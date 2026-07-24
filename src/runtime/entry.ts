@@ -84,7 +84,15 @@ export function findEntry(
   options: FindEntryOptions,
 ): EntryResult {
   const trace = options.trace ?? createTrace();
-  const limit = options.limit ?? 10;
+  // `--limit abc` parses to NaN, and `slice(0, NaN)` is empty — a typo'd flag
+  // would report a confident "0 results" for a query that does match. Anything
+  // that is not a non-negative integer falls back to the documented default.
+  const limit =
+    typeof options.limit === "number" &&
+    Number.isInteger(options.limit) &&
+    options.limit >= 0
+      ? options.limit
+      : 10;
 
   const lexical = options.lexical.search(query, { limit });
   const candidates = rrfMerge([lexical]).slice(0, limit);

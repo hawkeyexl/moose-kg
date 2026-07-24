@@ -83,12 +83,27 @@ Concepts are worth seeding from (concept → the documents about it);
 `iirds:ProductVariant` is not, because a variant is a *scope filter*, not
 something to read.
 
-**Granularity rule.** A **Section** carries its own body slice. A **Document**
-carries title + description, and body text *only when it has no sections*.
-Otherwise every document would match everything its sections match and shadow
-them in the rankings, while doubling the artifact. Slicing reuses `sliceSection`
-from [src/runtime/resolve.ts](../src/runtime/resolve.ts) — the same function
-retrieval uses, so index-time and retrieval-time slicing cannot drift.
+**Granularity rule: every node indexes exactly the text it owns.** A **Section**
+carries its own body slice. A **Document** carries title + description plus the
+prose no section covers — its *preamble*, the text before the first heading —
+and its whole body when it has no sections at all.
+
+The rule is "own text", not "no text when sections exist", because both failure
+modes are real. If a document repeated its sections' text it would match
+everything they match and shadow them in the rankings, while doubling the
+artifact. But if it carried nothing, preamble prose would be indexed *nowhere*
+and become unfindable — the same evaporation this artifact exists to prevent,
+reintroduced at a smaller scale. Owning the complement of its sections avoids
+both: no duplication, no gap.
+
+Slicing reuses `sliceSection` and `documentPreamble` from
+[src/runtime/resolve.ts](../src/runtime/resolve.ts) — the same functions
+retrieval uses, so index-time and retrieval-time slicing cannot drift. Both are
+fence-aware: a `#` comment in a leading code block is not a heading.
+
+A document's body text has its **frontmatter stripped**: the block is machinery,
+not prose, and left in, a query for `prefLabel` or `altLabels` would match every
+document that has one. Section slices start at their heading and never see it.
 
 ### Engine: MiniSearch (option a) — with an explicit cost
 

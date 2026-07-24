@@ -12,7 +12,10 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { loadConfig } from "../core/config.js";
 import { compactIri } from "../core/load.js";
-import { SEARCH_INDEX_FILENAME } from "../core/search-index.js";
+import {
+  SEARCH_INDEX_FILENAME,
+  type SearchIndexDoc,
+} from "../core/search-index.js";
 import { DockgError } from "../types.js";
 import { findEntry } from "../runtime/entry.js";
 import { createLexicalIndex } from "../runtime/lexical.js";
@@ -41,6 +44,29 @@ export interface SearchReport {
   trace: QueryTrace;
 }
 
+/**
+ * Read and shape-check the artifact. A truncated write, or `-i` pointed at the
+ * wrong file, is an operational error (exit 2) like an unparseable graph — not
+ * a raw stack trace, and not a confident "0 results".
+ */
+function loadSearchIndex(indexPath: string): SearchIndexDoc {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(readFileSync(indexPath, "utf8"));
+  } catch (e) {
+    throw new DockgError(
+      `Failed to parse ${indexPath}: ${e instanceof Error ? e.message : "parse error"} — re-run \`dockg export --format search\`.`,
+    );
+  }
+  const entries = (parsed as SearchIndexDoc | null)?.entries;
+  if (!Array.isArray(entries)) {
+    throw new DockgError(
+      `Not a dockg search index: ${indexPath} — expected an \`entries\` array; re-run \`dockg export --format search\`.`,
+    );
+  }
+  return parsed as SearchIndexDoc;
+}
+
 export function runSearch(opts: SearchOptions): SearchReport {
   const cwd = opts.cwd ?? process.cwd();
   const config = loadConfig(opts.config, cwd);
@@ -55,7 +81,7 @@ export function runSearch(opts: SearchOptions): SearchReport {
     );
   }
 
-  const lexical = createLexicalIndex(readFileSync(indexPath, "utf8"));
+  const lexical = createLexicalIndex(loadSearchIndex(indexPath));
   const { candidates, trace } = findEntry(opts.query, {
     lexical,
     limit: opts.limit,

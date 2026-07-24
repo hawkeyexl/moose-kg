@@ -31,7 +31,11 @@ Run the installer. The default cache directory is .dockg/cache.
 Other things.
 `;
 
-const LOOSE_MD = `# Loose
+const LOOSE_MD = `---
+title: Loose
+kg:
+  prefLabel: Marmalade
+---
 
 No headings besides the title. Mentions marmalade.
 `;
@@ -103,9 +107,36 @@ describe("buildSearchIndex", () => {
     expect(doc?.description).toBe("About installing.");
   });
 
+  it("gives a document with sections the prose before its first heading", () => {
+    // Preamble text belongs to no section, so without this it is indexed
+    // nowhere and cannot be found at all.
+    const withPreamble = "Orientation prose.\n\n# A\n\n## Install\n\nSteps.\n";
+    const index = buildSearchIndex(fixture(), "/nowhere", {
+      readDoc: (p) => (p === "docs/a.md" ? withPreamble : SOURCES[p]),
+    });
+    const doc = byId(index.entries, DOC);
+    expect(doc?.text).toBe("Orientation prose.");
+    // It stops at the first heading — the sections own the rest.
+    expect(doc?.text).not.toContain("Steps.");
+  });
+
+  it("leaves a document with sections textless when it has no preamble", () => {
+    // Every corpus document opens with an H1, so this is the common case.
+    expect(byId(build().entries, DOC)?.text).toBeUndefined();
+  });
+
   it("gives body text to a document that has no sections", () => {
     const loose = byId(build().entries, LOOSE);
     expect(loose?.text).toContain("marmalade");
+  });
+
+  it("strips frontmatter from a document's body text", () => {
+    const loose = byId(build().entries, LOOSE);
+    // Frontmatter is machinery, not prose: indexed, a query for `prefLabel`
+    // matches every sectionless document.
+    expect(loose?.text).not.toContain("prefLabel");
+    expect(loose?.text).not.toContain("---");
+    expect(loose?.text?.startsWith("No headings")).toBe(true);
   });
 
   it("dedupes labels case-insensitively and sorts them", () => {

@@ -42,8 +42,11 @@ export function createLexicalIndex(
 ): LexicalIndex {
   const doc = (
     typeof input === "string" ? (JSON.parse(input) as SearchIndexDoc) : input
-  ) as SearchIndexDoc;
-  const entries = doc.entries ?? [];
+  ) as SearchIndexDoc | null;
+  // Shape-check rather than trust: handed something that is valid JSON but not
+  // a search artifact, MiniSearch's `addAll` throws "documents is not
+  // iterable" from inside the library. An empty index is the honest answer.
+  const entries = Array.isArray(doc?.entries) ? doc.entries : [];
 
   const mini = new MiniSearch<SearchEntry>({
     fields: ["title", "labels", "description", "text"],

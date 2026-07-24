@@ -48,6 +48,7 @@ export {
 } from "./traverse.js";
 export {
   createFetchResolver,
+  documentPreamble,
   sliceSection,
   splitFragment,
   type ContentResolver,

@@ -135,29 +135,52 @@ export function documentSectionOrder(
 }
 
 /**
+ * Occurrence number of every section of a document, in one walk: section IRI →
+ * how many earlier sections share its heading text and level.
+ *
+ * Batched because the per-section form is quadratic — a document with N
+ * sections would otherwise rebuild the whole `hasPart` order N times, once per
+ * section indexed or resolved.
+ */
+export function sectionOccurrences(
+  graph: GraphIndex,
+  docIri: string,
+): Map<string, number> {
+  const occurrences = new Map<string, number>();
+  // title → level → how many carrying that pair have been seen so far. Nested
+  // rather than a joined key, so no separator has to be safe in either field.
+  const counts = new Map<string, Map<string, number>>();
+
+  for (const section of documentSectionOrder(graph, docIri)) {
+    const title = graph.literal(section, DCTERMS_TITLE);
+    if (title === undefined) {
+      occurrences.set(section, 0);
+      continue;
+    }
+    const level = graph.literal(section, DOCKG_LEVEL) ?? "";
+    let byLevel = counts.get(title);
+    if (!byLevel) {
+      byLevel = new Map();
+      counts.set(title, byLevel);
+    }
+    const seen = byLevel.get(level) ?? 0;
+    occurrences.set(section, seen);
+    byLevel.set(level, seen + 1);
+  }
+  return occurrences;
+}
+
+/**
  * Which occurrence of its heading text a section is (0-based) — the number of
- * earlier same-title, same-level sections in the same document.
+ * earlier same-title, same-level sections in the same document. A section the
+ * `hasPart` tree does not reach counts as the first (0).
  */
 export function sectionOccurrence(
   graph: GraphIndex,
   sectionIri: string,
 ): number {
   const { doc } = splitFragment(sectionIri);
-  const title = graph.literal(sectionIri, DCTERMS_TITLE);
-  const level = graph.literal(sectionIri, DOCKG_LEVEL);
-  if (title === undefined) return 0;
-
-  let occurrence = 0;
-  for (const candidate of documentSectionOrder(graph, doc)) {
-    if (candidate === sectionIri) break;
-    if (
-      graph.literal(candidate, DCTERMS_TITLE) === title &&
-      graph.literal(candidate, DOCKG_LEVEL) === level
-    ) {
-      occurrence += 1;
-    }
-  }
-  return occurrence;
+  return sectionOccurrences(graph, doc).get(sectionIri) ?? 0;
 }
 
 /**
@@ -170,6 +193,31 @@ export function sectionOccurrence(
  * not unique, so callers with a specific section node in hand should pass
  * `sectionOccurrence(graph, iri)` rather than defaulting to the first match.
  */
+/**
+ * The prose before a document's first heading — the text that belongs to no
+ * section, and so would otherwise be indexed nowhere in a document that has
+ * sections.
+ *
+ * Fence-aware for the same reason `sliceSection` is: a `#` comment inside a
+ * leading code block is not a heading, and treating it as one would cut the
+ * preamble short. Frontmatter is *not* stripped here — the caller decides,
+ * since only the search index cares about that.
+ */
+export function documentPreamble(markdown: string): string | undefined {
+  const lines = markdown.split(/\r?\n/);
+  const fenced = fencedLines(lines);
+  let end = lines.length;
+  for (let i = 0; i < lines.length; i++) {
+    if (fenced[i]) continue;
+    if (/^#{1,6}\s+/.test(lines[i]!)) {
+      end = i;
+      break;
+    }
+  }
+  const text = lines.slice(0, end).join("\n").trim();
+  return text === "" ? undefined : text;
+}
+
 export function sliceSection(
   markdown: string,
   title: string,
@@ -225,6 +273,18 @@ export function createFetchResolver(
   const toUrl =
     options.pathToUrl ?? ((path: string) => `${options.baseUrl ?? ""}${path}`);
   const cache = new Map<string, Promise<string | undefined>>();
+  // `assemble` resolves many sections of the same document; the occurrence walk
+  // is per-document, so compute it once and reuse it.
+  const occurrenceCache = new Map<string, Map<string, number>>();
+
+  const occurrenceOf = (docIri: string, sectionIri: string): number => {
+    let map = occurrenceCache.get(docIri);
+    if (!map) {
+      map = sectionOccurrences(graph, docIri);
+      occurrenceCache.set(docIri, map);
+    }
+    return map.get(sectionIri) ?? 0;
+  };
 
   const fetchDoc = (url: string): Promise<string | undefined> => {
     let pending = cache.get(url);
@@ -268,7 +328,7 @@ export function createFetchResolver(
                 body,
                 title,
                 Number.isNaN(level) ? undefined : level,
-                sectionOccurrence(graph, iri),
+                occurrenceOf(doc, iri),
               );
         if (slice === undefined) {
           options.trace?.resolutions.push({

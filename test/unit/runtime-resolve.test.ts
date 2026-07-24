@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { GraphIndex } from "../../src/runtime/graph.js";
 import {
   createFetchResolver,
+  documentPreamble,
   documentSectionOrder,
   sectionOccurrence,
   sliceSection,
@@ -154,6 +155,41 @@ describe("sliceSection", () => {
     expect(sliceSection(md, "Install", 2)).toBe(
       ["## Install", "", "```", "# comment", "```"].join("\n"),
     );
+  });
+});
+
+describe("documentPreamble", () => {
+  it("returns the prose before the first heading", () => {
+    expect(documentPreamble("Intro text.\n\n# Title\n\nBody.\n")).toBe(
+      "Intro text.",
+    );
+  });
+
+  it("returns undefined when the document opens with a heading", () => {
+    expect(documentPreamble(MARKDOWN)).toBeUndefined();
+    expect(documentPreamble("")).toBeUndefined();
+    expect(documentPreamble("\n\n   \n")).toBeUndefined();
+  });
+
+  it("returns the whole document when it has no heading at all", () => {
+    expect(documentPreamble("Just prose.\n\nMore prose.\n")).toBe(
+      "Just prose.\n\nMore prose.",
+    );
+  });
+
+  it("does not end the preamble at a # inside a fenced block", () => {
+    const md = [
+      "```bash",
+      "# not a heading",
+      "```",
+      "",
+      "Still preamble.",
+      "",
+      "# Real",
+    ].join("\n");
+    const out = documentPreamble(md);
+    expect(out).toContain("Still preamble.");
+    expect(out).not.toContain("# Real");
   });
 });
 

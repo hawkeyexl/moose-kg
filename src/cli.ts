@@ -318,7 +318,7 @@ program
 program
   .command("export")
   .description(
-    "Reserialize the built graph into a consumer format (jsonld file or iirds package)",
+    "Reserialize the built graph into a consumer format (jsonld file, iirds package, or search index)",
   )
   .option("-c, --config <path>", "Path to dockg.config.yaml")
   .option("-g, --graph <path>", "Graph .ttl path (default: config out)")

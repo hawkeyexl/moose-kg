@@ -21,7 +21,11 @@ import { compactIri } from "./load.js";
 import { byCodeUnit } from "./sort.js";
 import { NS } from "./vocab.js";
 import type { GraphIndex } from "../runtime/graph.js";
-import { sectionOccurrence, sliceSection } from "../runtime/resolve.js";
+import {
+  documentPreamble,
+  sectionOccurrences,
+  sliceSection,
+} from "../runtime/resolve.js";
 
 const DOCKG_DOCUMENT = `${NS.dockg}Document`;
 const DOCKG_SECTION = `${NS.dockg}Section`;
@@ -73,6 +77,22 @@ function joinLabels(values: string[]): string | undefined {
   return out.length > 0 ? out.join(" ") : undefined;
 }
 
+/**
+ * A leading YAML frontmatter block, and the blank lines after it.
+ *
+ * Only a document with *no* sections gets body text, and its body is the whole
+ * file — frontmatter included, unless it is stripped here. That block is
+ * machinery, not prose: left in, a query for `prefLabel` or `altLabels` matches
+ * every sectionless document, and the artifact carries YAML nobody can read.
+ * Section slices start at their heading, so they never see it.
+ */
+const FRONTMATTER =
+  /^---[ \t]*\r?\n(?:[\s\S]*?\r?\n)?(?:---|\.\.\.)[ \t]*(?:\r?\n|$)(?:\r?\n)*/;
+
+function stripFrontmatter(markdown: string): string {
+  return markdown.replace(FRONTMATTER, "");
+}
+
 /** Drop undefined fields so entries serialize identically for equal inputs. */
 function entry(
   id: string,
@@ -103,6 +123,20 @@ export function buildSearchIndex(
   const entries: SearchEntry[] = [];
   const sourceOf = new Map<string, string | undefined>();
 
+  // Group sections by their parent document once. Re-scanning every section per
+  // document is quadratic across the corpus, and the section loop below needs
+  // the same grouping anyway.
+  const allSections = graph.instancesOf(DOCKG_SECTION);
+  const sectionsOf = new Map<string, string[]>();
+  for (const section of allSections) {
+    const hash = section.indexOf("#");
+    if (hash < 0) continue;
+    const doc = section.slice(0, hash);
+    const siblings = sectionsOf.get(doc);
+    if (siblings) siblings.push(section);
+    else sectionsOf.set(doc, [section]);
+  }
+
   // Documents. Sections resolve their slice from the parent's source, so read
   // each document once and remember it.
   for (const doc of graph.instancesOf(DOCKG_DOCUMENT)) {
@@ -115,11 +149,17 @@ export function buildSearchIndex(
       );
     }
 
-    const sections = graph
-      .instancesOf(DOCKG_SECTION)
-      .filter((s) => s.startsWith(`${doc}#`));
-    // Granularity rule: body text belongs to sections when they exist.
-    const text = sections.length === 0 ? source : undefined;
+    // Granularity rule: a section owns its slice, so a document with sections
+    // keeps only the prose that belongs to no section — the preamble before the
+    // first heading. Without this, that text is indexed nowhere and is
+    // unfindable. A document with no sections owns its whole body.
+    const body = source === undefined ? undefined : stripFrontmatter(source);
+    const text =
+      body === undefined
+        ? undefined
+        : (sectionsOf.get(doc)?.length ?? 0) > 0
+          ? documentPreamble(body)
+          : body;
 
     entries.push(
       entry(doc, compactIri(DOCKG_DOCUMENT), {
@@ -130,8 +170,10 @@ export function buildSearchIndex(
     );
   }
 
-  // Sections: title plus the slice of the parent document they own.
-  for (const section of graph.instancesOf(DOCKG_SECTION)) {
+  // Sections: title plus the slice of the parent document they own. Occurrences
+  // are per-document, so compute each document's map once.
+  const occurrencesOf = new Map<string, Map<string, number>>();
+  for (const section of allSections) {
     const hash = section.indexOf("#");
     const doc = hash < 0 ? section : section.slice(0, hash);
     const title = graph.literal(section, DCTERMS_TITLE);
@@ -141,11 +183,17 @@ export function buildSearchIndex(
       levelText === undefined ? NaN : Number.parseInt(levelText, 10);
     const level = Number.isNaN(parsed) ? undefined : parsed;
 
+    let occurrences = occurrencesOf.get(doc);
+    if (!occurrences) {
+      occurrences = sectionOccurrences(graph, doc);
+      occurrencesOf.set(doc, occurrences);
+    }
+
     // Heading text repeats (the corpus has two `## Install`), so the section's
     // occurrence disambiguates which slice is actually its own.
     const text =
       source !== undefined && title !== undefined
-        ? sliceSection(source, title, level, sectionOccurrence(graph, section))
+        ? sliceSection(source, title, level, occurrences.get(section) ?? 0)
         : undefined;
 
     entries.push(entry(section, compactIri(DOCKG_SECTION), { title, text }));

@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -136,6 +136,26 @@ describe("dockg search (integration)", () => {
     const { graph } = buildIndexed();
     const args = ["search", "install", "-g", graph, "-f", "json"];
     expect(run(args, corpus).stdout).toBe(run(args, corpus).stdout);
+  });
+
+  it("exits 2 when the index is unreadable or the wrong file", () => {
+    const { dir, graph } = buildIndexed();
+    const corrupt = join(dir, "corrupt.json");
+    writeFileSync(corrupt, "not json", "utf8");
+    const parse = run(
+      ["search", "anything", "-g", graph, "-i", corrupt],
+      corpus,
+    );
+    expect(parse.status).toBe(2);
+    expect(parse.stdout).toContain("Failed to parse");
+
+    // A real file of the wrong shape — `-i` pointed at graph.jsonld — must not
+    // report a confident "0 results" either.
+    const wrong = join(dir, "wrong.json");
+    writeFileSync(wrong, JSON.stringify({ "@graph": [] }), "utf8");
+    const shape = run(["search", "anything", "-g", graph, "-i", wrong], corpus);
+    expect(shape.status).toBe(2);
+    expect(shape.stdout).toContain("Not a dockg search index");
   });
 
   it("exits 2 when the search index is missing", () => {

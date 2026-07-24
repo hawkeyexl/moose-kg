@@ -323,7 +323,7 @@ dockg fill --force            # overwrite human-set kg fields too
 | `dockg export -f iirds` | Package the graph as a conformant, deterministic iiRDS package (`.iirds`) |
 | `dockg export -f search` | Emit the lexical search index (`kg/search.json`) the runtime needs for text queries |
 
-Shared flags: `-c/--config`, `-f/--format pretty|json`; `build` takes `-o/--out`; `query`/`stats`/`check`/`export`/`traverse` take `-g/--graph`; `check` takes `--shapes`; `stats` takes `--coverage-threshold <pct>`; `export` takes `-f/--format` and `-o/--out`; `traverse` takes `-d/--depth` (default 1, or 3 under `--impact`, since impact analysis is only useful transitively), `--predicates`, `--reverse`, `--impact`, `--variant`, `--subject`, `--limit`.
+Shared flags: `-c/--config`, `-f/--format pretty|json`; `build` takes `-o/--out`; `query`/`stats`/`check`/`export`/`search`/`traverse` take `-g/--graph`; `check` takes `--shapes`; `stats` takes `--coverage-threshold <pct>`; `export` takes `-f/--format` and `-o/--out`; `search` takes `-i/--index` (default: `search.json` beside the graph) and `--limit` (default 10); `traverse` takes `-d/--depth` (default 1, or 3 under `--impact`, since impact analysis is only useful transitively), `--predicates`, `--reverse`, `--impact`, `--variant`, `--subject`, `--limit`.
 
 ### Retrieval runtime (`dockg/runtime`)
 
@@ -370,9 +370,13 @@ actually *says* — "what is the default cache directory?" would find nothing. T
 artifact carries the body text, built in Node from local markdown, so entry stays
 hermetic ([ADR 01019](adrs/01019-lexical-entry.md)).
 
-Body text belongs to **sections**; a document carries its title and description,
-and body text only when it has no sections — otherwise every document would
-shadow the sections inside it in the rankings (the granularity golden rule).
+**Every node indexes exactly the text it owns** (the granularity golden rule). A
+section carries its own body slice; a document carries its title, description,
+and the prose no section covers — the preamble before the first heading, or its
+whole body when it has no sections. Repeating its sections' text would let a
+document shadow them in the rankings; carrying none would leave preamble prose
+findable nowhere. Frontmatter is stripped from document body text: it is
+machinery, not prose.
 
 ```bash
 dockg build

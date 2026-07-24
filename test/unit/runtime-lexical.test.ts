@@ -74,6 +74,14 @@ describe("createLexicalIndex", () => {
     expect(index().search("install", { limit: 1 })).toHaveLength(1);
   });
 
+  it("yields an empty index for JSON that is not a search artifact", () => {
+    // MiniSearch's addAll throws "documents is not iterable" on this.
+    const notAnIndex = JSON.stringify({ "@graph": [], entries: { a: 1 } });
+    expect(() => createLexicalIndex(notAnIndex)).not.toThrow();
+    expect(createLexicalIndex(notAnIndex).size()).toBe(0);
+    expect(createLexicalIndex("null").size()).toBe(0);
+  });
+
   it("returns nothing for an empty query or a term with no match", () => {
     expect(index().search("")).toEqual([]);
     expect(index().search("   ")).toEqual([]);
@@ -153,6 +161,19 @@ describe("findEntry", () => {
     const result = findEntry("install", { lexical: index(), limit: 1 });
     expect(result.candidates).toHaveLength(1);
     expect(result.trace.entry).toHaveLength(1);
+  });
+
+  it("falls back to the default limit when the limit is not a count", () => {
+    // `--limit abc` parses to NaN; slice(0, NaN) would report "0 results" for a
+    // query that does match.
+    const result = findEntry("install", {
+      lexical: index(),
+      limit: Number.NaN,
+    });
+    expect(result.candidates.length).toBeGreaterThan(0);
+    expect(
+      findEntry("install", { lexical: index(), limit: 0 }).candidates,
+    ).toHaveLength(0);
   });
 
   it("returns no candidates and no trace entries for an unmatched query", () => {

@@ -389,8 +389,11 @@ Delivered ([ADR 01019](adrs/01019-lexical-entry.md)):
   carry only titles, so an index built from the graph alone can never match what
   a document *says*. Built in Node from local markdown, so entry stays hermetic.
   Plain JSON dockg owns (not MiniSearch's serialized index), sorted, byte-stable.
-- **Granularity golden rule enforced**: a section carries its own body slice; a
-  document carries title + description, and body only when it has no sections.
+- **Granularity golden rule enforced — every node indexes the text it owns**: a
+  section carries its own body slice; a document carries title + description
+  plus the prose no section covers (its preamble, or the whole body when it has
+  no sections). Duplicating would shadow sections in the rankings; carrying
+  nothing would leave preamble prose findable nowhere.
 - **`createLexicalIndex` / `findEntry`** in the runtime, with ties broken by IRI
   so ranking is a dockg contract rather than a library's.
 - **`rrfMerge`** shipped and tested though only one ranking exists — it fixes the
