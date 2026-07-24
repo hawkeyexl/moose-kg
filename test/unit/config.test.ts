@@ -50,6 +50,39 @@ describe("parseConfig", () => {
       "notSoftwareSubject",
     ]);
     expect(c.fill.minConfidence).toBe(0.7);
+    // iiRDS export defaults: version 1.3, no title/creator (ADR 01017).
+    expect(c.export.iirds).toEqual({
+      title: undefined,
+      creator: undefined,
+      version: "1.3",
+    });
+  });
+
+  it("parses export.iirds overrides", () => {
+    const c = parseConfig(
+      "version: 1\nexport:\n  iirds:\n    title: My Docs\n    creator: Acme\n    version: '1.2'\n",
+      "/tmp/dockg.config.yaml",
+    );
+    expect(c.export.iirds).toEqual({
+      title: "My Docs",
+      creator: "Acme",
+      version: "1.2",
+    });
+  });
+
+  it("rejects an unknown export.iirds version and unknown keys", () => {
+    expect(() =>
+      parseConfig(
+        "version: 1\nexport:\n  iirds:\n    version: '2.0'\n",
+        "/tmp/dockg.config.yaml",
+      ),
+    ).toThrow(DockgError);
+    expect(() =>
+      parseConfig(
+        "version: 1\nexport:\n  iirds:\n    bogus: true\n",
+        "/tmp/dockg.config.yaml",
+      ),
+    ).toThrow(DockgError);
   });
 
   it("normalizes baseIri with a trailing slash", () => {

@@ -296,25 +296,32 @@ Delivered ([ADR 01016](adrs/01016-jsonld-export.md)):
 - **`--format iirds`**: recognized but fails with a Phase-6b pointer, keeping the
   flag surface stable.
 
-## Phase 6b — iiRDS package export
+## Phase 6b — iiRDS package export — **done**
 
 **Goal:** `dockg export --format iirds` produces a conformant iiRDS package.
 
-Decisions to make (ADRs):
-- **Package layout**: `META-INF/metadata.rdf` (RDF/XML) + content refs; what
-  plays the `iirds:Rendition` content role for markdown sources.
-- **Mandatory package metadata**: `iirds:Package` + `iiRDSVersion`, a Creator
-  `iirds:Party` + vcard org, an `iirds:ProductVariant` — with an explicit story
-  for corpora lacking a creator/variant (warn + emit Unrestricted, or fail with
-  guidance).
-- **Deterministic ZIP**: fixed entry order, zeroed timestamps (no ZIP writer
-  exists in deps yet).
-- **RDF/XML serializer**: a second hand-rolled deterministic emitter (no library).
-- Conformance target: iiRDS 1.3 package rules, validated against the plusmeta
-  iiRDS Validation Tool's rule set.
+Delivered ([ADR 01017](adrs/01017-iirds-package-export.md)):
+- **Unrestricted iiRDS 1.3** target — the only variant achievable without a
+  content pipeline. Research (spec + plusmeta validator rules) established the
+  thin mandatory set: `iirds:Package` + `iiRDSVersion`, IUs as subclasses
+  (`iirds:Topic`) linked via `is-part-of-package`, renditions with
+  `source`/`format`. Creator/ProductVariant are iiRDS/H-only MUSTs, optional here.
+- **Package layout**: `mimetype` (stored, first) + `META-INF/metadata.rdf`
+  (RDF/XML) + markdown sources under `content/` as `iirds:Rendition`s
+  (`text/markdown`).
+- **Two new hand-rolled deterministic serializers**: `src/core/zip.ts` (ZIP —
+  zeroed timestamps, fixed order, native `zlib`) and `src/core/emit-rdfxml.ts`
+  (RDF/XML — sorted, no blank nodes). Projection in `src/core/iirds-package.ts`.
+- **Optional `export.iirds` config** (`title`, `creator`, `version`): a Creator
+  `iirds:Party`→`vcard:Organization` and package title; absent → a minimal valid
+  package.
+- **Classification carried**: the Phase-2 iiRDS edges + ProductVariant nodes land
+  in the package metadata.
+- Byte-identical across exports; `metadata.rdf` golden-gated; validated with
+  Python `zipfile` during development.
 
-Research first: iiRDS package conformance requirements; how existing CDPs
-(content delivery portals) validate incoming packages.
+Out of scope (later): iiRDS/A and iiRDS/H (content converters / PDF-A + JSON-LD
+twin); rendered-HTML renditions; iiRDS **ingest**; a `DirectoryNode` ToC tree.
 
 ## Phase 7 — Query engine and content resolver
 

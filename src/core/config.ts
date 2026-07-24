@@ -141,6 +141,17 @@ export interface DockgConfig {
      */
     coverageThreshold: Record<string, number>;
   };
+  export: {
+    /** iiRDS package export metadata (ADR 01017); all fields optional. */
+    iirds: {
+      /** Package title; when absent the exporter uses a default. */
+      title?: string;
+      /** Creator organization name → a Creator iirds:Party + vcard:Organization. */
+      creator?: string;
+      /** iiRDS version literal written to the package. Default "1.3". */
+      version: "1.2" | "1.3";
+    };
+  };
   /** Absolute path of the loaded config file. */
   configPath: string;
   /** Directory containing the config file; relative paths resolve against it. */
@@ -267,6 +278,13 @@ export function parseConfig(text: string, configPath: string): DockgConfig {
       writeProvenance: r.fill?.writeProvenance ?? true,
       validateGraph: r.fill?.validateGraph ?? true,
       pricing: r.fill?.pricing,
+    },
+    export: {
+      iirds: {
+        title: r.export?.iirds?.title,
+        creator: r.export?.iirds?.creator,
+        version: r.export?.iirds?.version ?? "1.3",
+      },
     },
     configPath: abs,
     configDir: dir,

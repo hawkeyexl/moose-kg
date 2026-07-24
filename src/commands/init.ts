@@ -79,6 +79,14 @@ fill:
   # Reject proposals that would violate the SHACL shapes contract
   # (broader/narrower cycles, conflicting labels).
   validateGraph: true
+
+# Optional enrichment for \`dockg export --format iirds\` (the iiRDS package).
+# Absent, a minimal valid package is still produced.
+# export:
+#   iirds:
+#     title: My Docs        # package title (default: "dockg export")
+#     creator: Acme Corp     # Creator iirds:Party + vcard:Organization
+#     version: "1.3"         # iiRDS version literal: "1.2" | "1.3"
 `;
 
 export function runInit(cwd = process.cwd()): string {

@@ -318,6 +318,7 @@ dockg fill --force            # overwrite human-set kg fields too
 | `dockg query` | Triple-pattern match: `-s`/`-p`/`-o`, omit for wildcard |
 | `dockg stats` | Counts, orphan docs, broken links, most-connected docs, metadata coverage; `--check` gates CI |
 | `dockg export -f jsonld` | Reserialize the built graph as deterministic JSON-LD |
+| `dockg export -f iirds` | Package the graph as a conformant, deterministic iiRDS package (`.iirds`) |
 
 Shared flags: `-c/--config`, `-f/--format pretty|json`; `build` takes `-o/--out`; `query`/`stats`/`check`/`export` take `-g/--graph`; `check` takes `--shapes`; `stats` takes `--coverage-threshold <pct>`; `export` takes `-f/--format` and `-o/--out`. SPARQL is a planned upgrade behind `query`.
 
@@ -339,8 +340,26 @@ dockg export -f jsonld -o out.jsonld  # explicit output path
 The output holds the same determinism contract as the Turtle: two exports over
 the same graph are byte-identical (no blank nodes, no wall clock, canonically
 sorted). The default output path is the graph path with a `.jsonld` extension;
-`-o/--out` overrides it. `--format iirds` (an iiRDS package) is a recognized
-flag value that currently exits with a "not yet supported (Phase 6b)" pointer.
+`-o/--out` overrides it.
+
+`dockg export --format iirds` packages the graph as an **unrestricted
+[iiRDS](https://www.iirds.org/) 1.3 package** (`.iirds`, a ZIP) — the format
+tekom's Content Delivery Portals ingest ([ADR 01017](adrs/01017-iirds-package-export.md)).
+The package carries `META-INF/metadata.rdf` (RDF/XML): one `iirds:Package`, each
+document as an `iirds:Topic` linked via `iirds:is-part-of-package`, each markdown
+source embedded as an `iirds:Rendition` (`text/markdown`), and the Phase-2 iiRDS
+classification (topic type, subject, product variant, lifecycle phase) carried
+across. It is byte-identical across runs (zeroed ZIP timestamps, sorted RDF/XML,
+`mimetype` stored first).
+
+```bash
+dockg build
+dockg export --format iirds           # -> kg/graph.iirds
+```
+
+Enrich the package with the optional `export.iirds` config block (below); absent,
+a minimal valid package is still produced. `A`/`H` iiRDS variants (which need a
+PDF/A or XHTML5 content pipeline) are out of scope.
 
 ### Metadata coverage
 
@@ -392,6 +411,11 @@ fill:
   minConfidence: 0.7     # write only fields the model scores >= this
   # fields: defaults to every fillable field; confidence gates what is written
   validateGraph: true    # reject proposals that would violate the shapes
+export:
+  iirds:                 # optional enrichment for `export --format iirds`
+    title: My Docs       # package title (default: "dockg export")
+    creator: Acme Corp   # Creator iirds:Party + vcard:Organization (default: none)
+    version: "1.3"       # iiRDS version literal: "1.2" | "1.3" (default: "1.3")
 ```
 
 ## Related standards
@@ -405,9 +429,11 @@ schema.org, FOAF):
   `http://iirds.tekom.de/iirds#` (Core, stable across versions) plus the
   Software domain `http://iirds.tekom.de/iirds/domain/software#`. dockg emits
   Core topic typing and product-variant applicability, and the Software
-  domain's lifecycle-phase and subject classifications (see the `kg:` section).
-  Only published IRIs are *referenced* — the spec is CC BY-ND, so the
-  vocabulary is never vendored, re-serialized, or modified in this repo.
+  domain's lifecycle-phase and subject classifications (see the `kg:` section),
+  and packages the whole graph as an unrestricted iiRDS 1.3 `.iirds` container
+  via `dockg export --format iirds`. Only published IRIs are *referenced* — the
+  spec is CC BY-ND, so the vocabulary is never vendored, re-serialized, or
+  modified in this repo.
 - **DIN SPEC 91526** — "Knowledge Graphs for Language Models and Language
   Models for Knowledge Graphs" (DIN Media, 2025): a general pre-standardization
   spec on grounding LLMs with knowledge graphs. It is *not* an iiRDS document
