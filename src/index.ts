@@ -59,7 +59,18 @@ export {
   type PackageProjection,
   type ContentFile,
 } from "./core/iirds-package.js";
-export { loadGraph, expandTerm, compactIri } from "./core/load.js";
+export {
+  loadGraph,
+  expandTerm,
+  compactIri,
+  storeToQuads,
+} from "./core/load.js";
+/**
+ * The browser-native GraphRAG runtime is also published as the `dockg/runtime`
+ * subpath, which is the import to use in a browser: it has no `node:` imports
+ * and no dependencies (ADR 01018).
+ */
+export * from "./runtime/index.js";
 export {
   applyKgFields,
   existingKgFields,
@@ -96,6 +107,12 @@ export {
   type StatsOptions,
   type StatsReport,
 } from "./commands/stats.js";
+export {
+  runTraverse,
+  renderTraverse,
+  type TraverseOptions as TraverseCommandOptions,
+  type TraverseReport,
+} from "./commands/traverse.js";
 export {
   runFill,
   type FillOptions,

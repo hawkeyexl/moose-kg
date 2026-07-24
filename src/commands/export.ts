@@ -7,19 +7,14 @@
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { Store } from "n3";
 import { DockgError } from "../types.js";
 import { loadConfig } from "../core/config.js";
-import type { Quad, Term } from "../core/derive.js";
 import { emitJsonLd } from "../core/emit-jsonld.js";
 import { emitRdfXml } from "../core/emit-rdfxml.js";
 import { projectPackage } from "../core/iirds-package.js";
-import { loadGraph } from "../core/load.js";
+import { loadGraph, storeToQuads } from "../core/load.js";
 import { byCodeUnit } from "../core/sort.js";
-import { NS } from "../core/vocab.js";
 import { writeZip, type ZipEntry } from "../core/zip.js";
-
-const XSD_STRING = `${NS.xsd}string`;
 
 export type ExportFormat = "jsonld" | "iirds";
 
@@ -47,24 +42,6 @@ const EXTENSION: Record<ExportFormat, string> = {
   jsonld: ".jsonld",
   iirds: ".iirds",
 };
-
-/** Convert an in-memory N3 store back to dockg's internal quad shape. */
-function storeToQuads(store: Store): Quad[] {
-  return store.getQuads(null, null, null, null).map((q) => {
-    const o = q.object;
-    let term: Term;
-    if (o.termType === "Literal") {
-      const dt = o.datatype.value;
-      term =
-        dt && dt !== XSD_STRING
-          ? { kind: "literal", value: o.value, datatype: dt }
-          : { kind: "literal", value: o.value };
-    } else {
-      term = { kind: "iri", value: o.value };
-    }
-    return { s: q.subject.value, p: q.predicate.value, o: term };
-  });
-}
 
 /** Replace a path's extension (or append one) with `.jsonld`-style ext. */
 function withExtension(path: string, ext: string): string {

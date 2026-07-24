@@ -11,6 +11,7 @@ import { renderValidate, runValidate } from "./commands/validate.js";
 import { renderFill, runFill } from "./commands/fill.js";
 import { runInit } from "./commands/init.js";
 import { renderStats, runStats } from "./commands/stats.js";
+import { renderTraverse, runTraverse } from "./commands/traverse.js";
 
 const program = new Command();
 
@@ -221,6 +222,56 @@ program
         const report = runStats(opts);
         console.log(renderStats(report, opts.format as "pretty" | "json"));
         process.exitCode = report.exitCode;
+      } catch (e) {
+        fail(e);
+      }
+    },
+  );
+
+program
+  .command("traverse")
+  .description(
+    "Walk the graph from a node, honoring scope rules, with the full trace",
+  )
+  .argument("<node>", "Starting node: a full IRI or a prefix:local CURIE")
+  .option("-c, --config <path>", "Path to dockg.config.yaml")
+  .option("-g, --graph <path>", "Graph .ttl path (default: config out)")
+  .option(
+    "-d, --depth <n>",
+    "Maximum hops from the node (default 1; 3 under --impact)",
+    (v) => Number.parseInt(v, 10),
+  )
+  .option("--predicates <curies...>", "Only follow these predicates")
+  .option("--reverse", "Follow inbound edges (who points at this node)")
+  .option("--impact", "Transitive inbound reach: what a change here affects")
+  .option(
+    "--variant <variant>",
+    "Scope filter: product variant IRI, title, or slug",
+  )
+  .option("--subject <subject>", "Scope filter: software subject")
+  .option("--limit <n>", "Stop after this many nodes", (v) =>
+    Number.parseInt(v, 10),
+  )
+  .option("-f, --format <format>", "Output format: pretty | json", "pretty")
+  .action(
+    (
+      node: string,
+      opts: {
+        config?: string;
+        graph?: string;
+        depth?: number;
+        predicates?: string[];
+        reverse?: boolean;
+        impact?: boolean;
+        variant?: string;
+        subject?: string;
+        limit?: number;
+        format: string;
+      },
+    ) => {
+      try {
+        const report = runTraverse({ ...opts, node });
+        console.log(renderTraverse(report, opts.format as "pretty" | "json"));
       } catch (e) {
         fail(e);
       }

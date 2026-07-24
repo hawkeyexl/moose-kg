@@ -316,11 +316,75 @@ dockg fill --force            # overwrite human-set kg fields too
 | `dockg check` | Validate the built graph against the SHACL shapes (bundled `shapes/dockg-0.5.ttl`) |
 | `dockg fill [globs]` | Propose `kg:` fields with an LLM, gated by confidence, and write them back |
 | `dockg query` | Triple-pattern match: `-s`/`-p`/`-o`, omit for wildcard |
+| `dockg traverse <node>` | Walk from a node honoring scope rules, with the full trace; `--impact` for reverse reach |
 | `dockg stats` | Counts, orphan docs, broken links, most-connected docs, metadata coverage; `--check` gates CI |
 | `dockg export -f jsonld` | Reserialize the built graph as deterministic JSON-LD |
 | `dockg export -f iirds` | Package the graph as a conformant, deterministic iiRDS package (`.iirds`) |
 
-Shared flags: `-c/--config`, `-f/--format pretty|json`; `build` takes `-o/--out`; `query`/`stats`/`check`/`export` take `-g/--graph`; `check` takes `--shapes`; `stats` takes `--coverage-threshold <pct>`; `export` takes `-f/--format` and `-o/--out`. SPARQL is a planned upgrade behind `query`.
+Shared flags: `-c/--config`, `-f/--format pretty|json`; `build` takes `-o/--out`; `query`/`stats`/`check`/`export`/`traverse` take `-g/--graph`; `check` takes `--shapes`; `stats` takes `--coverage-threshold <pct>`; `export` takes `-f/--format` and `-o/--out`; `traverse` takes `-d/--depth` (default 1, or 3 under `--impact`, since impact analysis is only useful transitively), `--predicates`, `--reverse`, `--impact`, `--variant`, `--subject`, `--limit`.
+
+### Retrieval runtime (`dockg/runtime`)
+
+`dockg traverse` is a thin CLI over **`dockg/runtime`** — a browser-native
+retrieval layer ([ADR 01018](adrs/01018-graphrag-runtime-architecture.md)) that
+runs the same code client-side. It has **no Node APIs and no dependencies**
+(21 KB raw / ~6 KB gzipped), because the graph it reads is the plain
+`JSON.parse`-able JSON-LD export — no RDF parser needed.
+
+```js
+import { GraphIndex, traverse, createFetchResolver, assemble } from "dockg/runtime";
+
+const graph = GraphIndex.fromJsonLd(await (await fetch("/kg/graph.jsonld")).text());
+
+// Walk the graph, honoring product-variant scope (including negative scope).
+const { nodes, trace } = traverse(graph, {
+  seeds: ["https://example.com/kg/doc/docs/configuration.md"],
+  depth: 2,
+  variant: "SP-X100",
+});
+
+// Resolve node text and assemble the bundle an inference engine consumes.
+const resolver = createFetchResolver(graph, { baseUrl: "/raw/", trace });
+const bundle = await assemble(resolver, nodes, { trace, maxChars: 12000 });
+// → { context, citations, trace, refusal?, truncated }
+```
+
+Three properties are contractual:
+
+- **Retrieval-only.** The runtime returns `{ context, citations, trace }` and
+  **stops** — it never calls a model. Wiring generation (an agent, your backend,
+  whatever) is the host's job, which keeps API keys and inference cost outside
+  dockg and keeps retrieval fully deterministic.
+- **Every result carries its trace.** `trace` records the seeds, every hop
+  (`{from, predicate, to, depth}`), every scope exclusion (`{node, rule, value}`),
+  and every content resolution — so "why did this come back?" is always
+  answerable. `dockg traverse -f json` prints it too.
+- **No route ⇒ a structured refusal**, never empty context: `bundle.refusal` is
+  `{reason: "no-route" | "no-content", detail}` so a caller can decline honestly
+  instead of guessing.
+
+Scope filtering follows [ADR 01014](adrs/01014-negative-scope.md): a node is
+dropped when an explicit negative (`kg.notApplicableTo`) names the target, or
+when it scoped itself to *other* variants — and the trace says which rule fired.
+Schema edges (`rdf:type`) are not traversed by default, since every document
+shares its class node and following them would make everything reachable from
+everything.
+
+**Custom SPARQL** is supported without adding weight for anyone who doesn't want
+it: `rdfjsQuads(graph)` hands out standard RDF/JS quads for any store or engine.
+
+```js
+import { Store } from "n3";
+import { QueryEngine } from "@comunica/query-sparql-rdfjs-lite";
+import { rdfjsQuads } from "dockg/runtime";
+
+const bindings = await new QueryEngine().queryBindings(sparql, {
+  sources: [new Store(rdfjsQuads(graph))],
+});
+```
+
+Engine results carry bindings, not the walker's trace — explainability lives in
+the walker API.
 
 ### Export
 
