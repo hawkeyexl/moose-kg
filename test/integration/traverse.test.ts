@@ -1,0 +1,197 @@
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+import { Parser, Store } from "n3";
+import { describe, expect, it } from "vitest";
+import { GraphIndex } from "../../src/runtime/graph.js";
+import { traverse } from "../../src/runtime/traverse.js";
+import { storeToQuads } from "../../src/core/load.js";
+import { NS } from "../../src/core/vocab.js";
+
+const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const cli = join(root, "dist", "cli.js");
+const corpus = join(root, "test", "fixtures", "corpus");
+const goldenDir = join(root, "test", "fixtures", "golden");
+const traverseGolden = join(goldenDir, "traverse.json");
+
+const CONFIG_DOC = "https://example.com/kg/doc/docs/configuration.md";
+const REFERENCES = `${NS.dcterms}references`;
+const HAS_PART = `${NS.dcterms}hasPart`;
+
+function run(args: string[], cwd: string): { stdout: string; status: number } {
+  try {
+    const stdout = execFileSync(process.execPath, [cli, ...args], {
+      encoding: "utf8",
+      cwd,
+    });
+    return { stdout, status: 0 };
+  } catch (e) {
+    const err = e as { stdout?: string; stderr?: string; status?: number };
+    return {
+      stdout: (err.stdout ?? "") + (err.stderr ?? ""),
+      status: err.status ?? -1,
+    };
+  }
+}
+
+function buildGraph(): string {
+  const dir = mkdtempSync(join(tmpdir(), "dockg-traverse-"));
+  const graph = join(dir, "graph.ttl");
+  execFileSync(process.execPath, [cli, "build", "--out", graph], {
+    encoding: "utf8",
+    cwd: corpus,
+  });
+  return graph;
+}
+
+describe("dockg traverse (integration)", () => {
+  it("matches the traverse golden, trace included", () => {
+    const graph = buildGraph();
+    const { stdout, status } = run(
+      [
+        "traverse",
+        CONFIG_DOC,
+        "-g",
+        graph,
+        "-d",
+        "2",
+        "--predicates",
+        "dcterms:references",
+        "dcterms:hasPart",
+        "--variant",
+        "SP-X100",
+        "-f",
+        "json",
+      ],
+      corpus,
+    );
+    expect(status).toBe(0);
+    expect(stdout).toBe(readFileSync(traverseGolden, "utf8"));
+  });
+
+  it("explains a scope exclusion in pretty output", () => {
+    const graph = buildGraph();
+    const { stdout } = run(
+      [
+        "traverse",
+        "https://example.com/kg/doc/docs/windows-notes.md",
+        "-g",
+        graph,
+        "-d",
+        "2",
+        "--variant",
+        "SP-X300",
+        "--predicates",
+        "dcterms:references",
+      ],
+      corpus,
+    );
+    // configuration.md declares notApplicableTo: [SP-X300], so it is dropped
+    // and the reason is reported, not silently omitted.
+    expect(stdout).toContain("excluded by scope:");
+    expect(stdout).toContain("dockg:notApplicableToVariant");
+    expect(stdout).toContain("1 node, 1 hop, 1 excluded");
+  });
+
+  it("reports transitive inbound reach with --impact", () => {
+    const graph = buildGraph();
+    const { stdout, status } = run(
+      [
+        "traverse",
+        CONFIG_DOC,
+        "-g",
+        graph,
+        "--impact",
+        "-d",
+        "2",
+        "-f",
+        "json",
+      ],
+      corpus,
+    );
+    expect(status).toBe(0);
+    const report = JSON.parse(stdout) as { nodes: Array<{ iri: string }> };
+    const iris = report.nodes.map((n) => n.iri);
+    // windows-notes.md and getting-started.md both link to configuration.md.
+    expect(iris).toContain("https://example.com/kg/doc/docs/windows-notes.md");
+    expect(iris).not.toContain(CONFIG_DOC);
+  });
+
+  it("exits 2 for an unknown node and an unknown variant", () => {
+    const graph = buildGraph();
+    const missing = run(
+      ["traverse", "https://example.com/kg/doc/nope.md", "-g", graph],
+      corpus,
+    );
+    expect(missing.status).toBe(2);
+    expect(missing.stdout.toLowerCase()).toContain("node not found");
+
+    const badVariant = run(
+      ["traverse", CONFIG_DOC, "-g", graph, "--variant", "SP-NOPE"],
+      corpus,
+    );
+    expect(badVariant.status).toBe(2);
+    expect(badVariant.stdout.toLowerCase()).toContain(
+      "unknown product variant",
+    );
+  });
+
+  it("is deterministic across two runs", () => {
+    const graph = buildGraph();
+    const args = ["traverse", CONFIG_DOC, "-g", graph, "-d", "3", "-f", "json"];
+    expect(run(args, corpus).stdout).toBe(run(args, corpus).stdout);
+  });
+});
+
+describe("JSON-LD ⇄ Turtle equivalence gate", () => {
+  /**
+   * The browser builds a GraphIndex from graph.jsonld; the CLI builds one from
+   * graph.ttl. Retrieval must not depend on which artifact was loaded.
+   */
+  const fromJsonLd = (): GraphIndex =>
+    GraphIndex.fromJsonLd(
+      readFileSync(join(goldenDir, "graph.jsonld"), "utf8"),
+    );
+  const fromTurtle = (): GraphIndex =>
+    GraphIndex.fromQuads(
+      storeToQuads(
+        new Store(
+          new Parser().parse(
+            readFileSync(join(goldenDir, "graph.ttl"), "utf8"),
+          ),
+        ),
+      ),
+    );
+
+  it("indexes the same node set from either artifact", () => {
+    expect(fromJsonLd().ids()).toEqual(fromTurtle().ids());
+  });
+
+  it("yields identical traversals from either artifact", () => {
+    const options = {
+      seeds: [CONFIG_DOC],
+      depth: 3,
+      predicates: [REFERENCES, HAS_PART],
+    };
+    const a = traverse(fromJsonLd(), options);
+    const b = traverse(fromTurtle(), options);
+    expect(b.nodes).toEqual(a.nodes);
+    expect(b.trace.hops).toEqual(a.trace.hops);
+  });
+
+  it("applies scope rules identically from either artifact", () => {
+    const options = {
+      seeds: [CONFIG_DOC],
+      depth: 3,
+      predicates: [REFERENCES, HAS_PART],
+      variant: "SP-X100",
+    };
+    const a = traverse(fromJsonLd(), options);
+    const b = traverse(fromTurtle(), options);
+    expect(b.nodes).toEqual(a.nodes);
+    expect(b.trace.exclusions).toEqual(a.trace.exclusions);
+    expect(a.trace.exclusions.length).toBeGreaterThan(0);
+  });
+});

@@ -323,61 +323,108 @@ Delivered ([ADR 01017](adrs/01017-iirds-package-export.md)):
 Out of scope (later): iiRDS/A and iiRDS/H (content converters / PDF-A + JSON-LD
 twin); rendered-HTML renditions; iiRDS **ingest**; a `DirectoryNode` ToC tree.
 
-## Phase 7 — Query engine and content resolver
+## The GraphRAG runtime (Phases 7–10)
 
-**Goal:** the runtime foundation: real traversal over the built graph plus
-node→text resolution. First phase of the GraphRAG arc.
+**Constraint set by the maintainer:** triples compilation stays in Node; the
+layer that *serves* the graph must be **browser-safe**, ideally browser-native,
+and may eventually become its own project. Plus two scope decisions:
+**every result carries its trace**, and **generation is out of scope** — dockg
+returns the bundle an inference engine consumes and stops.
 
-Decisions to make (ADRs):
-- Traversal API vs. SPARQL first (leading candidate: purpose-built
-  deterministic walker — expand, reverse-references, variant filter,
-  negative-scope check — with SPARQL as a later addition behind the same
-  seam; alternatives: oxigraph WASM, Comunica over the N3 store).
-- Content resolver contract: IRI → file path + heading span → text;
-  behavior when files drifted from the graph (stale build detection?).
-- CLI surface (`dockg traverse`? extend `query`?) and JSON output shapes.
+The pipeline therefore splits at the artifact boundary:
 
-Constraints: fully hermetic, corpus-testable, no LLM involvement.
+```
+   compile side (Node)                 │   serve side (browser-safe)
+ docs ─ build ─→ graph.ttl ────────────┼─→ (git-diff source of truth)
+        export → graph.jsonld ─────────┼─→ GraphIndex (JSON.parse, 0 deps)
+        index  → embeddings sidecar ───┼─→ vector entry (Phase 8, optional)
+        [docs published on a site] ────┼─→ ContentResolver (fetch)
+```
 
-## Phase 8 — Hybrid entry (embeddings sidecar)
+`graph.jsonld` is the runtime's native format: deterministic, blank-node-free,
+and plain `JSON.parse`-able, so the browser needs **no RDF parser**. Phase 6
+retroactively became the runtime's foundation.
+
+### Standing invariants ([ADR 01018](adrs/01018-graphrag-runtime-architecture.md))
+
+1. Deterministic end to end — same graph + query ⇒ same nodes, context, and trace.
+2. Every result is explainable: no API returns results without the trace.
+3. Hermetic by default: zero network beyond what the host points it at.
+4. No route ⇒ a *structured refusal*, never empty context.
+5. The runtime never writes the graph; `fill` stays the only LLM→frontmatter path.
+
+## Phase 7 — Browser-native runtime core — **done**
+
+**Goal:** traversal over the built graph plus node→text resolution, running
+identically in a browser and in the CLI.
+
+Delivered ([ADR 01018](adrs/01018-graphrag-runtime-architecture.md)):
+- **`dockg/runtime` subpath export** — `platform: neutral`, no `node:` imports,
+  no dependencies, 21 KB raw / ~6 KB gzipped, enforced by a **bundle-purity
+  gate** that scans the built bundle.
+- **`GraphIndex`** (`fromJsonLd` / `fromQuads`), **`traverse`** (BFS, depth- and
+  predicate-bounded, in/out/both), **`reverseReferences`**, **`impact`**.
+- **Scope filtering** honoring iiRDS variants and the ADR 01014 negative
+  predicates, with the firing rule recorded in the trace.
+- **`QueryTrace`** — entry, hops, exclusions, resolutions — plus a
+  trace-completeness test (every result reachable via recorded events; every
+  filtered node has a recorded exclusion).
+- **`ContentResolver`** (fetch-based, injectable; sections slice their parent
+  document by heading, so no line-span predicates were added to the graph) and
+  **`assemble`** → `{ context, citations, trace, refusal?, truncated }`.
+- **`dockg traverse`** CLI; **JSON-LD ⇄ Turtle equivalence gate**; custom SPARQL
+  proven by running real Comunica over `rdfjsQuads()`.
+
+Decided during implementation: **`rdf:type` is not traversed by default** —
+every document shares its class node, so following schema edges makes everything
+reachable from everything (the edge contamination this project exists to avoid).
+
+## Phase 8 — Hybrid entry (lexical + embeddings)
 
 **Goal:** natural-language entry points into the graph without breaking the
 hermetic build.
 
 Decisions to make (ADRs):
-- `dockg index` as an explicit command (network boundary per the defaults
-  mandate); provider seam through `src/llm/`; deterministic mock embedder
-  for tests.
-- Sidecar artifact format/location (gitignored, cache-keyed, disposable —
-  the graph stays the source of truth); staleness/invalidation story.
-- Chunking = section nodes (granularity golden rule) — confirm or refine.
+- **Lexical entry, always on**: BM25 over text the graph already carries
+  (titles, section titles, `skos:prefLabel`/`altLabel`), built in-memory at
+  load. Leading candidate: MiniSearch (~6 KB gzip, VitePress-proven).
+- **Vector entry, opt-in**: `dockg index` (Node, explicit spend per the defaults
+  mandate) precomputes embeddings into a gitignored sidecar; the runtime does
+  brute-force cosine + RRF merge with the lexical leg. Query-time embedding
+  needs a host-supplied `embedQuery`; absent, lexical-only still works.
+- Sidecar format/location, staleness and invalidation; deterministic mock
+  embedder for tests; chunking = section nodes (confirm or refine).
 
-## Phase 9 — `ask` + MCP serving
+## Phase 9 — `retrieve` + MCP serving
 
-**Goal:** interlocked answer synthesis and agent-consumable serving.
+**Goal:** one call from a question to a citation-bearing context bundle, and the
+same thing exposed to agents.
 
 Decisions to make (ADRs):
-- Retrieval pipeline: vector entry (if index present) → graph traversal
-  honoring `appliesTo`/negative scope → content resolution → synthesis with
-  mandatory IRI citations; **no route found = refuse and say so** (the
-  disciplined-silence contract).
-- `dockg mcp`: which tools to expose (`ask`, `traverse`, `impact`,
-  `check`-style audit); transport; auth story if any.
-- Runtime never writes the graph; `fill` remains the only LLM→frontmatter
-  path. Ratify as a standing invariant.
+- `retrieve()` orchestration: entry → traversal (scope honored) → resolution →
+  assembly, with mandatory citations and structured refusal. **No generation.**
+- `dockg retrieve <question>` printing the bundle as JSON.
+- `dockg mcp`: which tools (`retrieve`, `traverse`, `impact`), transport, auth —
+  each returning `{context, citations, trace}` for the *agent* to reason over.
+- A browser integration example wiring the runtime to a docs site.
 
 ## Phase 10 — Evaluation harness
 
-**Goal:** the GraphRAG behavior becomes a regression-gated contract, like
-the golden Turtle.
+**Goal:** retrieval behavior becomes a regression-gated contract, like the
+golden Turtle.
 
 Decisions to make (ADRs):
-- Golden Q&A fixtures over the corpus: answerable questions with expected
-  citation IRIs, *unanswerable* questions with expected refusals (the
-  Test A/B/C pattern from the source research).
-- CI runs with mocks only; documented recipe for live-model eval runs
-  outside CI; metrics worth tracking (answerability, citation precision,
-  refusal correctness).
+- Fixtures over the corpus: question → expected citation IRIs; *unanswerable*
+  question → expected structured refusal.
+- Metrics: citation precision/recall, refusal correctness, scope-honoring.
+- **Fully hermetic** — with generation out of scope, eval needs no LLM at all,
+  not even mocks.
+
+## Stretch (post-10) — client-side retrieval widget
+
+A web component: search box → sources + a rendered trace view, retrieval-only.
+No commercial docs widget (kapa, Algolia Ask AI, Mintlify) does client-side
+retrieval today; all are SaaS-retrieval script embeds.
 
 ---
 
@@ -395,7 +442,7 @@ of the phase that needs it, not before):
 | Negative-scope precedent in iiRDS/schema.org (verify none before minting `dockg:` term) | Phase 4 |
 | iiRDS 1.3 package conformance rules; CDP intake validation practices | Phase 6b |
 | QUDT adoption for quantitative properties (sizes, torques) lifted by fill | Phase 5/6 |
-| Embedded SPARQL options (oxigraph WASM, Comunica) vs. custom walker maintenance cost | Phase 7 |
+| Browser vector-search options if the Phase 8 sidecar outgrows brute-force cosine | Phase 8 |
 | MCP server conventions for doc/knowledge tools | Phase 9 |
 
 ## Process per phase

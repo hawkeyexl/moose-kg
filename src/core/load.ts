@@ -2,7 +2,10 @@
 import { existsSync, readFileSync } from "node:fs";
 import { Parser, Store } from "n3";
 import { DockgError } from "../types.js";
+import type { Quad, Term } from "./derive.js";
 import { NS, PREFIXES } from "./vocab.js";
+
+const XSD_STRING = `${NS.xsd}string`;
 
 export function loadGraph(ttlPath: string): Store {
   if (!existsSync(ttlPath)) {
@@ -20,6 +23,29 @@ export function loadGraph(ttlPath: string): Store {
     );
   }
   return new Store(quads);
+}
+
+/**
+ * Convert an in-memory N3 store back to dockg's internal quad shape — the
+ * bridge from the Turtle-reading Node side to the platform-neutral emitters and
+ * runtime. A redundant `xsd:string` datatype is dropped so the result matches
+ * what the JSON-LD path produces.
+ */
+export function storeToQuads(store: Store): Quad[] {
+  return store.getQuads(null, null, null, null).map((q) => {
+    const o = q.object;
+    let term: Term;
+    if (o.termType === "Literal") {
+      const dt = o.datatype.value;
+      term =
+        dt && dt !== XSD_STRING
+          ? { kind: "literal", value: o.value, datatype: dt }
+          : { kind: "literal", value: o.value };
+    } else {
+      term = { kind: "iri", value: o.value };
+    }
+    return { s: q.subject.value, p: q.predicate.value, o: term };
+  });
 }
 
 /** Expand `dcterms:references`-style prefixed names to full IRIs; pass through the rest. */
