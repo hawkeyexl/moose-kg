@@ -195,6 +195,34 @@ describe("dockg export (integration)", () => {
     );
   });
 
+  it("writes export.iirds.title as the package title in metadata.rdf", () => {
+    const { dir, graph } = buildGraph();
+    const cfg = join(dir, "dockg.config.yaml");
+    writeFileSync(
+      cfg,
+      "version: 1\nbaseIri: https://example.com/kg/\nexport:\n  iirds:\n    title: My Corpus\n",
+    );
+    const out = join(dir, "pkg.iirds");
+    run(["export", "-f", "iirds", "-g", graph, "-c", cfg, "-o", out], corpus);
+    const meta = readZip(readFileSync(out))
+      .get("META-INF/metadata.rdf")!
+      .toString("utf8");
+    expect(meta).toContain("<iirds:title>My Corpus</iirds:title>");
+  });
+
+  it("exits 2 when a Document's source content file is missing", () => {
+    const { graph } = buildGraph();
+    // Run from a directory that lacks the corpus `docs/` sources: the graph's
+    // dockg:path entries resolve to files that do not exist here → exit 2.
+    const elsewhere = mkdtempSync(join(tmpdir(), "dockg-export-nosrc-"));
+    const { status, stdout } = run(
+      ["export", "-f", "iirds", "-g", graph, "-o", join(elsewhere, "p.iirds")],
+      elsewhere,
+    );
+    expect(status).toBe(2);
+    expect(stdout.toLowerCase()).toContain("not found");
+  });
+
   it("exits 2 for an unknown --format", () => {
     const { graph } = buildGraph();
     const { status, stdout } = run(

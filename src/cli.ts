@@ -253,6 +253,9 @@ program
           format: opts.format as ExportFormat,
           out: opts.out,
         });
+        for (const warning of result.warnings) {
+          console.error(pc.yellow(`dockg: ${warning}`));
+        }
         console.log(
           `Wrote ${result.nodes} node${result.nodes === 1 ? "" : "s"} to ${result.outPath}`,
         );

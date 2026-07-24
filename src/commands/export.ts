@@ -38,6 +38,8 @@ export interface ExportResult {
   format: ExportFormat;
   /** Distinct subject nodes in the emitted (or projected) graph. */
   nodes: number;
+  /** Non-fatal projection warnings (iiRDS only; empty otherwise). */
+  warnings: string[];
 }
 
 /** File extension each format writes to. */
@@ -79,7 +81,7 @@ function runJsonLd(cwd: string, graphPath: string, out?: string): ExportResult {
     : withExtension(graphPath, EXTENSION.jsonld);
   mkdirSync(dirname(outPath), { recursive: true });
   writeFileSync(outPath, serialized, "utf8");
-  return { outPath, format: "jsonld", nodes };
+  return { outPath, format: "jsonld", nodes, warnings: [] };
 }
 
 function runIirds(
@@ -123,7 +125,7 @@ function runIirds(
   mkdirSync(dirname(outPath), { recursive: true });
   writeFileSync(outPath, writeZip(entries));
   const nodes = new Set(projection.quads.map((q) => q.s)).size;
-  return { outPath, format: "iirds", nodes };
+  return { outPath, format: "iirds", nodes, warnings: projection.warnings };
 }
 
 export async function runExport(opts: ExportOptions): Promise<ExportResult> {
