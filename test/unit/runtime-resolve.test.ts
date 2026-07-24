@@ -90,6 +90,69 @@ describe("sliceSection", () => {
     expect(sliceSection(MARKDOWN, "Nope", 2)).toBeUndefined();
     expect(sliceSection(MARKDOWN, "Install", 3)).toBeUndefined();
   });
+
+  it("does not end a section at a # line inside a fenced code block", () => {
+    // A shell comment in a code sample is not an h1. Reading it as one used to
+    // truncate the section to its first two lines.
+    const md = [
+      "# Doc",
+      "",
+      "## Install",
+      "",
+      "```bash",
+      "# Set the API key",
+      "export KEY=abc",
+      "```",
+      "",
+      "Prose after the fence.",
+      "",
+      "## Other",
+      "",
+      "tail",
+    ].join("\n");
+    expect(sliceSection(md, "Install", 2)).toBe(
+      [
+        "## Install",
+        "",
+        "```bash",
+        "# Set the API key",
+        "export KEY=abc",
+        "```",
+        "",
+        "Prose after the fence.",
+      ].join("\n"),
+    );
+  });
+
+  it("ignores a heading-shaped line inside a tilde fence too", () => {
+    const md = [
+      "## Install",
+      "",
+      "~~~",
+      "## Not a heading",
+      "~~~",
+      "",
+      "Still inside Install.",
+    ].join("\n");
+    expect(sliceSection(md, "Install", 2)).toContain("Still inside Install.");
+  });
+
+  it("still ends the section at a real heading after a closed fence", () => {
+    const md = [
+      "## Install",
+      "",
+      "```",
+      "# comment",
+      "```",
+      "",
+      "## Other",
+      "",
+      "tail",
+    ].join("\n");
+    expect(sliceSection(md, "Install", 2)).toBe(
+      ["## Install", "", "```", "# comment", "```"].join("\n"),
+    );
+  });
 });
 
 describe("createFetchResolver", () => {

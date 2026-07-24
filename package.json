@@ -39,8 +39,8 @@
     "node": ">=24"
   },
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
+    "build": "node scripts/clean-dist.mjs && tsup",
+    "dev": "node scripts/clean-dist.mjs && tsup --watch",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",

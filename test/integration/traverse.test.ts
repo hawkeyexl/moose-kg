@@ -175,6 +175,24 @@ describe("dockg traverse (integration)", () => {
     );
   });
 
+  it("exits 2 for an unknown subject rather than ignoring the filter", () => {
+    const graph = buildGraph();
+    // An unresolvable subject silently disables scope filtering in the walker,
+    // which would return exactly the nodes the filter was meant to exclude.
+    const bad = run(
+      ["traverse", CONFIG_DOC, "-g", graph, "--subject", "not-a-subject"],
+      corpus,
+    );
+    expect(bad.status).toBe(2);
+    expect(bad.stdout.toLowerCase()).toContain("unknown software subject");
+
+    const good = run(
+      ["traverse", CONFIG_DOC, "-g", graph, "--subject", "architecture"],
+      corpus,
+    );
+    expect(good.status).toBe(0);
+  });
+
   it("is deterministic across two runs", () => {
     const graph = buildGraph();
     const args = ["traverse", CONFIG_DOC, "-g", graph, "-d", "3", "-f", "json"];

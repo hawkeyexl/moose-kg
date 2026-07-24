@@ -6,7 +6,7 @@
  * whole module graph into dist/runtime.js, so scanning that one file catches a
  * `node:` import sneaking in through *any* transitive import.
  */
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -14,6 +14,32 @@ import { describe, expect, it } from "vitest";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const bundle = join(root, "dist", "runtime.js");
 const source = (): string => readFileSync(bundle, "utf8");
+
+describe("dockg/runtime package surface", () => {
+  /**
+   * Both tsup configs write to dist, and tsup builds an array config
+   * concurrently — a config with `clean` deletes every .d.ts in the shared
+   * outDir when its declaration rollup starts, which silently raced away
+   * runtime.d.ts. Assert every path package.json's exports map names.
+   */
+  it("emits every file the ./runtime export names", () => {
+    const pkg = JSON.parse(
+      readFileSync(join(root, "package.json"), "utf8"),
+    ) as { exports: Record<string, Record<string, string>> };
+    const entry = pkg.exports["./runtime"];
+    expect(entry).toBeDefined();
+    for (const target of Object.values(entry!)) {
+      expect(existsSync(join(root, target)), `missing ${target}`).toBe(true);
+    }
+  });
+
+  it("declares the documented API in its .d.ts", () => {
+    const types = readFileSync(join(root, "dist", "runtime.d.ts"), "utf8");
+    for (const name of ["GraphIndex", "traverse", "assemble", "QueryTrace"]) {
+      expect(types).toContain(name);
+    }
+  });
+});
 
 describe("dockg/runtime bundle purity", () => {
   it("imports no node: built-in", () => {
