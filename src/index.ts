@@ -51,6 +51,14 @@ export {
 } from "./core/git.js";
 export { emitTurtle } from "./core/emit.js";
 export { emitJsonLd } from "./core/emit-jsonld.js";
+export { emitRdfXml } from "./core/emit-rdfxml.js";
+export { writeZip, type ZipEntry } from "./core/zip.js";
+export {
+  projectPackage,
+  type IirdsPackageOptions,
+  type PackageProjection,
+  type ContentFile,
+} from "./core/iirds-package.js";
 export { loadGraph, expandTerm, compactIri } from "./core/load.js";
 export {
   applyKgFields,

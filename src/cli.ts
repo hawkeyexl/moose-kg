@@ -230,11 +230,11 @@ program
 program
   .command("export")
   .description(
-    "Reserialize the built graph into a consumer format (jsonld; iirds is Phase 6b)",
+    "Reserialize the built graph into a consumer format (jsonld file or iirds package)",
   )
   .option("-c, --config <path>", "Path to dockg.config.yaml")
   .option("-g, --graph <path>", "Graph .ttl path (default: config out)")
-  .option("-f, --format <format>", "Export format: jsonld", "jsonld")
+  .option("-f, --format <format>", "Export format: jsonld | iirds", "jsonld")
   .option(
     "-o, --out <path>",
     "Output path (default: the graph path with the format's extension)",
@@ -253,6 +253,9 @@ program
           format: opts.format as ExportFormat,
           out: opts.out,
         });
+        for (const warning of result.warnings) {
+          console.error(pc.yellow(`dockg: ${warning}`));
+        }
         console.log(
           `Wrote ${result.nodes} node${result.nodes === 1 ? "" : "s"} to ${result.outPath}`,
         );

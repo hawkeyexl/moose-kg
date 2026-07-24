@@ -18,6 +18,34 @@ export const IIRDS_HAS_SUBJECT = `${NS.iirds}has-subject`;
 export const IIRDS_PRODUCT_VARIANT = `${NS.iirds}ProductVariant`;
 
 /**
+ * Package-serialization terms (iiRDS package export, ADR 01017). Local names
+ * byte-verified against the canonical RDF/XML example in the published spec
+ * (`sections/structure/serialization.md`). Used only by the package projection —
+ * never emitted into the built graph. IUs are typed `iirds:Topic` (the subclass
+ * that carries `has-topic-type`/`has-subject`), one of the valid IU subclasses.
+ */
+export const IIRDS_PACKAGE = `${NS.iirds}Package`;
+export const IIRDS_IIRDS_VERSION = `${NS.iirds}iiRDSVersion`;
+export const IIRDS_TOPIC = `${NS.iirds}Topic`;
+export const IIRDS_IS_PART_OF_PACKAGE = `${NS.iirds}is-part-of-package`;
+export const IIRDS_HAS_RENDITION = `${NS.iirds}has-rendition`;
+export const IIRDS_RENDITION = `${NS.iirds}Rendition`;
+export const IIRDS_SOURCE = `${NS.iirds}source`;
+export const IIRDS_FORMAT = `${NS.iirds}format`;
+export const IIRDS_TITLE = `${NS.iirds}title`;
+export const IIRDS_LANGUAGE = `${NS.iirds}language`;
+export const IIRDS_PARTY = `${NS.iirds}Party`;
+export const IIRDS_HAS_PARTY_ROLE = `${NS.iirds}has-party-role`;
+export const IIRDS_CREATOR = `${NS.iirds}Creator`;
+export const IIRDS_RELATES_TO_PARTY = `${NS.iirds}relates-to-party`;
+export const IIRDS_RELATES_TO_VCARD = `${NS.iirds}relates-to-vcard`;
+
+/** vcard namespace — package-local (not in the global NS/PREFIXES table). */
+export const VCARD_NS = "http://www.w3.org/2006/vcard/ns#";
+export const VCARD_ORGANIZATION = `${VCARD_NS}Organization`;
+export const VCARD_ORGANIZATION_NAME = `${VCARD_NS}organization-name`;
+
+/**
  * Negative-scope predicates (ADR 01014). Minted into `dockg:` — no standard
  * term exists, and OWL negative property assertions require blank nodes. Each
  * mirrors, and is SHACL-disjoint from, its positive counterpart above.

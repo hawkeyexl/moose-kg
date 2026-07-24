@@ -159,6 +159,21 @@
           }
         }
       }
+    },
+    "export": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "iirds": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "title": { "type": "string", "minLength": 1 },
+            "creator": { "type": "string", "minLength": 1 },
+            "version": { "enum": ["1.2", "1.3"] }
+          }
+        }
+      }
     }
   }
 }
