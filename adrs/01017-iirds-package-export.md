@@ -53,8 +53,10 @@ Chosen: **option 1 — unrestricted iiRDS 1.3, hand-rolled**.
 Research against the spec and the validator's own `min_requirements.rdf` pass
 fixture established that unrestricted iiRDS has a **thin** mandatory metadata set:
 one `iirds:Package` with exactly one `iirds:iiRDSVersion`; information units as
-subclasses (`iirds:Document`) with IRIs (no blank nodes) linked via
-`iirds:is-part-of-package`; and each content file as an `iirds:Rendition` with
+subclasses with IRIs (no blank nodes) linked via `iirds:is-part-of-package`
+(dockg types each document `iirds:Topic`, the subclass that carries the Phase-2
+`has-topic-type`/`has-subject` classification); and each content file as an
+`iirds:Rendition` with
 `iirds:source` + `iirds:format`. Creator `Party` and `ProductVariant`/`Identity`
 are **iiRDS/H-only** MUSTs — optional here. Unrestricted also permits any content
 format, so the raw markdown source ships directly as `text/markdown`, with no

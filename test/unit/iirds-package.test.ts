@@ -122,6 +122,26 @@ describe("projectPackage", () => {
     ).toBe(true);
   });
 
+  it("warns (not throws) for a Document with no dockg:path and emits no rendition", () => {
+    const ttl = `
+@prefix dockg: <${NS.dockg}> .
+@prefix dcterms: <${NS.dcterms}> .
+<${BASE}doc/docs/b.md> a dockg:Document ;
+  dcterms:title "B" .
+`;
+    const { quads, contentFiles, warnings } = projectPackage(
+      storeOf(ttl),
+      OPTS,
+      cwdWithDoc(),
+    );
+    expect(warnings.some((w) => w.includes("no dockg:path"))).toBe(true);
+    expect(contentFiles).toEqual([]);
+    const doc = `${BASE}doc/docs/b.md`;
+    expect(
+      quads.some((q) => q.s === doc && q.p === `${NS.iirds}has-rendition`),
+    ).toBe(false);
+  });
+
   it("throws DockgError when a Document's source file is missing", () => {
     const emptyCwd = mkdtempSync(join(tmpdir(), "dockg-pkg-empty-"));
     expect(() => projectPackage(storeOf(TTL), OPTS, emptyCwd)).toThrow(
