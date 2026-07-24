@@ -73,16 +73,32 @@ describe("dockg/runtime bundle purity", () => {
     expect(text.startsWith("#!")).toBe(false);
   });
 
-  it("bundles no npm dependency (self-contained)", () => {
+  /**
+   * The runtime was dependency-free until Phase 8 (ADR 01019) traded that for
+   * MiniSearch's tokenizer and fuzzy matching. The contract narrows rather than
+   * disappears: exactly one dependency may reach the bundle, and it is bundled
+   * in so `dist/runtime.js` stays a single-file browser drop-in.
+   */
+  const ALLOWED_DEPS = new Set(["minisearch"]);
+
+  it("bundles no npm dependency outside the allow-list", () => {
     const pkg = JSON.parse(
       readFileSync(join(root, "package.json"), "utf8"),
-    ) as { dependencies?: Record<string, string> };
+    ) as {
+      dependencies?: Record<string, string>;
+    };
     const text = source();
     for (const dep of Object.keys(pkg.dependencies ?? {})) {
+      if (ALLOWED_DEPS.has(dep)) continue;
       expect(text).not.toMatch(
         new RegExp(`from\\s*["'\`]${dep.replace(/[/@-]/g, "\\$&")}`),
       );
     }
+  });
+
+  it("bundles the allow-listed dependency rather than importing it", () => {
+    // A bare `from "minisearch"` would mean the browser has to resolve it.
+    expect(source()).not.toMatch(/from\s*["'`]minisearch["'`]/);
   });
 
   it("exports the documented runtime API", async () => {
@@ -108,15 +124,33 @@ describe("dockg/runtime bundle purity", () => {
     // The browser has no process/Buffer/__dirname/__filename. A static scan is
     // the honest gate here: importing the bundle in this Node process would
     // *not* catch a reference, because those globals exist here.
+    //
+    // Matched as *uses* (member access or typeof), not as bare words: bundled
+    // dependency doc-comments legitimately contain the English word "process"
+    // ("used to process each tokenized term"), and stripping comments first
+    // would be worse — the bundle is full of `https://` IRIs that a naive
+    // line-comment stripper would mangle.
+    //
+    // The member-access patterns exclude a leading `.` so `foo.process` (a
+    // property named "process") does not trip them — which means the
+    // `globalThis.`-qualified forms need their own patterns, or
+    // `globalThis.process.env` would slip through the gate entirely.
     const text = source();
-    for (const global of [
-      "process",
-      "Buffer",
-      "__dirname",
-      "__filename",
-      "globalThis.process",
-    ]) {
-      expect(text).not.toMatch(new RegExp(`\\b${global}\\b`));
+    const uses: Array<[string, RegExp]> = [
+      ["process", /(^|[^\w.$"'`])process\s*(\.|\[)/m],
+      ["process", /typeof\s+process\b/],
+      ["globalThis.process", /globalThis\s*(\.\s*process\b|\[\s*["'`]process)/],
+      ["Buffer", /(^|[^\w.$"'`])Buffer\s*(\.|\(|\[)/m],
+      ["Buffer", /typeof\s+Buffer\b/],
+      ["globalThis.Buffer", /globalThis\s*(\.\s*Buffer\b|\[\s*["'`]Buffer)/],
+      ["__dirname", /\b__dirname\b/],
+      ["__filename", /\b__filename\b/],
+    ];
+    for (const [name, pattern] of uses) {
+      expect(
+        pattern.test(text),
+        `bundle references the Node-only global ${name}`,
+      ).toBe(false);
     }
   });
 

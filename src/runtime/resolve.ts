@@ -18,7 +18,9 @@ import type { QueryTrace } from "./trace.js";
 
 const DOCKG_PATH = `${NS.dockg}path`;
 const DCTERMS_TITLE = `${NS.dcterms}title`;
+const DCTERMS_HAS_PART = `${NS.dcterms}hasPart`;
 const DOCKG_LEVEL = `${NS.dockg}level`;
+const DOCKG_ORDER = `${NS.dockg}order`;
 
 export interface ResolvedContent {
   iri: string;
@@ -93,21 +95,175 @@ function fencedLines(lines: string[]): boolean[] {
 }
 
 /**
+ * Sections of a document in true document order, reconstructed from the
+ * `dcterms:hasPart` tree ordered by `dockg:order` within each parent.
+ *
+ * Needed because heading text is not unique: a document with two `## Install`
+ * headings produces two section nodes, and matching by title alone would give
+ * both the *first* heading's text — wrong content under a confident citation.
+ */
+export function documentSectionOrder(
+  graph: GraphIndex,
+  docIri: string,
+): string[] {
+  const ordered: string[] = [];
+  const seen = new Set<string>();
+
+  const childrenOf = (iri: string): string[] =>
+    graph
+      .out(iri, DCTERMS_HAS_PART)
+      .map((e) => e.target)
+      .sort((a, b) => {
+        const oa = Number.parseInt(graph.literal(a, DOCKG_ORDER) ?? "", 10);
+        const ob = Number.parseInt(graph.literal(b, DOCKG_ORDER) ?? "", 10);
+        if (Number.isNaN(oa) || Number.isNaN(ob) || oa === ob) {
+          return a < b ? -1 : a > b ? 1 : 0;
+        }
+        return oa - ob;
+      });
+
+  const walk = (iri: string): void => {
+    for (const child of childrenOf(iri)) {
+      if (seen.has(child)) continue;
+      seen.add(child);
+      ordered.push(child);
+      walk(child);
+    }
+  };
+  walk(docIri);
+  return ordered;
+}
+
+/**
+ * Occurrence number of every section of a document, in one walk: section IRI →
+ * how many earlier sections share its heading text and level.
+ *
+ * Batched because the per-section form is quadratic — a document with N
+ * sections would otherwise rebuild the whole `hasPart` order N times, once per
+ * section indexed or resolved.
+ */
+export function sectionOccurrences(
+  graph: GraphIndex,
+  docIri: string,
+): Map<string, number> {
+  const occurrences = new Map<string, number>();
+  // title → level → how many carrying that pair have been seen so far. Nested
+  // rather than a joined key, so no separator has to be safe in either field.
+  const counts = new Map<string, Map<string, number>>();
+
+  for (const section of documentSectionOrder(graph, docIri)) {
+    const rawTitle = graph.literal(section, DCTERMS_TITLE);
+    if (rawTitle === undefined) {
+      occurrences.set(section, 0);
+      continue;
+    }
+    // Keyed exactly the way `sliceSection` matches headings — trimmed and
+    // case-folded. Keyed by the raw title instead, a document with `## Install`
+    // and `## install` gives both sections occurrence 0, and the second one
+    // then slices the first heading: wrong content under a confident citation.
+    const title = rawTitle.trim().toLowerCase();
+    const level = graph.literal(section, DOCKG_LEVEL) ?? "";
+    let byLevel = counts.get(title);
+    if (!byLevel) {
+      byLevel = new Map();
+      counts.set(title, byLevel);
+    }
+    const seen = byLevel.get(level) ?? 0;
+    occurrences.set(section, seen);
+    byLevel.set(level, seen + 1);
+  }
+  return occurrences;
+}
+
+/**
+ * Which occurrence of its heading text a section is (0-based) — the number of
+ * earlier same-title, same-level sections in the same document. A section the
+ * `hasPart` tree does not reach counts as the first (0).
+ */
+export function sectionOccurrence(
+  graph: GraphIndex,
+  sectionIri: string,
+): number {
+  const { doc } = splitFragment(sectionIri);
+  return sectionOccurrences(graph, doc).get(sectionIri) ?? 0;
+}
+
+/**
+ * The prose before a document's first heading — the text that belongs to no
+ * section, and so would otherwise be indexed nowhere in a document that has
+ * sections.
+ *
+ * Fence-aware for the same reason `sliceSection` is: a `#` comment inside a
+ * leading code block is not a heading, and treating it as one would cut the
+ * preamble short. Frontmatter is *not* stripped here — the caller decides,
+ * since only the search index cares about that.
+ */
+export function documentPreamble(markdown: string): string | undefined {
+  const lines = markdown.split(/\r?\n/);
+  const fenced = fencedLines(lines);
+  let end = lines.length;
+  for (let i = 0; i < lines.length; i++) {
+    if (fenced[i]) continue;
+    if (/^#{1,6}\s+/.test(lines[i]!)) {
+      end = i;
+      break;
+    }
+  }
+  const text = lines.slice(0, end).join("\n").trim();
+  return text === "" ? undefined : text;
+}
+
+/**
  * Slice a markdown document at the heading whose text matches `title`,
  * returning that heading through to the next heading of the same or higher
  * rank. Returns undefined when no such heading exists. Handles CRLF, and
  * ignores `#` lines inside fenced code blocks.
+ *
+ * `occurrence` selects among repeated headings (0 = the first). Heading text is
+ * not unique, so callers with a specific section node in hand should pass
+ * `sectionOccurrence(graph, iri)` rather than defaulting to the first match.
  */
 export function sliceSection(
   markdown: string,
   title: string,
   level?: number,
+  occurrence = 0,
+): string | undefined {
+  return slice(markdown, title, level, occurrence, false);
+}
+
+/**
+ * The text a section *owns*: its heading down to the next heading of **any**
+ * rank, so nested subsections are excluded.
+ *
+ * `sliceSection` keeps the subtree because that is what retrieval wants — ask
+ * for "Configuration" and you should get its subsections too. Indexing wants
+ * the opposite: with the subtree, a parent section matches everything its
+ * children match and outranks them, so an H1 section shadows every heading
+ * beneath it. Same granularity rule as Document vs Section, one level down.
+ */
+export function sectionOwnText(
+  markdown: string,
+  title: string,
+  level?: number,
+  occurrence = 0,
+): string | undefined {
+  return slice(markdown, title, level, occurrence, true);
+}
+
+function slice(
+  markdown: string,
+  title: string,
+  level: number | undefined,
+  occurrence: number,
+  ownTextOnly: boolean,
 ): string | undefined {
   const lines = markdown.split(/\r?\n/);
   const fenced = fencedLines(lines);
   const wanted = title.trim().toLowerCase();
   let start = -1;
   let startLevel = level ?? 0;
+  let remaining = occurrence;
 
   for (let i = 0; i < lines.length; i++) {
     if (fenced[i]) continue;
@@ -116,6 +272,10 @@ export function sliceSection(
     const hLevel = m[1]!.length;
     if (m[2]!.trim().toLowerCase() !== wanted) continue;
     if (level !== undefined && hLevel !== level) continue;
+    if (remaining > 0) {
+      remaining -= 1;
+      continue;
+    }
     start = i;
     startLevel = hLevel;
     break;
@@ -126,7 +286,7 @@ export function sliceSection(
   for (let i = start + 1; i < lines.length; i++) {
     if (fenced[i]) continue;
     const m = /^(#{1,6})\s+/.exec(lines[i]!);
-    if (m && m[1]!.length <= startLevel) {
+    if (m && (ownTextOnly || m[1]!.length <= startLevel)) {
       end = i;
       break;
     }
@@ -147,6 +307,18 @@ export function createFetchResolver(
   const toUrl =
     options.pathToUrl ?? ((path: string) => `${options.baseUrl ?? ""}${path}`);
   const cache = new Map<string, Promise<string | undefined>>();
+  // `assemble` resolves many sections of the same document; the occurrence walk
+  // is per-document, so compute it once and reuse it.
+  const occurrenceCache = new Map<string, Map<string, number>>();
+
+  const occurrenceOf = (docIri: string, sectionIri: string): number => {
+    let map = occurrenceCache.get(docIri);
+    if (!map) {
+      map = sectionOccurrences(graph, docIri);
+      occurrenceCache.set(docIri, map);
+    }
+    return map.get(sectionIri) ?? 0;
+  };
 
   const fetchDoc = (url: string): Promise<string | undefined> => {
     let pending = cache.get(url);
@@ -190,6 +362,7 @@ export function createFetchResolver(
                 body,
                 title,
                 Number.isNaN(level) ? undefined : level,
+                occurrenceOf(doc, iri),
               );
         if (slice === undefined) {
           options.trace?.resolutions.push({

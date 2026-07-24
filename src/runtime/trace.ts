@@ -10,13 +10,20 @@
  * trace is byte-stable for a given graph + query.
  */
 
+/** How a seed was found. `hybrid` means several legs agreed on it. */
+export type EntryVia = "explicit" | "lexical" | "vector" | "hybrid";
+
 /** A starting node, with the score/reason that made it a seed. */
 export interface EntryCandidate {
   iri: string;
-  /** Relevance score. 1 for explicitly requested seeds (Phase 7). */
+  /**
+   * Relevance score: 1 for an explicitly requested seed, otherwise the fused
+   * `rrfMerge` score. Note that fusion is **rank**-based, so a searched seed's
+   * score reflects its position (1/(60 + rank)), not the engine's relevance —
+   * it orders candidates but is not a magnitude to threshold on.
+   */
   score: number;
-  /** How this seed was found — "explicit" | "lexical" | "vector" | "hybrid". */
-  via: string;
+  via: EntryVia;
 }
 
 /** One edge walked, in either direction. */

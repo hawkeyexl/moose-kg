@@ -114,6 +114,20 @@ export {
   type TraverseReport,
 } from "./commands/traverse.js";
 export {
+  runSearch,
+  renderSearch,
+  type SearchOptions,
+  type SearchReport,
+} from "./commands/search.js";
+export {
+  buildSearchIndex,
+  emitSearchIndex,
+  SEARCH_INDEX_FILENAME,
+  type SearchEntry,
+  type SearchIndexDoc,
+  type SearchIndexOptions,
+} from "./core/search-index.js";
+export {
   runFill,
   type FillOptions,
   type FillReport,

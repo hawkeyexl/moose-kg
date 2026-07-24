@@ -27,6 +27,7 @@ export {
   createTrace,
   reachedNodes,
   type EntryCandidate,
+  type EntryVia,
   type Hop,
   type QueryTrace,
   type Resolution,
@@ -47,6 +48,14 @@ export {
 } from "./traverse.js";
 export {
   createFetchResolver,
+  documentPreamble,
+  documentSectionOrder,
+  // `sliceSection`'s contract names these: heading text is not unique, so a
+  // caller slicing a specific section node needs its occurrence or it silently
+  // gets the first same-titled heading's body.
+  sectionOccurrence,
+  sectionOccurrences,
+  sectionOwnText,
   sliceSection,
   splitFragment,
   type ContentResolver,
@@ -71,3 +80,15 @@ export {
   type RdfQuad,
   type RdfTerm,
 } from "./rdfjs.js";
+export {
+  createLexicalIndex,
+  type LexicalIndex,
+  type LexicalSearchOptions,
+} from "./lexical.js";
+export {
+  findEntry,
+  rrfMerge,
+  type EntryResult,
+  type FindEntryOptions,
+} from "./entry.js";
+export type { SearchEntry, SearchIndexDoc } from "../core/search-index.js";

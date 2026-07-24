@@ -6,17 +6,24 @@
  * deterministic unrestricted iiRDS package (`.iirds` ZIP) — see ADR 01017.
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { DockgError } from "../types.js";
 import { loadConfig } from "../core/config.js";
 import { emitJsonLd } from "../core/emit-jsonld.js";
 import { emitRdfXml } from "../core/emit-rdfxml.js";
 import { projectPackage } from "../core/iirds-package.js";
 import { loadGraph, storeToQuads } from "../core/load.js";
+import {
+  buildSearchIndex,
+  emitSearchIndex,
+  SEARCH_INDEX_FILENAME,
+} from "../core/search-index.js";
 import { byCodeUnit } from "../core/sort.js";
+import { PREFIXES } from "../core/vocab.js";
+import { GraphIndex } from "../runtime/graph.js";
 import { writeZip, type ZipEntry } from "../core/zip.js";
 
-export type ExportFormat = "jsonld" | "iirds";
+export type ExportFormat = "jsonld" | "iirds" | "search";
 
 export interface ExportOptions {
   config?: string;
@@ -37,8 +44,8 @@ export interface ExportResult {
   warnings: string[];
 }
 
-/** File extension each format writes to. */
-const EXTENSION: Record<ExportFormat, string> = {
+/** File extension each single-file format writes to. */
+const EXTENSION: Record<"jsonld" | "iirds", string> = {
   jsonld: ".jsonld",
   iirds: ".iirds",
 };
@@ -105,18 +112,56 @@ function runIirds(
   return { outPath, format: "iirds", nodes, warnings: projection.warnings };
 }
 
+/**
+ * The lexical search artifact. Reads each document's source from disk — the
+ * same thing the iiRDS projection does for renditions — because the graph
+ * deliberately carries no prose (ADR 01008/01019).
+ */
+function runSearchIndex(
+  cwd: string,
+  graphPath: string,
+  out?: string,
+): ExportResult {
+  const store = loadGraph(graphPath);
+  const graph = GraphIndex.fromQuads(
+    storeToQuads(store),
+    Object.fromEntries(PREFIXES),
+  );
+  const warnings: string[] = [];
+  const index = buildSearchIndex(graph, cwd, { warnings });
+
+  // Sibling of the graph, named for what it is: `graph.json` next to
+  // `graph.jsonld` would be a trap.
+  const outPath = out
+    ? resolve(cwd, out)
+    : join(dirname(graphPath), SEARCH_INDEX_FILENAME);
+  mkdirSync(dirname(outPath), { recursive: true });
+  writeFileSync(outPath, emitSearchIndex(index), "utf8");
+  return { outPath, format: "search", nodes: index.entries.length, warnings };
+}
+
+const FORMATS: ExportFormat[] = ["jsonld", "iirds", "search"];
+
 export async function runExport(opts: ExportOptions): Promise<ExportResult> {
   const cwd = opts.cwd ?? process.cwd();
-  if (opts.format !== "jsonld" && opts.format !== "iirds") {
+  if (!FORMATS.includes(opts.format)) {
     throw new DockgError(
-      `Unknown export format: ${opts.format} (expected: jsonld | iirds).`,
+      `Unknown export format: ${opts.format} (expected: ${FORMATS.join(" | ")}).`,
     );
   }
 
   const config = loadConfig(opts.config, cwd);
   const graphPath = resolve(cwd, opts.graph ?? config.out);
 
-  return opts.format === "jsonld"
-    ? runJsonLd(cwd, graphPath, opts.out)
-    : runIirds(cwd, graphPath, config.export.iirds, config.baseIri, opts.out);
+  if (opts.format === "jsonld") return runJsonLd(cwd, graphPath, opts.out);
+  if (opts.format === "search") {
+    return runSearchIndex(cwd, graphPath, opts.out);
+  }
+  return runIirds(
+    cwd,
+    graphPath,
+    config.export.iirds,
+    config.baseIri,
+    opts.out,
+  );
 }

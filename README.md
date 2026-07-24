@@ -316,38 +316,81 @@ dockg fill --force            # overwrite human-set kg fields too
 | `dockg check` | Validate the built graph against the SHACL shapes (bundled `shapes/dockg-0.5.ttl`) |
 | `dockg fill [globs]` | Propose `kg:` fields with an LLM, gated by confidence, and write them back |
 | `dockg query` | Triple-pattern match: `-s`/`-p`/`-o`, omit for wildcard |
+| `dockg search <query>` | Rank graph nodes for a text query (needs `export --format search`) |
 | `dockg traverse <node>` | Walk from a node honoring scope rules, with the full trace; `--impact` for reverse reach |
 | `dockg stats` | Counts, orphan docs, broken links, most-connected docs, metadata coverage; `--check` gates CI |
 | `dockg export -f jsonld` | Reserialize the built graph as deterministic JSON-LD |
 | `dockg export -f iirds` | Package the graph as a conformant, deterministic iiRDS package (`.iirds`) |
+| `dockg export -f search` | Emit the lexical search index (`kg/search.json`) the runtime needs for text queries |
 
-Shared flags: `-c/--config`, `-f/--format pretty|json`; `build` takes `-o/--out`; `query`/`stats`/`check`/`export`/`traverse` take `-g/--graph`; `check` takes `--shapes`; `stats` takes `--coverage-threshold <pct>`; `export` takes `-f/--format` and `-o/--out`; `traverse` takes `-d/--depth` (default 1, or 3 under `--impact`, since impact analysis is only useful transitively), `--predicates`, `--reverse`, `--impact`, `--variant`, `--subject`, `--limit`.
+Shared flags: `-c/--config`, `-f/--format pretty|json`; `build` takes `-o/--out`; `query`/`stats`/`check`/`export`/`search`/`traverse` take `-g/--graph`; `check` takes `--shapes`; `stats` takes `--coverage-threshold <pct>`; `export` takes `-f/--format` and `-o/--out`; `search` takes `-i/--index` (default: `search.json` beside the graph) and `--limit` (default 10); `traverse` takes `-d/--depth` (default 1, or 3 under `--impact`, since impact analysis is only useful transitively), `--predicates`, `--reverse`, `--impact`, `--variant`, `--subject`, `--limit`.
 
 ### Retrieval runtime (`dockg/runtime`)
 
-`dockg traverse` is a thin CLI over **`dockg/runtime`** — a browser-native
-retrieval layer ([ADR 01018](adrs/01018-graphrag-runtime-architecture.md)) that
-runs the same code client-side. It has **no Node APIs and no dependencies**
-(21 KB raw / ~6 KB gzipped), because the graph it reads is the plain
-`JSON.parse`-able JSON-LD export — no RDF parser needed.
+`dockg search` and `dockg traverse` are thin CLIs over **`dockg/runtime`** — a
+browser-native retrieval layer ([ADR 01018](adrs/01018-graphrag-runtime-architecture.md))
+that runs the same code client-side. It uses **no Node APIs**, because the graph
+it reads is the plain `JSON.parse`-able JSON-LD export — no RDF parser needed.
+Its one dependency is MiniSearch, bundled in, so `dist/runtime.js` stays a
+single-file drop-in (~10.6 KB gzipped once your bundler minifies it).
 
 ```js
-import { GraphIndex, traverse, createFetchResolver, assemble } from "dockg/runtime";
+import {
+  GraphIndex, createLexicalIndex, findEntry,
+  traverse, createFetchResolver, assemble,
+} from "dockg/runtime";
 
 const graph = GraphIndex.fromJsonLd(await (await fetch("/kg/graph.jsonld")).text());
+const lexical = createLexicalIndex(await (await fetch("/kg/search.json")).text());
 
-// Walk the graph, honoring product-variant scope (including negative scope).
-const { nodes, trace } = traverse(graph, {
-  seeds: ["https://example.com/kg/doc/docs/configuration.md"],
+// 1. Question → seed nodes, ranked.
+const { candidates, trace } = findEntry("how do I configure the SP-X100?", { lexical });
+
+// 2. Walk the graph, honoring product-variant scope (including negative scope).
+const { nodes } = traverse(graph, {
+  seeds: candidates.map((c) => c.iri),
   depth: 2,
   variant: "SP-X100",
+  trace,
 });
 
-// Resolve node text and assemble the bundle an inference engine consumes.
+// 3. Resolve node text and assemble the bundle an inference engine consumes.
 const resolver = createFetchResolver(graph, { baseUrl: "/raw/", trace });
 const bundle = await assemble(resolver, nodes, { trace, maxChars: 12000 });
 // → { context, citations, trace, refusal?, truncated }
 ```
+
+### Lexical entry
+
+Step 1 above needs `kg/search.json`, produced by `dockg export --format search`.
+It exists because the graph is an *index, not a corpus*
+([ADR 01008](adrs/01008-graph-as-index-not-corpus.md)): sections carry only
+titles, so an index built from the graph alone could never match what a document
+actually *says* — "what is the default cache directory?" would find nothing. The
+artifact carries the body text, built in Node from local markdown, so entry stays
+hermetic ([ADR 01019](adrs/01019-lexical-entry.md)).
+
+**Every node indexes exactly the text it owns** (the granularity golden rule). A
+section carries its text down to the next heading of any rank — subsections are
+their own nodes. A document carries its title, description, and the prose no
+section covers: the preamble before the first heading, or its whole body when it
+has no sections. Repeating text would let a node shadow the nodes beneath it in
+the rankings; carrying none would leave that prose findable nowhere. Frontmatter
+is stripped from document body text: it is machinery, not prose.
+
+Retrieval differs from indexing here on purpose — `createFetchResolver` returns a
+section *with* its subsections, because asking for a section should give you
+what is under it.
+
+```bash
+dockg build
+dockg export --format search       # -> kg/search.json
+dockg search "default cache directory"
+```
+
+Ranking is deterministic: the same query against the same artifact always
+returns the same order, with ties broken by IRI. `rrfMerge` is exported and
+already fuses N ranked lists, ready for the embeddings leg in a later phase.
 
 Three properties are contractual:
 
