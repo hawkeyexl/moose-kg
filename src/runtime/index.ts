@@ -27,6 +27,7 @@ export {
   createTrace,
   reachedNodes,
   type EntryCandidate,
+  type EntryVia,
   type Hop,
   type QueryTrace,
   type Resolution,
@@ -71,3 +72,15 @@ export {
   type RdfQuad,
   type RdfTerm,
 } from "./rdfjs.js";
+export {
+  createLexicalIndex,
+  type LexicalIndex,
+  type LexicalSearchOptions,
+} from "./lexical.js";
+export {
+  findEntry,
+  rrfMerge,
+  type EntryResult,
+  type FindEntryOptions,
+} from "./entry.js";
+export type { SearchEntry, SearchIndexDoc } from "../core/search-index.js";

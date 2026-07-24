@@ -379,21 +379,53 @@ Decided during implementation: **`rdf:type` is not traversed by default** —
 every document shares its class node, so following schema edges makes everything
 reachable from everything (the edge contamination this project exists to avoid).
 
-## Phase 8 — Hybrid entry (lexical + embeddings)
+## Phase 8 — Lexical entry — **done**
 
-**Goal:** natural-language entry points into the graph without breaking the
-hermetic build.
+**Goal:** a text question reaches the right nodes, hermetically.
+
+Delivered ([ADR 01019](adrs/01019-lexical-entry.md)):
+- **`dockg export --format search` → `kg/search.json`** — the artifact that
+  makes body text findable. Forced by the graph-as-index contract: sections
+  carry only titles, so an index built from the graph alone can never match what
+  a document *says*. Built in Node from local markdown, so entry stays hermetic.
+  Plain JSON dockg owns (not MiniSearch's serialized index), sorted, byte-stable.
+- **Granularity golden rule enforced**: a section carries its own body slice; a
+  document carries title + description, and body only when it has no sections.
+- **`createLexicalIndex` / `findEntry`** in the runtime, with ties broken by IRI
+  so ranking is a dockg contract rather than a library's.
+- **`rrfMerge`** shipped and tested though only one ranking exists — it fixes the
+  fusion contract before the vector leg arrives.
+- **`dockg search <query>`** CLI; `EntryCandidate.via` tightened to a union.
+
+Traded deliberately: the runtime is no longer dependency-free. MiniSearch is
+bundled in (6.4 → 22.7 KB gzipped as shipped, ~10.6 KB minified), and the
+bundle-purity gate narrowed from "no npm dependency" to an allow-list of exactly
+`minisearch` plus an assertion that it is inlined rather than imported.
+
+Found and fixed while implementing: **repeated headings resolved to the wrong
+text.** The corpus has two `## Install` headings, and slicing matched by title,
+so both sections got the *first* one's body — wrong content under a confident
+citation, in the Phase 7 resolver as well as the new index. Sections now derive
+their occurrence from true document order (the `dcterms:hasPart` tree ordered by
+`dockg:order`).
+
+## Phase 8b — Vector entry (embeddings sidecar)
+
+**Goal:** semantic entry alongside the lexical leg, behind the network/spend
+boundary.
 
 Decisions to make (ADRs):
-- **Lexical entry, always on**: BM25 over text the graph already carries
-  (titles, section titles, `skos:prefLabel`/`altLabel`), built in-memory at
-  load. Leading candidate: MiniSearch (~6 KB gzip, VitePress-proven).
-- **Vector entry, opt-in**: `dockg index` (Node, explicit spend per the defaults
-  mandate) precomputes embeddings into a gitignored sidecar; the runtime does
-  brute-force cosine + RRF merge with the lexical leg. Query-time embedding
-  needs a host-supplied `embedQuery`; absent, lexical-only still works.
-- Sidecar format/location, staleness and invalidation; deterministic mock
-  embedder for tests; chunking = section nodes (confirm or refine).
+- `dockg embed` (Node, explicit spend per the defaults mandate) precomputes
+  embeddings into a gitignored sidecar; the runtime does brute-force cosine and
+  fuses through the existing `rrfMerge`.
+- Sidecar format and location, staleness/invalidation keying (graph hash + model
+  + dimensions), and what happens when the graph moves on.
+- Embedding provider seam: Anthropic has no embeddings API, so this is not
+  `fill`'s provider set — openai-compatible plus a deterministic mock at
+  minimum. `Pricing` is input/output-token shaped; embeddings are input-only and
+  need a variant.
+- Query-time embedding requires a host-supplied `embedQuery`; absent, lexical
+  entry must keep working unchanged.
 
 ## Phase 9 — `retrieve` + MCP serving
 
@@ -442,7 +474,7 @@ of the phase that needs it, not before):
 | Negative-scope precedent in iiRDS/schema.org (verify none before minting `dockg:` term) | Phase 4 |
 | iiRDS 1.3 package conformance rules; CDP intake validation practices | Phase 6b |
 | QUDT adoption for quantitative properties (sizes, torques) lifted by fill | Phase 5/6 |
-| Browser vector-search options if the Phase 8 sidecar outgrows brute-force cosine | Phase 8 |
+| Browser vector-search options if the sidecar outgrows brute-force cosine | Phase 8b |
 | MCP server conventions for doc/knowledge tools | Phase 9 |
 
 ## Process per phase

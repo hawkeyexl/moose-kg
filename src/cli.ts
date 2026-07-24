@@ -10,6 +10,7 @@ import { renderQuery, runQuery } from "./commands/query.js";
 import { renderValidate, runValidate } from "./commands/validate.js";
 import { renderFill, runFill } from "./commands/fill.js";
 import { runInit } from "./commands/init.js";
+import { renderSearch, runSearch } from "./commands/search.js";
 import { renderStats, runStats } from "./commands/stats.js";
 import { renderTraverse, runTraverse } from "./commands/traverse.js";
 
@@ -229,6 +230,42 @@ program
   );
 
 program
+  .command("search")
+  .description(
+    "Rank graph nodes for a text query (needs `export --format search`)",
+  )
+  .argument("<query>", "Text query")
+  .option("-c, --config <path>", "Path to dockg.config.yaml")
+  .option("-g, --graph <path>", "Graph .ttl path (default: config out)")
+  .option(
+    "-i, --index <path>",
+    "Search index path (default: search.json beside the graph)",
+  )
+  .option("--limit <n>", "Maximum results (default 10)", (v) =>
+    Number.parseInt(v, 10),
+  )
+  .option("-f, --format <format>", "Output format: pretty | json", "pretty")
+  .action(
+    (
+      query: string,
+      opts: {
+        config?: string;
+        graph?: string;
+        index?: string;
+        limit?: number;
+        format: string;
+      },
+    ) => {
+      try {
+        const report = runSearch({ ...opts, query });
+        console.log(renderSearch(report, opts.format as "pretty" | "json"));
+      } catch (e) {
+        fail(e);
+      }
+    },
+  );
+
+program
   .command("traverse")
   .description(
     "Walk the graph from a node, honoring scope rules, with the full trace",
@@ -285,7 +322,11 @@ program
   )
   .option("-c, --config <path>", "Path to dockg.config.yaml")
   .option("-g, --graph <path>", "Graph .ttl path (default: config out)")
-  .option("-f, --format <format>", "Export format: jsonld | iirds", "jsonld")
+  .option(
+    "-f, --format <format>",
+    "Export format: jsonld | iirds | search",
+    "jsonld",
+  )
   .option(
     "-o, --out <path>",
     "Output path (default: the graph path with the format's extension)",

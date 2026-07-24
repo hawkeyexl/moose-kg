@@ -80,6 +80,7 @@
     "fast-glob": "^3.3.2",
     "github-slugger": "^2.0.0",
     "mdast-util-to-string": "^4.0.0",
+    "minisearch": "^7.2.0",
     "n3": "^1.26.0",
     "picocolors": "^1.1.1",
     "rdf-validate-shacl": "^0.6.5",

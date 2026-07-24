@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { GraphIndex } from "../../src/runtime/graph.js";
 import {
   createFetchResolver,
+  documentSectionOrder,
+  sectionOccurrence,
   sliceSection,
   splitFragment,
 } from "../../src/runtime/resolve.js";
@@ -152,6 +154,102 @@ describe("sliceSection", () => {
     expect(sliceSection(md, "Install", 2)).toBe(
       ["## Install", "", "```", "# comment", "```"].join("\n"),
     );
+  });
+});
+
+describe("repeated headings", () => {
+  const DUP_MD = [
+    "# Doc",
+    "",
+    "## Install",
+    "",
+    "First install.",
+    "",
+    "## Install",
+    "",
+    "Second install.",
+  ].join("\n");
+
+  const DUP_DOC = `${BASE}doc/docs/dup.md`;
+  const SEC_1 = `${DUP_DOC}#install`;
+  const SEC_2 = `${DUP_DOC}#install-1`;
+  const ROOT = `${DUP_DOC}#doc`;
+
+  /** Doc → root section → two same-titled children, ordered by dockg:order. */
+  function dupGraph(): GraphIndex {
+    const lit2 = (v: string) => ({
+      kind: "literal" as const,
+      value: v,
+      datatype: `${NS.xsd}integer`,
+    });
+    return GraphIndex.fromQuads([
+      {
+        s: DUP_DOC,
+        p: `${NS.dockg}path`,
+        o: { kind: "literal", value: "docs/dup.md" },
+      },
+      {
+        s: DUP_DOC,
+        p: `${NS.dcterms}hasPart`,
+        o: { kind: "iri", value: ROOT },
+      },
+      {
+        s: ROOT,
+        p: `${NS.dcterms}title`,
+        o: { kind: "literal", value: "Doc" },
+      },
+      { s: ROOT, p: `${NS.dockg}level`, o: lit2("1") },
+      { s: ROOT, p: `${NS.dockg}order`, o: lit2("1") },
+      { s: ROOT, p: `${NS.dcterms}hasPart`, o: { kind: "iri", value: SEC_1 } },
+      { s: ROOT, p: `${NS.dcterms}hasPart`, o: { kind: "iri", value: SEC_2 } },
+      {
+        s: SEC_1,
+        p: `${NS.dcterms}title`,
+        o: { kind: "literal", value: "Install" },
+      },
+      { s: SEC_1, p: `${NS.dockg}level`, o: lit2("2") },
+      { s: SEC_1, p: `${NS.dockg}order`, o: lit2("1") },
+      {
+        s: SEC_2,
+        p: `${NS.dcterms}title`,
+        o: { kind: "literal", value: "Install" },
+      },
+      { s: SEC_2, p: `${NS.dockg}level`, o: lit2("2") },
+      { s: SEC_2, p: `${NS.dockg}order`, o: lit2("2") },
+    ]);
+  }
+
+  it("selects the nth heading via the occurrence argument", () => {
+    expect(sliceSection(DUP_MD, "Install", 2, 0)).toContain("First install.");
+    expect(sliceSection(DUP_MD, "Install", 2, 1)).toContain("Second install.");
+    expect(sliceSection(DUP_MD, "Install", 2, 2)).toBeUndefined();
+  });
+
+  it("derives each section's occurrence from document order", () => {
+    const g = dupGraph();
+    expect(sectionOccurrence(g, SEC_1)).toBe(0);
+    expect(sectionOccurrence(g, SEC_2)).toBe(1);
+  });
+
+  it("resolves duplicate-titled sections to their own text, not the first", () => {
+    const g = dupGraph();
+    const r = createFetchResolver(g, { fetch: stubFetch(DUP_MD) });
+    return Promise.all([r.resolve(SEC_1), r.resolve(SEC_2)]).then(
+      ([first, second]) => {
+        expect(first?.text).toContain("First install.");
+        // Without the occurrence fix this returned "First install." too —
+        // wrong content under a confident citation.
+        expect(second?.text).toContain("Second install.");
+      },
+    );
+  });
+
+  it("orders sections depth-first by dockg:order", () => {
+    expect(documentSectionOrder(dupGraph(), DUP_DOC)).toEqual([
+      ROOT,
+      SEC_1,
+      SEC_2,
+    ]);
   });
 });
 

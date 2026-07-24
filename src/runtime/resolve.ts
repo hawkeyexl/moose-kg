@@ -18,7 +18,9 @@ import type { QueryTrace } from "./trace.js";
 
 const DOCKG_PATH = `${NS.dockg}path`;
 const DCTERMS_TITLE = `${NS.dcterms}title`;
+const DCTERMS_HAS_PART = `${NS.dcterms}hasPart`;
 const DOCKG_LEVEL = `${NS.dockg}level`;
+const DOCKG_ORDER = `${NS.dockg}order`;
 
 export interface ResolvedContent {
   iri: string;
@@ -93,21 +95,93 @@ function fencedLines(lines: string[]): boolean[] {
 }
 
 /**
+ * Sections of a document in true document order, reconstructed from the
+ * `dcterms:hasPart` tree ordered by `dockg:order` within each parent.
+ *
+ * Needed because heading text is not unique: a document with two `## Install`
+ * headings produces two section nodes, and matching by title alone would give
+ * both the *first* heading's text — wrong content under a confident citation.
+ */
+export function documentSectionOrder(
+  graph: GraphIndex,
+  docIri: string,
+): string[] {
+  const ordered: string[] = [];
+  const seen = new Set<string>();
+
+  const childrenOf = (iri: string): string[] =>
+    graph
+      .out(iri, DCTERMS_HAS_PART)
+      .map((e) => e.target)
+      .sort((a, b) => {
+        const oa = Number.parseInt(graph.literal(a, DOCKG_ORDER) ?? "", 10);
+        const ob = Number.parseInt(graph.literal(b, DOCKG_ORDER) ?? "", 10);
+        if (Number.isNaN(oa) || Number.isNaN(ob) || oa === ob) {
+          return a < b ? -1 : a > b ? 1 : 0;
+        }
+        return oa - ob;
+      });
+
+  const walk = (iri: string): void => {
+    for (const child of childrenOf(iri)) {
+      if (seen.has(child)) continue;
+      seen.add(child);
+      ordered.push(child);
+      walk(child);
+    }
+  };
+  walk(docIri);
+  return ordered;
+}
+
+/**
+ * Which occurrence of its heading text a section is (0-based) — the number of
+ * earlier same-title, same-level sections in the same document.
+ */
+export function sectionOccurrence(
+  graph: GraphIndex,
+  sectionIri: string,
+): number {
+  const { doc } = splitFragment(sectionIri);
+  const title = graph.literal(sectionIri, DCTERMS_TITLE);
+  const level = graph.literal(sectionIri, DOCKG_LEVEL);
+  if (title === undefined) return 0;
+
+  let occurrence = 0;
+  for (const candidate of documentSectionOrder(graph, doc)) {
+    if (candidate === sectionIri) break;
+    if (
+      graph.literal(candidate, DCTERMS_TITLE) === title &&
+      graph.literal(candidate, DOCKG_LEVEL) === level
+    ) {
+      occurrence += 1;
+    }
+  }
+  return occurrence;
+}
+
+/**
  * Slice a markdown document at the heading whose text matches `title`,
  * returning that heading through to the next heading of the same or higher
  * rank. Returns undefined when no such heading exists. Handles CRLF, and
  * ignores `#` lines inside fenced code blocks.
+ *
+ * `occurrence` selects among repeated headings (0 = the first). Heading text is
+ * not unique, so callers with a specific section node in hand should pass
+ * `sectionOccurrence(graph, iri)` rather than defaulting to the first match.
  */
 export function sliceSection(
   markdown: string,
   title: string,
   level?: number,
+  occurrence = 0,
 ): string | undefined {
   const lines = markdown.split(/\r?\n/);
   const fenced = fencedLines(lines);
   const wanted = title.trim().toLowerCase();
   let start = -1;
   let startLevel = level ?? 0;
+  let remaining = occurrence;
 
   for (let i = 0; i < lines.length; i++) {
     if (fenced[i]) continue;
@@ -116,6 +190,10 @@ export function sliceSection(
     const hLevel = m[1]!.length;
     if (m[2]!.trim().toLowerCase() !== wanted) continue;
     if (level !== undefined && hLevel !== level) continue;
+    if (remaining > 0) {
+      remaining -= 1;
+      continue;
+    }
     start = i;
     startLevel = hLevel;
     break;
@@ -190,6 +268,7 @@ export function createFetchResolver(
                 body,
                 title,
                 Number.isNaN(level) ? undefined : level,
+                sectionOccurrence(graph, iri),
               );
         if (slice === undefined) {
           options.trace?.resolutions.push({

@@ -41,5 +41,14 @@ export default defineConfig([
     clean: false,
     dts: true,
     sourcemap: true,
+    /**
+     * tsup externalizes package.json `dependencies` by default, which would
+     * leave a bare `import MiniSearch from "minisearch"` in the bundle — a
+     * specifier no browser can resolve without an import map or a bundler,
+     * breaking the single-file drop-in `dist/runtime.js` is meant to be
+     * (ADR 01019). Inline it. The Node build leaves it external, so it is not
+     * duplicated there.
+     */
+    noExternal: ["minisearch"],
   },
 ]);
