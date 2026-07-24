@@ -64,12 +64,18 @@ export function rrfMerge(
   }
 
   return [...fused.entries()]
-    .map(([iri, { score, vias }]) => ({
-      iri,
-      score,
+    .map(([iri, { score, vias }]) => {
       // One leg keeps its own provenance; several means the seed was fused.
-      via: vias.size === 1 ? [...vias][0]! : "hybrid",
-    }))
+      // Destructuring rather than `[...vias][0]!` so the single-leg case needs
+      // no non-null assertion — an empty set simply falls through to "hybrid",
+      // which is unreachable anyway (a set only exists once a leg added to it).
+      const [only] = vias;
+      return {
+        iri,
+        score,
+        via: vias.size === 1 && only !== undefined ? only : "hybrid",
+      };
+    })
     .sort((a, b) =>
       a.score === b.score ? byCodeUnit(a.iri, b.iri) : b.score - a.score,
     );
