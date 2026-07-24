@@ -78,9 +78,23 @@ describe("dockg/runtime bundle purity", () => {
     }
   });
 
-  it("runs with the Node globals a browser lacks made unavailable", async () => {
-    // Smoke: the module graph must not touch process/require/Buffer at import
-    // or call time. Exercised via a traversal on a tiny in-memory graph.
+  it("references no Node-only global", () => {
+    // The browser has no process/Buffer/__dirname/__filename. A static scan is
+    // the honest gate here: importing the bundle in this Node process would
+    // *not* catch a reference, because those globals exist here.
+    const text = source();
+    for (const global of [
+      "process",
+      "Buffer",
+      "__dirname",
+      "__filename",
+      "globalThis.process",
+    ]) {
+      expect(text).not.toMatch(new RegExp(`\\b${global}\\b`));
+    }
+  });
+
+  it("executes a traversal when imported", async () => {
     const { GraphIndex, traverse } = (await import(
       bundle
     )) as typeof import("../../src/runtime/index.js");

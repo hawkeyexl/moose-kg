@@ -95,6 +95,43 @@ describe("dockg traverse (integration)", () => {
     expect(stdout).toContain("1 node, 1 hop, 1 excluded");
   });
 
+  it("follows inbound edges with --reverse, and outbound without it", () => {
+    const graph = buildGraph();
+    const args = (extra: string[]) => [
+      "traverse",
+      CONFIG_DOC,
+      "-g",
+      graph,
+      "--predicates",
+      "dcterms:references",
+      "-f",
+      "json",
+      ...extra,
+    ];
+    const iris = (out: string) =>
+      (JSON.parse(out) as { nodes: Array<{ iri: string }> }).nodes.map(
+        (n) => n.iri,
+      );
+
+    // Inbound: who references configuration.md.
+    const reverse = iris(run(args(["--reverse"]), corpus).stdout);
+    expect(reverse).toContain(
+      "https://example.com/kg/doc/docs/windows-notes.md",
+    );
+    expect(reverse).not.toContain(
+      "https://example.com/kg/doc/docs/getting-started.md#install",
+    );
+
+    // Outbound (the off state): what configuration.md references.
+    const forward = iris(run(args([]), corpus).stdout);
+    expect(forward).toContain(
+      "https://example.com/kg/doc/docs/getting-started.md#install",
+    );
+    expect(forward).not.toContain(
+      "https://example.com/kg/doc/docs/windows-notes.md",
+    );
+  });
+
   it("reports transitive inbound reach with --impact", () => {
     const graph = buildGraph();
     const { stdout, status } = run(

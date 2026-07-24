@@ -236,8 +236,10 @@ program
   .argument("<node>", "Starting node: a full IRI or a prefix:local CURIE")
   .option("-c, --config <path>", "Path to dockg.config.yaml")
   .option("-g, --graph <path>", "Graph .ttl path (default: config out)")
-  .option("-d, --depth <n>", "Maximum hops from the node (default 1)", (v) =>
-    Number.parseInt(v, 10),
+  .option(
+    "-d, --depth <n>",
+    "Maximum hops from the node (default 1; 3 under --impact)",
+    (v) => Number.parseInt(v, 10),
   )
   .option("--predicates <curies...>", "Only follow these predicates")
   .option("--reverse", "Follow inbound edges (who points at this node)")

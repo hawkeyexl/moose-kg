@@ -321,7 +321,7 @@ dockg fill --force            # overwrite human-set kg fields too
 | `dockg export -f jsonld` | Reserialize the built graph as deterministic JSON-LD |
 | `dockg export -f iirds` | Package the graph as a conformant, deterministic iiRDS package (`.iirds`) |
 
-Shared flags: `-c/--config`, `-f/--format pretty|json`; `build` takes `-o/--out`; `query`/`stats`/`check`/`export`/`traverse` take `-g/--graph`; `check` takes `--shapes`; `stats` takes `--coverage-threshold <pct>`; `export` takes `-f/--format` and `-o/--out`; `traverse` takes `-d/--depth`, `--predicates`, `--reverse`, `--impact`, `--variant`, `--subject`, `--limit`.
+Shared flags: `-c/--config`, `-f/--format pretty|json`; `build` takes `-o/--out`; `query`/`stats`/`check`/`export`/`traverse` take `-g/--graph`; `check` takes `--shapes`; `stats` takes `--coverage-threshold <pct>`; `export` takes `-f/--format` and `-o/--out`; `traverse` takes `-d/--depth` (default 1, or 3 under `--impact`, since impact analysis is only useful transitively), `--predicates`, `--reverse`, `--impact`, `--variant`, `--subject`, `--limit`.
 
 ### Retrieval runtime (`dockg/runtime`)
 

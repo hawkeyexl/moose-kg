@@ -25,6 +25,7 @@
  * pulled from `@rdfjs/data-model`, keeping the runtime dependency-free and
  * browser-safe.
  */
+import { byCodeUnit } from "../core/sort.js";
 import type { GraphIndex, Value } from "./graph.js";
 
 const XSD_STRING = "http://www.w3.org/2001/XMLSchema#string";
@@ -120,7 +121,7 @@ export function rdfjsQuads(graph: GraphIndex): RdfQuad[] {
   for (const s of graph.ids()) {
     const node = graph.node(s);
     if (!node) continue;
-    for (const p of [...node.props.keys()].sort()) {
+    for (const p of [...node.props.keys()].sort(byCodeUnit)) {
       for (const v of node.props.get(p) ?? []) quads.push(makeQuad(s, p, v));
     }
   }
@@ -143,7 +144,9 @@ export function matchQuads(
   for (const s of subjects) {
     const node = graph.node(s);
     if (!node) continue;
-    const predicates = predicate ? [predicate] : [...node.props.keys()].sort();
+    const predicates = predicate
+      ? [predicate]
+      : [...node.props.keys()].sort(byCodeUnit);
     for (const p of predicates) {
       for (const v of node.props.get(p) ?? []) {
         if (object !== undefined && object !== null && v.value !== object) {

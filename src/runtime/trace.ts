@@ -32,9 +32,18 @@ export interface Hop {
 /** A node the scope filter removed, and why. */
 export interface ScopeExclusion {
   node: string;
-  /** The predicate that disqualified it (a `dockg:not*` IRI). */
+  /**
+   * The predicate that disqualified the node: a `dockg:not*` IRI when an
+   * explicit negative named the target, or the positive predicate (e.g.
+   * `iirds:relates-to-product-variant`) when the node declared a scope set that
+   * omits the target.
+   */
   rule: string;
-  /** The scope value that matched the exclusion. */
+  /**
+   * The filter target being applied — the variant or subject IRI the query
+   * asked for. Under a `dockg:not*` rule the node named this explicitly; under
+   * a positive rule this is what the node's declared set was missing.
+   */
   value: string;
 }
 

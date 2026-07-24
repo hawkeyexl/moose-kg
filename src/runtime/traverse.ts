@@ -251,7 +251,8 @@ export function reverseReferences(
 
 /**
  * Transitive inbound reach — "what is affected if this node changes".
- * Excludes the node itself from the returned set.
+ * Excludes the node itself from the returned set. Defaults to depth 3 rather
+ * than the walker's 1, because impact analysis is only useful transitively.
  */
 export function impact(
   graph: GraphIndex,
