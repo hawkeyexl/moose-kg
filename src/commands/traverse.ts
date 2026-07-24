@@ -17,11 +17,13 @@ import {
   loadGraph,
   storeToQuads,
 } from "../core/load.js";
+import { SOFTWARE_SUBJECT_IRIS } from "../core/iirds.js";
 import { NS, PREFIXES } from "../core/vocab.js";
 import { DockgError } from "../types.js";
 import { GraphIndex } from "../runtime/graph.js";
 import {
   impact,
+  resolveSubject,
   resolveVariant,
   traverse,
   type Direction,
@@ -73,6 +75,15 @@ export function runTraverse(opts: TraverseOptions): TraverseReport {
   if (opts.variant && !resolveVariant(graph, opts.variant)) {
     throw new DockgError(
       `Unknown product variant: ${opts.variant} — no iirds:ProductVariant matches that IRI, title, or slug.`,
+    );
+  }
+  // An unresolvable scope filter silently disables itself in the walker, which
+  // would hand back exactly the nodes the filter was meant to exclude. Fail
+  // loudly instead — same contract as --variant above.
+  if (opts.subject && !resolveSubject(graph, opts.subject)) {
+    throw new DockgError(
+      `Unknown software subject: ${opts.subject} — expected one of ` +
+        `${Object.keys(SOFTWARE_SUBJECT_IRIS).sort().join(", ")}, or a full IRI.`,
     );
   }
 

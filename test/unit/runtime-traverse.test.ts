@@ -188,6 +188,20 @@ describe("reverseReferences and impact", () => {
     const r = impact(g, C, { predicates: [REFERENCES] });
     expect(r.nodes.map((n) => n.iri)).toEqual([B, A]);
   });
+
+  it("counts `limit` in affected nodes, not including the dropped seed", () => {
+    const g = fixture();
+    // Two nodes reach C transitively; asking for 1 must yield exactly 1, not 0
+    // (the seed used to consume a slot before being filtered out).
+    expect(impact(g, C, { predicates: [REFERENCES], limit: 1 }).nodes).toEqual([
+      { iri: B, depth: 1 },
+    ]);
+    expect(
+      impact(g, C, { predicates: [REFERENCES], limit: 2 }).nodes.map(
+        (n) => n.iri,
+      ),
+    ).toEqual([B, A]);
+  });
 });
 
 describe("trace completeness (the explainability contract)", () => {

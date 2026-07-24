@@ -264,6 +264,11 @@ export function impact(
     seeds: [iri],
     direction: "in",
     depth: options.depth ?? 3,
+    // The seed occupies a slot in the walker's limit but is dropped below, so
+    // ask for one more: `limit` means "this many *affected* nodes". (A seed the
+    // scope filter excludes never enters the walker's set, and then traversal
+    // stops at the empty frontier, so this cannot over-return.)
+    limit: options.limit === undefined ? undefined : options.limit + 1,
   });
   return {
     nodes: result.nodes.filter((n) => n.iri !== iri),
