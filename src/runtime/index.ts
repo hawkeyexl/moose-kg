@@ -49,6 +49,13 @@ export {
 export {
   createFetchResolver,
   documentPreamble,
+  documentSectionOrder,
+  // `sliceSection`'s contract names these: heading text is not unique, so a
+  // caller slicing a specific section node needs its occurrence or it silently
+  // gets the first same-titled heading's body.
+  sectionOccurrence,
+  sectionOccurrences,
+  sectionOwnText,
   sliceSection,
   splitFragment,
   type ContentResolver,

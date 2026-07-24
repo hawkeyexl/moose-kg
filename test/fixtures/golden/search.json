@@ -46,13 +46,13 @@
       "id": "https://example.com/kg/doc/docs/configuration.md#configuration",
       "type": "dockg:Section",
       "title": "Configuration",
-      "text": "# Configuration\n\nBack to [install](getting-started.md#install), or the whole\n[getting started guide](getting-started.md).\n\nExternal docs: [JSON Schema](https://json-schema.org/).\n\n## Options\n\n### Advanced\n\nDeep section under Options."
+      "text": "# Configuration\n\nBack to [install](getting-started.md#install), or the whole\n[getting started guide](getting-started.md).\n\nExternal docs: [JSON Schema](https://json-schema.org/)."
     },
     {
       "id": "https://example.com/kg/doc/docs/configuration.md#options",
       "type": "dockg:Section",
       "title": "Options",
-      "text": "## Options\n\n### Advanced\n\nDeep section under Options."
+      "text": "## Options"
     },
     {
       "id": "https://example.com/kg/doc/docs/getting-started.md",
@@ -64,7 +64,7 @@
       "id": "https://example.com/kg/doc/docs/getting-started.md#getting-started",
       "type": "dockg:Section",
       "title": "Getting Started",
-      "text": "# Getting Started\n\nWelcome. See the [configuration reference](configuration.md).\n\n## Install\n\nRun the installer:\n\n```bash\nnpm install -g dockg\n```\n\n```python\nprint(\"hello\")\n```\n\n![architecture](img/arch.png)\n\n## Install\n\nSecond install section with a duplicate heading."
+      "text": "# Getting Started\n\nWelcome. See the [configuration reference](configuration.md)."
     },
     {
       "id": "https://example.com/kg/doc/docs/getting-started.md#install",

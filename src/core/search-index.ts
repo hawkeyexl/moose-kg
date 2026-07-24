@@ -9,11 +9,17 @@
  * renditions), and emits a deterministic JSON index the browser runtime loads in
  * one fetch.
  *
- * Granularity golden rule: a Section carries its own body slice; a Document
- * carries title + description, and body text *only* when it has no sections —
- * otherwise every document would shadow the sections inside it in the rankings.
- * Slicing reuses `sliceSection` from the runtime, so index-time and
- * retrieval-time slicing cannot drift.
+ * Granularity golden rule: **every node indexes exactly the text it owns.** A
+ * Section carries its own text down to the next heading of any rank; a Document
+ * carries title + description plus the prose no section covers (its preamble,
+ * or its whole body when it has no sections). Duplicating would let a node
+ * shadow the nodes beneath it in the rankings; carrying nothing would leave
+ * that prose findable nowhere.
+ *
+ * Slicing reuses the runtime's own functions, so index-time and retrieval-time
+ * text cannot drift — with one deliberate difference: retrieval uses
+ * `sliceSection` (subtree included, because asking for a section should give
+ * you its subsections), indexing uses `sectionOwnText`.
  */
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -24,7 +30,7 @@ import type { GraphIndex } from "../runtime/graph.js";
 import {
   documentPreamble,
   sectionOccurrences,
-  sliceSection,
+  sectionOwnText,
 } from "../runtime/resolve.js";
 
 const DOCKG_DOCUMENT = `${NS.dockg}Document`;
@@ -153,7 +159,13 @@ export function buildSearchIndex(
     // keeps only the prose that belongs to no section — the preamble before the
     // first heading. Without this, that text is indexed nowhere and is
     // unfindable. A document with no sections owns its whole body.
-    const body = source === undefined ? undefined : stripFrontmatter(source);
+    // Newlines normalized to LF: section slices and `documentPreamble` already
+    // re-join on "\n", so without this a sectionless CRLF document is the one
+    // entry in the artifact carrying "\r\n".
+    const body =
+      source === undefined
+        ? undefined
+        : stripFrontmatter(source).replace(/\r\n/g, "\n");
     const text =
       body === undefined
         ? undefined
@@ -193,7 +205,7 @@ export function buildSearchIndex(
     // occurrence disambiguates which slice is actually its own.
     const text =
       source !== undefined && title !== undefined
-        ? sliceSection(source, title, level, occurrences.get(section) ?? 0)
+        ? sectionOwnText(source, title, level, occurrences.get(section) ?? 0)
         : undefined;
 
     entries.push(entry(section, compactIri(DOCKG_SECTION), { title, text }));

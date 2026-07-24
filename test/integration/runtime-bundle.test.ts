@@ -130,12 +130,19 @@ describe("dockg/runtime bundle purity", () => {
     // ("used to process each tokenized term"), and stripping comments first
     // would be worse — the bundle is full of `https://` IRIs that a naive
     // line-comment stripper would mangle.
+    //
+    // The member-access patterns exclude a leading `.` so `foo.process` (a
+    // property named "process") does not trip them — which means the
+    // `globalThis.`-qualified forms need their own patterns, or
+    // `globalThis.process.env` would slip through the gate entirely.
     const text = source();
     const uses: Array<[string, RegExp]> = [
       ["process", /(^|[^\w.$"'`])process\s*(\.|\[)/m],
       ["process", /typeof\s+process\b/],
+      ["globalThis.process", /globalThis\s*(\.\s*process\b|\[\s*["'`]process)/],
       ["Buffer", /(^|[^\w.$"'`])Buffer\s*(\.|\(|\[)/m],
       ["Buffer", /typeof\s+Buffer\b/],
+      ["globalThis.Buffer", /globalThis\s*(\.\s*Buffer\b|\[\s*["'`]Buffer)/],
       ["__dirname", /\b__dirname\b/],
       ["__filename", /\b__filename\b/],
     ];

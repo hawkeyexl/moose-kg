@@ -390,7 +390,8 @@ Delivered ([ADR 01019](adrs/01019-lexical-entry.md)):
   a document *says*. Built in Node from local markdown, so entry stays hermetic.
   Plain JSON dockg owns (not MiniSearch's serialized index), sorted, byte-stable.
 - **Granularity golden rule enforced — every node indexes the text it owns**: a
-  section carries its own body slice; a document carries title + description
+  section carries its text down to the next heading of any rank; a document
+  carries title + description
   plus the prose no section covers (its preamble, or the whole body when it has
   no sections). Duplicating would shadow sections in the rankings; carrying
   nothing would leave preamble prose findable nowhere.

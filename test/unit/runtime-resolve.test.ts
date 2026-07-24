@@ -5,6 +5,7 @@ import {
   documentPreamble,
   documentSectionOrder,
   sectionOccurrence,
+  sectionOwnText,
   sliceSection,
   splitFragment,
 } from "../../src/runtime/resolve.js";
@@ -158,6 +159,56 @@ describe("sliceSection", () => {
   });
 });
 
+describe("sectionOwnText", () => {
+  const NESTED = [
+    "# Top",
+    "",
+    "Top prose.",
+    "",
+    "## Child",
+    "",
+    "Child prose.",
+    "",
+    "### Grandchild",
+    "",
+    "Grandchild prose.",
+  ].join("\n");
+
+  it("stops at the next heading of any rank", () => {
+    expect(sectionOwnText(NESTED, "Top", 1)).toBe("# Top\n\nTop prose.");
+    expect(sectionOwnText(NESTED, "Child", 2)).toBe("## Child\n\nChild prose.");
+  });
+
+  it("differs from sliceSection, which keeps the subtree", () => {
+    // Retrieval wants the subtree; indexing wants own text, or a parent
+    // matches everything its children match and outranks them.
+    const sliced = sliceSection(NESTED, "Top", 1)!;
+    expect(sliced).toContain("Grandchild prose.");
+    expect(sectionOwnText(NESTED, "Top", 1)).not.toContain("Grandchild prose.");
+  });
+
+  it("returns just the heading for a section whose body is all subsections", () => {
+    const md = "## Options\n\n### Advanced\n\nDeep.";
+    expect(sectionOwnText(md, "Options", 2)).toBe("## Options");
+  });
+
+  it("honors occurrence and fenced code like sliceSection", () => {
+    const md = [
+      "## A",
+      "",
+      "```",
+      "# not a heading",
+      "```",
+      "",
+      "## A",
+      "",
+      "second",
+    ].join("\n");
+    expect(sectionOwnText(md, "A", 2, 0)).toContain("# not a heading");
+    expect(sectionOwnText(md, "A", 2, 1)).toBe("## A\n\nsecond");
+  });
+});
+
 describe("documentPreamble", () => {
   it("returns the prose before the first heading", () => {
     expect(documentPreamble("Intro text.\n\n# Title\n\nBody.\n")).toBe(
@@ -212,7 +263,7 @@ describe("repeated headings", () => {
   const ROOT = `${DUP_DOC}#doc`;
 
   /** Doc → root section → two same-titled children, ordered by dockg:order. */
-  function dupGraph(): GraphIndex {
+  function dupGraph(secondTitle = "Install"): GraphIndex {
     const lit2 = (v: string) => ({
       kind: "literal" as const,
       value: v,
@@ -248,7 +299,7 @@ describe("repeated headings", () => {
       {
         s: SEC_2,
         p: `${NS.dcterms}title`,
-        o: { kind: "literal", value: "Install" },
+        o: { kind: "literal", value: secondTitle },
       },
       { s: SEC_2, p: `${NS.dockg}level`, o: lit2("2") },
       { s: SEC_2, p: `${NS.dockg}order`, o: lit2("2") },
@@ -278,6 +329,18 @@ describe("repeated headings", () => {
         expect(second?.text).toContain("Second install.");
       },
     );
+  });
+
+  it("counts occurrences the way sliceSection matches — case-folded", () => {
+    // `## Install` then `## install`. `sliceSection` matches headings
+    // case-insensitively, so counting by the raw title gave both sections
+    // occurrence 0, and the second one then sliced the *first* heading.
+    const g = dupGraph("install");
+    expect(sectionOccurrence(g, SEC_2)).toBe(1);
+    const md = DUP_MD.replace("## Install\n\nSecond", "## install\n\nSecond");
+    expect(
+      sliceSection(md, "install", 2, sectionOccurrence(g, SEC_2)),
+    ).toContain("Second install.");
   });
 
   it("orders sections depth-first by dockg:order", () => {

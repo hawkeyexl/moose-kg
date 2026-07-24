@@ -17,8 +17,10 @@ export type EntryVia = "explicit" | "lexical" | "vector" | "hybrid";
 export interface EntryCandidate {
   iri: string;
   /**
-   * Relevance score: 1 for an explicitly requested seed, the engine's score for
-   * a lexical hit, or the fused score after `rrfMerge`.
+   * Relevance score: 1 for an explicitly requested seed, otherwise the fused
+   * `rrfMerge` score. Note that fusion is **rank**-based, so a searched seed's
+   * score reflects its position (1/(60 + rank)), not the engine's relevance —
+   * it orders candidates but is not a magnitude to threshold on.
    */
   score: number;
   via: EntryVia;

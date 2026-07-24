@@ -84,9 +84,10 @@ Concepts are worth seeding from (concept → the documents about it);
 something to read.
 
 **Granularity rule: every node indexes exactly the text it owns.** A **Section**
-carries its own body slice. A **Document** carries title + description plus the
-prose no section covers — its *preamble*, the text before the first heading —
-and its whole body when it has no sections at all.
+carries its text down to the next heading of *any* rank — subsections are their
+own nodes. A **Document** carries title + description plus the prose no section
+covers — its *preamble*, the text before the first heading — and its whole body
+when it has no sections at all.
 
 The rule is "own text", not "no text when sections exist", because both failure
 modes are real. If a document repeated its sections' text it would match
@@ -96,10 +97,18 @@ and become unfindable — the same evaporation this artifact exists to prevent,
 reintroduced at a smaller scale. Owning the complement of its sections avoids
 both: no duplication, no gap.
 
-Slicing reuses `sliceSection` and `documentPreamble` from
-[src/runtime/resolve.ts](../src/runtime/resolve.ts) — the same functions
-retrieval uses, so index-time and retrieval-time slicing cannot drift. Both are
-fence-aware: a `#` comment in a leading code block is not a heading.
+The rule applies at *both* boundaries — Document→Section and Section→Section.
+Enforced only at the first, an H1 section carries its whole subtree and outranks
+every heading beneath it: the same shadowing, one level down.
+
+Slicing reuses `sectionOwnText`, `documentPreamble`, and `sliceSection` from
+[src/runtime/resolve.ts](../src/runtime/resolve.ts) — the runtime's own
+functions, so index-time and retrieval-time text cannot drift. One difference is
+deliberate: **retrieval** uses `sliceSection`, which keeps the subtree, because
+asking for "Configuration" should hand back its subsections too; **indexing**
+uses `sectionOwnText`, which does not, because a parent that repeats its
+children outranks them. All are fence-aware: a `#` comment in a code block is
+not a heading.
 
 A document's body text has its **frontmatter stripped**: the block is machinery,
 not prose, and left in, a query for `prefLabel` or `altLabels` would match every

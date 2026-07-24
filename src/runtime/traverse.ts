@@ -180,10 +180,17 @@ export function traverse(
   const seen = new Set<string>();
   let frontier: string[] = [];
 
+  // A seed `findEntry` already recorded keeps its real provenance. Re-recording
+  // it as `explicit`/1 would leave the trace answering "why did retrieval start
+  // here?" twice, with the lexical/vector score contradicted by a flat 1.
+  const alreadySeeded = new Set(trace.entry.map((e) => e.iri));
+
   for (const seed of [...options.seeds].sort(byCodeUnit)) {
     if (!graph.has(seed) || seen.has(seed)) continue;
     seen.add(seed);
-    trace.entry.push({ iri: seed, score: 1, via: "explicit" });
+    if (!alreadySeeded.has(seed)) {
+      trace.entry.push({ iri: seed, score: 1, via: "explicit" });
+    }
     if (!keep(seed)) continue;
     nodes.push({ iri: seed, depth: 0 });
     frontier.push(seed);

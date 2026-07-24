@@ -152,11 +152,16 @@ export function sectionOccurrences(
   const counts = new Map<string, Map<string, number>>();
 
   for (const section of documentSectionOrder(graph, docIri)) {
-    const title = graph.literal(section, DCTERMS_TITLE);
-    if (title === undefined) {
+    const rawTitle = graph.literal(section, DCTERMS_TITLE);
+    if (rawTitle === undefined) {
       occurrences.set(section, 0);
       continue;
     }
+    // Keyed exactly the way `sliceSection` matches headings — trimmed and
+    // case-folded. Keyed by the raw title instead, a document with `## Install`
+    // and `## install` gives both sections occurrence 0, and the second one
+    // then slices the first heading: wrong content under a confident citation.
+    const title = rawTitle.trim().toLowerCase();
     const level = graph.literal(section, DOCKG_LEVEL) ?? "";
     let byLevel = counts.get(title);
     if (!byLevel) {
@@ -184,16 +189,6 @@ export function sectionOccurrence(
 }
 
 /**
- * Slice a markdown document at the heading whose text matches `title`,
- * returning that heading through to the next heading of the same or higher
- * rank. Returns undefined when no such heading exists. Handles CRLF, and
- * ignores `#` lines inside fenced code blocks.
- *
- * `occurrence` selects among repeated headings (0 = the first). Heading text is
- * not unique, so callers with a specific section node in hand should pass
- * `sectionOccurrence(graph, iri)` rather than defaulting to the first match.
- */
-/**
  * The prose before a document's first heading — the text that belongs to no
  * section, and so would otherwise be indexed nowhere in a document that has
  * sections.
@@ -218,11 +213,50 @@ export function documentPreamble(markdown: string): string | undefined {
   return text === "" ? undefined : text;
 }
 
+/**
+ * Slice a markdown document at the heading whose text matches `title`,
+ * returning that heading through to the next heading of the same or higher
+ * rank. Returns undefined when no such heading exists. Handles CRLF, and
+ * ignores `#` lines inside fenced code blocks.
+ *
+ * `occurrence` selects among repeated headings (0 = the first). Heading text is
+ * not unique, so callers with a specific section node in hand should pass
+ * `sectionOccurrence(graph, iri)` rather than defaulting to the first match.
+ */
 export function sliceSection(
   markdown: string,
   title: string,
   level?: number,
   occurrence = 0,
+): string | undefined {
+  return slice(markdown, title, level, occurrence, false);
+}
+
+/**
+ * The text a section *owns*: its heading down to the next heading of **any**
+ * rank, so nested subsections are excluded.
+ *
+ * `sliceSection` keeps the subtree because that is what retrieval wants — ask
+ * for "Configuration" and you should get its subsections too. Indexing wants
+ * the opposite: with the subtree, a parent section matches everything its
+ * children match and outranks them, so an H1 section shadows every heading
+ * beneath it. Same granularity rule as Document vs Section, one level down.
+ */
+export function sectionOwnText(
+  markdown: string,
+  title: string,
+  level?: number,
+  occurrence = 0,
+): string | undefined {
+  return slice(markdown, title, level, occurrence, true);
+}
+
+function slice(
+  markdown: string,
+  title: string,
+  level: number | undefined,
+  occurrence: number,
+  ownTextOnly: boolean,
 ): string | undefined {
   const lines = markdown.split(/\r?\n/);
   const fenced = fencedLines(lines);
@@ -252,7 +286,7 @@ export function sliceSection(
   for (let i = start + 1; i < lines.length; i++) {
     if (fenced[i]) continue;
     const m = /^(#{1,6})\s+/.exec(lines[i]!);
-    if (m && m[1]!.length <= startLevel) {
+    if (m && (ownTextOnly || m[1]!.length <= startLevel)) {
       end = i;
       break;
     }

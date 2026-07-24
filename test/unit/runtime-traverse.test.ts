@@ -7,7 +7,7 @@ import {
   scopeExclusion,
   traverse,
 } from "../../src/runtime/traverse.js";
-import { reachedNodes } from "../../src/runtime/trace.js";
+import { createTrace, reachedNodes } from "../../src/runtime/trace.js";
 import { NS, RDF_TYPE } from "../../src/core/vocab.js";
 import {
   DOCKG_NOT_APPLICABLE_TO_VARIANT,
@@ -210,6 +210,23 @@ describe("trace completeness (the explainability contract)", () => {
     const r = traverse(g, { seeds: [A], depth: 2 });
     const reached = reachedNodes(r.trace);
     for (const node of r.nodes) expect(reached.has(node.iri)).toBe(true);
+  });
+
+  it("keeps a seed's existing provenance instead of re-recording it", () => {
+    // The documented `findEntry` → `traverse` composition shares one trace.
+    // Re-recording the seed as explicit/1 would answer "why did retrieval start
+    // here?" twice, with the search score contradicted by a flat 1.
+    const g = fixture();
+    const trace = createTrace();
+    trace.entry.push({ iri: A, score: 0.75, via: "lexical" });
+    traverse(g, { seeds: [A], depth: 1, trace });
+    expect(trace.entry).toEqual([{ iri: A, score: 0.75, via: "lexical" }]);
+  });
+
+  it("still records a seed no earlier stage seeded", () => {
+    const g = fixture();
+    const r = traverse(g, { seeds: [A], depth: 1 });
+    expect(r.trace.entry).toEqual([{ iri: A, score: 1, via: "explicit" }]);
   });
 
   it("records an exclusion for every node filtered out of the results", () => {

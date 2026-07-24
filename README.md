@@ -371,12 +371,16 @@ artifact carries the body text, built in Node from local markdown, so entry stay
 hermetic ([ADR 01019](adrs/01019-lexical-entry.md)).
 
 **Every node indexes exactly the text it owns** (the granularity golden rule). A
-section carries its own body slice; a document carries its title, description,
-and the prose no section covers — the preamble before the first heading, or its
-whole body when it has no sections. Repeating its sections' text would let a
-document shadow them in the rankings; carrying none would leave preamble prose
-findable nowhere. Frontmatter is stripped from document body text: it is
-machinery, not prose.
+section carries its text down to the next heading of any rank — subsections are
+their own nodes. A document carries its title, description, and the prose no
+section covers: the preamble before the first heading, or its whole body when it
+has no sections. Repeating text would let a node shadow the nodes beneath it in
+the rankings; carrying none would leave that prose findable nowhere. Frontmatter
+is stripped from document body text: it is machinery, not prose.
+
+Retrieval differs from indexing here on purpose — `createFetchResolver` returns a
+section *with* its subsections, because asking for a section should give you
+what is under it.
 
 ```bash
 dockg build
