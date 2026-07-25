@@ -116,7 +116,11 @@ async function makeEmbedder(
     if (e instanceof EmbedderUnavailableError) {
       throw new DockgError(e.message);
     }
-    throw e;
+    // Everything else the model stack can fail on — an unknown id, a 404 on the
+    // hub, corrupt weights — is operational (exit 2), not a raw stack trace.
+    throw new DockgError(
+      `Failed to load embedding model ${model}: ${e instanceof Error ? e.message : String(e)}`,
+    );
   }
 }
 
@@ -151,7 +155,17 @@ export async function runEmbed(opts: EmbedOptions = {}): Promise<EmbedReport> {
 
   const model = opts.model ?? config.embed.model;
   const dtype = opts.dtype ?? config.embed.dtype;
-  const embedder = await makeEmbedder(opts, model, dtype);
+  // Built on the first cache miss, not up front: `pipeline()` downloads and
+  // initializes tens of megabytes of weights, and a run that is entirely cache
+  // hits has no reason to pay for it. An injected embedder is already built.
+  let embedder = opts.embedder;
+  const getEmbedder = async (): Promise<Embedder> =>
+    (embedder ??= await makeEmbedder(opts, model, dtype));
+  // The identity that keys the cache and stamps the header. Known without
+  // loading anything: `makeEmbedder` reports back exactly what it was asked for.
+  const identity = embedder
+    ? { model: embedder.model, dtype: embedder.dtype }
+    : { model, dtype };
   const cache = new VectorCache(
     resolve(cwd, config.embed.cacheDir),
     !opts.noCache,
@@ -171,12 +185,12 @@ export async function runEmbed(opts: EmbedOptions = {}): Promise<EmbedReport> {
     // JSON rather than a joined string: no separator can collide with content,
     // and no NUL byte enters the source (a NUL makes git classify the file as
     // binary — the no-NUL-bytes invariant in CLAUDE.md).
-    const key = sha256(JSON.stringify([embedder.model, embedder.dtype, text]));
+    const key = sha256(JSON.stringify([identity.model, identity.dtype, text]));
     let vector = cache.get(key);
     if (vector) {
       cached += 1;
     } else {
-      vector = await embedder.embed(text);
+      vector = await (await getEmbedder()).embed(text);
       cache.set(key, vector);
       embedded += 1;
     }
@@ -190,15 +204,15 @@ export async function runEmbed(opts: EmbedOptions = {}): Promise<EmbedReport> {
   writeFileSync(
     outPath,
     encodeVectorIndex(vectors, {
-      model: embedder.model,
-      dtype: embedder.dtype,
+      model: identity.model,
+      dtype: identity.dtype,
       source,
     }),
   );
 
   return {
     outPath,
-    model: embedder.model,
+    model: identity.model,
     dims: vectors[0]?.vector.length ?? 0,
     embedded,
     cached,

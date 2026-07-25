@@ -37,7 +37,7 @@ export interface VectorSearchOptions {
 
 /** Why a vector index cannot be used with the embedder or corpus at hand. */
 export interface VectorMismatch {
-  reason: "model" | "dims" | "stale-source";
+  reason: "model" | "dtype" | "dims" | "stale-source";
   detail: string;
 }
 
@@ -55,10 +55,17 @@ export interface VectorIndex {
    */
   check(expected: {
     model?: string;
+    dtype?: string;
     dims?: number;
     source?: string;
   }): VectorMismatch | undefined;
   readonly model: string;
+  /**
+   * Weight quantization the corpus vectors were produced under. The query side
+   * must embed at the *same* dtype — q8 and fp32 weights are different
+   * functions, so mixing them compares incomparable vectors (ADR 01020).
+   */
+  readonly dtype: string;
   readonly dims: number;
   readonly source: string;
   size(): number;
@@ -73,6 +80,7 @@ export function createVectorIndex(bytes: Uint8Array): VectorIndex {
 
   return {
     model: header.model,
+    dtype: header.dtype,
     dims,
     source: header.source,
     size: () => ids.length,
@@ -83,6 +91,12 @@ export function createVectorIndex(bytes: Uint8Array): VectorIndex {
         return {
           reason: "model",
           detail: `Vector index was built with ${header.model}, but the embedder is ${expected.model}. Re-run \`dockg embed\`.`,
+        };
+      }
+      if (expected.dtype !== undefined && expected.dtype !== header.dtype) {
+        return {
+          reason: "dtype",
+          detail: `Vector index was built at dtype ${header.dtype}, but the embedder is at ${expected.dtype} — different weights are a different function. Re-run \`dockg embed\`.`,
         };
       }
       if (expected.dims !== undefined && expected.dims !== dims) {

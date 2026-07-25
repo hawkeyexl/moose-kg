@@ -92,8 +92,12 @@ async function loadTransformers(injected?: any): Promise<any> {
 }
 
 /**
- * Create an embedder backed by a local model. Nothing is downloaded until the
- * first `embed()` call.
+ * Create an embedder backed by a local model.
+ *
+ * **Constructing it is the expensive step**: `pipeline()` fetches the model's
+ * config and weights (tens of megabytes on a cold cache) and builds the ONNX
+ * session before returning, so callers that may not need to embed anything —
+ * `dockg embed` on an all-cache-hit run — should construct it lazily.
  */
 export async function createLocalEmbedder(
   options: LocalEmbedderOptions = {},

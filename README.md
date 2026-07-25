@@ -324,7 +324,7 @@ dockg fill --force            # overwrite human-set kg fields too
 | `dockg export -f search` | Emit the lexical search index (`kg/search.json`) the runtime needs for text queries |
 | `dockg embed` | Compute local embeddings for the search index → `kg/vectors.bin` (semantic search) |
 
-Shared flags: `-c/--config`, `-f/--format pretty|json`; `build` takes `-o/--out`; `query`/`stats`/`check`/`export`/`search`/`traverse` take `-g/--graph`; `check` takes `--shapes`; `stats` takes `--coverage-threshold <pct>`; `export` takes `-f/--format` and `-o/--out`; `search` takes `-i/--index` (default: `search.json` beside the graph), `--limit` (default 10), `--vectors`, and `--mode lexical|vector|hybrid`; `embed` takes `-i/--index`, `-o/--out`, `--model`, `--dtype`, `--no-cache`; `traverse` takes `-d/--depth` (default 1, or 3 under `--impact`, since impact analysis is only useful transitively), `--predicates`, `--reverse`, `--impact`, `--variant`, `--subject`, `--limit`.
+Shared flags: `-c/--config`, `-f/--format pretty|json`; `build` takes `-o/--out`; `query`/`stats`/`check`/`export`/`search`/`embed`/`traverse` take `-g/--graph`; `check` takes `--shapes`; `stats` takes `--coverage-threshold <pct>`; `export` takes `-f/--format` and `-o/--out`; `search` takes `-i/--index` (default: `search.json` beside the graph), `--limit` (default 10), `--vectors`, and `--mode lexical|vector|hybrid`; `embed` takes `-i/--index`, `-o/--out`, `--model`, `--dtype`, `--no-cache`; `traverse` takes `-d/--depth` (default 1, or 3 under `--impact`, since impact analysis is only useful transitively), `--predicates`, `--reverse`, `--impact`, `--variant`, `--subject`, `--limit`.
 
 ### Retrieval runtime (`dockg/runtime`)
 
@@ -413,16 +413,20 @@ The model is a knob, not a constant — `embed.model` accepts any id, and the
 table below is the *tested* set rather than the permitted set. The caveat column
 matters, because the cheapest options fail **quietly**:
 
+Ids are the full hub repo paths — that is what `embed.model` and `--model` take,
+and a bare name resolves to nothing:
+
 | Model | q8 download | Dims | Notes |
 |---|---|---|---|
-| **`granite-embedding-small-english-r2`** (default) | ~53 MB | 384 | 8192-token context, so sections are never truncated; no prefix convention |
-| `gte-small` | ~34 MB | 384 | Lighter; 512-token context; no prefixes |
-| `bge-small-en-v1.5` | ~34 MB | 384 | Needs a query prefix — dockg applies it for you, since omitting it degrades retrieval silently |
-| `all-MiniLM-L6-v2` | ~23 MB | 384 | Smallest, but truncates at 256 wordpieces (~190 words), so a long section's tail becomes unsearchable |
+| **`onnx-community/granite-embedding-small-english-r2-ONNX`** (default) | ~53 MB | 384 | 8192-token context, so sections are never truncated; no prefix convention |
+| `Xenova/gte-small` | ~34 MB | 384 | Lighter; 512-token context; no prefixes |
+| `Xenova/bge-small-en-v1.5` | ~34 MB | 384 | Needs a query prefix — dockg applies it for you, since omitting it degrades retrieval silently |
+| `Xenova/all-MiniLM-L6-v2` | ~23 MB | 384 | Smallest, but truncates at 256 wordpieces (~190 words), so a long section's tail becomes unsearchable |
 
 Weights download once and are cached by the browser; nothing is fetched until
-the first query. `--model mock` produces deterministic hash vectors for offline
-testing — useful for plumbing, meaningless for quality.
+you build an embedder (`createLocalEmbedder`), so a page that never searches
+never pays for one. `--model mock` produces deterministic hash vectors for
+offline testing — useful for plumbing, meaningless for quality.
 
 **Three modes, each usable on its own.** `--mode lexical|vector|hybrid`, and in
 the API `lexical.search()`, `vectors.search()`, and `findEntry()` are

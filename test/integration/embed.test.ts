@@ -264,6 +264,88 @@ describe("dockg search with vectors (integration)", () => {
     expect(stdout).toContain("dockg embed");
   });
 
+  it("refuses a sidecar built from a different search index", () => {
+    // Editing docs and re-exporting without re-embedding must not rank against
+    // yesterday's vectors — stale hits point at IRIs that may be gone, and
+    // everything added since is unreachable (ADR 01020).
+    const { graph, vectors } = prepare();
+    const index = join(dirname(graph), "search.json");
+    const doc = JSON.parse(readFileSync(index, "utf8")) as {
+      entries: Array<Record<string, string>>;
+    };
+    doc.entries.push({
+      id: "https://example.com/kg/doc/docs/brand-new.md",
+      type: "dockg:Document",
+      title: "Brand new",
+      text: "content that did not exist when the vectors were built",
+    });
+    writeFileSync(index, JSON.stringify(doc), "utf8");
+
+    const { status, stdout } = run(
+      ["search", "configuration", "-g", graph, "--vectors", vectors],
+      corpus,
+    );
+    expect(status).toBe(2);
+    expect(stdout).toContain("corpus changed");
+  });
+
+  it("exits 2 rather than crashing on a corrupt sidecar", () => {
+    // A truncated write or `--vectors` pointed at the wrong file is an
+    // operational error like an unparseable index — not a raw stack trace.
+    const { dir, graph } = prepare(false);
+    const bad = join(dir, "not-vectors.bin");
+    writeFileSync(bad, "definitely not a vector index", "utf8");
+    const { status, stdout } = run(
+      ["search", "configuration", "-g", graph, "--vectors", bad],
+      corpus,
+    );
+    expect(status).toBe(2);
+    expect(stdout).toContain("bad magic");
+    expect(stdout).not.toContain("at decodeVectorIndex");
+  });
+
+  it("reports the requested mode even when the vector leg matched nothing", () => {
+    // Reporting "lexical" for an explicit `--mode vector` would deny that the
+    // semantic leg ran at all.
+    const { graph, vectors } = prepare();
+    const out = search([
+      "search",
+      "   ",
+      "-g",
+      graph,
+      "--vectors",
+      vectors,
+      "--mode",
+      "vector",
+      "-f",
+      "json",
+    ]);
+    expect(out.mode).toBe("vector");
+    expect(out.results).toEqual([]);
+  });
+
+  it("keeps the trace consistent with the results under --mode vector", () => {
+    // The trace answers "why did these come back" (ADR 01018), so it must
+    // describe the ranking returned, not the fusion this mode discards.
+    const { graph, vectors } = prepare();
+    const out = search([
+      "search",
+      "configuration",
+      "-g",
+      graph,
+      "--vectors",
+      vectors,
+      "--mode",
+      "vector",
+      "-f",
+      "json",
+    ]);
+    expect(out.results.length).toBeGreaterThan(0);
+    expect(out.trace.entry.map((e) => e.iri)).toEqual(
+      out.results.map((r) => r.iri),
+    );
+  });
+
   it("refuses a sidecar built by a different model", () => {
     const { dir, graph } = prepare(false);
     const other = join(dir, "other.bin");

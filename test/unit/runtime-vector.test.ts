@@ -103,6 +103,9 @@ describe("createVectorIndex — standalone search", () => {
   it("exposes its provenance", () => {
     const index = INDEX();
     expect(index.model).toBe("test/model");
+    // dtype is exposed so the query side can embed at the same quantization —
+    // q8 and fp32 weights are different functions (ADR 01020).
+    expect(index.dtype).toBe("q8");
     expect(index.dims).toBe(3);
     expect(index.source).toBe("sha256:corpus-v1");
     expect(index.size()).toBe(3);
@@ -126,6 +129,13 @@ describe("check — refuse rather than rank against the wrong vectors", () => {
   it("reports a model mismatch", () => {
     const m = INDEX().check({ model: "other/model" });
     expect(m?.reason).toBe("model");
+    expect(m?.detail).toContain("dockg embed");
+  });
+
+  it("reports a dtype mismatch", () => {
+    // Same model at a different quantization is still a different function.
+    const m = INDEX().check({ model: "test/model", dtype: "fp32" });
+    expect(m?.reason).toBe("dtype");
     expect(m?.detail).toContain("dockg embed");
   });
 
