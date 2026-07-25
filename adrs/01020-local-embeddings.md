@@ -141,6 +141,14 @@ hatch for a host running its own model, but it carries no identity, so only the
 dimension check applies — documented as unverified rather than pretending
 otherwise.
 
+Corpus staleness is the other half, and it is checked whichever way the query is
+embedded: it is a property of the corpus, not the embedder. The runtime cannot
+derive the digest itself — it never sees the raw `search.json` bytes — so the
+caller passes `source`, computed with the exported `searchIndexDigest` helper so
+the recipe cannot drift from the one `dockg embed` records. Omitted, that half
+simply does not run; the README says so rather than promising a check the code
+has no way to perform.
+
 ### 5. `dockg/embed` is an opt-in subpath, never a dependency
 
 `@huggingface/transformers` is an **optional `peerDependency`**. It hard-depends

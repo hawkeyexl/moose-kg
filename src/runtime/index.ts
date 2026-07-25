@@ -95,6 +95,7 @@ export {
 } from "./entry.js";
 export {
   createVectorIndex,
+  searchIndexDigest,
   VectorMismatchError,
   type VectorIndex,
   type VectorMismatch,

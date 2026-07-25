@@ -57,6 +57,33 @@ export class VectorMismatchError extends Error {
   }
 }
 
+/**
+ * The digest `dockg embed` records as a sidecar's `source`, computed the same
+ * way in a browser — SHA-256 over the **raw bytes of `search.json` exactly as
+ * fetched**, hex, prefixed `sha256:`.
+ *
+ * Exists so a host can pass `source` to `findEntry` and get the staleness half
+ * of the refusal (ADR 01020) without reconstructing the recipe. Re-serializing
+ * the parsed JSON would change the bytes and so the digest — pass the response
+ * text, not `JSON.stringify(doc)`.
+ *
+ * Uses Web Crypto, which is platform-neutral: browsers and Node 18+ both have
+ * it on `globalThis`.
+ */
+export async function searchIndexDigest(raw: string): Promise<string> {
+  const subtle = globalThis.crypto?.subtle;
+  if (!subtle) {
+    throw new Error(
+      "searchIndexDigest needs Web Crypto (globalThis.crypto.subtle), which is unavailable here — a page served over plain HTTP does not get it.",
+    );
+  }
+  const digest = await subtle.digest("SHA-256", new TextEncoder().encode(raw));
+  const hex = [...new Uint8Array(digest)]
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  return `sha256:${hex}`;
+}
+
 export interface VectorIndex {
   /**
    * Rank nodes against a query vector. The vector is normalized here, so

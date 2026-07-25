@@ -350,6 +350,46 @@ describe("findEntry with a vector leg", () => {
     expect(result.vector.length).toBeGreaterThan(0);
   });
 
+  it("refuses a sidecar built from an older corpus", async () => {
+    // The IRIs in a stale sidecar may no longer exist, and it misses
+    // everything added since — ranking against it is the silent wrong answer.
+    await expect(
+      findEntry("install", {
+        lexical: index(),
+        vectors: vectors(),
+        embedder: {
+          model: "mock",
+          dtype: "q8",
+          embed: () => Float32Array.from([1, 0]),
+        },
+        source: "sha256:a-different-corpus",
+      }),
+    ).rejects.toThrow(/corpus changed/);
+  });
+
+  it("checks staleness on the unverified path too", async () => {
+    // Staleness is a property of the corpus, not the embedder, so a caller
+    // using the `embedQuery` escape hatch still gets this half.
+    await expect(
+      findEntry("install", {
+        lexical: index(),
+        vectors: vectors(),
+        embedQuery: () => Float32Array.from([1, 0]),
+        source: "sha256:a-different-corpus",
+      }),
+    ).rejects.toThrow(VectorMismatchError);
+  });
+
+  it("runs when the digest agrees", async () => {
+    const result = await findEntry("install", {
+      lexical: index(),
+      vectors: vectors(),
+      embedQuery: () => Float32Array.from([1, 0]),
+      source: "sha256:x",
+    });
+    expect(result.vector.length).toBeGreaterThan(0);
+  });
+
   it("accepts a synchronous embedder", async () => {
     const result = await findEntry("install", {
       lexical: index(),

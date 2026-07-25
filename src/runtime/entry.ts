@@ -54,6 +54,14 @@ export interface FindEntryOptions {
    * Prefer `embedder`.
    */
   embedQuery?: (query: string) => Promise<Float32Array> | Float32Array;
+  /**
+   * Digest of the `search.json` this caller loaded, from `searchIndexDigest`.
+   * Supplied, a sidecar built from a *different* corpus is refused rather than
+   * ranked — its IRIs may no longer exist, and it misses everything added
+   * since. Omitted, that half of the check simply does not run: the runtime
+   * cannot derive the digest, since it never sees the raw bytes.
+   */
+  source?: string;
   /** Maximum seeds to return. Default 10. */
   limit?: number;
   /** Append candidates here instead of starting a new trace. */
@@ -155,13 +163,16 @@ export async function findEntry(
     // ADR 01020 exists is that the browser must embed with a function that
     // agrees with the one that embedded the corpus. Ranking a stale or
     // wrong-model index would be the silent wrong answer this design prevents.
-    if (options.embedder) {
-      const mismatch = options.vectors.check({
-        model: options.embedder.model,
-        dtype: options.embedder.dtype,
-      });
-      if (mismatch) throw new VectorMismatchError(mismatch);
-    }
+    const mismatch = options.vectors.check({
+      ...(options.embedder
+        ? { model: options.embedder.model, dtype: options.embedder.dtype }
+        : {}),
+      // Staleness is checked whichever way the query is embedded — it is a
+      // property of the corpus, not of the embedder, so even the unverified
+      // `embedQuery` path gets it when the caller supplies a digest.
+      ...(options.source === undefined ? {} : { source: options.source }),
+    });
+    if (mismatch) throw new VectorMismatchError(mismatch);
     const queryVector = await embed(query);
     vector = options.vectors.search(queryVector, { limit });
   }

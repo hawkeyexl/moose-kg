@@ -454,8 +454,23 @@ Two things dockg does so the vectors are trustworthy:
   produced by a *different* function. dockg forces WASM on both sides,
   single-threaded, one text per call.
 - **A mismatched sidecar is refused, not ranked.** The artifact records its
-  model, dimensions, and a digest of the search index; if any disagree, you get
-  an error rather than quietly wrong results.
+  model, dtype, dimensions, and a digest of the search index it was built from.
+  Model and dtype are checked against the `embedder` you pass; the digest is
+  checked when you pass `source`, since the runtime never sees the raw bytes it
+  would have to hash. Either way you get a `VectorMismatchError` rather than
+  quietly wrong results.
+
+```js
+const raw = await (await fetch("/kg/search.json")).text();
+const { candidates } = await findEntry(question, {
+  lexical: createLexicalIndex(raw), vectors, embedder,
+  source: await searchIndexDigest(raw),   // refuses a sidecar built from an older corpus
+});
+```
+
+`searchIndexDigest` takes the response text exactly as fetched —
+`JSON.stringify(parsed)` would produce different bytes and so a digest that
+never matches.
 
 `kg/vectors.bin` is gitignored by default: it is derived, binary, and — unlike
 every other dockg artifact — cannot be rebuilt in CI, because model weights are

@@ -1,7 +1,9 @@
+import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { encodeVectorIndex } from "../../src/core/vector-index.js";
 import {
   createVectorIndex,
+  searchIndexDigest,
   VectorMismatchError,
 } from "../../src/runtime/vector.js";
 
@@ -122,6 +124,26 @@ describe("createVectorIndex — standalone search", () => {
     expect(index.size()).toBe(3);
     expect(index.idAt(0)).toBe("urn:a");
     expect(index.idAt(99)).toBeUndefined();
+  });
+});
+
+describe("searchIndexDigest", () => {
+  it("computes exactly the digest `dockg embed` records as `source`", async () => {
+    // The whole point of exporting this: a browser host that hand-rolled the
+    // recipe would get a digest that never matches, turning the staleness
+    // check into a permanent refusal. Pinned against the Node recipe in
+    // src/commands/embed.ts.
+    const raw = '{"version":1,"entries":[]}';
+    const expected = `sha256:${createHash("sha256").update(raw, "utf8").digest("hex")}`;
+    expect(await searchIndexDigest(raw)).toBe(expected);
+  });
+
+  it("hashes the raw text, so re-serializing changes the answer", async () => {
+    // Callers must pass the response text, not JSON.stringify(parsed).
+    const raw = '{ "version": 1 }';
+    expect(await searchIndexDigest(raw)).not.toBe(
+      await searchIndexDigest(JSON.stringify(JSON.parse(raw))),
+    );
   });
 });
 
