@@ -21,7 +21,11 @@ import { VectorIndexError } from "../core/vector-index.js";
 import { DockgError } from "../types.js";
 import { findEntry } from "../runtime/entry.js";
 import { createLexicalIndex } from "../runtime/lexical.js";
-import { createVectorIndex, type VectorIndex } from "../runtime/vector.js";
+import {
+  createVectorIndex,
+  VectorMismatchError,
+  type VectorIndex,
+} from "../runtime/vector.js";
 import {
   createLocalEmbedder,
   EmbedderUnavailableError,
@@ -162,14 +166,20 @@ export async function runSearch(opts: SearchOptions): Promise<SearchReport> {
     embedder = await resolveEmbedder(opts, vectors, wantsVector);
   }
 
-  const embedQuery = embedder
-    ? (q: string): Promise<Float32Array> => embedder!.embed(q)
-    : undefined;
-
   const entry = await findEntry(opts.query, {
     lexical,
-    ...(embedQuery && vectors ? { vectors, embedQuery } : {}),
+    // Pass the embedder, not a bare function: findEntry then verifies it
+    // against the index itself rather than trusting the CLI to have done so.
+    ...(embedder && vectors ? { vectors, embedder } : {}),
     limit: opts.limit,
+  }).catch((e: unknown) => {
+    // `resolveEmbedder` has already checked model and dtype, so reaching here
+    // means a dimension disagreement the header did not predict — a real
+    // operational error (exit 2), not a stack trace out of an async action.
+    if (e instanceof VectorMismatchError) {
+      throw new DockgError(`${e.message} Re-run \`dockg embed\`.`);
+    }
+    throw e;
   });
 
   const decorate = (c: {
@@ -192,7 +202,7 @@ export async function runSearch(opts: SearchOptions): Promise<SearchReport> {
   // "lexical" for an explicit `--mode vector` would deny it ever happened. An
   // explicit mode is authoritative — the guards above already errored if it
   // could not be honored.
-  const mode = opts.mode ?? (embedQuery && vectors ? "hybrid" : "lexical");
+  const mode = opts.mode ?? (embedder && vectors ? "hybrid" : "lexical");
 
   // `--mode vector` reports the vector leg alone rather than the fusion.
   const results = opts.mode === "vector" ? entry.vector : entry.candidates;
@@ -239,6 +249,9 @@ async function resolveEmbedder(
     const mismatch = vectors.check({
       model: embedder.model,
       dtype: embedder.dtype,
+      // Defense in depth: a future model that changes output size without
+      // changing its id would otherwise only surface deep inside search().
+      ...(embedder.dims > 0 ? { dims: embedder.dims } : {}),
     });
     if (mismatch) throw new DockgError(mismatch.detail);
     return embedder;

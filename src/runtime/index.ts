@@ -91,9 +91,11 @@ export {
   rrfMerge,
   type EntryResult,
   type FindEntryOptions,
+  type QueryEmbedder,
 } from "./entry.js";
 export {
   createVectorIndex,
+  VectorMismatchError,
   type VectorIndex,
   type VectorMismatch,
   type VectorSearchOptions,

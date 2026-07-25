@@ -41,6 +41,22 @@ export interface VectorMismatch {
   detail: string;
 }
 
+/**
+ * Thrown when a query would be ranked against vectors it cannot be compared to.
+ *
+ * A distinct type so hosts can catch exactly this — and so it cannot be mistaken
+ * for "no results". Ranking on regardless is the silent-wrong-answer failure
+ * ADR 01020 exists to prevent, so this is loud by design.
+ */
+export class VectorMismatchError extends Error {
+  readonly reason: VectorMismatch["reason"];
+  constructor(mismatch: VectorMismatch) {
+    super(mismatch.detail);
+    this.name = "VectorMismatchError";
+    this.reason = mismatch.reason;
+  }
+}
+
 export interface VectorIndex {
   /**
    * Rank nodes against a query vector. The vector is normalized here, so
@@ -119,9 +135,12 @@ export function createVectorIndex(bytes: Uint8Array): VectorIndex {
       if (dims === 0 || ids.length === 0) return [];
       if (query.length !== dims) {
         // A silent zero-fill or truncate here would return confident nonsense.
-        throw new Error(
-          `Query vector has ${query.length} dimensions, expected ${dims}.`,
-        );
+        // Typed like every other mismatch so a caller (and the CLI's exit-code
+        // mapping) handles it the same way rather than seeing a raw stack.
+        throw new VectorMismatchError({
+          reason: "dims",
+          detail: `Query vector has ${query.length} dimensions, but the index has ${dims}.`,
+        });
       }
       const limit = normalizeLimit(options.limit);
       if (limit === 0) return [];

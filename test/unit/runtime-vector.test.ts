@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { encodeVectorIndex } from "../../src/core/vector-index.js";
-import { createVectorIndex } from "../../src/runtime/vector.js";
+import {
+  createVectorIndex,
+  VectorMismatchError,
+} from "../../src/runtime/vector.js";
 
 const META = { model: "test/model", dtype: "q8", source: "sha256:corpus-v1" };
 
@@ -87,11 +90,19 @@ describe("createVectorIndex — standalone search", () => {
     expect(filtered.map((h) => h.iri)).toEqual(["urn:a", "urn:c"]);
   });
 
-  it("throws on a query of the wrong dimensionality", () => {
-    // Zero-filling or truncating would return confident nonsense.
+  it("throws a typed mismatch on a query of the wrong dimensionality", () => {
+    // Zero-filling or truncating would return confident nonsense. Typed like
+    // every other mismatch so a caller handles it the same way rather than
+    // seeing a bare Error's stack.
     expect(() => INDEX().search(Float32Array.from([1, 0]))).toThrow(
-      /2 dimensions, expected 3/,
+      VectorMismatchError,
     );
+    try {
+      INDEX().search(Float32Array.from([1, 0]));
+    } catch (e) {
+      expect((e as VectorMismatchError).reason).toBe("dims");
+      expect((e as Error).message).toMatch(/2 dimensions/);
+    }
   });
 
   it("returns nothing from an empty index", () => {

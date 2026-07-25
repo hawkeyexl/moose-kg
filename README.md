@@ -434,10 +434,17 @@ independent. `findEntry` returns each leg *and* the fusion, so a UI can show
 "text matches" and "semantic matches" separately:
 
 ```js
+const embedder = await createLocalEmbedder({ role: "query" });
 const { candidates, lexical, vector } = await findEntry(question, {
-  lexical: lexicalIndex, vectors, embedQuery,
+  lexical: lexicalIndex, vectors, embedder,
 });
 ```
+
+Pass the `embedder`, not a bare embedding function: `findEntry` then verifies its
+model and dtype against the sidecar and throws `VectorMismatchError` rather than
+ranking against vectors from a different model. (An `embedQuery` function is
+accepted too, for a host wiring its own model — but it carries no identity, so
+only the dimension check applies.)
 
 Two things dockg does so the vectors are trustworthy:
 

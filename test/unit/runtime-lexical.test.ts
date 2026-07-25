@@ -4,7 +4,10 @@ import { findEntry, rrfMerge } from "../../src/runtime/entry.js";
 import { createTrace, type EntryCandidate } from "../../src/runtime/trace.js";
 import type { SearchIndexDoc } from "../../src/core/search-index.js";
 import { encodeVectorIndex } from "../../src/core/vector-index.js";
-import { createVectorIndex } from "../../src/runtime/vector.js";
+import {
+  createVectorIndex,
+  VectorMismatchError,
+} from "../../src/runtime/vector.js";
 
 const DOC = "https://ex.com/kg/doc/docs/a.md";
 const SEC_INSTALL = `${DOC}#install`;
@@ -272,6 +275,79 @@ describe("findEntry with a vector leg", () => {
     });
     expect(called).toBe(0);
     expect(result.candidates).toEqual([]);
+  });
+
+  it("refuses a wrong-model index at the runtime layer, not just the CLI", async () => {
+    // The browser is the surface this matters on: a host following the README
+    // example gets the refusal without wiring a check itself (ADR 01020).
+    await expect(
+      findEntry("install", {
+        lexical: index(),
+        vectors: vectors(),
+        embedder: {
+          model: "some/other-model",
+          dtype: "q8",
+          embed: () => Float32Array.from([1, 0]),
+        },
+      }),
+    ).rejects.toThrow(VectorMismatchError);
+  });
+
+  it("refuses a dtype mismatch too", async () => {
+    await expect(
+      findEntry("install", {
+        lexical: index(),
+        vectors: vectors(),
+        embedder: {
+          model: "mock",
+          dtype: "fp32",
+          embed: () => Float32Array.from([1, 0]),
+        },
+      }),
+    ).rejects.toThrow(/different function/);
+  });
+
+  it("refuses before embedding, so a mismatch costs nothing", async () => {
+    let embedCalls = 0;
+    await expect(
+      findEntry("install", {
+        lexical: index(),
+        vectors: vectors(),
+        embedder: {
+          model: "wrong/model",
+          dtype: "q8",
+          embed: () => {
+            embedCalls += 1;
+            return Float32Array.from([1, 0]);
+          },
+        },
+      }),
+    ).rejects.toThrow(VectorMismatchError);
+    expect(embedCalls).toBe(0);
+  });
+
+  it("runs the vector leg when the embedder matches the index", async () => {
+    const result = await findEntry("install", {
+      lexical: index(),
+      vectors: vectors(),
+      embedder: {
+        model: "mock",
+        dtype: "q8",
+        embed: () => Float32Array.from([1, 0]),
+      },
+    });
+    expect(result.vector.length).toBeGreaterThan(0);
+  });
+
+  it("still allows a bare embedQuery, unverified by design", async () => {
+    // The escape hatch carries no identity, so no model check is possible —
+    // documented as such rather than silently pretending to verify.
+    const result = await findEntry("install", {
+      lexical: index(),
+      vectors: vectors(),
+      embedQuery: () => Float32Array.from([1, 0]),
+    });
+    expect(result.vector.length).toBeGreaterThan(0);
   });
 
   it("accepts a synchronous embedder", async () => {

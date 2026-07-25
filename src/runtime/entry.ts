@@ -17,7 +17,7 @@
  */
 import { byCodeUnit } from "../core/sort.js";
 import type { LexicalIndex } from "./lexical.js";
-import type { VectorIndex } from "./vector.js";
+import { VectorMismatchError, type VectorIndex } from "./vector.js";
 import {
   createTrace,
   type EntryCandidate,
@@ -25,14 +25,33 @@ import {
   type QueryTrace,
 } from "./trace.js";
 
+/**
+ * Enough of an embedder to verify it against a vector index. Structural rather
+ * than the `Embedder` interface itself, so the runtime stays independent of
+ * `dockg/embed` — any object with these three fields works.
+ */
+export interface QueryEmbedder {
+  readonly model: string;
+  readonly dtype: string;
+  embed(text: string): Promise<Float32Array> | Float32Array;
+}
+
 export interface FindEntryOptions {
   /** The lexical index to query. */
   lexical: LexicalIndex;
-  /** The vector index. Without it (or `embedQuery`), entry is lexical-only. */
+  /** The vector index. Without it (and an embedder), entry is lexical-only. */
   vectors?: VectorIndex;
   /**
-   * Embed the query locally. Required for the vector leg; absent, entry
-   * degrades to lexical rather than failing (ADR 01009).
+   * The embedder for the query side. **Prefer this over `embedQuery`**: it
+   * carries the model and dtype, so `findEntry` can verify they match the
+   * vector index and refuse rather than rank against incomparable vectors.
+   */
+  embedder?: QueryEmbedder;
+  /**
+   * Embed the query with a bare function. An escape hatch for hosts wiring
+   * their own model — but it carries no identity, so **the model/dtype match
+   * cannot be verified**; only the dimension check inside `search` applies.
+   * Prefer `embedder`.
    */
   embedQuery?: (query: string) => Promise<Float32Array> | Float32Array;
   /** Maximum seeds to return. Default 10. */
@@ -125,9 +144,25 @@ export async function findEntry(
 
   const lexical = options.lexical.search(query, { limit });
 
+  const embed = options.embedder
+    ? (q: string) => options.embedder!.embed(q)
+    : options.embedQuery;
+
   let vector: EntryCandidate[] = [];
-  if (options.vectors && options.embedQuery && query.trim() !== "") {
-    const queryVector = await options.embedQuery(query);
+  if (options.vectors && embed && query.trim() !== "") {
+    // Verify *before* embedding. The refusal is enforced here, not only in the
+    // CLI, because this is the browser-facing surface — and the whole reason
+    // ADR 01020 exists is that the browser must embed with a function that
+    // agrees with the one that embedded the corpus. Ranking a stale or
+    // wrong-model index would be the silent wrong answer this design prevents.
+    if (options.embedder) {
+      const mismatch = options.vectors.check({
+        model: options.embedder.model,
+        dtype: options.embedder.dtype,
+      });
+      if (mismatch) throw new VectorMismatchError(mismatch);
+    }
+    const queryVector = await embed(query);
     vector = options.vectors.search(queryVector, { limit });
   }
 

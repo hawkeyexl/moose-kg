@@ -132,6 +132,15 @@ Swapping models is safe by construction: the sidecar header records model,
 dtype, and dims; the runtime **refuses** on mismatch rather than ranking against
 vectors from a different function; and the embed cache key includes model+dtype.
 
+That refusal is enforced in `findEntry` itself, not only in the CLI — the browser
+is the surface it matters on, and a host that wires the documented path gets the
+guarantee without having to know it exists. Callers pass an `embedder` (an object
+carrying `model` and `dtype`) and a mismatch throws `VectorMismatchError` *before*
+the query is embedded. A bare `embedQuery` function remains accepted as an escape
+hatch for a host running its own model, but it carries no identity, so only the
+dimension check applies — documented as unverified rather than pretending
+otherwise.
+
 ### 5. `dockg/embed` is an opt-in subpath, never a dependency
 
 `@huggingface/transformers` is an **optional `peerDependency`**. It hard-depends
