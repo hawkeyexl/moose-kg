@@ -3,6 +3,8 @@ import { createLexicalIndex } from "../../src/runtime/lexical.js";
 import { findEntry, rrfMerge } from "../../src/runtime/entry.js";
 import { createTrace, type EntryCandidate } from "../../src/runtime/trace.js";
 import type { SearchIndexDoc } from "../../src/core/search-index.js";
+import { encodeVectorIndex } from "../../src/core/vector-index.js";
+import { createVectorIndex } from "../../src/runtime/vector.js";
 
 const DOC = "https://ex.com/kg/doc/docs/a.md";
 const SEC_INSTALL = `${DOC}#install`;
@@ -149,36 +151,135 @@ describe("rrfMerge", () => {
 });
 
 describe("findEntry", () => {
-  it("records every candidate in the trace", () => {
+  it("records every candidate in the trace", async () => {
     const trace = createTrace();
-    const { candidates } = findEntry("install", { lexical: index(), trace });
+    const { candidates } = await findEntry("install", {
+      lexical: index(),
+      trace,
+    });
     expect(candidates.length).toBeGreaterThan(0);
     expect(trace.entry).toEqual(candidates);
     expect(trace.entry[0]?.via).toBe("lexical");
   });
 
-  it("honors the limit and starts its own trace when none is given", () => {
-    const result = findEntry("install", { lexical: index(), limit: 1 });
+  it("honors the limit and starts its own trace when none is given", async () => {
+    const result = await findEntry("install", { lexical: index(), limit: 1 });
     expect(result.candidates).toHaveLength(1);
     expect(result.trace.entry).toHaveLength(1);
   });
 
-  it("falls back to the default limit when the limit is not a count", () => {
+  it("falls back to the default limit when the limit is not a count", async () => {
     // `--limit abc` parses to NaN; slice(0, NaN) would report "0 results" for a
     // query that does match.
-    const result = findEntry("install", {
+    const result = await findEntry("install", {
       lexical: index(),
       limit: Number.NaN,
     });
     expect(result.candidates.length).toBeGreaterThan(0);
-    expect(
-      findEntry("install", { lexical: index(), limit: 0 }).candidates,
-    ).toHaveLength(0);
+    const zero = await findEntry("install", { lexical: index(), limit: 0 });
+    expect(zero.candidates).toHaveLength(0);
   });
 
-  it("returns no candidates and no trace entries for an unmatched query", () => {
-    const result = findEntry("zzzznotpresent", { lexical: index() });
+  it("returns no candidates and no trace entries for an unmatched query", async () => {
+    const result = await findEntry("zzzznotpresent", { lexical: index() });
     expect(result.candidates).toEqual([]);
     expect(result.trace.entry).toEqual([]);
+  });
+
+  it("returns the lexical leg separately, with an empty vector leg", async () => {
+    // A caller rendering a search UI wants "text matches" as its own list.
+    const result = await findEntry("install", { lexical: index() });
+    expect(result.lexical.length).toBeGreaterThan(0);
+    expect(result.lexical.every((c) => c.via === "lexical")).toBe(true);
+    expect(result.vector).toEqual([]);
+  });
+});
+
+describe("findEntry with a vector leg", () => {
+  const A = SEC_INSTALL;
+  const B = CONCEPT;
+
+  /** A tiny vector index: A points at x, B at y. */
+  const vectors = () =>
+    createVectorIndex(
+      encodeVectorIndex(
+        [
+          { id: A, vector: Float32Array.from([1, 0]) },
+          { id: B, vector: Float32Array.from([0, 1]) },
+        ],
+        { model: "mock", dtype: "q8", source: "sha256:x" },
+      ),
+    );
+
+  const embedTo = (v: number[]) => () => Promise.resolve(Float32Array.from(v));
+
+  it("returns both legs and a fused ranking", async () => {
+    const result = await findEntry("install", {
+      lexical: index(),
+      vectors: vectors(),
+      embedQuery: embedTo([1, 0]),
+    });
+    expect(result.lexical.every((c) => c.via === "lexical")).toBe(true);
+    expect(result.vector.every((c) => c.via === "vector")).toBe(true);
+    expect(result.vector[0]!.iri).toBe(A);
+    expect(result.candidates.length).toBeGreaterThan(0);
+  });
+
+  it("promotes a node both legs rank, and marks it hybrid", async () => {
+    // "install" ranks SEC_INSTALL lexically; the query vector ranks it first
+    // semantically too — so fusion should put it on top, via hybrid.
+    const result = await findEntry("install", {
+      lexical: index(),
+      vectors: vectors(),
+      embedQuery: embedTo([1, 0]),
+    });
+    expect(result.candidates[0]!.iri).toBe(A);
+    expect(result.candidates[0]!.via).toBe("hybrid");
+  });
+
+  it("surfaces a node only the vector leg found", async () => {
+    // The concept is not a lexical hit for this query, but is the nearest
+    // vector — the whole point of adding the semantic leg.
+    const result = await findEntry("zzzznotpresent", {
+      lexical: index(),
+      vectors: vectors(),
+      embedQuery: embedTo([0, 1]),
+    });
+    expect(result.lexical).toEqual([]);
+    expect(result.candidates.map((c) => c.iri)).toContain(B);
+  });
+
+  it("stays lexical-only when the embedder is absent", async () => {
+    // Degrade, never fail (ADR 01009) — a vector index without an embedder is
+    // not an error.
+    const result = await findEntry("install", {
+      lexical: index(),
+      vectors: vectors(),
+    });
+    expect(result.vector).toEqual([]);
+    expect(result.candidates.every((c) => c.via === "lexical")).toBe(true);
+  });
+
+  it("does not embed an empty query", async () => {
+    let called = 0;
+    const result = await findEntry("   ", {
+      lexical: index(),
+      vectors: vectors(),
+      embedQuery: () => {
+        called += 1;
+        return Float32Array.from([1, 0]);
+      },
+    });
+    expect(called).toBe(0);
+    expect(result.candidates).toEqual([]);
+  });
+
+  it("accepts a synchronous embedder", async () => {
+    const result = await findEntry("install", {
+      lexical: index(),
+      vectors: vectors(),
+      embedQuery: () => Float32Array.from([1, 0]),
+    });
+    expect(result.vector.length).toBeGreaterThan(0);
   });
 });

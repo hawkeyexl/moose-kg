@@ -116,9 +116,31 @@ export {
 export {
   runSearch,
   renderSearch,
+  type SearchHit,
   type SearchOptions,
   type SearchReport,
 } from "./commands/search.js";
+export {
+  runEmbed,
+  renderEmbed,
+  embedText,
+  type EmbedOptions,
+  type EmbedReport,
+} from "./commands/embed.js";
+export {
+  createLocalEmbedder,
+  createMockEmbedder,
+  EmbedderUnavailableError,
+  DEFAULT_MODEL,
+  MODEL_PROFILES,
+  profileFor,
+  withPrefix,
+  type EmbedRole,
+  type Embedder,
+  type LocalEmbedderOptions,
+  type MockEmbedderOptions,
+  type ModelProfile,
+} from "./embed/index.js";
 export {
   buildSearchIndex,
   emitSearchIndex,

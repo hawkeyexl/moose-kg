@@ -1,0 +1,141 @@
+import { describe, expect, it } from "vitest";
+import { encodeVectorIndex } from "../../src/core/vector-index.js";
+import { createVectorIndex } from "../../src/runtime/vector.js";
+
+const META = { model: "test/model", dtype: "q8", source: "sha256:corpus-v1" };
+
+/**
+ * Three orthogonal-ish vectors so expected rankings are obvious by hand:
+ * a points at x, b at y, c halfway between x and y.
+ */
+const INDEX = () =>
+  createVectorIndex(
+    encodeVectorIndex(
+      [
+        { id: "urn:a", vector: Float32Array.from([1, 0, 0]) },
+        { id: "urn:b", vector: Float32Array.from([0, 1, 0]) },
+        { id: "urn:c", vector: Float32Array.from([1, 1, 0]) },
+      ],
+      META,
+    ),
+  );
+
+describe("createVectorIndex — standalone search", () => {
+  it("ranks by cosine similarity without any lexical index or graph", () => {
+    // Pure semantic search: a query vector in, ranked IRIs out.
+    const hits = INDEX().search(Float32Array.from([1, 0, 0]));
+    expect(hits[0]!.iri).toBe("urn:a");
+    expect(hits[0]!.score).toBeCloseTo(1, 5);
+    // c is 45° from the query, b is orthogonal.
+    expect(hits[1]!.iri).toBe("urn:c");
+    expect(hits[1]!.score).toBeCloseTo(Math.SQRT1_2, 5);
+    expect(hits[2]!.iri).toBe("urn:b");
+    expect(hits[2]!.score).toBeCloseTo(0, 5);
+    expect(hits.every((h) => h.via === "vector")).toBe(true);
+  });
+
+  it("normalizes the query, so magnitude does not change the ranking", () => {
+    const unit = INDEX().search(Float32Array.from([1, 0, 0]));
+    const scaled = INDEX().search(Float32Array.from([100, 0, 0]));
+    expect(scaled.map((h) => h.iri)).toEqual(unit.map((h) => h.iri));
+    expect(scaled[0]!.score).toBeCloseTo(unit[0]!.score, 6);
+  });
+
+  it("does not mutate the caller's query vector", () => {
+    const query = Float32Array.from([3, 4, 0]);
+    INDEX().search(query);
+    expect([...query]).toEqual([3, 4, 0]);
+  });
+
+  it("breaks ties by IRI", () => {
+    // b and c... use a query equidistant from two entries with equal scores.
+    const index = createVectorIndex(
+      encodeVectorIndex(
+        [
+          { id: "urn:z", vector: Float32Array.from([1, 0]) },
+          { id: "urn:a", vector: Float32Array.from([1, 0]) },
+        ],
+        META,
+      ),
+    );
+    expect(index.search(Float32Array.from([1, 0])).map((h) => h.iri)).toEqual([
+      "urn:a",
+      "urn:z",
+    ]);
+  });
+
+  it("honors limit, and falls back to the default for a NaN limit", () => {
+    expect(
+      INDEX().search(Float32Array.from([1, 0, 0]), { limit: 2 }),
+    ).toHaveLength(2);
+    expect(INDEX().search(Float32Array.from([1, 0, 0]), { limit: 0 })).toEqual(
+      [],
+    );
+    // `--limit abc` parses to NaN; slice(0, NaN) would report a confident zero.
+    const nan = INDEX().search(Float32Array.from([1, 0, 0]), {
+      limit: Number.NaN,
+    });
+    expect(nan).toHaveLength(3);
+  });
+
+  it("applies minScore when asked, and imposes none by default", () => {
+    const all = INDEX().search(Float32Array.from([1, 0, 0]));
+    expect(all).toHaveLength(3);
+    const filtered = INDEX().search(Float32Array.from([1, 0, 0]), {
+      minScore: 0.5,
+    });
+    expect(filtered.map((h) => h.iri)).toEqual(["urn:a", "urn:c"]);
+  });
+
+  it("throws on a query of the wrong dimensionality", () => {
+    // Zero-filling or truncating would return confident nonsense.
+    expect(() => INDEX().search(Float32Array.from([1, 0]))).toThrow(
+      /2 dimensions, expected 3/,
+    );
+  });
+
+  it("returns nothing from an empty index", () => {
+    const empty = createVectorIndex(encodeVectorIndex([], META));
+    expect(empty.size()).toBe(0);
+    expect(empty.search(Float32Array.from([1]))).toEqual([]);
+  });
+
+  it("exposes its provenance", () => {
+    const index = INDEX();
+    expect(index.model).toBe("test/model");
+    expect(index.dims).toBe(3);
+    expect(index.source).toBe("sha256:corpus-v1");
+    expect(index.size()).toBe(3);
+    expect(index.idAt(0)).toBe("urn:a");
+    expect(index.idAt(99)).toBeUndefined();
+  });
+});
+
+describe("check — refuse rather than rank against the wrong vectors", () => {
+  it("passes when model, dims, and source agree", () => {
+    expect(
+      INDEX().check({
+        model: "test/model",
+        dims: 3,
+        source: "sha256:corpus-v1",
+      }),
+    ).toBeUndefined();
+    expect(INDEX().check({})).toBeUndefined();
+  });
+
+  it("reports a model mismatch", () => {
+    const m = INDEX().check({ model: "other/model" });
+    expect(m?.reason).toBe("model");
+    expect(m?.detail).toContain("dockg embed");
+  });
+
+  it("reports a dimension mismatch", () => {
+    expect(INDEX().check({ dims: 384 })?.reason).toBe("dims");
+  });
+
+  it("reports a stale corpus", () => {
+    const m = INDEX().check({ source: "sha256:corpus-v2" });
+    expect(m?.reason).toBe("stale-source");
+    expect(m?.detail).toContain("corpus changed");
+  });
+});

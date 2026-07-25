@@ -50,12 +50,41 @@ describe("parseConfig", () => {
       "notSoftwareSubject",
     ]);
     expect(c.fill.minConfidence).toBe(0.7);
+    // Local embeddings default to granite, configurable (ADR 01020).
+    expect(c.embed.model).toContain("granite-embedding-small-english-r2");
+    expect(c.embed.dtype).toBe("q8");
+    expect(c.embed.out).toBe("kg/vectors.bin");
+    expect(c.embed.cacheDir).toBe(".dockg/embed-cache");
     // iiRDS export defaults: version 1.3, no title/creator (ADR 01017).
     expect(c.export.iirds).toEqual({
       title: undefined,
       creator: undefined,
       version: "1.3",
     });
+  });
+
+  it("parses embed overrides and accepts any model id", () => {
+    // `model` is an open string, not an enum: the documented table is the
+    // tested set, not the permitted set, so a newer model needs no release.
+    const c = parseConfig(
+      "version: 1\nembed:\n  model: some/brand-new-model\n  dtype: fp32\n  out: v/x.bin\n  cacheDir: .c\n",
+      "/tmp/dockg.config.yaml",
+    );
+    expect(c.embed).toEqual({
+      model: "some/brand-new-model",
+      dtype: "fp32",
+      out: "v/x.bin",
+      cacheDir: ".c",
+    });
+  });
+
+  it("rejects unknown embed keys", () => {
+    expect(() =>
+      parseConfig(
+        "version: 1\nembed:\n  bogus: true\n",
+        "/tmp/dockg.config.yaml",
+      ),
+    ).toThrow(DockgError);
   });
 
   it("parses export.iirds overrides", () => {

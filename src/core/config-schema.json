@@ -160,6 +160,16 @@
         }
       }
     },
+    "embed": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "model": { "type": "string", "minLength": 1 },
+        "dtype": { "type": "string", "minLength": 1 },
+        "out": { "type": "string", "minLength": 1 },
+        "cacheDir": { "type": "string", "minLength": 1 }
+      }
+    },
     "export": {
       "type": "object",
       "additionalProperties": false,

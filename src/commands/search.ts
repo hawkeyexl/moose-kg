@@ -19,6 +19,13 @@ import {
 import { DockgError } from "../types.js";
 import { findEntry } from "../runtime/entry.js";
 import { createLexicalIndex } from "../runtime/lexical.js";
+import { createVectorIndex, type VectorIndex } from "../runtime/vector.js";
+import {
+  createLocalEmbedder,
+  EmbedderUnavailableError,
+} from "../embed/local.js";
+import { createMockEmbedder } from "../embed/mock.js";
+import type { Embedder } from "../embed/types.js";
 import type { QueryTrace } from "../runtime/trace.js";
 
 export interface SearchOptions {
@@ -29,18 +36,37 @@ export interface SearchOptions {
   index?: string;
   query: string;
   limit?: number;
+  /** Vector sidecar path (default: config `embed.out` when it exists). */
+  vectors?: string;
+  /**
+   * Which legs to run. "lexical" is always available; "vector"/"hybrid" need an
+   * embedder and a sidecar. Default "hybrid" when both are present, else
+   * "lexical" — additive, never a new failure mode.
+   */
+  mode?: "lexical" | "vector" | "hybrid";
+  /** Injection seam for tests: bypasses the embedder factory. */
+  embedder?: Embedder;
   cwd?: string;
+}
+
+export interface SearchHit {
+  iri: string;
+  score: number;
+  via: string;
+  type?: string;
+  title?: string;
 }
 
 export interface SearchReport {
   query: string;
-  results: Array<{
-    iri: string;
-    score: number;
-    via: string;
-    type?: string;
-    title?: string;
-  }>;
+  /** Which legs actually ran. */
+  mode: "lexical" | "vector" | "hybrid";
+  /** The fused ranking (or the single leg's, when only one ran). */
+  results: SearchHit[];
+  /** The lexical leg's own ranking. */
+  lexical: SearchHit[];
+  /** The vector leg's own ranking; empty when it did not run. */
+  vector: SearchHit[];
   trace: QueryTrace;
 }
 
@@ -67,7 +93,7 @@ function loadSearchIndex(indexPath: string): SearchIndexDoc {
   return parsed as SearchIndexDoc;
 }
 
-export function runSearch(opts: SearchOptions): SearchReport {
+export async function runSearch(opts: SearchOptions): Promise<SearchReport> {
   const cwd = opts.cwd ?? process.cwd();
   const config = loadConfig(opts.config, cwd);
   const graphPath = resolve(cwd, opts.graph ?? config.out);
@@ -82,25 +108,106 @@ export function runSearch(opts: SearchOptions): SearchReport {
   }
 
   const lexical = createLexicalIndex(loadSearchIndex(indexPath));
-  const { candidates, trace } = findEntry(opts.query, {
+
+  // The vector leg is opt-in by availability: a sidecar plus an embedder. Asked
+  // for explicitly (`--mode vector|hybrid`) a missing piece is an error, since
+  // silently answering lexically would look like the semantic leg ran.
+  const wantsVector = opts.mode === "vector" || opts.mode === "hybrid";
+  const vectorsPath = opts.vectors
+    ? resolve(cwd, opts.vectors)
+    : resolve(cwd, config.embed.out);
+  let vectors: VectorIndex | undefined;
+  if (opts.mode !== "lexical" && existsSync(vectorsPath)) {
+    vectors = createVectorIndex(readFileSync(vectorsPath));
+  } else if (wantsVector) {
+    throw new DockgError(
+      `Vector index not found: ${vectorsPath} — run \`dockg embed\` first, or use \`--mode lexical\`.`,
+    );
+  }
+
+  let embedder: Embedder | undefined;
+  if (vectors) {
+    embedder = await resolveEmbedder(opts, config.embed, vectors, wantsVector);
+  }
+
+  const embedQuery = embedder
+    ? (q: string): Promise<Float32Array> => embedder!.embed(q)
+    : undefined;
+
+  const entry = await findEntry(opts.query, {
     lexical,
+    ...(embedQuery && vectors ? { vectors, embedQuery } : {}),
     limit: opts.limit,
   });
 
+  const decorate = (c: {
+    iri: string;
+    score: number;
+    via: string;
+  }): SearchHit => {
+    const found = lexical.entry(c.iri);
+    return {
+      iri: c.iri,
+      score: c.score,
+      via: c.via,
+      ...(found?.type === undefined ? {} : { type: found.type }),
+      ...(found?.title === undefined ? {} : { title: found.title }),
+    };
+  };
+
+  const ranLexical = opts.mode !== "vector";
+  const ranVector = entry.vector.length > 0;
+  const mode =
+    ranVector && ranLexical ? "hybrid" : ranVector ? "vector" : "lexical";
+
   return {
     query: opts.query,
-    results: candidates.map((c) => {
-      const entry = lexical.entry(c.iri);
-      return {
-        iri: c.iri,
-        score: c.score,
-        via: c.via,
-        ...(entry?.type === undefined ? {} : { type: entry.type }),
-        ...(entry?.title === undefined ? {} : { title: entry.title }),
-      };
-    }),
-    trace,
+    mode,
+    // `--mode vector` reports the vector leg alone rather than the fusion.
+    results: (opts.mode === "vector" ? entry.vector : entry.candidates).map(
+      decorate,
+    ),
+    lexical: entry.lexical.map(decorate),
+    vector: entry.vector.map(decorate),
+    trace: entry.trace,
   };
+}
+
+/**
+ * Build an embedder for the query side, matching the sidecar. A mismatch is
+ * refused rather than ranked against: comparing vectors from two different
+ * models compares outputs of two different functions (ADR 01020).
+ */
+async function resolveEmbedder(
+  opts: SearchOptions,
+  embedConfig: { model: string; dtype: string },
+  vectors: VectorIndex,
+  required: boolean,
+): Promise<Embedder | undefined> {
+  const model = vectors.model;
+  try {
+    const embedder =
+      opts.embedder ??
+      (model === "mock"
+        ? createMockEmbedder({ dtype: embedConfig.dtype })
+        : await createLocalEmbedder({
+            model,
+            dtype: embedConfig.dtype,
+            role: "query",
+          }));
+    const mismatch = vectors.check({ model: embedder.model });
+    if (mismatch) throw new DockgError(mismatch.detail);
+    return embedder;
+  } catch (e) {
+    if (e instanceof DockgError) throw e;
+    if (e instanceof EmbedderUnavailableError) {
+      // Only fatal when the vector leg was asked for; otherwise degrade to
+      // lexical rather than failing a search that can still be answered.
+      if (required) throw new DockgError(e.message);
+      return undefined;
+    }
+    throw e;
+  }
 }
 
 export function renderSearch(
@@ -120,7 +227,7 @@ export function renderSearch(
   }
   lines.push("");
   lines.push(
-    `${report.results.length} result${report.results.length === 1 ? "" : "s"}`,
+    `${report.results.length} result${report.results.length === 1 ? "" : "s"} (${report.mode})`,
   );
   return lines.join("\n");
 }

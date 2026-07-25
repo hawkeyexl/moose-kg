@@ -460,6 +460,43 @@ describe("assemble", () => {
     expect(bundle.truncated).toBe(false);
   });
 
+  it("carries the entry rankings alongside the graph results", async () => {
+    // Retrieval answers two questions — what matched, and what the graph is
+    // connected to — and a caller needs both, not one plus a trace to mine.
+    const entry = {
+      lexical: [{ iri: DOC, score: 2, via: "lexical" as const }],
+      vector: [{ iri: SECTION, score: 0.9, via: "vector" as const }],
+      merged: [{ iri: DOC, score: 0.03, via: "hybrid" as const }],
+    };
+    const bundle = await assemble(
+      resolver({ [DOC]: "alpha" }),
+      [{ iri: DOC, depth: 0 }],
+      { entry },
+    );
+    expect(bundle.entry).toEqual(entry);
+    expect(bundle.context.map((b) => b.iri)).toEqual([DOC]);
+  });
+
+  it("carries the entry rankings even when it refuses", async () => {
+    // A caller still wants to show what matched, and see that nothing survived
+    // the graph walk.
+    const entry = {
+      lexical: [{ iri: DOC, score: 2, via: "lexical" as const }],
+      vector: [],
+      merged: [{ iri: DOC, score: 0.016, via: "lexical" as const }],
+    };
+    const bundle = await assemble(resolver({}), [], { entry });
+    expect(bundle.refusal?.reason).toBe("no-route");
+    expect(bundle.entry).toEqual(entry);
+  });
+
+  it("omits entry entirely when seeds were explicit", async () => {
+    const bundle = await assemble(resolver({ [DOC]: "alpha" }), [
+      { iri: DOC, depth: 0 },
+    ]);
+    expect("entry" in bundle).toBe(false);
+  });
+
   it("refuses with no-route when traversal returned nothing", async () => {
     const bundle = await assemble(resolver({}), []);
     expect(bundle.refusal?.reason).toBe("no-route");

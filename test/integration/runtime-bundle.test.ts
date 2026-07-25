@@ -101,6 +101,79 @@ describe("dockg/runtime bundle purity", () => {
     expect(source()).not.toMatch(/from\s*["'`]minisearch["'`]/);
   });
 
+  it("keeps the embedder and its model stack out of the runtime", () => {
+    // @huggingface/transformers hard-depends on both ONNX runtimes plus native
+    // sharp. It lives behind `dockg/embed` precisely so the runtime never grows
+    // a model stack (ADR 01020).
+    const text = source();
+    expect(text).not.toMatch(/@huggingface\/transformers/);
+    expect(text).not.toMatch(/onnxruntime/);
+  });
+
+  it("emits no shared chunk the browser would have to fetch separately", () => {
+    // `dist/runtime.js` must stay a single-file drop-in: a relative chunk import
+    // resolves under a bundler and breaks with a plain script tag.
+    const text = source();
+    expect(text).not.toMatch(/from\s*["'`]\.\/chunk-/);
+    // No bare specifiers at all — every import would be a browser resolution.
+    const bareImports = [
+      ...text.matchAll(/^import\s.*from\s*["'`]([^.][^"'`]*)/gm),
+    ];
+    expect(bareImports.map((m) => m[1])).toEqual([]);
+  });
+});
+
+describe("dockg/embed package surface", () => {
+  const embedBundle = join(root, "dist", "embed.js");
+
+  it("emits every file the ./embed export names", () => {
+    const pkg = JSON.parse(
+      readFileSync(join(root, "package.json"), "utf8"),
+    ) as {
+      exports: Record<string, Record<string, string>>;
+    };
+    const entry = pkg.exports["./embed"];
+    expect(entry).toBeDefined();
+    for (const target of Object.values(entry!)) {
+      expect(existsSync(join(root, target)), `missing ${target}`).toBe(true);
+    }
+  });
+
+  it("declares the optional peer rather than depending on it", () => {
+    const pkg = JSON.parse(
+      readFileSync(join(root, "package.json"), "utf8"),
+    ) as {
+      dependencies?: Record<string, string>;
+      peerDependencies?: Record<string, string>;
+      peerDependenciesMeta?: Record<string, { optional?: boolean }>;
+    };
+    expect(pkg.dependencies?.["@huggingface/transformers"]).toBeUndefined();
+    expect(pkg.peerDependencies?.["@huggingface/transformers"]).toBeDefined();
+    expect(
+      pkg.peerDependenciesMeta?.["@huggingface/transformers"]?.optional,
+    ).toBe(true);
+  });
+
+  it("leaves the peer as a bare dynamic import, not inlined", () => {
+    // Inlining it would defeat the whole point of an optional peer.
+    const text = readFileSync(embedBundle, "utf8");
+    expect(text).toMatch(
+      /import\(\s*["'`]@huggingface\/transformers["'`]\s*\)/,
+    );
+    expect(text).not.toMatch(/onnxruntime/);
+  });
+
+  it("exposes the mock embedder for hermetic use downstream", async () => {
+    const api = (await import(
+      embedBundle
+    )) as typeof import("../../src/embed/index.js");
+    const mock = api.createMockEmbedder({ dims: 4 });
+    const a = await mock.embed("hello");
+    const b = await mock.embed("hello");
+    expect([...a]).toEqual([...b]);
+    expect(a).toHaveLength(4);
+  });
+
   it("exports the documented runtime API", async () => {
     const api = (await import(bundle)) as Record<string, unknown>;
     for (const name of [

@@ -1,5 +1,11 @@
 node_modules/
 dist/
-.dockg/cache/
+# Depth-agnostic: a leading-path pattern like `.dockg/cache/` is anchored to
+# this file's directory, so a run inside test/fixtures/ would leak its cache
+# into a tracked fixture. `**/` matches wherever the command was run.
+**/.dockg/
+# Derived, binary, and not CI-regenerable (model weights are a download).
+# Build it in your deploy pipeline instead of committing it.
+**/kg/vectors.bin
 *.tsbuildinfo
 .tmp/

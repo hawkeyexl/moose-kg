@@ -1,11 +1,14 @@
 /**
- * Entry-point finding (ADR 01019) — the stage that turns a question into seed
- * nodes for the walker.
+ * Entry-point finding (ADR 01019, extended by ADR 01020) — the stage that turns
+ * a question into seed nodes for the walker.
  *
- * Today there is one ranking (lexical). `rrfMerge` ships anyway, tested: it
- * fixes the fusion contract *before* Phase 8b's vector leg arrives, so adding
- * embeddings cannot reshape this API. With a single ranking it is an identity
- * ranking, not dead code.
+ * Two rankings now: lexical (BM25 over the search artifact) and, when the host
+ * supplies an embedder, vector (cosine over the sidecar). `rrfMerge` fuses them.
+ *
+ * **Each leg is returned separately as well as fused.** A caller rendering a
+ * search UI wants to show "text matches" and "semantic matches" as distinct
+ * things, and either leg is usable on its own — `lexical.search` and
+ * `vectors.search` are public and independent of this function.
  *
  * Every candidate is appended to the trace, so "why did retrieval start here?"
  * is answerable alongside "why did it walk there?" (ADR 01018 invariant 2).
@@ -14,6 +17,7 @@
  */
 import { byCodeUnit } from "../core/sort.js";
 import type { LexicalIndex } from "./lexical.js";
+import type { VectorIndex } from "./vector.js";
 import {
   createTrace,
   type EntryCandidate,
@@ -24,6 +28,13 @@ import {
 export interface FindEntryOptions {
   /** The lexical index to query. */
   lexical: LexicalIndex;
+  /** The vector index. Without it (or `embedQuery`), entry is lexical-only. */
+  vectors?: VectorIndex;
+  /**
+   * Embed the query locally. Required for the vector leg; absent, entry
+   * degrades to lexical rather than failing (ADR 01009).
+   */
+  embedQuery?: (query: string) => Promise<Float32Array> | Float32Array;
   /** Maximum seeds to return. Default 10. */
   limit?: number;
   /** Append candidates here instead of starting a new trace. */
@@ -31,7 +42,12 @@ export interface FindEntryOptions {
 }
 
 export interface EntryResult {
+  /** The fused ranking — what seeds traversal. */
   candidates: EntryCandidate[];
+  /** The lexical leg's own ranking. */
+  lexical: EntryCandidate[];
+  /** The vector leg's own ranking; empty when no embedder was supplied. */
+  vector: EntryCandidate[];
   trace: QueryTrace;
 }
 
@@ -82,13 +98,20 @@ export function rrfMerge(
 }
 
 /**
- * Find seed nodes for a question. Currently lexical-only; the vector leg joins
- * the same `rrfMerge` call in Phase 8b.
+ * Find seed nodes for a question, returning each ranking leg and their fusion.
+ *
+ * Async because embedding a query is: local models are a WASM forward pass.
+ * Uniformly async rather than sync-when-lexical-only, so callers have one
+ * contract to hold rather than a return type that changes with the options.
+ *
+ * The vector leg runs only when both a `vectors` index and an `embedQuery` are
+ * supplied. Absent either, this is lexical entry exactly as Phase 8 shipped it —
+ * additive, never a new failure mode (ADR 01009's degrade-don't-fail rule).
  */
-export function findEntry(
+export async function findEntry(
   query: string,
   options: FindEntryOptions,
-): EntryResult {
+): Promise<EntryResult> {
   const trace = options.trace ?? createTrace();
   // `--limit abc` parses to NaN, and `slice(0, NaN)` is empty — a typo'd flag
   // would report a confident "0 results" for a query that does match. Anything
@@ -101,8 +124,16 @@ export function findEntry(
       : 10;
 
   const lexical = options.lexical.search(query, { limit });
-  const candidates = rrfMerge([lexical]).slice(0, limit);
+
+  let vector: EntryCandidate[] = [];
+  if (options.vectors && options.embedQuery && query.trim() !== "") {
+    const queryVector = await options.embedQuery(query);
+    vector = options.vectors.search(queryVector, { limit });
+  }
+
+  const rankings = vector.length > 0 ? [lexical, vector] : [lexical];
+  const candidates = rrfMerge(rankings).slice(0, limit);
 
   for (const candidate of candidates) trace.entry.push(candidate);
-  return { candidates, trace };
+  return { candidates, lexical, vector, trace };
 }
