@@ -80,6 +80,14 @@ fill:
   # (broader/narrower cycles, conflicting labels).
   validateGraph: true
 
+# Local embeddings for semantic search (\`dockg embed\`). Needs the optional
+# peer: npm install @huggingface/transformers
+# embed:
+#   model: onnx-community/granite-embedding-small-english-r2-ONNX
+#   dtype: q8            # q8 keeps embedding reproducible across platforms
+#   out: kg/vectors.bin  # gitignored: derived, binary, not CI-regenerable
+#   cacheDir: .dockg/embed-cache
+
 # Optional enrichment for \`dockg export --format iirds\` (the iiRDS package).
 # Absent, a minimal valid package is still produced.
 # export:

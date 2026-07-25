@@ -34,6 +34,7 @@ export default defineConfig([
   {
     entry: {
       runtime: "src/runtime/index.ts",
+      embed: "src/embed/index.ts",
     },
     format: ["esm"],
     target: "es2022",
@@ -50,5 +51,17 @@ export default defineConfig([
      * duplicated there.
      */
     noExternal: ["minisearch"],
+    /**
+     * The opposite of minisearch: @huggingface/transformers is an *optional
+     * peer* and must stay a bare specifier, so a consumer who never imports
+     * `dockg/embed` never resolves it and bundlers can leave it alone.
+     */
+    external: ["@huggingface/transformers"],
+    /**
+     * No shared chunks: `dist/runtime.js` must stay a single file you can drop
+     * into a browser with a script tag. Splitting would emit a chunk it imports
+     * by relative path, which works in a bundler and breaks everywhere else.
+     */
+    splitting: false,
   },
 ]);

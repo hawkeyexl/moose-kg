@@ -10,6 +10,7 @@ import { renderQuery, runQuery } from "./commands/query.js";
 import { renderValidate, runValidate } from "./commands/validate.js";
 import { renderFill, runFill } from "./commands/fill.js";
 import { runInit } from "./commands/init.js";
+import { renderEmbed, runEmbed } from "./commands/embed.js";
 import { renderSearch, runSearch } from "./commands/search.js";
 import { renderStats, runStats } from "./commands/stats.js";
 import { renderTraverse, runTraverse } from "./commands/traverse.js";
@@ -244,20 +245,27 @@ program
   .option("--limit <n>", "Maximum results (default 10)", (v) =>
     Number.parseInt(v, 10),
   )
+  .option("--vectors <path>", "Vector sidecar path (default: config embed.out)")
+  .option(
+    "--mode <mode>",
+    "Which legs to run: lexical | vector | hybrid (default: hybrid when vectors exist)",
+  )
   .option("-f, --format <format>", "Output format: pretty | json", "pretty")
   .action(
-    (
+    async (
       query: string,
       opts: {
         config?: string;
         graph?: string;
         index?: string;
         limit?: number;
+        vectors?: string;
+        mode?: "lexical" | "vector" | "hybrid";
         format: string;
       },
     ) => {
       try {
-        const report = runSearch({ ...opts, query });
+        const report = await runSearch({ ...opts, query });
         console.log(renderSearch(report, opts.format as "pretty" | "json"));
       } catch (e) {
         fail(e);
@@ -309,6 +317,48 @@ program
       try {
         const report = runTraverse({ ...opts, node });
         console.log(renderTraverse(report, opts.format as "pretty" | "json"));
+      } catch (e) {
+        fail(e);
+      }
+    },
+  );
+
+program
+  .command("embed")
+  .description(
+    "Compute local embeddings for the search index (needs @huggingface/transformers)",
+  )
+  .option("-c, --config <path>", "Path to dockg.config.yaml")
+  .option("-g, --graph <path>", "Graph .ttl path (default: config out)")
+  .option(
+    "-i, --index <path>",
+    "Search index path (default: search.json beside the graph)",
+  )
+  .option("-o, --out <path>", "Vector sidecar path (default: config embed.out)")
+  .option(
+    "--model <id>",
+    "Embedding model id (any id; `mock` for offline runs)",
+  )
+  .option("--dtype <dtype>", "Weight quantization (default q8)")
+  .option("--no-cache", "Ignore the vector cache")
+  .option("-f, --format <format>", "Output format: pretty | json", "pretty")
+  .action(
+    async (opts: {
+      config?: string;
+      graph?: string;
+      index?: string;
+      out?: string;
+      model?: string;
+      dtype?: string;
+      cache?: boolean;
+      format: string;
+    }) => {
+      try {
+        const report = await runEmbed({
+          ...opts,
+          noCache: opts.cache === false,
+        });
+        console.log(renderEmbed(report, opts.format as "pretty" | "json"));
       } catch (e) {
         fail(e);
       }

@@ -27,7 +27,10 @@ function sparqlSource(graph: GraphIndex) {
   );
 }
 
-describe("custom SPARQL over the runtime index", () => {
+// Comunica does real engine setup on first query. Under a full parallel test
+// run that cold start has exceeded the default timeout, so give this file room
+// rather than leaving a known-flaky test for CI to trip over.
+describe("custom SPARQL over the runtime index", { timeout: 60_000 }, () => {
   it("answers a SELECT via an RDF/JS store built from rdfjsQuads", async () => {
     const engine = new QueryEngine();
     const stream = await engine.queryBindings(

@@ -67,6 +67,7 @@ export {
   type AssembleOptions,
   type Citation,
   type ContextBlock,
+  type EntryRankings,
   type Refusal,
   type RefusalReason,
   type RetrievalBundle,
@@ -90,5 +91,23 @@ export {
   rrfMerge,
   type EntryResult,
   type FindEntryOptions,
+  type QueryEmbedder,
 } from "./entry.js";
+export {
+  createVectorIndex,
+  searchIndexDigest,
+  VectorMismatchError,
+  type VectorIndex,
+  type VectorMismatch,
+  type VectorSearchOptions,
+} from "./vector.js";
+export {
+  decodeVectorIndex,
+  encodeVectorIndex,
+  normalize,
+  VectorIndexError,
+  VECTOR_INDEX_FILENAME,
+  type VectorIndexDoc,
+  type VectorIndexHeader,
+} from "../core/vector-index.js";
 export type { SearchEntry, SearchIndexDoc } from "../core/search-index.js";

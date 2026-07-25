@@ -11,6 +11,8 @@ import configSchema from "./config-schema.json" with { type: "json" };
 import { DockgError } from "../types.js";
 import { resolveBaseIri } from "./iri.js";
 import { COVERAGE_FIELD_NAMES } from "./coverage.js";
+// Pure data module (no transformers import), so config stays Node-light.
+import { DEFAULT_MODEL as DEFAULT_EMBED_MODEL } from "../embed/types.js";
 
 export type ProviderName = "anthropic" | "openai" | "claude-cli" | "mock";
 
@@ -140,6 +142,20 @@ export interface DockgConfig {
      * See ADR 01011.
      */
     coverageThreshold: Record<string, number>;
+  };
+  embed: {
+    /**
+     * Embedding model id (ADR 01020). An open string, not an enum: the
+     * documented table is the *tested* set, not the permitted set, so a newer
+     * model works without a dockg release.
+     */
+    model: string;
+    /** Weight quantization. `q8` keeps int32 accumulation, which is associative. */
+    dtype: string;
+    /** Vector sidecar path. */
+    out: string;
+    /** Per-text vector cache, keyed on text+model+dtype. */
+    cacheDir: string;
   };
   export: {
     /** iiRDS package export metadata (ADR 01017); all fields optional. */
@@ -278,6 +294,12 @@ export function parseConfig(text: string, configPath: string): DockgConfig {
       writeProvenance: r.fill?.writeProvenance ?? true,
       validateGraph: r.fill?.validateGraph ?? true,
       pricing: r.fill?.pricing,
+    },
+    embed: {
+      model: r.embed?.model ?? DEFAULT_EMBED_MODEL,
+      dtype: r.embed?.dtype ?? "q8",
+      out: r.embed?.out ?? "kg/vectors.bin",
+      cacheDir: r.embed?.cacheDir ?? ".dockg/embed-cache",
     },
     export: {
       iirds: {

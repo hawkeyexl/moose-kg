@@ -17,6 +17,10 @@
       "types": "./dist/runtime.d.ts",
       "import": "./dist/runtime.js"
     },
+    "./embed": {
+      "types": "./dist/embed.d.ts",
+      "import": "./dist/embed.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
@@ -70,6 +74,14 @@
     "cli"
   ],
   "license": "MIT",
+  "peerDependencies": {
+    "@huggingface/transformers": ">=4"
+  },
+  "peerDependenciesMeta": {
+    "@huggingface/transformers": {
+      "optional": true
+    }
+  },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.70.0",
     "ajv": "^8.17.1",

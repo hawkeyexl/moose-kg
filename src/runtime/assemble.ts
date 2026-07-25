@@ -14,7 +14,7 @@
  * Platform-neutral: no `node:` imports, no npm dependencies.
  */
 import type { ContentResolver } from "./resolve.js";
-import type { QueryTrace } from "./trace.js";
+import type { EntryCandidate, QueryTrace } from "./trace.js";
 import { createTrace } from "./trace.js";
 import type { TraversedNode } from "./traverse.js";
 
@@ -40,7 +40,26 @@ export interface Refusal {
   detail: string;
 }
 
+/**
+ * The rankings that produced the seeds, carried through to the caller.
+ *
+ * Retrieval answers two different questions — "what matched the query?" and
+ * "what is the graph connected to it?" — and a consumer needs both. Returning
+ * only the graph result would make the match rankings inferrable solely from the
+ * trace, which is diagnostic rather than a result surface (ADR 01020).
+ */
+export interface EntryRankings {
+  /** The lexical leg's own ranking. */
+  lexical: EntryCandidate[];
+  /** The vector leg's own ranking; empty when no embedder was in play. */
+  vector: EntryCandidate[];
+  /** The fused ranking that actually seeded traversal. */
+  merged: EntryCandidate[];
+}
+
 export interface RetrievalBundle {
+  /** What matched the query, per leg. Absent when seeds were given explicitly. */
+  entry?: EntryRankings;
   context: ContextBlock[];
   citations: Citation[];
   trace: QueryTrace;
@@ -55,6 +74,11 @@ export interface AssembleOptions {
   maxChars?: number;
   /** Append to an existing trace (normally the traversal's). */
   trace?: QueryTrace;
+  /**
+   * The entry rankings that produced these nodes, passed through to the bundle
+   * so callers see matches and graph results side by side.
+   */
+  entry?: EntryRankings;
 }
 
 /**
@@ -72,6 +96,7 @@ export async function assemble(
 
   if (nodes.length === 0) {
     return {
+      ...(options.entry ? { entry: options.entry } : {}),
       context: [],
       citations: [],
       trace,
@@ -109,6 +134,7 @@ export async function assemble(
 
   if (context.length === 0) {
     return {
+      ...(options.entry ? { entry: options.entry } : {}),
       context: [],
       citations: [],
       trace,
@@ -123,6 +149,7 @@ export async function assemble(
   }
 
   return {
+    ...(options.entry ? { entry: options.entry } : {}),
     context,
     citations: context.map((b) => ({
       iri: b.iri,

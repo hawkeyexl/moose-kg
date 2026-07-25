@@ -322,8 +322,9 @@ dockg fill --force            # overwrite human-set kg fields too
 | `dockg export -f jsonld` | Reserialize the built graph as deterministic JSON-LD |
 | `dockg export -f iirds` | Package the graph as a conformant, deterministic iiRDS package (`.iirds`) |
 | `dockg export -f search` | Emit the lexical search index (`kg/search.json`) the runtime needs for text queries |
+| `dockg embed` | Compute local embeddings for the search index → `kg/vectors.bin` (semantic search) |
 
-Shared flags: `-c/--config`, `-f/--format pretty|json`; `build` takes `-o/--out`; `query`/`stats`/`check`/`export`/`search`/`traverse` take `-g/--graph`; `check` takes `--shapes`; `stats` takes `--coverage-threshold <pct>`; `export` takes `-f/--format` and `-o/--out`; `search` takes `-i/--index` (default: `search.json` beside the graph) and `--limit` (default 10); `traverse` takes `-d/--depth` (default 1, or 3 under `--impact`, since impact analysis is only useful transitively), `--predicates`, `--reverse`, `--impact`, `--variant`, `--subject`, `--limit`.
+Shared flags: `-c/--config`, `-f/--format pretty|json`; `build` takes `-o/--out`; `query`/`stats`/`check`/`export`/`search`/`embed`/`traverse` take `-g/--graph`; `check` takes `--shapes`; `stats` takes `--coverage-threshold <pct>`; `export` takes `-f/--format` and `-o/--out`; `search` takes `-i/--index` (default: `search.json` beside the graph), `--limit` (default 10), `--vectors`, and `--mode lexical|vector|hybrid`; `embed` takes `-i/--index`, `-o/--out`, `--model`, `--dtype`, `--no-cache`; `traverse` takes `-d/--depth` (default 1, or 3 under `--impact`, since impact analysis is only useful transitively), `--predicates`, `--reverse`, `--impact`, `--variant`, `--subject`, `--limit`.
 
 ### Retrieval runtime (`dockg/runtime`)
 
@@ -389,8 +390,91 @@ dockg search "default cache directory"
 ```
 
 Ranking is deterministic: the same query against the same artifact always
-returns the same order, with ties broken by IRI. `rrfMerge` is exported and
-already fuses N ranked lists, ready for the embeddings leg in a later phase.
+returns the same order, with ties broken by IRI.
+
+### Semantic entry (`dockg embed`)
+
+Lexical search finds words; semantic search finds *meaning*. `dockg embed`
+computes an embedding per indexed node into `kg/vectors.bin`, and the runtime
+ranks a query against it ([ADR 01020](adrs/01020-local-embeddings.md)).
+
+**Embeddings are local — always.** No API, no key, no spend, no corpus text
+leaving the machine. The model runs under `@huggingface/transformers`, an
+**optional peer dependency** you install only if you want this:
+
+```bash
+npm install @huggingface/transformers
+dockg build && dockg export --format search
+dockg embed                       # -> kg/vectors.bin
+dockg search "how do I set this up" --mode hybrid
+```
+
+The model is a knob, not a constant — `embed.model` accepts any id, and the
+table below is the *tested* set rather than the permitted set. The caveat column
+matters, because the cheapest options fail **quietly**:
+
+Ids are the full hub repo paths — that is what `embed.model` and `--model` take,
+and a bare name resolves to nothing:
+
+| Model | q8 download | Dims | Notes |
+|---|---|---|---|
+| **`onnx-community/granite-embedding-small-english-r2-ONNX`** (default) | ~53 MB | 384 | 8192-token context, so sections are never truncated; no prefix convention |
+| `Xenova/gte-small` | ~34 MB | 384 | Lighter; 512-token context; no prefixes |
+| `Xenova/bge-small-en-v1.5` | ~34 MB | 384 | Needs a query prefix — dockg applies it for you, since omitting it degrades retrieval silently |
+| `Xenova/all-MiniLM-L6-v2` | ~23 MB | 384 | Smallest, but truncates at 256 wordpieces (~190 words), so a long section's tail becomes unsearchable |
+
+Weights download once and are cached by the browser; nothing is fetched until
+you build an embedder (`createLocalEmbedder`), so a page that never searches
+never pays for one. `--model mock` produces deterministic hash vectors for
+offline testing — useful for plumbing, meaningless for quality.
+
+**Three modes, each usable on its own.** `--mode lexical|vector|hybrid`, and in
+the API `lexical.search()`, `vectors.search()`, and `findEntry()` are
+independent. `findEntry` returns each leg *and* the fusion, so a UI can show
+"text matches" and "semantic matches" separately:
+
+```js
+const embedder = await createLocalEmbedder({ role: "query" });
+const { candidates, lexical, vector } = await findEntry(question, {
+  lexical: lexicalIndex, vectors, embedder,
+});
+```
+
+Pass the `embedder`, not a bare embedding function: `findEntry` then verifies its
+model and dtype against the sidecar and throws `VectorMismatchError` rather than
+ranking against vectors from a different model. (An `embedQuery` function is
+accepted too, for a host wiring its own model — but it carries no identity, so
+only the dimension check applies.)
+
+Two things dockg does so the vectors are trustworthy:
+
+- **Node and the browser compute the same function.** transformers.js uses a
+  native runtime in Node and WASM in the browser, and they disagree measurably —
+  which would mean comparing build-time vectors against query-time vectors
+  produced by a *different* function. dockg forces WASM on both sides,
+  single-threaded, one text per call.
+- **A mismatched sidecar is refused, not ranked.** The artifact records its
+  model, dtype, dimensions, and a digest of the search index it was built from.
+  Model and dtype are checked against the `embedder` you pass; the digest is
+  checked when you pass `source`, since the runtime never sees the raw bytes it
+  would have to hash. Either way you get a `VectorMismatchError` rather than
+  quietly wrong results.
+
+```js
+const raw = await (await fetch("/kg/search.json")).text();
+const { candidates } = await findEntry(question, {
+  lexical: createLexicalIndex(raw), vectors, embedder,
+  source: await searchIndexDigest(raw),   // refuses a sidecar built from an older corpus
+});
+```
+
+`searchIndexDigest` takes the response text exactly as fetched —
+`JSON.stringify(parsed)` would produce different bytes and so a digest that
+never matches.
+
+`kg/vectors.bin` is gitignored by default: it is derived, binary, and — unlike
+every other dockg artifact — cannot be rebuilt in CI, because model weights are
+a download. Build it in your deploy pipeline.
 
 Three properties are contractual:
 

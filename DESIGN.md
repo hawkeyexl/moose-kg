@@ -413,23 +413,46 @@ citation, in the Phase 7 resolver as well as the new index. Sections now derive
 their occurrence from true document order (the `dcterms:hasPart` tree ordered by
 `dockg:order`).
 
-## Phase 8b — Vector entry (embeddings sidecar)
+## Phase 8b — Vector entry with local embeddings — **done**
 
-**Goal:** semantic entry alongside the lexical leg, behind the network/spend
-boundary.
+**Goal:** semantic entry alongside the lexical leg, computed by local models.
 
-Decisions to make (ADRs):
-- `dockg embed` (Node, explicit spend per the defaults mandate) precomputes
-  embeddings into a gitignored sidecar; the runtime does brute-force cosine and
-  fuses through the existing `rrfMerge`.
-- Sidecar format and location, staleness/invalidation keying (graph hash + model
-  + dimensions), and what happens when the graph moves on.
-- Embedding provider seam: Anthropic has no embeddings API, so this is not
-  `fill`'s provider set — openai-compatible plus a deterministic mock at
-  minimum. `Pricing` is input/output-token shaped; embeddings are input-only and
-  need a variant.
-- Query-time embedding requires a host-supplied `embedQuery`; absent, lexical
-  entry must keep working unchanged.
+Delivered ([ADR 01020](adrs/01020-local-embeddings.md)):
+- **`dockg embed` → `kg/vectors.bin`** — embeds the text already in
+  `search.json`, so both ranking legs score the same units. Deterministic binary
+  layout (magic + JSON header + L2-normalized float32), header recording model,
+  dtype, dims, sorted IRIs, and a digest of the search index.
+- **Local-only, hard requirement.** No API, no key, no spend. Model runs under
+  `@huggingface/transformers` as an **optional peer** behind `dockg/embed`, so
+  the runtime never grows a model stack and most users never install it.
+- **Node and browser compute the same function.** transformers.js uses a native
+  runtime in Node and WASM in the browser, and they measurably disagree — which
+  would compare build vectors against query vectors from a *different* function.
+  Forced WASM both sides, single-threaded, q8, one text per call.
+- **Model is configurable**, defaulting to granite-embedding-small-english-r2
+  (8192 ctx, no prefixes). Open string, not an enum; prefix conventions applied
+  automatically for models that need them.
+- **Three modes, each standalone**: `lexical.search()`, `vectors.search()`, and
+  `findEntry()` which returns **each leg and the fusion**. The retrieval bundle
+  carries an `entry` block beside `nodes`/`context`/`citations`, so a consumer
+  sees text matches, semantic matches, and graph results as distinct things.
+- **Mismatch is refused, not ranked** — wrong model, dims, or a stale corpus
+  digest errors rather than returning quietly wrong results.
+
+Corrected during planning: an earlier draft specified int8 vectors as
+"effectively lossless". At **384 dimensions int8 retains only ~91%** of float32
+retrieval — the 97–100% figures widely quoted are 1024-dim models. Storing
+L2-normalized float32 instead costs ~1.1 MB per 1000 sections and makes cosine a
+bare dot product.
+
+No vector-search library was adopted, on evidence: the dedicated ones are ~3
+years stale, no maintained micro-package handles typed arrays (the popular one
+throws on `Float32Array`), and Orama — the credible alternative — runs
+`Date.now()` at module load, which collides with the no-wall-clock invariant.
+
+Unlike every other dockg artifact, `kg/vectors.bin` **cannot be regenerated in
+CI** (weights are a download), so it is gitignored, built in the deploy
+pipeline, and gated in tests with a deterministic mock embedder.
 
 ## Phase 9 — `retrieve` + MCP serving
 
