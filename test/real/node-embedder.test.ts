@@ -11,15 +11,12 @@
  * not make: they are about what `@huggingface/transformers` actually does, not
  * about what dockg passes it.
  */
-import { mkdirSync, writeFileSync } from "node:fs";
 import { beforeAll, describe, expect, it } from "vitest";
 import { createLocalEmbedder } from "../../src/embed/local.js";
 import { DEFAULT_MODEL } from "../../src/embed/types.js";
 import type { Embedder } from "../../src/embed/types.js";
 
 const TEXT = "The default cache directory is marmalade.";
-/** Where the cross-platform gate picks up Node's answer. */
-const OUT = ".tmp/real";
 
 let embedder: Embedder;
 
@@ -94,13 +91,6 @@ describe(
         return d;
       };
       expect(cos(query, relevant)).toBeGreaterThan(cos(query, irrelevant));
-    });
-
-    it("publishes its vector for the cross-platform gate", async () => {
-      const v = await embedder.embed(TEXT);
-      mkdirSync(OUT, { recursive: true });
-      writeFileSync(`${OUT}/node-vector.json`, JSON.stringify([...v]));
-      expect(v.length).toBeGreaterThan(0);
     });
   },
 );

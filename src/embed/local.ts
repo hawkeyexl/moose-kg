@@ -150,7 +150,7 @@ export async function createLocalEmbedder(
       return dims;
     },
     async embed(text: string): Promise<Float32Array> {
-      // Discipline 4: one text per call, never a batch.
+      // Discipline 3: one text per call, never a batch.
       const output = await extractor(withPrefix(profile, role, text), {
         pooling: "mean",
         normalize: true,
