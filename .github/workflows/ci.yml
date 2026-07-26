@@ -85,11 +85,18 @@ jobs:
 
       # ~53 MB of granite weights. Keyed by model id so a default-model change
       # misses the cache rather than silently testing the old one.
+      #
+      # This is where transformers.js v4 actually caches in Node — verified by
+      # reading `env.cacheDir` back, which resolves to
+      # `node_modules/@huggingface/transformers/.cache/`. An earlier version of
+      # this step cached `~/.cache/huggingface` (the Python HF path), which holds
+      # nothing here, so it never saved or restored and re-downloaded every run.
+      # Must come *after* the peer install, which creates the package directory.
       - name: Cache model weights
         uses: actions/cache@v4
         with:
-          path: ~/.cache/huggingface
-          key: hf-onnx-community-granite-embedding-small-english-r2-ONNX-q8
+          path: node_modules/@huggingface/transformers/.cache
+          key: hf-granite-embedding-small-english-r2-ONNX-q8-v2
 
       - run: npx playwright install --with-deps chromium
 

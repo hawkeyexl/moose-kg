@@ -27,7 +27,12 @@ import { extname, join, resolve } from "node:path";
 import { chromium } from "playwright";
 // The built artifact, not src: this is what a consumer imports, and plain Node
 // cannot resolve TypeScript's .js-means-.ts specifiers. Run `npm run build` first.
-import { createLocalEmbedder, DEFAULT_MODEL } from "../../dist/embed.js";
+import {
+  createLocalEmbedder,
+  DEFAULT_MODEL,
+  profileFor,
+  withPrefix,
+} from "../../dist/embed.js";
 
 const WORK = resolve(".tmp/real/cross");
 const PORT = 7311;
@@ -182,7 +187,13 @@ async function main() {
 
   console.log("bundling web build…");
   await bundleForBrowser();
-  writePage(QUERIES);
+  // The page calls the raw pipeline, so it must be handed the *prefixed* text
+  // `Embedder.embed` would apply. granite has no prefix convention, but the gate
+  // is keyed to DEFAULT_MODEL — switch that to bge-small (already in the tested
+  // table) and an unprefixed page would compare two different strings and
+  // certify nothing.
+  const profile = profileFor(DEFAULT_MODEL);
+  writePage(QUERIES.map((q) => withPrefix(profile, "query", q)));
 
   const server = createServer(async (req, res) => {
     const p = join(

@@ -89,12 +89,17 @@ async function loadTransformers(injected?: any): Promise<any> {
   if (injected) return injected;
   try {
     // A literal specifier, so a consumer's bundler can resolve and chunk it
-    // normally when they *have* opted in. It does not typecheck here because
-    // the package is an optional peer and deliberately not installed in this
-    // repo — the same position every consumer who skips it is in. Nothing is
-    // lost: this boundary is untyped by design (see the eslint block above),
-    // and the missing-package path is exactly what the catch handles.
-    // @ts-expect-error optional peer dependency, may not be installed
+    // normally when they *have* opted in. Nothing is lost by leaving it
+    // untyped: this boundary is untyped by design (see the eslint block
+    // above), and the missing-package path is what the catch handles.
+    //
+    // `@ts-ignore`, not `@ts-expect-error`, precisely because whether this
+    // line errors depends on whether the optional peer happens to be
+    // installed. `@ts-expect-error` fails with TS2578 ("unused directive") the
+    // moment someone follows the README and installs it — which is exactly
+    // what the `embed-real` CI job does, and how this was caught.
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore optional peer dependency, may or may not be installed
     return await import("@huggingface/transformers");
   } catch (e) {
     throw new EmbedderUnavailableError(
