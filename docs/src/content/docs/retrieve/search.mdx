@@ -71,9 +71,17 @@ npm install @huggingface/transformers
 No API, no key, no spend, and **no corpus text leaves the machine**. That is a procurement fact as
 much as a technical one, and it is worth having quotable.
 
-The model runs through WASM on both Node and the browser deliberately, so build-time and query-time
-vectors come from the same function. A vector computed in CI and a vector computed in a user's
-browser agree.
+Node and the browser **rank the same, though they do not compute the same floats**.
+transformers.js uses a native ONNX runtime in Node and WASM in the browser, and it accepts
+*different* `device` values on each, so there is no way to force one backend everywhere. Measured
+on the default model, a query embedded in Node and the same query embedded in Chrome agree to
+**cosine 0.999914**.
+
+What dockg guarantees — and gates in CI against the real model in a real browser — is **decisive
+ordering**: any two results clearly separated in score keep their relative order on both platforms.
+Results within the noise of each other may swap, and in practice sometimes do, so do not treat the
+tail of a result list as stable across platforms. dockg pins what is pinnable: single-threaded on
+the WASM side, `q8` weights, one text per call.
 
 ## The three modes
 
