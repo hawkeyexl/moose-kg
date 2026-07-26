@@ -107,6 +107,20 @@ Concretely:
    Because the threshold is calibrated from measured noise, the gate **also bounds that
    noise** (ceiling 2e-2, ~3× what was observed). Otherwise a library regression that
    doubled the disagreement would silently widen the tolerance and keep passing.
+
+   **Each backend is stable across machines, even though they disagree with each other.**
+   The first CI run of the gate (Linux x86, GitHub runner) reproduced the local numbers
+   (Windows x86) to every digit: worst query cosine 0.999088842, worst score noise
+   4.364e-3, closest decisive gap upheld 2.324e-4, and the same single query swapping.
+   Three independent metrics agreeing to ten significant figures across different
+   operating systems and CPUs means the vectors themselves are identical per backend.
+
+   So the divergence is attributable entirely to native-ORT-vs-WASM, not to CPU dispatch
+   or OS — which is a stronger position than this ADR originally claimed. It does **not**
+   restore ADR 01020's remedy (there is still no device value that selects one backend on
+   both platforms), and it is two data points, not a guarantee: ARM runners and other
+   Chrome versions are untested. The gate re-measures on every run rather than trusting
+   this.
 4. **A real-model CI job, separate from the default suite.** `npm test` stays hermetic and
    network-free. A distinct `embed-real` job installs the optional peer, downloads granite
    once (cached), and runs both the Node tests and the cross-platform gate. The invariant

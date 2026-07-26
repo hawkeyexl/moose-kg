@@ -242,7 +242,10 @@ async function main() {
         { timeout: 900_000 },
       );
     } catch (e) {
-      console.error(`\npage state at timeout:\n${await page.innerText("#o")}`);
+      // Guarded: if the page died hard enough that reading it also throws, that
+      // exception would replace the timeout and lose the actual failure.
+      const state = await page.innerText("#o").catch(() => "<page unreadable>");
+      console.error(`\npage state at timeout:\n${state}`);
       throw e;
     }
     const err = await page.evaluate(() => window.__ERROR ?? null);
