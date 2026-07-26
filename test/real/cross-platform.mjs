@@ -222,11 +222,29 @@ async function main() {
   let browserQueryVectors, threads;
   try {
     const page = await browser.newPage();
+    // Surface page-side failures. Without this a crash inside the module
+    // script is invisible and shows up only as a wait timeout.
+    page.on("console", (m) => {
+      if (m.type() === "error") console.error(`  [page] ${m.text()}`);
+    });
+    page.on("pageerror", (e) => console.error(`  [page] ${e.message}`));
+
     await page.goto(`http://127.0.0.1:${port}/`);
-    await page.waitForFunction(
-      () => document.title === "DONE" || document.title === "ERR",
-      { timeout: 600_000 },
-    );
+    try {
+      // `waitForFunction(fn, arg, options)` — the second parameter is the
+      // *argument*, not the options. Passing `{timeout}` there silently leaves
+      // the 30 s default in place, which is what failed CI: the browser
+      // downloads its own copy of the model (Node's npm-side cache does not
+      // serve the page), so a cold run needs minutes, not seconds.
+      await page.waitForFunction(
+        () => document.title === "DONE" || document.title === "ERR",
+        undefined,
+        { timeout: 900_000 },
+      );
+    } catch (e) {
+      console.error(`\npage state at timeout:\n${await page.innerText("#o")}`);
+      throw e;
+    }
     const err = await page.evaluate(() => window.__ERROR ?? null);
     if (err) throw new Error(`browser embedding failed: ${err}`);
     browserQueryVectors = await page.evaluate(() => window.__VECTORS);
