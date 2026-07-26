@@ -131,7 +131,14 @@ export async function runSearch(opts: SearchOptions): Promise<SearchReport> {
   // The vector leg is opt-in by availability: a sidecar plus an embedder. Asked
   // for explicitly (`--mode vector|hybrid`) a missing piece is an error, since
   // silently answering lexically would look like the semantic leg ran.
-  const wantsVector = opts.mode === "vector" || opts.mode === "hybrid";
+  // "Asked for" means an explicit `--mode vector|hybrid` *or* an explicit
+  // `--vectors <path>`. A typo'd path would otherwise fall through to the
+  // default-path branch, find nothing, and return lexical results with exit 0 —
+  // a confident answer to a question the user did not ask.
+  const wantsVector =
+    opts.mode === "vector" ||
+    opts.mode === "hybrid" ||
+    (opts.vectors !== undefined && opts.mode !== "lexical");
   const vectorsPath = opts.vectors
     ? resolve(cwd, opts.vectors)
     : resolve(cwd, config.embed.out);
@@ -153,8 +160,19 @@ export async function runSearch(opts: SearchOptions): Promise<SearchReport> {
     // Refuse rather than rank: vectors built from a different corpus point at
     // IRIs that may no longer exist and miss everything added since
     // (ADR 01020, "Mismatch is refused, not ranked").
+    //
+    // But only refuse when the vector leg was *asked for*. A plain `dockg
+    // search` that merely happens to find a stale sidecar beside the graph
+    // should degrade to lexical, not fail — the leg is additive, and turning a
+    // working lexical search into exit 2 is the new failure mode ADR 01009
+    // forbids. Warned about rather than silently dropped, so a user who
+    // expected semantic results learns why they did not get them.
     const stale = vectors.check({ source });
-    if (stale) throw new DockgError(stale.detail);
+    if (stale && wantsVector) throw new DockgError(stale.detail);
+    if (stale) {
+      process.stderr.write(`dockg: ${stale.detail} Falling back to lexical.\n`);
+      vectors = undefined;
+    }
   } else if (wantsVector) {
     throw new DockgError(
       `Vector index not found: ${vectorsPath} — run \`dockg embed\` first, or use \`--mode lexical\`.`,

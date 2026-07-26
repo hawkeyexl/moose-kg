@@ -14,10 +14,15 @@
  * const embedder = await createLocalEmbedder({ role: "query" });
  * const vectors = createVectorIndex(new Uint8Array(await (await fetch("/kg/vectors.bin")).arrayBuffer()));
  * const entry = await findEntry(question, {
- *   lexical, vectors, embedQuery: (q) => embedder.embed(q),
+ *   lexical, vectors, embedder,
  * });
  * // entry.lexical / entry.vector / entry.candidates
  * ```
+ *
+ * Pass the `embedder` itself, not `embedQuery: (q) => embedder.embed(q)`. A bare
+ * function carries no model or dtype, so `findEntry` cannot check it against the
+ * sidecar and will happily rank a query against vectors from a different model.
+ * The object form gets that refusal (ADR 01020).
  */
 export {
   createLocalEmbedder,
