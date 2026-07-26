@@ -35,7 +35,6 @@ import {
 } from "../../dist/embed.js";
 
 const WORK = resolve(".tmp/real/cross");
-const PORT = 7311;
 
 /** A corpus with deliberately close neighbours, so ties are actually at risk. */
 const CORPUS = [
@@ -213,14 +212,17 @@ async function main() {
       res.end("nf");
     }
   });
-  await new Promise((r) => server.listen(PORT, r));
+  // Port 0: the OS assigns a free one. A hardcoded port is a source of
+  // failures that have nothing to do with what this gate measures.
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  const port = server.address().port;
 
   console.log("embedding the same queries in headless Chrome…");
   const browser = await chromium.launch();
   let browserQueryVectors, threads;
   try {
     const page = await browser.newPage();
-    await page.goto(`http://localhost:${PORT}/`);
+    await page.goto(`http://127.0.0.1:${port}/`);
     await page.waitForFunction(
       () => document.title === "DONE" || document.title === "ERR",
       { timeout: 600_000 },
