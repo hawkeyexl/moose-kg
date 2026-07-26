@@ -144,6 +144,7 @@ describe("dockg/embed package surface", () => {
       readFileSync(join(root, "package.json"), "utf8"),
     ) as {
       dependencies?: Record<string, string>;
+      devDependencies?: Record<string, string>;
       peerDependencies?: Record<string, string>;
       peerDependenciesMeta?: Record<string, { optional?: boolean }>;
     };
@@ -152,6 +153,13 @@ describe("dockg/embed package surface", () => {
     expect(
       pkg.peerDependenciesMeta?.["@huggingface/transformers"]?.optional,
     ).toBe(true);
+    // Not a devDependency either: it drags in both ONNX runtimes plus native
+    // sharp (~476 MB), which every contributor would then install to work on
+    // anything. The `embed-real` CI job installs it for its own run. This is
+    // easy to reintroduce by accident — `npm uninstall` of the peer strips the
+    // `peerDependencies` entry while leaving `peerDependenciesMeta`, so the two
+    // assertions above are checked together with this one.
+    expect(pkg.devDependencies?.["@huggingface/transformers"]).toBeUndefined();
   });
 
   it("leaves the peer as a bare dynamic import, not inlined", () => {

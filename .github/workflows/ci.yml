@@ -58,3 +58,50 @@ jobs:
           sed 's/dockg:version "[^"]*"/dockg:version "X"/' /tmp/gate-a.ttl > /tmp/gate-a-norm.ttl
           sed 's/dockg:version "[^"]*"/dockg:version "X"/' ../golden/graph.ttl > /tmp/golden-norm.ttl
           cmp /tmp/gate-a-norm.ttl /tmp/golden-norm.ttl
+
+  # The embedder against the real model and a real browser (ADR 01021).
+  #
+  # Separate from build-test on purpose: this is the only job allowed network
+  # beyond npm, and the only one that downloads model weights. `npm test` stays
+  # hermetic. It exists because mocks certified a `createLocalEmbedder` that
+  # threw on every real call for a whole release.
+  embed-real:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm install
+
+      # --save-dev, not a bare install: npm treats a plain
+      # `npm install @huggingface/transformers` as already satisfied here,
+      # because this package declares it as an *optional peer* of itself, and
+      # installs its dependency tree without the package. Consumers, whose
+      # manifests carry no such declaration, are unaffected.
+      - name: Install the optional embedding peer
+        run: npm install --save-dev @huggingface/transformers@^4
+
+      # ~53 MB of granite weights. Keyed by model id so a default-model change
+      # misses the cache rather than silently testing the old one.
+      - name: Cache model weights
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-onnx-community-granite-embedding-small-english-r2-ONNX-q8
+
+      - run: npx playwright install --with-deps chromium
+
+      # The cross-platform gate imports dist/embed.js — the built artifact a
+      # consumer would import, not src.
+      - run: npm run build
+
+      - name: Real model, Node side
+        run: npm run test:real
+
+      # The guarantee dockg actually makes: a corpus embedded in Node and a
+      # query embedded in the browser rank the same, even though the two run
+      # different ONNX backends and cannot be made to run the same one.
+      - name: Cross-platform ranking agreement
+        run: npm run test:real:cross

@@ -448,11 +448,19 @@ only the dimension check applies.)
 
 Two things dockg does so the vectors are trustworthy:
 
-- **Node and the browser compute the same function.** transformers.js uses a
-  native runtime in Node and WASM in the browser, and they disagree measurably —
-  which would mean comparing build-time vectors against query-time vectors
-  produced by a *different* function. dockg forces WASM on both sides,
-  single-threaded, one text per call.
+- **Node and the browser rank the same, though they do not compute the same
+  floats.** transformers.js uses a native ONNX runtime in Node and WASM in the
+  browser, and it accepts *different* `device` values on each — so there is no
+  way to force one backend everywhere. Measured on the default model, a query
+  embedded in Node and the same query embedded in Chrome agree to **cosine
+  0.999914**. What dockg guarantees, and gates in CI against the real model in a
+  real browser, is **decisive ordering**: any two results clearly separated in
+  score keep their relative order on both platforms. Results within the noise of
+  each other — a near-tie — may swap, and in practice sometimes do, so don't
+  treat the tail of a result list as stable across platforms. See
+  [ADR 01021](adrs/01021-embedder-cross-platform-reality.md) for the measurements
+  and the gate. dockg pins what is pinnable: single-threaded on the WASM side,
+  `q8` weights, one text per call.
 - **A mismatched sidecar is refused, not ranked.** The artifact records its
   model, dtype, dimensions, and a digest of the search index it was built from.
   Model and dtype are checked against the `embedder` you pass; the digest is

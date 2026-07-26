@@ -70,9 +70,16 @@ gotcha, a decision, a convention — record it **in the repo, in the same change
   broken links, fill errors) · `2` operational error (`DockgError`). `cli.ts fail()` rethrows
   non-DockgError. SHACL severities map onto this: `sh:Violation` → 1, `sh:Warning`/`sh:Info` →
   reported but 0.
-- **No network in tests.** LLM code paths are tested through `MockProvider`
-  (`src/llm/providers/mock.ts`), exported publicly for downstream use. The exec seam is
-  injectable for git/CLI subprocess tests.
+- **No network in the default test suite.** `npm test` is hermetic: LLM code paths go
+  through `MockProvider` (`src/llm/providers/mock.ts`), exported publicly for downstream
+  use, and the exec seam is injectable for git/CLI subprocess tests. **A mock is not
+  coverage of the thing it stands in for** — `createLocalEmbedder` shipped a hardcoded
+  `device: "wasm"` that throws on every real Node call, and mocks certified it for a whole
+  release ([ADR 01021](adrs/01021-embedder-cross-platform-reality.md)). Where a mock stands
+  in for a third-party API, the real one must be exercised **somewhere**: `test/real/` holds
+  those, excluded from `npm test` (`vitest.config.ts`), run by the `embed-real` CI job with
+  `npm run test:real` and `npm run test:real:cross`. Adding a mock for an external library
+  means adding the real-path test in the same change.
 - **LF everywhere.** [.gitattributes](.gitattributes) declares `* text=auto eol=lf`, so the
   object store and every working tree are LF on every platform regardless of a contributor's
   global `core.autocrlf`. Exemptions use `-text` and **must stay below** the `*` rule — the last

@@ -37,6 +37,13 @@ export default tseslint.config(
     languageOptions: { sourceType: "commonjs" },
   },
   {
+    // The real-model gate drives a browser: its `page.evaluate` callbacks are
+    // serialized and run in the page, so they legitimately name `window` and
+    // `document` from a file that is otherwise Node.
+    files: ["test/real/**/*.mjs"],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } },
+  },
+  {
     files: ["**/*.ts"],
     rules: {
       // Unused args are meaningful in this codebase's interface-conforming
