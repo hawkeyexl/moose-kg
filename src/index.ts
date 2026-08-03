@@ -155,9 +155,19 @@ export {
   type FillReport,
   type FillDocResult,
 } from "./commands/fill.js";
-export type {
-  LlmProvider,
-  CompleteJSONRequest,
-  CompleteJSONResponse,
-} from "./llm/types.js";
-export { MockProvider, type MockResponse } from "./llm/providers/mock.js";
+// The inference layer is @hawkeyexl/inference; re-exported here so downstream
+// code that only depends on dockg can still construct providers and drive the
+// offline test seam without adding a second dependency.
+export {
+  MockProvider,
+  type CompleteJSONRequest,
+  type CompleteJSONResponse,
+  type InferenceProvider,
+  type MockResponse,
+} from "@hawkeyexl/inference";
+export {
+  makeProvider,
+  providerSpecFor,
+  resolveProviderIdentity,
+  type ProviderOptions,
+} from "./llm/provider.js";

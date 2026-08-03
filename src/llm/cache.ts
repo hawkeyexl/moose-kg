@@ -1,17 +1,14 @@
 /**
- * Fill proposal cache: content-addressed JSON files. The key covers provider,
- * model, prompt version, requested fields, and the full file content — any
- * change misses.
+ * Fill proposal cache. Storage is the inference library's `JsonCache`; what
+ * stays here is what only dockg can decide — what invalidates an entry:
+ * provider, model, prompt version, the requested fields, and the full file
+ * content.
  */
-import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { JsonCache, buildCacheKey, sha256 } from "@hawkeyexl/inference";
 import type { FillField } from "../core/config.js";
 import { PROMPT_VERSION } from "./prompt.js";
 
-export function sha256(text: string): string {
-  return createHash("sha256").update(text, "utf8").digest("hex");
-}
+export { sha256 };
 
 export function cacheKey(
   provider: string,
@@ -19,40 +16,23 @@ export function cacheKey(
   content: string,
   fields: FillField[],
 ): string {
-  return sha256(
-    [
-      provider,
-      model,
-      `v${PROMPT_VERSION}`,
-      sha256(content),
-      fields.join(","),
-    ].join("|"),
-  );
+  return buildCacheKey([
+    provider,
+    model,
+    `v${PROMPT_VERSION}`,
+    // Pre-hashed: documents are large and key parts should stay short.
+    sha256(content),
+    fields.join(","),
+  ]);
 }
 
-export class FillCache {
-  constructor(
-    private readonly dir: string,
-    private readonly enabled: boolean = true,
-  ) {}
-
-  get(key: string): Record<string, unknown> | undefined {
-    if (!this.enabled) return undefined;
-    const path = join(this.dir, `${key}.json`);
-    if (!existsSync(path)) return undefined;
-    try {
-      return JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
-    } catch {
-      return undefined; // Corrupt cache entry — treat as a miss.
-    }
-  }
-
-  set(key: string, proposal: Record<string, unknown>): void {
-    if (!this.enabled) return;
-    mkdirSync(this.dir, { recursive: true });
-    writeFileSync(
-      join(this.dir, `${key}.json`),
-      JSON.stringify(proposal, null, 2),
-    );
+/**
+ * Proposals are plain JSON objects. Callers re-validate what comes back
+ * against the proposal schema — a hand-edited or stale entry must not bypass
+ * validation just because it parsed.
+ */
+export class FillCache extends JsonCache<Record<string, unknown>> {
+  constructor(dir: string, enabled: boolean = true) {
+    super(dir, enabled, "dockg");
   }
 }

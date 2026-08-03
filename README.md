@@ -30,10 +30,12 @@ you have lifted so the gaps are a number you can see.
 ## Install
 
 ```bash
-npm install -g dockg
+npm install -g @hawkeyexl/dockg
 ```
 
-Requires Node.js 24+. (`dockg` depends on `docmeta` for frontmatter extraction and validation.)
+Requires Node.js 24+. The command stays `dockg`. (It depends on `docmeta` for frontmatter
+extraction and validation, and on [`@hawkeyexl/inference`](https://github.com/hawkeyexl/inference)
+for the `fill` provider layer.)
 
 ## Quick start
 
