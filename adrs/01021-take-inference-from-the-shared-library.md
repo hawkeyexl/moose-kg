@@ -62,7 +62,7 @@ This also required one upstream change: the library's `ExecOptions.env` was type
 `Record<string, string>`, but ADR 01005 has dockg clearing inherited `GIT_*` variables by mapping
 them to `undefined`, and empty string is not the same as unset to git. The library's `realExec`
 already supported it — Node omits undefined-valued keys when building the child environment — so
-only the type was wrong. Widened upstream in `@hawkeyexl/inference@0.0.2`.
+only the type was wrong. Widened upstream in `@hawkeyexl/inference@0.1.0`.
 
 ### Consequences
 

@@ -3,7 +3,7 @@
  * the shared inference library's `ProviderSpec`.
  *
  * The providers themselves, the response cache, the price table, and the
- * schema-validated retry all live in `@hawkeyexl/inference` (ADR 01004). What
+ * schema-validated retry all live in `@hawkeyexl/inference` (ADR 01021). What
  * stays here is the one thing only dockg can decide: which of its own config
  * keys mean what.
  */

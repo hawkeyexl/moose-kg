@@ -1,0 +1,60 @@
+/**
+ * `proposalSchema` is memoized so the inference library's identity-keyed
+ * validator cache hits instead of recompiling Ajv per document. Memoization
+ * makes call order observable, which determinism does not allow.
+ */
+import { describe, expect, it } from "vitest";
+import { proposalSchema } from "../../src/llm/prompt.js";
+import type { FillField } from "../../src/core/config.js";
+
+const A: FillField[] = ["prefLabel", "related", "subjects"];
+const B: FillField[] = ["subjects", "prefLabel", "related"];
+
+describe("proposalSchema", () => {
+  it("returns the identical object for the same field set", () => {
+    // Object identity is the point: the library memoizes its compiled
+    // validator on it, so a fresh object per call recompiles Ajv per document.
+    expect(proposalSchema(A)).toBe(proposalSchema(A));
+  });
+
+  it("is order-independent, including property order", () => {
+    // The cache key is the sorted field set, so these two calls share an
+    // entry. If the schema were built from the caller's order, whichever call
+    // arrived first would fix the property order for both — and that order is
+    // observable: the schema is JSON.stringify'd into the claude-cli and
+    // json_object prompts, so identical inputs could yield different prompts
+    // depending on call sequence.
+    const first = proposalSchema(A);
+    const second = proposalSchema(B);
+    expect(second).toBe(first);
+    expect(JSON.stringify(second)).toBe(JSON.stringify(first));
+  });
+
+  it("orders properties deterministically regardless of which order arrives first", () => {
+    const props = Object.keys(
+      proposalSchema(B)["properties"] as Record<string, unknown>,
+    );
+    const valueFields = props.filter(
+      (p) => p !== "confidence" && p !== "reasoning",
+    );
+    expect(valueFields).toEqual([...valueFields].sort());
+  });
+
+  it("still narrows to exactly the requested fields", () => {
+    const props = proposalSchema(["prefLabel"])["properties"] as Record<
+      string,
+      unknown
+    >;
+    expect(Object.keys(props).sort()).toEqual([
+      "confidence",
+      "prefLabel",
+      "reasoning",
+    ]);
+  });
+
+  it("keeps distinct field sets distinct", () => {
+    expect(proposalSchema(["prefLabel"])).not.toBe(
+      proposalSchema(["prefLabel", "related"]),
+    );
+  });
+});
