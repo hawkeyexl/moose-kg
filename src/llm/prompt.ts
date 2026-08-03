@@ -82,7 +82,24 @@ export const FIELD_SCHEMAS: Record<FillField, Record<string, unknown>> = {
   ),
 };
 
+/**
+ * Memoized by the requested field set. A corpus has only a handful of distinct
+ * field combinations, but a fresh schema object per document would defeat the
+ * inference library's identity-keyed validator cache and recompile Ajv once per
+ * file. The returned object must therefore be treated as immutable.
+ */
+const schemaCache = new Map<string, Record<string, unknown>>();
+
 export function proposalSchema(fields: FillField[]): Record<string, unknown> {
+  const key = [...fields].sort().join(",");
+  const memoized = schemaCache.get(key);
+  if (memoized) return memoized;
+  const built = buildProposalSchema(fields);
+  schemaCache.set(key, built);
+  return built;
+}
+
+function buildProposalSchema(fields: FillField[]): Record<string, unknown> {
   const properties: Record<string, unknown> = {};
   const confidence: Record<string, unknown> = {};
   const reasoning: Record<string, unknown> = {};

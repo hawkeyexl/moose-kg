@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { runFill } from "../../src/commands/fill.js";
-import { MockProvider } from "../../src/llm/providers/mock.js";
+import { MockProvider } from "@hawkeyexl/inference";
 
 function setup(files: Record<string, string>, config = ""): string {
   const dir = mkdtempSync(join(tmpdir(), "dockg-fill-"));
@@ -125,6 +125,7 @@ describe("runFill", () => {
 
   it("reports schema-invalid proposals as errors with exit 1", async () => {
     const dir = setup({ "a.md": "---\ntitle: T\n---\n" });
+    // Both attempts fail: the mock cycles its single scripted response.
     const provider = new MockProvider([{ json: { prefLabel: 42 } }]);
     const report = await runFill({
       cwd: dir,
@@ -133,6 +134,42 @@ describe("runFill", () => {
     });
     expect(report.results[0]).toMatchObject({ status: "error" });
     expect(report.exitCode).toBe(1);
+  });
+
+  it("retries once when the first proposal is schema-invalid", async () => {
+    // fill used to abort a document on a single malformed response. One bad
+    // completion is not worth losing the work over, so the shared inference
+    // layer retries once before recording an error.
+    const dir = setup({ "a.md": "---\ntitle: T\n---\n" });
+    const provider = new MockProvider([
+      { json: { prefLabel: 42 } },
+      { json: PROPOSAL },
+    ]);
+    const report = await runFill({
+      cwd: dir,
+      providerInstance: provider,
+      noCache: true,
+    });
+    expect(report.results[0]).toMatchObject({ status: "filled" });
+    expect(report.exitCode).toBe(0);
+    expect(readFileSync(join(dir, "a.md"), "utf8")).toContain(
+      "prefLabel: Query Syntax",
+    );
+  });
+
+  it("retries a transient provider error before giving up", async () => {
+    const dir = setup({ "a.md": "---\ntitle: T\n---\n" });
+    const provider = new MockProvider([
+      { error: "503 upstream unavailable" },
+      { json: PROPOSAL },
+    ]);
+    const report = await runFill({
+      cwd: dir,
+      providerInstance: provider,
+      noCache: true,
+    });
+    expect(report.results[0]).toMatchObject({ status: "filled" });
+    expect(report.exitCode).toBe(0);
   });
 
   it("writes kg.provenance naming the model and filled fields, in the same write", async () => {

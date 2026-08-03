@@ -7,7 +7,7 @@
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { Ajv2020 } from "ajv/dist/2020.js";
+
 import { analyzeDoc } from "../core/analyze.js";
 import { loadConfig, type FillField } from "../core/config.js";
 import { discoverFiles } from "../core/discover.js";
@@ -21,18 +21,20 @@ import {
 import { FillGuard } from "../core/fill-guard.js";
 import { bundledShapesPath } from "../core/pkg.js";
 import { DockgError } from "../types.js";
+import {
+  completeValidatedJSON,
+  costOfUsage,
+  pricingFor,
+  validatorFor,
+  type InferenceProvider,
+} from "@hawkeyexl/inference";
 import { FillCache, cacheKey } from "../llm/cache.js";
-import { costOfUsage, pricingFor } from "../llm/cost.js";
 import {
   SYSTEM_PROMPT,
   buildUserPrompt,
   proposalSchema,
 } from "../llm/prompt.js";
-import {
-  makeProvider,
-  resolveProviderIdentity,
-} from "../llm/providers/index.js";
-import type { LlmProvider } from "../llm/types.js";
+import { makeProvider, resolveProviderIdentity } from "../llm/provider.js";
 
 export interface FillOptions {
   globs?: string[];
@@ -49,7 +51,7 @@ export interface FillOptions {
   /** Disable the graph guardrail (`--no-validate-graph`). */
   noValidateGraph?: boolean;
   /** Injection seam for tests: bypasses the provider factory. */
-  providerInstance?: LlmProvider;
+  providerInstance?: InferenceProvider;
 }
 
 export type FillStatus =
@@ -84,8 +86,6 @@ export interface FillReport {
   costUsd: number;
   exitCode: 0 | 1;
 }
-
-const ajv = new Ajv2020({ allErrors: true });
 
 /** SKOS relation fields that require a prefLabel to attach to. */
 const RELATION_FIELDS = [
@@ -166,15 +166,18 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
         provider: opts.provider,
         model: opts.model,
       });
-  let provider: LlmProvider | undefined = opts.providerInstance;
-  const getProvider = (): LlmProvider =>
+  let provider: InferenceProvider | undefined = opts.providerInstance;
+  const getProvider = (): InferenceProvider =>
     (provider ??= makeProvider(config, {
       provider: opts.provider,
       model: opts.model,
     }));
 
   const fields = config.fill.fields;
-  const validateProposal = ajv.compile(proposalSchema(fields));
+  // Compiled against the full configured field set, not any one doc's missing
+  // subset: proposals are validated leniently and narrowed afterwards, so a
+  // provider that volunteers a field this doc didn't ask for is fine.
+  const validateProposal = validatorFor(proposalSchema(fields));
   const cache = new FillCache(
     resolve(cwd, config.fill.cacheDir),
     !opts.noCache,
@@ -288,20 +291,27 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
       const doc = analyzeDoc(content, path, allPaths, {
         routes: config.routes,
       });
-      const response = await getProvider().completeJSON({
+      // completeValidatedJSON validates and retries once before giving up.
+      // fill previously aborted the document on a single malformed response;
+      // one bad completion is not worth losing the work over.
+      //
+      // The request schema is narrowed to this doc's missing fields, so the
+      // provider cannot propose fields the run should not touch. Validation
+      // deliberately uses the WIDER configured-field schema: a provider that
+      // volunteers extra fields is tolerated and narrowed below, not failed.
+      const run = await completeValidatedJSON<Record<string, unknown>>({
+        provider: getProvider(),
         system: SYSTEM_PROMPT,
         user: buildUserPrompt(doc, content, missing),
         schema: proposalSchema(missing),
+        validate: validateProposal,
         temperature: config.fill.temperature,
       });
-      costUsd += costOfUsage(response.usage, pricing);
-      if (!validateProposal(response.json)) {
-        const details = (validateProposal.errors ?? [])
-          .map((e) => `${e.instancePath || "/"}: ${e.message}`)
-          .join("; ");
-        throw new Error(`Proposal failed schema validation: ${details}`);
+      costUsd += costOfUsage(run.usage, pricing);
+      if (run.result === undefined) {
+        throw new Error(run.error ?? "provider returned no proposal");
       }
-      proposal = response.json as Record<string, unknown>;
+      proposal = run.result;
       cache.set(key, proposal);
     }
 

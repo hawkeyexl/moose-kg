@@ -9,8 +9,7 @@
  * names only, matching frontmatter author handling.
  */
 import { DockgError } from "../types.js";
-import { realExec } from "../llm/exec.js";
-import type { ExecFn } from "../llm/types.js";
+import { realExec, type ExecFn } from "@hawkeyexl/inference";
 import { normalizeDocPath } from "./iri.js";
 
 export interface GitFileHistory {

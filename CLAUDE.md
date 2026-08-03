@@ -70,9 +70,15 @@ gotcha, a decision, a convention — record it **in the repo, in the same change
   broken links, fill errors) · `2` operational error (`DockgError`). `cli.ts fail()` rethrows
   non-DockgError. SHACL severities map onto this: `sh:Violation` → 1, `sh:Warning`/`sh:Info` →
   reported but 0.
-- **No network in tests.** LLM code paths are tested through `MockProvider`
-  (`src/llm/providers/mock.ts`), exported publicly for downstream use. The exec seam is
-  injectable for git/CLI subprocess tests.
+- **The inference layer is [`@hawkeyexl/inference`](https://github.com/hawkeyexl/inference), not
+  local code** (ADR 01021). Providers, the response cache, the price table, and the
+  schema-validated retry all live there. `src/llm/` keeps only what is dockg's own: the SKOS
+  prompt and proposal schema (`prompt.ts`), the cache-key composition (`cache.ts`), and the
+  config → `ProviderSpec` mapping (`provider.ts`). Never reimplement a provider here — three
+  copies of this code drifted apart once already; a fix belongs upstream.
+- **No network in tests.** LLM code paths are tested through the library's `MockProvider`,
+  re-exported from [src/index.ts](src/index.ts) for downstream use. The exec seam is injectable
+  for git/CLI subprocess tests.
 - **LF everywhere.** [.gitattributes](.gitattributes) declares `* text=auto eol=lf`, so the
   object store and every working tree are LF on every platform regardless of a contributor's
   global `core.autocrlf`. Exemptions use `-text` and **must stay below** the `*` rule — the last

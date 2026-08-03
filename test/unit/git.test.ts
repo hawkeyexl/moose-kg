@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { collectGitHistory } from "../../src/core/git.js";
 import { DockgError } from "../../src/types.js";
-import type { ExecFn, ExecResult } from "../../src/llm/types.js";
+import type { ExecFn, ExecResult } from "@hawkeyexl/inference";
 
 function mockExec(stdout: string, code = 0): ExecFn {
   return () =>
