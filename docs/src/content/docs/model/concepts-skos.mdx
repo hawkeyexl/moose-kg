@@ -116,3 +116,17 @@ vocabulary pass. Slug convergence is silent by design, and the query is how you 
     description="Every key with its type and dependencies."
   />
 </CardGrid>
+
+{/* Doc Detective inline tests: verify this page against the local build, exposed
+    as `dockg` via `npm link` (see .github/workflows/doc-detective.yml), over the
+    fixtures in test/fixtures/dd/. Writes go to .tmp/, never into a fixture.
+    Constraints these commands are shaped by: runShell does not go through a shell
+    (no `&&`); it does not honor a working directory, so paths are repo-root-
+    relative and input globs live in the fixture config rather than on the command
+    line, which would also close this comment; and Doc Detective deduplicates
+    identical commands run-wide, so each assertion needs its own command.
+    Run with `npx doc-detective`. Config: .doc-detective.json. */}
+{/* test {"testId":"concepts-and-skos","description":"Slug convergence is a warning, not a violation."} */}
+{/* step {"description":"Build a corpus where two documents spell one concept two ways.","runShell":{"command":"dockg build -c test/fixtures/dd/dockg.config.yaml","exitCodes":[0]}} */}
+{/* step {"description":"The two spellings converge on one node and are reported as a warning, so the run exits 0.","runShell":{"command":"dockg check -c test/fixtures/dd/dockg.config.yaml --shapes shapes/dockg-0.5.ttl","exitCodes":[0],"stdout":"multiple prefLabels"}} */}
+{/* test end */}

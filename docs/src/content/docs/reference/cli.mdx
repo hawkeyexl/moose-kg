@@ -329,3 +329,18 @@ Reserialize the built graph into a consumer format (jsonld file, iirds package, 
 
 Projection warnings go to stderr and do not fail the run, so check stderr if you care whether
 something was dropped.
+
+{/* Doc Detective inline tests: verify this page against the local build, exposed
+    as `dockg` via `npm link` (see .github/workflows/doc-detective.yml), over the
+    fixtures in test/fixtures/dd/. Writes go to .tmp/, never into a fixture.
+    Constraints these commands are shaped by: runShell does not go through a shell
+    (no `&&`); it does not honor a working directory, so paths are repo-root-
+    relative and input globs live in the fixture config rather than on the command
+    line, which would also close this comment; and Doc Detective deduplicates
+    identical commands run-wide, so each assertion needs its own command.
+    Run with `npx doc-detective`. Config: .doc-detective.json. */}
+{/* test {"testId":"cli-reference","description":"The command surface the CLI reference documents."} */}
+{/* step {"description":"The program lists every documented command.","runShell":{"command":"dockg --help","exitCodes":[0],"stdout":"traverse [options] <node>"}} */}
+{/* step {"description":"export's -f selects the export format, unlike every other command.","runShell":{"command":"dockg export --help","exitCodes":[0],"stdout":"Export format: jsonld | iirds | search"}} */}
+{/* step {"description":"stats gates only under --check.","runShell":{"command":"dockg stats --help","exitCodes":[0],"stdout":"Exit 1 when broken internal links exist"}} */}
+{/* test end */}
