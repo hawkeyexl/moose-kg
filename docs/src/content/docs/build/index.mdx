@@ -134,11 +134,13 @@ heading.
 **Coverage** is the fraction of documents carrying each field. A low first number is the normal
 starting point, not a failing grade.
 
-<Aside type="caution" title="dockg does not parse MDX">
-  Markdown parsing covers headings, prose links, and frontmatter in `.mdx` files, but JSX is
-  treated as raw text. Links inside components — `<LinkCard href="…">` and similar — **do not
-  become graph edges.** If your site is MDX-based and component-heavy, your reference counts and
-  orphan list will understate reality.
+<Aside type="note" title="MDX components are read too">
+  In an `.mdx` file, a JSX element's `href` becomes a link and its `src` becomes an image — on any
+  element, because those are HTML's own names for the relationships. So `<LinkCard href="…" />`
+  produces the same edge a Markdown link would.
+
+  An attribute whose value is an expression (`href={route}`) is skipped rather than guessed at: its
+  value is not knowable without evaluating the module.
 </Aside>
 
 ## What you have now

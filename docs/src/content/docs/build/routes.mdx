@@ -118,10 +118,10 @@ usually a page that was moved or deleted without its inbound links being updated
 That list is now small enough to act on, and stable enough to
 [gate on in CI](/dockg/govern/ci/).
 
-<Aside type="caution" title="MDX components are still invisible">
-  dockg parses Markdown, not MDX. A link written as `<LinkCard href="/docs/actions/find" />` is
-  not a Markdown link, so route mapping cannot help it — it never becomes an edge at all. Prose
-  links inside `.mdx` files work fine.
+<Aside type="note" title="Route mapping applies to component links too">
+  A route written as `<LinkCard href="/docs/actions/find" />` in an `.mdx` file resolves through the
+  same mapping as a Markdown link. If your site is component-heavy, expect the broken-link count to
+  move substantially the first time you configure routes.
 </Aside>
 
 ## What you have now
