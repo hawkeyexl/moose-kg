@@ -43,7 +43,9 @@ gotcha, a decision, a convention — record it **in the repo, in the same change
 |---|---|
 | Behavior decisions, contracts, trade-offs | [adrs/](adrs) (MADR, see below) |
 | Repo-wide agent workflow rules | This file |
-| User-facing behavior, config, commands | [README.md](README.md) |
+| User-facing behavior, config, commands | [docs/src/content/docs/](docs/src/content/docs) (the published site) |
+| Who the docs serve, and why they are shaped this way | [docs/content_strategy/](docs/content_strategy) |
+| Contributor mechanics | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Ephemeral working notes | `.tmp/` (gitignored) — never committed |
 
 ## Invariants of this codebase (required reading)
@@ -146,10 +148,40 @@ key, CLI flag, output shape) also needs:
 ## Documentation impact (required)
 
 Behavior change → answer explicitly: does this add, change, or remove something a user can see,
-run, configure, or rely on? **If yes, the docs are part of the change's definition-of-done**:
-README (vocabulary table, config sample, commands table), the `dockg init` starter template, and
-command `--help` text all land in the same commit. If no (pure refactor, internal-only), say so
-in the commit body. Rule of thumb: a change that warrants an ADR has docs impact.
+run, configure, or rely on? **If yes, the docs are part of the change's definition-of-done**: the
+affected page under [docs/src/content/docs/](docs/src/content/docs), the `dockg init` starter
+template, and command `--help` text all land in the same commit. If no (pure refactor,
+internal-only), say so in the commit body. Rule of thumb: a change that warrants an ADR has docs
+impact.
+
+The README is a router, not a manual — it carries the hook, a five-line quickstart, and a table
+of links into the site. Do not move reference material back into it.
+
+### Writing or changing a page
+
+Read [docs/content_strategy/README.md](docs/content_strategy/README.md) first — it is the entry
+point, and these are pointers into it, not a summary of it.
+
+1. **Name the persona.** [personas/_overview.md](docs/content_strategy/personas/_overview.md).
+   A page that serves everyone serves no one.
+2. **Find the CUJ.** [journeys/_overview.md](docs/content_strategy/journeys/_overview.md). The
+   page exists to move that persona along that journey.
+3. **Structure around the outcome, not the document type.** Do *not* impose a Diátaxis
+   tutorial/how-to/explanation/reference split as the organizing principle — the nav is
+   journey-voiced, and the Reference shelf supports navigation rather than driving it.
+4. **Link into Reference; do not restate it.** Journey pages explain the path.
+5. **Check the page's place and launch status** in
+   [proposed-ia.md](docs/content_strategy/information_architecture/proposed-ia.md). No page
+   exists without a CUJ except the three navigation-only pages named in the gap analysis.
+6. **Every page needs `title` and `description`** — a machine-enforced deploy gate.
+7. **Never hand-write command output.** Capture it by running the built binary against a fixture
+   in [test/fixtures/dd/](test/fixtures/dd), and add the claim to that page's Doc Detective
+   block so it stays true.
+
+Four gates run in CI and all of them block: `npm run docs:check-strategy` (anchor and coverage
+invariants), `npm run docs:check-cli` (reference/cli.mdx vs commander), `npm run docs:check-links`
+(every `/dockg/…` target resolves), and `npm test` (every documented command claim, via
+`test/integration/docs-claims.test.ts`).
 
 ## SHACL shapes impact (required)
 
@@ -245,8 +277,16 @@ the repo's `CLAUDE_CODE_OAUTH_TOKEN` secret.
 
 ## Related files
 
-- [.github/workflows/ci.yml](.github/workflows/ci.yml) — CI incl. the determinism gate and the
-  determinism gate
+- [.github/workflows/ci.yml](.github/workflows/ci.yml) — the full loop plus the determinism gate
+- [.github/workflows/docs.yml](.github/workflows/docs.yml) — strategy invariants, CLI drift, page
+  frontmatter, the graph gate over dockg's own docs, then the Pages deploy
+- [.github/workflows/doc-detective.yml](.github/workflows/doc-detective.yml) — the inline doc
+  tests against the linked binary (fork-guarded)
+- [scripts/](scripts) — `check-content-strategy.mjs`, `check-cli-reference.mjs`,
+  `check-docs-links.mjs`, `check-publishable.mjs`
+- [dockg.docs.yaml](dockg.docs.yaml) — dockg pointed at its own documentation. Not named
+  `dockg.config.yaml` deliberately: that filename is discovered implicitly and would apply to
+  every bare invocation from the repo root, including the integration tests
 - [.releaserc.json](.releaserc.json) · [commitlint.config.cjs](commitlint.config.cjs)
 - [.husky/](.husky) — `commit-msg` (commitlint), `pre-commit` (lint-staged + typecheck),
   `pre-push` (full loop)

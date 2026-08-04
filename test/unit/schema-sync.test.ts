@@ -151,25 +151,37 @@ describe("iiRDS enums ↔ bundled schema", () => {
 });
 
 /**
- * Drift guard: the README names the bundled-default schema and shapes files as
- * a user-facing fact. Each bundled-path bump left stale version numbers behind
- * (caught twice in review); pin the current-state README references to the
- * actual bundled filenames so a future bump fails here instead of shipping a
- * wrong doc.
+ * Drift guard: the docs name the bundled-default schema and shapes files as a
+ * user-facing fact. Each bundled-path bump left stale version numbers behind
+ * (caught twice in review); pin the current-state references to the actual
+ * bundled filenames so a future bump fails here instead of shipping a wrong doc.
+ *
+ * These facts used to live in the README and now live on the configuration
+ * reference page, which is where a reader looks up a default. The guard moved
+ * with them rather than being dropped.
  */
-describe("README bundled-default references ↔ pkg.ts", () => {
-  const readme = readFileSync(
-    join(dirname(fileURLToPath(import.meta.url)), "..", "..", "README.md"),
+describe("documented bundled defaults ↔ pkg.ts", () => {
+  const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
+  const configPage = readFileSync(
+    join(
+      root,
+      "docs",
+      "src",
+      "content",
+      "docs",
+      "reference",
+      "configuration.mdx",
+    ),
     "utf8",
   );
   const schemaFile = basename(bundledSchemaPath(import.meta.url));
   const shapesFile = basename(bundledShapesPath(import.meta.url));
 
   it("names the current bundled schema file", () => {
-    expect(readme).toContain(`schemas/${schemaFile}`);
+    expect(configPage).toContain(`schemas/${schemaFile}`);
   });
 
   it("names the current bundled shapes file", () => {
-    expect(readme).toContain(`shapes/${shapesFile}`);
+    expect(configPage).toContain(`shapes/${shapesFile}`);
   });
 });
