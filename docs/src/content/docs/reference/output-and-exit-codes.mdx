@@ -96,24 +96,3 @@ Piping `--format json` to a file and reading stderr separately is the reliable p
 ```sh
 dockg stats --format json > stats.json 2> stats.err
 ```
-
-{/* Doc Detective inline tests: verify this page against the local build, exposed
-    as `dockg` via `npm link` (see .github/workflows/doc-detective.yml), over the
-    fixtures in test/fixtures/dd/. Writes go to .tmp/, never into a fixture.
-    Two things to know before editing these. Output is asserted with `stdio`,
-    which matches stdout or stderr; `stdout`/`stderr` are not schema properties,
-    and a step using them is dropped without failing the run (scripts/check-doc-
-    tests.mjs is the guard against that). And paths are repo-root-relative with
-    the input globs in the fixture config, because a glob on the command line
-    would close this comment. Run with `npx doc-detective`. */}
-{/* test {"testId":"exit-code-contract","description":"The 0/1/2 contract, including the cases that report a problem and still exit 0."} */}
-{/* step {"description":"Build the corpus the later steps read.","runShell":{"command":"dockg build -c test/fixtures/dd/dockg.config.yaml","exitCodes":[0]}} */}
-{/* step {"description":"check reporting only warnings exits 0 — warnings never gate.","runShell":{"command":"dockg check -c test/fixtures/dd/dockg.config.yaml","exitCodes":[0],"stdio":"0 violations, 1 warning"}} */}
-{/* step {"description":"Build a corpus that violates the shapes.","runShell":{"command":"dockg build -c test/fixtures/dd/violations.config.yaml","exitCodes":[0]}} */}
-{/* step {"description":"check finding violations exits 1, unlike the warnings-only run above.","runShell":{"command":"dockg check -c test/fixtures/dd/violations.config.yaml","exitCodes":[1],"stdio":"2 violations, 0 warnings"}} */}
-{/* step {"description":"validate exits 1 when a file fails the frontmatter schema.","runShell":{"command":"dockg validate -c test/fixtures/dd/invalid.config.yaml","exitCodes":[1],"stdio":"1 file checked, 0 passed, 1 failed"}} */}
-{/* step {"description":"stats without --check never gates, however bad the numbers are.","runShell":{"command":"dockg stats -c test/fixtures/dd/dockg.config.yaml --coverage-threshold 100","exitCodes":[0]}} */}
-{/* step {"description":"stats --check exits 1 when coverage is below the threshold.","runShell":{"command":"dockg stats -c test/fixtures/dd/dockg.config.yaml --check --coverage-threshold 100","exitCodes":[1]}} */}
-{/* step {"description":"A missing graph is an operational error, exit 2 — not a finding.","runShell":{"command":"dockg check -c test/fixtures/dd/dockg.config.yaml -g .tmp/dd/absent.ttl","exitCodes":[2],"stdio":"Graph not found"}} */}
-{/* step {"description":"Inputs that match nothing are an operational error, not an empty successful build.","runShell":{"command":"dockg build -c test/fixtures/dd/nomatch.config.yaml","exitCodes":[2],"stdio":"No input files matched"}} */}
-{/* test end */}

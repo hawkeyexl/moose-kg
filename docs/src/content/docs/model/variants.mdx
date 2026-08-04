@@ -127,19 +127,3 @@ metadata down to the heading that owns the text — see
     description="Turn how much of the corpus is actually scoped into a gated number."
   />
 </CardGrid>
-
-{/* Doc Detective inline tests: verify this page against the local build, exposed
-    as `dockg` via `npm link` (see .github/workflows/doc-detective.yml), over the
-    fixtures in test/fixtures/dd/. Writes go to .tmp/, never into a fixture.
-    Two things to know before editing these. Output is asserted with `stdio`,
-    which matches stdout or stderr; `stdout`/`stderr` are not schema properties,
-    and a step using them is dropped without failing the run (scripts/check-doc-
-    tests.mjs is the guard against that). And paths are repo-root-relative with
-    the input globs in the fixture config, because a glob on the command line
-    would close this comment. Run with `npx doc-detective`. */}
-{/* test {"testId":"scope-by-variant","description":"Contradictory applicability is a violation, and an unresolvable filter refuses."} */}
-{/* step {"description":"Build a corpus where one topic both applies and does not apply to the same variant.","runShell":{"command":"dockg build -c test/fixtures/dd/violations.config.yaml","exitCodes":[0]}} */}
-{/* step {"description":"SHACL disjointness catches the contradiction, and it exits 1.","runShell":{"command":"dockg check -c test/fixtures/dd/violations.config.yaml","exitCodes":[1],"stdio":"dockg:notApplicableToVariant"}} */}
-{/* step {"description":"Build the clean corpus for the traversal below.","runShell":{"command":"dockg build -c test/fixtures/dd/dockg.config.yaml","exitCodes":[0]}} */}
-{/* step {"description":"traverse exits 2 on a variant that is not in the graph, rather than returning an empty set.","runShell":{"command":"dockg traverse https://example.com/dd/doc/test/fixtures/dd/docs/configuration.md -c test/fixtures/dd/dockg.config.yaml --variant SP-X999","exitCodes":[2],"stdio":"Unknown product variant"}} */}
-{/* test end */}

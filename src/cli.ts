@@ -420,8 +420,8 @@ program
  *
  * `realpathSync` on both sides because `npm link` puts a symlink on argv[1]
  * while `import.meta.url` resolves to the real file — comparing the raw paths
- * would make a linked CLI silently do nothing, which is exactly how the docs
- * are tested (see .github/workflows/doc-detective.yml).
+ * would make a linked CLI silently do nothing, which is how a locally linked
+ * `dockg` is normally exercised.
  */
 function isMain(): boolean {
   const entry = process.argv[1];

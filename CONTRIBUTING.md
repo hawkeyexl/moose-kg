@@ -35,9 +35,9 @@ CI, which is the authoritative gate.
 
 Prettier deliberately ignores `test/fixtures/` and `schemas/`: the corpus and golden graph are
 byte-exact regression baselines, and published frontmatter schemas are immutable once released.
-It also ignores `*.mdx`, because the docs pages carry Doc Detective test blocks written as JSX
-comments wrapping JSON, which its MDX formatter reflows into invalid JSON.
-`.gitattributes` pins LF line endings everywhere except those byte-exact fixtures.
+It also ignores `*.md` and `*.mdx`: prose in this repo is hand-wrapped, and Prettier's reflow adds
+churn without adding signal. `.gitattributes` pins LF line endings everywhere except those
+byte-exact fixtures.
 
 ## Documentation
 
@@ -59,30 +59,19 @@ named persona and journey.
 | Strategy invariants | `npm run docs:check-strategy` | Every `aud-`/`persona-`/`cuj-` reference resolves; personas and CUJs cover each other; the IA plans exactly the pages the journeys name |
 | CLI drift | `npm run docs:check-cli` | `reference/cli.mdx` documents exactly the commands, arguments, and options commander knows about |
 | Internal links | `npm run docs:check-links` | Every `/dockg/…` link resolves to a built page |
-| Documented behavior | `npm run docs:test` | Every command shown on a page actually behaves as printed |
 
-`docs:test` needs the CLI on `PATH` as `dockg`, so link it first:
-
-```bash
-npm run build && npm link && npm link @hawkeyexl/dockg
-```
-
-It runs Doc Detective over the inline blocks, then `scripts/check-doc-tests.mjs`, which compares
-the steps the pages declare against the steps that actually ran.
-
-**That second half is not optional.** Doc Detective skips a step it cannot parse — it logs a
-warning and carries on, so the run reports success while testing less than it appears to. Twenty-two
-of this repo's thirty-three steps were skipped that way once, and everything was green. The usual
-cause is a property the `runShell` schema does not define: assert output with **`stdio`** (it
-matches stdout or stderr), never `stdout` or `stderr`.
+The docs workflow additionally builds a graph from the documentation site itself and holds it to
+`dockg check` and `dockg stats --check` — the same gates the docs recommend to readers.
 
 **When you change the CLI surface** — add, rename, or remove a command, argument, flag, or
 default — update [`docs/src/content/docs/reference/cli.mdx`](docs/src/content/docs/reference/cli.mdx)
 in the same change. The drift check enforces it.
 
-Command output shown on a page is captured by running the built binary against a committed
-fixture in [`test/fixtures/dd/`](test/fixtures/dd), never written from memory. Determinism means
-what you capture is what every reader sees.
+**Command output on a page is not verified by CI.** Capture it by running the built binary
+against a committed fixture under [`test/fixtures/`](test/fixtures), never from memory —
+determinism means what you capture is what every reader sees. Automated doc testing was removed
+and is planned to return; until it does, re-capturing output when a command changes is a manual
+obligation.
 
 ## Commit messages
 

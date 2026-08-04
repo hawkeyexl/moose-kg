@@ -1,5 +1,0 @@
-{
-  "input": "docs/src/content/docs",
-  "output": ".tmp/doc-detective/results",
-  "detectSteps": false
-}

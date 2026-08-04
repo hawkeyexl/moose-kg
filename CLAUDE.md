@@ -174,17 +174,18 @@ point, and these are pointers into it, not a summary of it.
    [proposed-ia.md](docs/content_strategy/information_architecture/proposed-ia.md). No page
    exists without a CUJ except the three navigation-only pages named in the gap analysis.
 6. **Every page needs `title` and `description`** — a machine-enforced deploy gate.
-7. **Never hand-write command output.** Capture it by running the built binary against a fixture
-   in [test/fixtures/dd/](test/fixtures/dd), and add the claim to that page's Doc Detective
-   block so it stays true. Assert output with **`stdio`** — it matches stdout or stderr, and
-   `stdout`/`stderr` are not properties the `runShell` schema defines. A step that uses them is
-   **skipped silently**: Doc Detective logs a warning and the run still reports success.
+7. **Never hand-write command output.** Capture it by running the built binary against a
+   committed fixture under [test/fixtures/](test/fixtures). Determinism means what you capture is
+   what every reader sees — and a transcribed approximation is a claim nothing checks.
 
-Four gates run in CI and all of them block: `npm run docs:check-strategy` (anchor and coverage
-invariants), `npm run docs:check-cli` (reference/cli.mdx vs commander), `npm run docs:check-links`
-(every `/dockg/…` target resolves), and `npm run docs:test` (Doc Detective over the inline blocks,
-then `scripts/check-doc-tests.mjs` asserting every declared step actually ran — a green Doc
-Detective run alone does not prove that).
+Three gates run in CI and all of them block: `npm run docs:check-strategy` (anchor and coverage
+invariants), `npm run docs:check-cli` (reference/cli.mdx vs commander), and
+`npm run docs:check-links` (every `/dockg/…` target resolves). The docs workflow also builds a
+graph from the docs themselves and holds it to `dockg check` and `dockg stats --check`.
+
+**Automated doc testing is deliberately absent.** Command output on a page is currently verified
+by whoever captures it, not by CI. Re-adding a runner is planned; until then, treat a changed
+command's documented output as something you must re-capture by hand.
 
 ## SHACL shapes impact (required)
 
@@ -283,10 +284,8 @@ the repo's `CLAUDE_CODE_OAUTH_TOKEN` secret.
 - [.github/workflows/ci.yml](.github/workflows/ci.yml) — the full loop plus the determinism gate
 - [.github/workflows/docs.yml](.github/workflows/docs.yml) — strategy invariants, CLI drift, page
   frontmatter, the graph gate over dockg's own docs, then the Pages deploy
-- [.github/workflows/doc-detective.yml](.github/workflows/doc-detective.yml) — the inline doc
-  tests against the linked binary (fork-guarded)
 - [scripts/](scripts) — `check-content-strategy.mjs`, `check-cli-reference.mjs`,
-  `check-docs-links.mjs`, `check-doc-tests.mjs`, `check-publishable.mjs`
+  `check-docs-links.mjs`, `check-publishable.mjs`
 - [dockg.docs.yaml](dockg.docs.yaml) — dockg pointed at its own documentation. Not named
   `dockg.config.yaml` deliberately: that filename is discovered implicitly and would apply to
   every bare invocation from the repo root, including the integration tests
