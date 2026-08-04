@@ -42,16 +42,16 @@ jobs:
           npm link @hawkeyexl/dockg
           dockg --version
 
-      - uses: doc-detective/github-action@49c73785b0ff864356ec2ef71b728f0623a8621d # v1.6.1
-        with:
-          config: .doc-detective.json
-          exit_on_fail: true
+      # Run the version pinned in the lockfile rather than the marketplace action,
+      # so the suite and the guard below read the same results and the version
+      # cannot drift between them.
+      - name: Inline doc tests
+        run: npx doc-detective
 
-      # Doc Detective is not the authoritative gate: its inline runner has been
-      # observed to execute only a subset of the declared steps without reporting
-      # the omissions. test/integration/docs-claims.test.ts reads the same inline
-      # blocks and runs every one of them, and it runs in the main CI job. This
-      # workflow adds what that test cannot: the published `dockg …` command form,
-      # resolved through the link above.
-      - name: Every declared step (authoritative)
-        run: npx vitest run test/integration/docs-claims.test.ts
+      # A green run is not sufficient on its own. Doc Detective skips a step it
+      # cannot parse — it logs a warning and carries on, so the run still reports
+      # success while testing less than it appears to. This compares the steps the
+      # pages declare against the steps that actually ran.
+      - name: Every declared step ran
+        if: always()
+        run: npm run docs:check-doc-tests

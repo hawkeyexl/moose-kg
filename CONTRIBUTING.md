@@ -59,7 +59,22 @@ named persona and journey.
 | Strategy invariants | `npm run docs:check-strategy` | Every `aud-`/`persona-`/`cuj-` reference resolves; personas and CUJs cover each other; the IA plans exactly the pages the journeys name |
 | CLI drift | `npm run docs:check-cli` | `reference/cli.mdx` documents exactly the commands, arguments, and options commander knows about |
 | Internal links | `npm run docs:check-links` | Every `/dockg/…` link resolves to a built page |
-| Documented behavior | `npm test` | Every command shown on a page actually behaves as printed (`test/integration/docs-claims.test.ts`) |
+| Documented behavior | `npm run docs:test` | Every command shown on a page actually behaves as printed |
+
+`docs:test` needs the CLI on `PATH` as `dockg`, so link it first:
+
+```bash
+npm run build && npm link && npm link @hawkeyexl/dockg
+```
+
+It runs Doc Detective over the inline blocks, then `scripts/check-doc-tests.mjs`, which compares
+the steps the pages declare against the steps that actually ran.
+
+**That second half is not optional.** Doc Detective skips a step it cannot parse — it logs a
+warning and carries on, so the run reports success while testing less than it appears to. Twenty-two
+of this repo's thirty-three steps were skipped that way once, and everything was green. The usual
+cause is a property the `runShell` schema does not define: assert output with **`stdio`** (it
+matches stdout or stderr), never `stdout` or `stderr`.
 
 **When you change the CLI surface** — add, rename, or remove a command, argument, flag, or
 default — update [`docs/src/content/docs/reference/cli.mdx`](docs/src/content/docs/reference/cli.mdx)

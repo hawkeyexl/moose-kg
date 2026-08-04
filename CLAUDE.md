@@ -176,12 +176,15 @@ point, and these are pointers into it, not a summary of it.
 6. **Every page needs `title` and `description`** — a machine-enforced deploy gate.
 7. **Never hand-write command output.** Capture it by running the built binary against a fixture
    in [test/fixtures/dd/](test/fixtures/dd), and add the claim to that page's Doc Detective
-   block so it stays true.
+   block so it stays true. Assert output with **`stdio`** — it matches stdout or stderr, and
+   `stdout`/`stderr` are not properties the `runShell` schema defines. A step that uses them is
+   **skipped silently**: Doc Detective logs a warning and the run still reports success.
 
 Four gates run in CI and all of them block: `npm run docs:check-strategy` (anchor and coverage
 invariants), `npm run docs:check-cli` (reference/cli.mdx vs commander), `npm run docs:check-links`
-(every `/dockg/…` target resolves), and `npm test` (every documented command claim, via
-`test/integration/docs-claims.test.ts`).
+(every `/dockg/…` target resolves), and `npm run docs:test` (Doc Detective over the inline blocks,
+then `scripts/check-doc-tests.mjs` asserting every declared step actually ran — a green Doc
+Detective run alone does not prove that).
 
 ## SHACL shapes impact (required)
 
@@ -283,7 +286,7 @@ the repo's `CLAUDE_CODE_OAUTH_TOKEN` secret.
 - [.github/workflows/doc-detective.yml](.github/workflows/doc-detective.yml) — the inline doc
   tests against the linked binary (fork-guarded)
 - [scripts/](scripts) — `check-content-strategy.mjs`, `check-cli-reference.mjs`,
-  `check-docs-links.mjs`, `check-publishable.mjs`
+  `check-docs-links.mjs`, `check-doc-tests.mjs`, `check-publishable.mjs`
 - [dockg.docs.yaml](dockg.docs.yaml) — dockg pointed at its own documentation. Not named
   `dockg.config.yaml` deliberately: that filename is discovered implicitly and would apply to
   every bare invocation from the repo root, including the integration tests

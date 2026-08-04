@@ -195,15 +195,16 @@ None of it is enforced yet. Nothing fails when the numbers get worse.
 {/* Doc Detective inline tests: verify this page against the local build, exposed
     as `dockg` via `npm link` (see .github/workflows/doc-detective.yml), over the
     fixtures in test/fixtures/dd/. Writes go to .tmp/, never into a fixture.
-    Constraints these commands are shaped by: runShell does not go through a shell
-    (no `&&`); it does not honor a working directory, so paths are repo-root-
-    relative and input globs live in the fixture config rather than on the command
-    line, which would also close this comment; and Doc Detective deduplicates
-    identical commands run-wide, so each assertion needs its own command.
-    Run with `npx doc-detective`. Config: .doc-detective.json. */}
+    Two things to know before editing these. Output is asserted with `stdio`,
+    which matches stdout or stderr; `stdout`/`stderr` are not schema properties,
+    and a step using them is dropped without failing the run (scripts/check-doc-
+    tests.mjs is the guard against that). And paths are repo-root-relative with
+    the input globs in the fixture config, because a glob on the command line
+    would close this comment. Run with `npx doc-detective`. */}
 {/* test {"testId":"get-started","description":"Install check, first build, and reading the corpus back with stats."} */}
 {/* step {"description":"dockg is on PATH and reports a version.","runShell":{"command":"dockg --version","exitCodes":[0]}} */}
-{/* step {"description":"A build over a Markdown corpus reports the document and triple count it wrote.","runShell":{"command":"dockg build -c test/fixtures/dd/dockg.config.yaml","exitCodes":[0],"stdout":"3 docs, 101 triples"}} */}
-{/* step {"description":"stats reports a broken internal link.","runShell":{"command":"dockg stats -c test/fixtures/dd/dockg.config.yaml","exitCodes":[0],"stdout":"Broken internal links (1)"}} */}
-{/* step {"description":"stats reports per-field coverage, with title at 100%.","runShell":{"command":"dockg stats -c test/fixtures/dd/dockg.config.yaml --top 3","exitCodes":[0],"stdout":"title        3/3  100.0%"}} */}
+{/* step {"description":"A build over a Markdown corpus reports the document and triple count it wrote.","runShell":{"command":"dockg build -c test/fixtures/dd/dockg.config.yaml","exitCodes":[0],"stdio":"3 docs, 101 triples"}} */}
+{/* step {"description":"Two builds over unchanged inputs are byte-identical — the determinism claim, checked.","runShell":{"command":"dockg build -c test/fixtures/dd/dockg.config.yaml --out .tmp/dd/a.ttl && dockg build -c test/fixtures/dd/dockg.config.yaml --out .tmp/dd/b.ttl && diff .tmp/dd/a.ttl .tmp/dd/b.ttl","exitCodes":[0]}} */}
+{/* step {"description":"stats reports a broken internal link.","runShell":{"command":"dockg stats -c test/fixtures/dd/dockg.config.yaml","exitCodes":[0],"stdio":"Broken internal links (1)"}} */}
+{/* step {"description":"stats reports per-field coverage, with title at 100%.","runShell":{"command":"dockg stats -c test/fixtures/dd/dockg.config.yaml","exitCodes":[0],"stdio":"title        3/3  100.0%"}} */}
 {/* test end */}
