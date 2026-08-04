@@ -9,3 +9,6 @@ dist/
 **/kg/vectors.bin
 *.tsbuildinfo
 .tmp/
+# Astro's build cache for the docs site. `node_modules/` and `dist/` above are
+# unanchored and already match docs/'s copies at any depth; this one is not.
+**/.astro/

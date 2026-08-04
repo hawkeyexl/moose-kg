@@ -1,4 +1,6 @@
 /** dockg CLI entry point. */
+import { realpathSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { Command } from "commander";
 import pc from "picocolors";
 import { DockgError } from "./types.js";
@@ -15,7 +17,13 @@ import { renderSearch, runSearch } from "./commands/search.js";
 import { renderStats, runStats } from "./commands/stats.js";
 import { renderTraverse, runTraverse } from "./commands/traverse.js";
 
-const program = new Command();
+/**
+ * The commander program, exported so tooling can read the command surface
+ * without running it — scripts/check-cli-reference.mjs imports this module to
+ * diff commander's view against the CLI reference page. Parsing is guarded by
+ * `isMain()` below, so an import never consumes the importer's argv.
+ */
+export const program = new Command();
 
 program
   .name("dockg")
@@ -407,4 +415,22 @@ program
     },
   );
 
-program.parse();
+/**
+ * True when this module is the process entry point rather than an import.
+ *
+ * `realpathSync` on both sides because `npm link` puts a symlink on argv[1]
+ * while `import.meta.url` resolves to the real file — comparing the raw paths
+ * would make a linked CLI silently do nothing, which is exactly how the docs
+ * are tested (see .github/workflows/doc-detective.yml).
+ */
+function isMain(): boolean {
+  const entry = process.argv[1];
+  if (!entry) return false;
+  try {
+    return realpathSync(entry) === realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
+}
+
+if (isMain()) program.parse();
