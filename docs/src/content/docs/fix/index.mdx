@@ -1,0 +1,215 @@
+---
+title: Fix a failing check
+description: Your pull request is red because of a dockg finding — decode the error line, work out whether it is your page or the pipeline, find your failure in the catalog, and apply the fix.
+---
+
+import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+Your pull request is red and a tool you may never have heard of is the reason. You are in the
+right place, and you do not need to learn anything about knowledge graphs to get out of here.
+
+dockg checks the **frontmatter** at the top of your Markdown file — the block between `---`
+lines. It does not check your prose. So whatever failed, the fix is in that block.
+
+## Is it even your fault?
+
+Check the exit code, or just the shape of the message.
+
+| What you see | Whose problem | What to do |
+|---|---|---|
+| A list of findings naming your file, exit `1` | Yours | Fix the frontmatter. Read on. |
+| `dockg: <something>` in red, exit `2` | The pipeline | Hand it back to whoever owns CI. |
+
+Exit `2` means dockg could not run properly at all — a missing file, an unreadable config, a
+broken environment. Nothing you write in your page will fix it. Common ones:
+
+```
+dockg: No input files matched: docs/**/*.md (cwd: /repo/docs)
+dockg: Graph not found: kg/graph.ttl — run `dockg build` first.
+dockg: Search index not found: kg/search.json — run `dockg export --format search` first.
+```
+
+<Aside type="tip" title="Say so when you hand it back">
+  "dockg exited 2, which is an operational error rather than a content finding" saves a round
+  trip. It is a real distinction the tool makes deliberately.
+</Aside>
+
+## Decode the error line
+
+A validation failure looks like this:
+
+```
+✗ bad-kg.md
+    /kg  must NOT have additional property 'bogus'  (line 3)  [/repo/schemas/frontmatter-0.8.json]
+
+1 file checked, 0 passed, 1 failed, 2 errors
+```
+
+| Part | What it tells you |
+|---|---|
+| `✗ bad-kg.md` | The file to open |
+| `/kg` | Where in the frontmatter — here, inside the `kg:` block |
+| `must NOT have additional property 'bogus'` | The rule that fired |
+| `(line 3)` | Where the `kg:` block starts, not necessarily the offending line |
+| `[…frontmatter-0.8.json]` | The schema being enforced |
+
+A graph-level finding from `dockg check` looks different — it names a concept rather than a file,
+and lists the files responsible at the end:
+
+```
+violation: https://example.com/kg/concept/alpha skos:broader — skos:broader cycle through …/alpha, …/beta (…/alpha → …/beta) — a concept cannot be its own ancestor [docs/alpha.md, docs/beta.md]
+```
+
+The bracketed list at the end is where to go.
+
+## Common failures
+
+### An unknown key inside `kg:`
+
+```
+/kg  must NOT have additional property 'bogus'
+```
+
+The `kg` block only accepts a fixed set of keys, and a typo is an error rather than an ignored
+line. Check the spelling against the [frontmatter reference](/dockg/reference/frontmatter/).
+
+```diff lang="md" title="docs/guide.md"
+  ---
+  kg:
+-   bogus: true
++   topicType: task
+  ---
+```
+
+### A relationship without `prefLabel`
+
+```
+/kg  must have property prefLabel when property altLabels is present
+```
+
+`altLabels`, `broader`, `narrower`, and `related` all describe a concept, so there has to be a
+concept to describe. Add the `prefLabel`, or remove the relationship.
+
+```diff lang="md" title="docs/guide.md"
+  ---
+  kg:
++   prefLabel: Rate limiting
+    altLabels: [throttling]
+  ---
+```
+
+### A value outside a controlled vocabulary
+
+```
+/kg/topicType  must be equal to one of the allowed values
+```
+
+`topicType`, `softwareLifecyclePhase`, and `softwareSubject` accept fixed lists — they map onto a
+published standard, so you cannot invent a value.
+
+```diff lang="md" title="docs/guide.md"
+  ---
+  kg:
+-   topicType: procedure
++   topicType: task
+  ---
+```
+
+Permitted values: `task`, `concept`, `reference`, `learning`, `troubleshooting`, `form`.
+
+### A `sections` key that matches no heading
+
+```
+Broken section refs (1):
+  docs/getting-started.md -> #missing-heading
+```
+
+Section metadata is keyed by heading slug, so renaming a heading orphans its entry. Update the key
+to match the new heading, or delete it.
+
+```diff lang="md" title="docs/getting-started.md"
+  ---
+  kg:
+    sections:
+-     install-the-cli:
++     installation:
+        topicType: task
+  ---
+
+- ## Install the CLI
++ ## Installation
+```
+
+### A broken internal link
+
+```
+Broken internal links (1):
+  docs/no-frontmatter.md -> missing.md
+```
+
+The link target does not exist on disk. Either fix the path, or — if the link works on the
+published site — the repo may be missing
+[route mappings](/dockg/build/routes/), which is a config problem rather than yours.
+
+### Applicability that contradicts itself
+
+```
+violation: … dockg:notApplicableToVariant — appliesTo and notApplicableTo share a value
+```
+
+A topic cannot both apply and not apply to the same product variant. Decide which is true and
+delete the other.
+
+### A concept cycle, or a `related`/`broader` conflict
+
+```
+violation: … skos:broader cycle through …/alpha, …/beta … [docs/alpha.md, docs/beta.md]
+```
+
+<Aside type="caution" title="This one may not be your page">
+  A cycle is formed by several documents together, and the file you edited might be innocent — it
+  may just be the one that closed the loop. The bracketed file list names every document involved.
+  If they are not yours, this needs whoever owns the vocabulary rather than a quick fix.
+</Aside>
+
+### Two spellings of the same concept
+
+```
+warning: … concept carries multiple prefLabels (same slug, different spellings) — settle on one spelling
+```
+
+This is a **warning**, not a violation. It exits `0` and does not fail a build — if your job is
+red, this is not why.
+
+## Reproduce it locally
+
+You can, and it is two commands:
+
+```sh
+npx @hawkeyexl/dockg validate
+```
+
+```sh
+npx @hawkeyexl/dockg build && npx @hawkeyexl/dockg check
+```
+
+Run them from the repository root — input globs resolve against your working directory, so
+running from a subdirectory matches nothing.
+
+If that does not reproduce what CI saw, your branch and CI probably disagree about the config.
+Pushing a fix and re-running is usually faster than chasing that difference.
+
+## Still stuck?
+
+<CardGrid>
+  <LinkCard
+    title="Frontmatter reference"
+    href="/dockg/reference/frontmatter/"
+    description="Every key dockg accepts, with its permitted values."
+  />
+  <LinkCard
+    title="What dockg is"
+    href="/dockg/"
+    description="If you have merged and are now curious what this thing was for."
+  />
+</CardGrid>

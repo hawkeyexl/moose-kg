@@ -1,0 +1,172 @@
+---
+title: Build your graph
+description: What each of dockg's seven derive sources reads from your repo, how to control which files get ingested, and how to read the corpus back with stats.
+---
+
+import { Aside, CardGrid, LinkCard, Steps } from '@astrojs/starlight/components';
+
+`dockg build` reads what is already on disk and writes a graph. Nothing here requires you to
+change a document first. This page covers what it reads, how to control what it reads, and how to
+interpret what comes back.
+
+## Before you start
+
+You should have run `dockg build` once — see [Get started](/dockg/get-started/) — and have a
+`graph.ttl` to look at.
+
+## The seven derive sources
+
+Every source is on by default. They are hermetic: no network, no credentials, no spend.
+
+| Source | Reads | Emits |
+|---|---|---|
+| `frontmatter` | Frontmatter fields and the `kg` block | Titles, descriptions, creators, dates, subjects, concepts, iiRDS typing |
+| `sections` | Every heading | A `dockg:Section` node per heading, with level and sibling order |
+| `links` | Markdown links between documents | `dcterms:references` edges, and `dockg:brokenLink` for unresolvable targets |
+| `tags` | `tags` and `keywords` | `dcterms:subject` pointing at `skos:Concept` nodes |
+| `images` | Image references | `schema:image` |
+| `code` | Fenced code blocks | `dockg:codeLanguage` per language used |
+| `provenance` | Frontmatter dates and authors, plus git history | PROV-O entities, activities, agents, and qualified attribution |
+
+Turn any of them off in config:
+
+```yaml title="dockg.config.yaml"
+build:
+  derive: [frontmatter, sections, links, tags]
+```
+
+`build.derive` is config-only. A graph built with different derive rules is a different graph, so
+it should not depend on how someone typed the command.
+
+<Aside type="note" title="Only `provenance` touches anything outside your files">
+  It shells out to git for committer history. Under the default `provenance.git: auto` a repo
+  without git history warns and continues; the build still exits 0.
+</Aside>
+
+## Control what gets ingested
+
+<Steps>
+
+1. **Set your inputs.** With no config file dockg ingests `**/*.md` — which includes
+   `README.md`, `CHANGELOG.md`, and any Markdown in `test/`. That is rarely what you want past
+   the first run.
+
+   ```yaml title="dockg.config.yaml"
+   version: 1
+   inputs:
+     - "docs/**/*.md"
+   exclude:
+     - "**/node_modules/**"
+     - "docs/drafts/**"
+   ```
+
+   <Aside type="caution" title="Globs resolve against the working directory">
+     Not against the config file. Run dockg from the repo root, or it matches nothing:
+
+     ```
+     dockg: No input files matched: docs/**/*.md (cwd: /repo/docs)
+     ```
+   </Aside>
+
+2. **Set a real `baseIri`.** IRIs are the graph's stable identity, and changing the base later
+   rewrites every subject in the file.
+
+   ```yaml title="dockg.config.yaml"
+   baseIri: https://docs.example.com/kg/
+   ```
+
+3. **Rebuild and confirm the document count changed as you expected.**
+
+   ```sh
+   dockg build
+   ```
+
+   ```
+   Wrote kg/graph.ttl (4 docs, 139 triples)
+   ```
+
+</Steps>
+
+## Read the corpus back
+
+```sh
+dockg stats
+```
+
+```
+Triples:    139
+Documents:  4
+Sections:   8
+Concepts:   5
+References: 6
+
+Most connected:
+  docs/configuration.md (5)
+  docs/getting-started.md (3)
+
+Orphan docs (0):
+  (none)
+
+Broken internal links (1):
+  docs/no-frontmatter.md -> missing.md
+
+Broken section refs (1):
+  docs/getting-started.md -> #missing-heading
+
+Coverage:
+  title        4/4  100.0%
+  description  1/4  25.0%
+  prefLabel    1/4  25.0%
+```
+
+**Most connected** are your hub documents — the ones whose removal or rename hurts most.
+
+**Orphan docs** have no inbound or outbound `dcterms:references`. A genuine orphan is usually
+either unreachable content or a page everybody links to from a nav config that dockg cannot see.
+
+**Broken internal links** point at files that do not exist. If your corpus links by published site
+route rather than file path, expect many of these and see below — they are a configuration gap,
+not a corpus defect.
+
+**Broken section refs** are `kg.sections` keys matching no heading, almost always a renamed
+heading.
+
+**Coverage** is the fraction of documents carrying each field. A low first number is the normal
+starting point, not a failing grade.
+
+<Aside type="caution" title="dockg does not parse MDX">
+  Markdown parsing covers headings, prose links, and frontmatter in `.mdx` files, but JSX is
+  treated as raw text. Links inside components — `<LinkCard href="…">` and similar — **do not
+  become graph edges.** If your site is MDX-based and component-heavy, your reference counts and
+  orphan list will understate reality.
+</Aside>
+
+## What you have now
+
+A graph over exactly the files you intended, with a reading of how connected and how annotated
+they are. Nothing is enforced yet.
+
+## Where to go next
+
+<CardGrid>
+  <LinkCard
+    title="Map your site's routes"
+    href="/dockg/build/routes/"
+    description="If the broken-link list is full of links that work fine on your published site."
+  />
+  <LinkCard
+    title="Backfill metadata"
+    href="/dockg/build/backfill/"
+    description="If coverage is low and hand-annotating the backlog is not going to happen."
+  />
+  <LinkCard
+    title="Govern it in CI"
+    href="/dockg/govern/"
+    description="Turn these numbers into a gate that fails a pull request."
+  />
+  <LinkCard
+    title="Configuration reference"
+    href="/dockg/reference/configuration/"
+    description="Every key, type, and default."
+  />
+</CardGrid>

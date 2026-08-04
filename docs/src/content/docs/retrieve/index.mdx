@@ -1,0 +1,80 @@
+---
+title: Retrieve & export
+description: dockg's browser-native retrieval runtime returns context, citations, and a trace and then stops — it is a deterministic scoping layer for a pipeline you already have, not a replacement for your ranker.
+---
+
+import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+If you own a retrieval pipeline over documentation you did not write, this track is about putting
+a hard boundary in front of a ranker that cannot see one.
+
+## What the runtime does, and where it stops
+
+`dockg/runtime` takes a graph, a lexical index, and optionally a vector sidecar, and returns:
+
+```ts
+{ context, citations, trace }
+```
+
+Then it stops. **It never calls a model.** There is no prompt, no generation, and no opinion about
+which LLM you use — it produces retrieval results and hands them back, so it drops into an
+existing stack rather than competing with it.
+
+It is also browser-native: no `node:` imports, one small bundle, with embeddings behind a separate
+entry point so the query path never pulls in the model stack.
+
+## The dependency, stated up front
+
+**dockg's value here scales with metadata someone else has to add.**
+
+A corpus with no `appliesTo` values cannot be filtered by variant, no matter how good the runtime
+is. If nobody has typed your documentation, dockg gives you sections, links, headings, and
+citations — useful, but not the boundary you came for.
+
+<Aside type="caution" title="Measure before you integrate">
+  Run `dockg stats` against the corpus and look at the coverage table. That number tells you how
+  much lift to expect, and it is the number to take to the documentation team. Discovering it
+  after you have built the integration is the expensive order.
+</Aside>
+
+## Why a typed edge rather than a better ranker
+
+Two passages describing the same procedure for two different machines are nearly identical in
+embedding space. Reranking does not separate them, because the wrong chunk genuinely is similar —
+this is the failure mode that brought you here.
+
+A typed edge separates them every time, with no threshold to tune. dockg is the filter you apply
+before similarity is considered; your ranker still does the ranking.
+
+## The artifact chain
+
+Three files that must stay in sync:
+
+| Artifact | Produced by | Purpose |
+|---|---|---|
+| `kg/graph.ttl` | `dockg build` | The typed nodes and edges |
+| `kg/search.json` | `dockg export --format search` | Lexical index |
+| `kg/vectors.bin` | `dockg embed` | Optional vector sidecar |
+
+A mismatched model, dtype, dimension count, or corpus digest is **refused** rather than ranked
+with — a stale sidecar produces plausible garbage, which is worse than an error.
+
+## Where to go next
+
+<CardGrid>
+  <LinkCard
+    title="Build the search artifacts"
+    href="/dockg/retrieve/search/"
+    description="Export the index, compute vectors locally, and keep them in sync."
+  />
+  <LinkCard
+    title="Query from the browser"
+    href="/dockg/retrieve/runtime/"
+    description="Load the graph, apply a scope filter, and read the trace."
+  />
+  <LinkCard
+    title="Export for another system"
+    href="/dockg/retrieve/export/"
+    description="JSON-LD for anything RDF-native, or a standards-conformant iiRDS package."
+  />
+</CardGrid>

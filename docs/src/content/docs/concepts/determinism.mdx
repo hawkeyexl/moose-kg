@@ -1,0 +1,92 @@
+---
+title: Determinism
+description: Two builds over unchanged inputs produce byte-identical output — which is what makes a dockg graph reviewable in a pull request and admissible as audit evidence rather than an anecdote.
+---
+
+import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+Run `dockg build` twice over the same inputs and you get the same bytes. Not equivalent graphs —
+the same file.
+
+That property is load-bearing rather than tidy, and it constrains the implementation everywhere.
+
+## Check it yourself
+
+```sh
+dockg build --out a.ttl && dockg build --out b.ttl && diff a.ttl b.ttl
+```
+
+Silence is the result.
+
+## What it takes
+
+Four rules, each of which rules out something a graph tool would otherwise do:
+
+**Canonical ordering.** Output comes from a custom emitter that sorts subjects, predicates, and
+objects by a fixed comparison. Nothing is emitted in hash-map or filesystem order.
+
+**Stable IRIs, minted from content.** A document's IRI is its repo-relative path under your
+`baseIri`, percent-encoded and OS-independent. A section's IRI is its document's plus the
+GitHub-style heading slug. The same file produces the same IRI on Windows and Linux, today and
+next year.
+
+**No blank nodes, ever.** Blank-node identifiers are assigned per-parse, so a graph containing
+them cannot be byte-stable — and its diffs are unreadable. Every node dockg emits, including
+provenance and attribution nodes, gets a deterministic IRI derived from what it describes.
+
+**No wall clock.** Dates come from frontmatter first, then git committer times. Nothing calls
+`Date.now()`. A build at noon and a build at midnight agree.
+
+<Aside type="note" title="Sorting without a separator">
+  Ordering compares field by field rather than joining fields into one string, because a joining
+  separator would need to be a character that cannot appear in the data — and the usual choice,
+  a NUL byte, makes git classify the file as binary and drop it out of diffs entirely.
+</Aside>
+
+## Why it matters, per reader
+
+**If you review pull requests:** `kg/graph.ttl` is a normal reviewable file. A change to a page's
+frontmatter shows up as a handful of changed lines rather than a whole-file rewrite, so metadata
+changes get reviewed like code changes.
+
+**If you cache or ship artifacts:** the graph, the JSON-LD export, and the iiRDS package are all
+content-addressable in practice. Same inputs, same hash.
+
+**If you answer to an auditor:** this is the difference between evidence and an anecdote. A report
+that changes between runs over unchanged inputs cannot be submitted. One that does not can be
+regenerated in front of the person asking, from inputs they can see.
+
+<Aside type="tip" title="The audit case is the one people underestimate">
+  A documentation tool caring about reproducibility reads as engineering fastidiousness right up
+  until you are the one being audited. If you are building toward
+  [provenance evidence](/dockg/govern/provenance/), this page is the foundation of it.
+</Aside>
+
+## Where determinism is deliberately relaxed
+
+**Git provenance degrades rather than fails.** With the default `provenance.git: auto`, a build
+in a directory that is not a git repo warns on stderr and continues without git-derived dates.
+The build still exits 0 — a degraded build is a successful one. Set `provenance.git: true` to
+make git a hard requirement, or `false` to skip the subprocess entirely.
+
+The consequence worth knowing: two builds of the same corpus, one with git available and one
+without, are *not* byte-identical. Determinism holds for a fixed set of inputs, and git history
+is an input.
+
+**Version stamping.** The emitted graph carries `dockg:version` on its build activity, so
+upgrading dockg changes one line. Test suites that compare against a golden file normalize it.
+
+## Where to go next
+
+<CardGrid>
+  <LinkCard
+    title="Prove provenance"
+    href="/dockg/govern/provenance/"
+    description="What determinism is for: authorship and derivation evidence that regenerates identically."
+  />
+  <LinkCard
+    title="Build your graph"
+    href="/dockg/build/"
+    description="What gets derived, and how to control what goes in."
+  />
+</CardGrid>

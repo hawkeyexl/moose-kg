@@ -1,0 +1,193 @@
+---
+title: Get started
+description: Install dockg, build a graph from a Markdown repo you already have with no config file, read what came back, and prove the build is deterministic by running it twice.
+---
+
+import { Aside, LinkCard, CardGrid, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+
+You have a documentation repo. By the end of this page you will have a knowledge graph derived
+from it, you will know what each part of that graph came from, and you will have proved the
+build is reproducible.
+
+You do not need to know RDF to finish this page.
+
+## Before you start
+
+You need Node 24 or newer and a repo with Markdown files in it. That is the whole list — dockg
+reads what is already on disk, so there is nothing to annotate first and no config file to
+write yet.
+
+## Install
+
+<Tabs>
+  <TabItem label="npx (no install)">
+    ```sh
+    npx @hawkeyexl/dockg --version
+    ```
+  </TabItem>
+  <TabItem label="Global">
+    ```sh
+    npm install -g @hawkeyexl/dockg
+    ```
+    ```sh
+    dockg --version
+    ```
+  </TabItem>
+</Tabs>
+
+## Build your first graph
+
+<Steps>
+
+1. **Run `build` from the root of your repo.**
+
+   With no config file, dockg ingests `**/*.md`, excludes `node_modules`, and writes
+   `kg/graph.ttl`.
+
+   ```sh
+   dockg build
+   ```
+
+   ```
+   Wrote kg/graph.ttl (4 docs, 139 triples)
+   ```
+
+   <Aside type="caution" title="Run it from where your paths are written">
+     Input globs resolve against your **current working directory**, not against the config
+     file's location. Running dockg from a subdirectory silently matches nothing:
+
+     ```
+     dockg: No input files matched: docs/**/*.md (cwd: /repo/docs)
+     ```
+
+     Run it from the repo root.
+   </Aside>
+
+2. **Open the file.**
+
+   It is Turtle — a text serialization of RDF. Skim it; you do not need to parse it. What you
+   are looking for is that every line traces back to something you wrote:
+
+   ```turtle
+   <https://example.com/kg/doc/docs/getting-started.md>
+       a dockg:Document ;
+       dcterms:title "Getting started" ;
+       dockg:path "docs/getting-started.md" ;
+       dcterms:references <https://example.com/kg/doc/docs/configuration.md> .
+   ```
+
+   The `title` came from your frontmatter. The `path` is where the file lives. The
+   `references` edge came from a Markdown link in your prose.
+
+3. **Notice what is missing.**
+
+   Your sentences are not in there, and they never will be. dockg indexes documentation; it
+   does not store it. Every node carries a `dockg:path` so you can route with the graph and
+   then open the file.
+
+   <LinkCard
+     title="Why prose never enters the graph"
+     href="/dockg/concepts/index-not-corpus/"
+     description="The design decision behind everything else on this site — worth ten minutes now."
+   />
+
+</Steps>
+
+## Prove it is deterministic
+
+dockg promises byte-identical rebuilds over unchanged inputs. That is a claim you can check in
+one command rather than take on faith.
+
+```sh
+dockg build --out a.ttl && dockg build --out b.ttl && diff a.ttl b.ttl
+```
+
+No output means no difference. There is no timestamp in the file, no random ordering, and no
+blank nodes — which is what makes `graph.ttl` safe to commit and reviewable in a pull request.
+
+<Aside type="note" title="Where do dates come from, then?">
+  Frontmatter first, then git committer times. Never the wall clock. A build running twice a
+  minute apart produces the same bytes because nothing in the pipeline asks what time it is.
+</Aside>
+
+## Read your corpus back
+
+`build` tells you the graph exists. `stats` tells you what it says about your documentation.
+
+```sh
+dockg stats
+```
+
+```
+Triples:    139
+Documents:  4
+Sections:   8
+Concepts:   5
+References: 6
+
+Most connected:
+  docs/configuration.md (5)
+  docs/getting-started.md (3)
+
+Broken internal links (1):
+  docs/no-frontmatter.md -> missing.md
+
+Broken section refs (1):
+  docs/getting-started.md -> #missing-heading
+
+Coverage:
+  title        4/4  100.0%
+  description  1/4  25.0%
+  creator      1/4  25.0%
+  created      1/4  25.0%
+  modified     1/4  25.0%
+  subject      2/4  50.0%
+  prefLabel    1/4  25.0%
+```
+
+Three things worth reacting to:
+
+- **Broken internal links** are links whose target does not exist on disk. If your corpus links
+  by published site route rather than by file path, expect a lot of these and see
+  [route mappings](/dockg/build/routes/) — they are a configuration gap, not a corpus defect.
+- **Broken section refs** are `kg.sections` keys that match no heading, usually because someone
+  renamed the heading.
+- **Coverage** is the fraction of documents carrying each field.
+
+<Aside type="tip" title="A low coverage number is the normal starting point">
+  Nobody adopts a metadata tool before they have too much documentation. If your first coverage
+  reading is in the single digits, that is a baseline, not a grade — and
+  [backfilling](/dockg/build/backfill/) is a designed path rather than an admission of defeat.
+</Aside>
+
+## What you have now
+
+A deterministic graph derived from documentation you did not have to change, a reading of how
+complete that documentation's metadata is, and a list of links that are actually broken.
+
+None of it is enforced yet. Nothing fails when the numbers get worse.
+
+## Where to go next
+
+<CardGrid>
+  <LinkCard
+    title="Build your graph"
+    href="/dockg/build/"
+    description="What each of the seven derive sources reads, and how to control what gets ingested."
+  />
+  <LinkCard
+    title="Govern it in CI"
+    href="/dockg/govern/"
+    description="Turn these numbers into a gate, so a metadata regression fails a pull request."
+  />
+  <LinkCard
+    title="Understand the model"
+    href="/dockg/concepts/"
+    description="What the graph is for, why it is reproducible, and what a missing value means."
+  />
+  <LinkCard
+    title="CLI reference"
+    href="/dockg/reference/cli/"
+    description="Every command, argument, and flag."
+  />
+</CardGrid>

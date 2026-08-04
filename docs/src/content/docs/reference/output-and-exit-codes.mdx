@@ -1,0 +1,98 @@
+---
+title: Output & exit codes
+description: The 0/1/2 exit contract that carries every CI integration, including the counter-intuitive cases where dockg reports a problem and still exits 0, plus the two different meanings of the -f flag.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Exit codes are how dockg integrates with anything. Get them wrong and you build a gate that does
+not gate, or one that fails on healthy runs.
+
+## The contract
+
+| Code | Meaning | What you should do |
+|---|---|---|
+| `0` | Success. Possibly with findings that do not gate. | Continue. Read the report if you care about non-gating findings. |
+| `1` | Findings. Validation failures, `check` violations, `stats --check` breaches. | Fail the build. Someone's page needs fixing. |
+| `2` | Operational error. Bad input, missing file, unusable environment. | Fail the build, but this is a pipeline problem, not a content problem. |
+
+The `1` versus `2` distinction is the one worth wiring into your messaging: `1` means a
+contributor should fix a document, `2` means whoever owns the pipeline should look at it.
+
+## Per command
+
+| Command | Exits `1` when | Exits `2` when |
+|---|---|---|
+| `init` | never | the config file already exists |
+| `build` | never | no input matched; `provenance.git: true` and git unusable |
+| `check` | any finding is a `sh:Violation` | the graph is missing or unparseable |
+| `validate` | any file failed or errored | inputs include a type docmeta cannot validate |
+| `fill` | any document's status is `error` | no inputs matched; a file is unreadable; TOML/JSON frontmatter |
+| `query` | never | the graph is missing or unparseable |
+| `stats` | `--check` and broken links or coverage below threshold | the graph is missing or unparseable |
+| `search` | never | index missing; sidecar missing under vector/hybrid; stale sidecar; model will not load |
+| `traverse` | never | node, variant, or subject not found in the graph |
+| `embed` | never | index missing; `@huggingface/transformers` absent; model will not load |
+| `export` | never | unknown format; the graph is missing |
+
+## The cases that surprise people
+
+<Aside type="caution" title="These four all exit 0">
+  Each of them prints something that looks like a problem. None of them fails a build.
+</Aside>
+
+**`check` with warnings only.** Only `sh:Violation` gates. `sh:Warning` and `sh:Info` are
+reported and exit `0`:
+
+```
+warning: https://example.com/kg/concept/installation skos:prefLabel — concept carries multiple prefLabels (same slug, different spellings) — settle on one spelling [docs/configuration.md, docs/getting-started.md]
+
+0 violations, 2 warnings
+```
+
+**`build` with a degraded provenance warning.** Under the default `provenance.git: auto`, a
+missing or unusable git history warns on stderr and continues. A degraded build is a successful
+build. Set `provenance.git: true` if that should be fatal instead.
+
+**`stats` without `--check`.** `stats` reports; `stats --check` gates. Reporting and gating are
+separate jobs, and a CI step that runs plain `stats` will never fail no matter how bad the
+numbers get.
+
+**`fill` dropping fields.** Low-confidence drops and SHACL guardrail rejections are routine
+operation, not errors. Only a per-document `error` status exits `1`. This is deliberate so an
+orchestrating agent does not treat a normal run as a failure — but it means you must read the
+report rather than the exit code to know what was written.
+
+<Aside type="caution" title="An empty graph passes every coverage gate">
+  Coverage over zero documents is vacuously 100%. A misconfigured `inputs` glob therefore produces
+  a green gate that checked nothing. Assert the document count too.
+</Aside>
+
+## Output formats
+
+Every command except `init`, `build`, and `export` takes `-f/--format` with `pretty` (default) or
+`json`. `pretty` is for humans and goes to stdout; `json` is stable and machine-readable.
+
+```sh
+dockg check --format json
+dockg stats --format json
+```
+
+<Aside type="caution" title="`-f` on `export` means something else entirely">
+  On `export`, `-f/--format` selects the **export format** — `jsonld`, `iirds`, or `search` — not
+  the rendering. There is no `pretty`/`json` choice on `export`.
+</Aside>
+
+## stdout, stderr, and color
+
+- **stdout** carries the report: the pretty rendering or the JSON document.
+- **stderr** carries warnings and errors, including operational-error messages and the projection
+  warnings `export` emits. **Warnings on stderr never affect the exit code**, so a pipeline that
+  discards stderr will silently lose the fact that something degraded.
+- Errors print as `dockg: <message>` in red.
+
+Piping `--format json` to a file and reading stderr separately is the reliable pattern:
+
+```sh
+dockg stats --format json > stats.json 2> stats.err
+```

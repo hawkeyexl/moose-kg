@@ -1,0 +1,74 @@
+---
+title: Embedding models
+description: The embedding models dockg has been tested against, their sizes, dimensions, and context limits — including the short-context model that truncates long sections without saying so.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+`embed.model` accepts any Hugging Face repo id. These four are the ones dockg has profiles for,
+which means their quirks are applied automatically on both the build and query sides so you cannot
+get them wrong.
+
+| Model | Size (q8) | Dims | Context | Notes |
+|---|---|---|---|---|
+| `onnx-community/granite-embedding-small-english-r2-ONNX` | ~53 MB | 384 | 8192 tokens | **Default.** Sections are never truncated; no prefixes. |
+| `Xenova/gte-small` | ~34 MB | 384 | 512 tokens | Lighter; no prefixes. |
+| `Xenova/bge-small-en-v1.5` | ~34 MB | 384 | 512 tokens | Needs a query prefix — applied for you, since omitting it degrades retrieval silently. |
+| `Xenova/all-MiniLM-L6-v2` | ~23 MB | 384 | 256 wordpieces | Smallest, and **truncates long sections**. See below. |
+
+```yaml title="dockg.config.yaml"
+embed:
+  model: onnx-community/granite-embedding-small-english-r2-ONNX
+  dtype: q8
+  out: kg/vectors.bin
+```
+
+<Aside type="caution" title="The truncation trap">
+  `Xenova/all-MiniLM-L6-v2` silently drops everything past roughly 190 words. A long section is
+  embedded from its opening only, so it ranks on its introduction and its actual content is
+  invisible to vector search. Nothing errors and nothing warns — the results are simply worse in a
+  way that looks like the model being weak.
+
+  If you are choosing on size, `Xenova/gte-small` is 11 MB larger and does not have this problem.
+</Aside>
+
+## `mock`
+
+```sh
+dockg embed --model mock
+```
+
+Deterministic hash vectors. No download, no `@huggingface/transformers`, no network. Useful in CI
+and in tests: byte-identical output, and a real exercise of the whole artifact chain without
+pulling model weights.
+
+The vectors are meaningless for relevance. Use it to test plumbing, never to evaluate retrieval
+quality.
+
+## Quantization
+
+`embed.dtype` defaults to `q8`. Any dtype the model publishes is accepted; smaller means faster and
+less accurate.
+
+The dtype is recorded in the sidecar, and querying with a different one is
+[refused rather than ranked with](/dockg/retrieve/search/) — so changing it means rebuilding.
+
+## The optional dependency
+
+`@huggingface/transformers` is an **optional peer dependency**:
+
+```sh
+npm install @huggingface/transformers
+```
+
+Without it, `dockg embed` exits `2` with an install hint, and `dockg search` degrades to lexical —
+unless `--mode vector` or `--mode hybrid` was requested explicitly, which errors instead.
+
+This split is why the package has a separate `dockg/embed` entry point: a consumer who only uses
+`dockg/runtime` never resolves the model stack, and bundlers can leave it alone.
+
+## Everything runs locally
+
+No API, no key, no spend, and no corpus text leaves the machine. Models execute through WASM on
+both Node and the browser deliberately, so a vector computed in CI and a vector computed in a
+user's browser come from the same function and agree.

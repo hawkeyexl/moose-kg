@@ -1,0 +1,91 @@
+---
+title: Export for another system
+description: Reserialize the graph as JSON-LD for anything RDF-native or as a standards-conformant iiRDS package — both deterministic, both lossy in ways worth knowing before you integrate.
+---
+
+import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+The graph is Turtle. Your destination probably is not. `dockg export` reserializes it.
+
+## Pick by destination
+
+| `--format` | Produces | Use when the destination is |
+|---|---|---|
+| `jsonld` (default) | A JSON-LD document | A triple store, an RDF-native pipeline, or anything that already speaks linked data |
+| `iirds` | An iiRDS package (a zip) | A content delivery portal, a partner ingest, or a contractual obligation |
+| `search` | A lexical index | dockg's own runtime — see [build the search artifacts](/dockg/retrieve/search/) |
+
+```sh
+dockg export                              # JSON-LD, beside the graph
+dockg export --format iirds -o dist/docs.iirds
+```
+
+```
+Wrote 17 nodes to kg/graph.jsonld
+```
+
+<Aside type="caution" title="`-f` means the export format here">
+  On every other command `-f/--format` selects how output is rendered (`pretty` or `json`). On
+  `export` it selects what is produced. There is no rendering choice on `export`, and this is the
+  flag people get wrong.
+</Aside>
+
+## Exports are deterministic too
+
+JSON-LD comes from a hand-rolled deterministic serializer rather than a general-purpose library,
+and the iiRDS package is a deterministic zip. Same inputs, same bytes.
+
+For a consumer that means exports are cacheable and content-addressable. For a regulated producer it
+means a package can be resubmitted identically — see [determinism](/dockg/concepts/determinism/).
+
+## Projection is lossy, and warnings go to stderr
+
+Every format is a projection, so something is always dropped. dockg reports what, on **stderr**,
+without failing the run:
+
+```sh
+dockg export --format iirds 2> export.warnings
+```
+
+A pipeline that discards stderr will not know something was dropped. If you care, capture it.
+
+## What is inside an iiRDS package
+
+A zip containing `META-INF/metadata.rdf` plus renditions of your documents. The metadata graph uses
+package-only terms that never appear in the built graph — `iirds:Package`, `iirds:Topic`,
+`iirds:Rendition`, `iirds:is-part-of-package`, party and vCard terms for the creator.
+
+If you diff an iiRDS export against `graph.ttl` and find vocabulary that is not in the Turtle, that
+is why.
+
+```yaml title="dockg.config.yaml"
+export:
+  iirds:
+    title: Example Machine Documentation
+    creator: Example GmbH
+    version: "1.3"
+```
+
+`version` accepts `"1.2"` or `"1.3"` and defaults to `1.3`.
+
+<Aside type="note" title="iiRDS licensing">
+  iiRDS is CC BY-ND. dockg references published IRIs and never vendors, re-serializes, or modifies
+  the vocabulary, so no redistribution obligation reaches you or your users. Tools that copy the
+  vocabulary into their own namespace create an obligation their users inherit — worth checking if
+  you are comparing options.
+</Aside>
+
+## Where to go next
+
+<CardGrid>
+  <LinkCard
+    title="Query from the browser"
+    href="/dockg/retrieve/runtime/"
+    description="If the destination turns out to be dockg's own runtime after all."
+  />
+  <LinkCard
+    title="CLI reference"
+    href="/dockg/reference/cli/"
+    description="Every export option and its default."
+  />
+</CardGrid>

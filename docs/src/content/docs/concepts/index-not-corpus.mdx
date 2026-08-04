@@ -1,0 +1,103 @@
+---
+title: An index, not a corpus
+description: Your prose never enters the graph, and that is the design rather than a limitation — dockg indexes documentation so you can route, filter, audit, and attribute, then read the files themselves.
+---
+
+import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+You built a graph, opened it, and could not find a single sentence you wrote. Nothing is broken.
+dockg stores metadata about your documentation and never the documentation itself.
+
+This is the decision the rest of the tool follows from, so it is worth the few minutes.
+
+## What is in there instead
+
+Every document becomes a node with a `dockg:path` pointing at the file. Every heading becomes a
+section node whose IRI is the document's IRI plus the heading's slug — which means it addresses
+an exact span on disk:
+
+```turtle
+<https://example.com/kg/doc/docs/configuration.md#inputs>
+    a dockg:Section ;
+    dcterms:title "Inputs" ;
+    dockg:level 2 ;
+    dockg:order 1 .
+```
+
+The text under that heading is not here. The address of it is.
+
+## The working pattern: route, then read
+
+This inverts how retrieval usually works. Rather than searching text and hoping the match is
+relevant, you use the graph to narrow to the right nodes by type, product variant, subject, or
+relationship — and *then* open the files those nodes name.
+
+The narrowing step is deterministic. A topic either carries `appliesTo: SP-X100` or it does not;
+there is no similarity threshold to tune and no chance a passage from a different product scores
+close enough to slip through.
+
+<Aside type="note" title="Why not just embed everything?">
+  Vector search is good at "what is this about" and bad at "which product does this belong to."
+  Two passages describing the same procedure for two different machines are almost identical in
+  embedding space, so a ranker cannot reliably separate them — the wrong chunk genuinely is
+  similar. A typed edge separates them every time, with no ranking involved.
+
+  dockg is not a replacement for that ranker. It is the boundary you put in front of it.
+</Aside>
+
+## What this design buys
+
+**Scope questions become queries.** *Which topics apply to variant SP-X100?* is an edge lookup,
+not a search.
+
+**Impact analysis becomes traversal.** *What references this page?* is answered by following
+inbound edges, so moving or deleting a page has a knowable blast radius.
+
+**Attribution and audit become derivable.** Who wrote a document, when, what it was derived from,
+and which model proposed which field are all recorded as typed assertions rather than assembled
+by hand from git history.
+
+**The graph stays small and diffable.** Metadata for a corpus is orders of magnitude smaller than
+the corpus. `graph.ttl` lives in git, and a pull request shows exactly which assertions changed.
+
+## What it costs
+
+A fact that exists only in prose does not exist for anything reading the graph.
+
+If a page says "this procedure does not apply to the compact model" in a sentence and nothing in
+its frontmatter says so, then a variant-scoped query will not know. The sentence is invisible.
+The gap is silent, and it is silent in the dangerous direction — you get a plausible answer
+rather than an error.
+
+The mitigation is measurement rather than vigilance: `dockg stats` reports metadata coverage per
+field, which turns "how much of what we know is actually machine-readable?" into a number you can
+watch and gate on.
+
+```
+Coverage:
+  title        4/4  100.0%
+  description  1/4  25.0%
+  prefLabel    1/4  25.0%
+```
+
+<Aside type="caution" title="This is the failure mode to design against">
+  Every other page on this site assumes you have internalized this one. A missing edge is not an
+  error; it is a quieter, worse thing. Coverage thresholds and
+  [open-world semantics](/dockg/concepts/open-world/) exist precisely to make the silence
+  audible.
+</Aside>
+
+## Where to go next
+
+<CardGrid>
+  <LinkCard
+    title="Open-world semantics"
+    href="/dockg/concepts/open-world/"
+    description="The other half of this idea: what dockg assumes when a value is absent."
+  />
+  <LinkCard
+    title="Granularity"
+    href="/dockg/concepts/granularity/"
+    description="If a node indexes more text than it describes, it is lying about part of it."
+  />
+</CardGrid>

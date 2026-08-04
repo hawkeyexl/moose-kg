@@ -13,12 +13,18 @@ export default tseslint.config(
     // Generated, vendored, or byte-pinned. `test/fixtures` in particular holds
     // the corpus, the golden graph, and a deliberately-CRLF file — none of it
     // is source, and rewriting any of it would break the determinism gate.
+    // `dist/**` and `node_modules/**` are anchored to this file's directory, so
+    // the docs site's own copies need naming separately — along with `.astro/`,
+    // Astro's generated type and build cache.
     ignores: [
       "dist/**",
       "node_modules/**",
       "coverage/**",
       ".tmp/**",
       "test/fixtures/**",
+      "docs/dist/**",
+      "docs/node_modules/**",
+      "docs/.astro/**",
     ],
   },
   js.configs.recommended,
