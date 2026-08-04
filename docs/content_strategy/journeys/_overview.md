@@ -5,6 +5,7 @@ journeys:
   - cuj-map-site-routes
   - cuj-gate-metadata-in-ci
   - cuj-backfill-metadata
+  - cuj-query-the-graph
   - cuj-model-concepts
   - cuj-scope-by-variant
   - cuj-section-granularity
@@ -18,7 +19,7 @@ anchors:
   - cuj-fix-failing-check
 ---
 
-The twelve end-to-end outcomes dockg's documentation must let someone reach, and which persona
+The thirteen end-to-end outcomes dockg's documentation must let someone reach, and which persona
 reaches each.
 
 ## What a CUJ is here
@@ -39,6 +40,7 @@ Rows are personas, columns are journeys. `●` primary, `○` secondary particip
 | [`cuj-map-site-routes`](map-site-routes.md) | ● | | | | |
 | [`cuj-gate-metadata-in-ci`](gate-metadata-in-ci.md) | ● | | | | |
 | [`cuj-backfill-metadata`](backfill-metadata.md) | ● | ○ | | | |
+| [`cuj-query-the-graph`](query-the-graph.md) | ● | ○ | | | |
 | [`cuj-model-concepts`](model-concepts.md) | | ● | | | |
 | [`cuj-scope-by-variant`](scope-by-variant.md) | | ● | | | |
 | [`cuj-section-granularity`](section-granularity.md) | | ● | | | |
@@ -80,7 +82,7 @@ showing the resulting artifact *and* naming the command that produced it, rather
 
 ## Route coverage
 
-**Every journey is fully backed: all 76 `steps[].doc` entries resolve to a real page.**
+**Every journey is fully backed: all 83 `steps[].doc` entries resolve to a real page.**
 
 That field is the live coverage gate. A step carries `exists: false` and a `[GAP]` note while its
 page is unwritten, and flips to `true` once the route resolves — `scripts/check-content-strategy.mjs`

@@ -5,9 +5,9 @@ scope: docs/src/content/docs/
 generator: Astro + Starlight
 base_path: /dockg
 groups: 9
-pages_total: 35
+pages_total: 36
 pages_phase_1: 15
-pages_written: 35
+pages_written: 36
 ---
 
 The proposed structure of dockg's published documentation set. **A proposal only** — it
@@ -40,7 +40,7 @@ Home — "What are you trying to do?" router + a 30-second proof
 ├─ Get started            (universal on-ramp)          → cuj-first-graph
 ├─ Understand the model   (cross-cutting; see note)    → supports every journey
 ├─ Build your graph       (Priya)                      → cuj-first-graph, cuj-map-site-routes,
-│                                                        cuj-backfill-metadata
+│                                                        cuj-backfill-metadata, cuj-query-the-graph
 ├─ Model your metadata    (Ines)                       → cuj-model-concepts, cuj-scope-by-variant,
 │                                                        cuj-section-granularity
 ├─ Govern it in CI        (Priya + Renata)             → cuj-gate-metadata-in-ci,
@@ -116,6 +116,7 @@ none is flagged in [`ia-gap-analysis.md`](ia-gap-analysis.md).
 | Page | CUJ | ★ | Notes |
 |---|---|:--:|---|
 | `index.mdx` | `cuj-first-graph` | ★ | The seven derive sources and what each reads; `inputs`/`exclude`; reading the corpus back with `stats`. |
+| `query.mdx` | `cuj-query-the-graph` | | Match triple patterns and walk edges; the impact check to run before moving a page. |
 | `routes.mdx` | `cuj-map-site-routes` | ★ | Route mappings per generator. Ends by reframing the remaining broken links as the valuable output. |
 | `backfill.mdx` | `cuj-backfill-metadata` | | `fill` as a review workflow, never as auto-annotation. Dry run, subset, cost cap, then the `kg.provenance` review queue. |
 

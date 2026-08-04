@@ -189,10 +189,18 @@ built to fix:
 | 9 | Provenance for a non-CLI reader | `govern/provenance.mdx` |
 | 10 | The metadata dependency stated up front for retrieval | `retrieve/index.mdx` |
 
-Two gaps found later and also closed: the Node package entry (`.`) had no planned page at all —
-only `./runtime` and `./embed` did — now `reference/library-api.mdx`; and
-`reference/embed-models.mdx` quoted a model size with no source in the repo, now removed rather
-than left unfalsifiable.
+Three gaps found later and also closed:
+
+- The Node package entry (`.`) had no planned page at all — only `./runtime` and `./embed` did.
+  Now `reference/library-api.mdx`.
+- `reference/embed-models.mdx` quoted a model size with no source in the repo. Removed rather than
+  left unfalsifiable.
+- **`query` and `traverse` had only CLI-reference coverage.** This was first recorded as a
+  deliberate non-gap on the grounds that no journey asked for a guide — which inverted the test.
+  The IA's rule is that a page needs a journey, not that a command's absence is justified by one
+  missing. There *was* an unwritten journey: reading the graph back, and specifically checking what
+  depends on a page before changing it, which `concepts/index-not-corpus.mdx` promises the graph is
+  for. Now [`cuj-query-the-graph`](../journeys/query-the-graph.md) and `build/query.mdx`.
 
 ## What is still open
 
@@ -210,9 +218,6 @@ manual obligation until a runner returns.
 
 Recorded so they are decisions rather than oversights:
 
-- **`query` and `traverse` have no guide page.** Both are covered by `reference/cli.mdx` and used
-  inline where a journey needs them (`model-concepts`, `scope-by-variant`, `audit-provenance`). No
-  journey asks for a dedicated page, and the IA does not admit pages without one.
 - **dockg does not parse MDX.** Links inside JSX components never become graph edges, so the docs
   graph's own reference and orphan counts understate reality. Stated on `build/index.mdx` rather
   than worked around; whether dockg should learn MDX needs its own ADR.

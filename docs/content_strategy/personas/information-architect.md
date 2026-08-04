@@ -36,6 +36,7 @@ journeys:
   - cuj-section-granularity
   - cuj-backfill-metadata
   - cuj-export-to-consumer
+  - cuj-query-the-graph
 evidence_basis:
   - DESIGN.md's grounding in tekom/iiRDS practice, addressed to this professional community
   - ADR 01012's choice to adopt published iiRDS terms rather than mint dockg equivalents
@@ -92,4 +93,6 @@ interpreting silence.
 [`cuj-model-concepts`](../journeys/model-concepts.md) ·
 [`cuj-scope-by-variant`](../journeys/scope-by-variant.md) ·
 [`cuj-section-granularity`](../journeys/section-granularity.md) ·
-[`cuj-backfill-metadata`](../journeys/backfill-metadata.md)
+[`cuj-backfill-metadata`](../journeys/backfill-metadata.md) ·
+[`cuj-export-to-consumer`](../journeys/export-to-consumer.md) ·
+[`cuj-query-the-graph`](../journeys/query-the-graph.md)

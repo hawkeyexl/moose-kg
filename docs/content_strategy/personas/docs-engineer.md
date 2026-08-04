@@ -34,6 +34,7 @@ journeys:
   - cuj-map-site-routes
   - cuj-gate-metadata-in-ci
   - cuj-backfill-metadata
+  - cuj-query-the-graph
   - cuj-audit-provenance
   - cuj-prove-coverage
 evidence_basis:
@@ -88,4 +89,8 @@ and a `stats` number that goes up over time. They will consider dockg adopted wh
 [`cuj-first-graph`](../journeys/first-graph.md) ·
 [`cuj-map-site-routes`](../journeys/map-site-routes.md) ·
 [`cuj-gate-metadata-in-ci`](../journeys/gate-metadata-in-ci.md) ·
-[`cuj-backfill-metadata`](../journeys/backfill-metadata.md)
+[`cuj-backfill-metadata`](../journeys/backfill-metadata.md) ·
+[`cuj-query-the-graph`](../journeys/query-the-graph.md)
+
+As the implementer on two of Renata's: [`cuj-audit-provenance`](../journeys/audit-provenance.md) ·
+[`cuj-prove-coverage`](../journeys/prove-coverage.md)
