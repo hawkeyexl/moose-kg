@@ -118,23 +118,24 @@ error — a `broader` cycle spanning three pages — is invisible to `validate` 
 `DESIGN.md` and a reader may encounter them there. The docset must not imply they ship.
 **Constraint, not a gap** — recorded here so it is not accidentally violated.
 
-## Known limitation the docset must state honestly
+## Known limitation, since resolved
 
-**dockg does not parse MDX.** The parsing stack is `remark-parse` + `remark-gfm` +
-`remark-frontmatter`, with no `remark-mdx`, so JSX is seen as raw text. Headings and prose links
-derive correctly; `href`s inside components such as `<LinkCard>` and `<CardGrid>` **do not become
+**dockg did not parse MDX.** The parsing stack was `remark-parse` + `remark-gfm` +
+`remark-frontmatter`, with no `remark-mdx`, so JSX was seen as raw text. Headings and prose links
+derived correctly; `href`s inside components such as `<LinkCard>` and `<CardGrid>` **did not become
 graph edges**.
 
-This has two consequences worth stating rather than discovering:
+It was documented on `build/index.mdx` rather than worked around, and the docs graph was the
+evidence: 36 documents, **26 reference edges, 5 orphans** — every orphan a page whose outbound links
+were all `<LinkCard>`s.
 
-1. Any reader running dockg over an MDX-based docs site gets a partial link graph, and their
-   broken-link and orphan numbers will be misleading. This belongs on `build/index.mdx`.
-2. dockg's own docs site is MDX, so the dogfood build — `dockg build` over
-   `docs/src/content/docs/` — produces a partial link graph too. The graph gate is still worth
-   running; the number just is not a complete picture.
+[ADR 01022](../../../adrs/01022-parse-mdx-and-derive-from-jsx-attributes.md) resolved it. `.mdx`
+inputs now go through `remark-mdx`, and a JSX element's `href` is read as a link, `src` as an image,
+on any element. The same corpus now reports **129 reference edges and 0 orphans**.
 
-Whether dockg should learn MDX is a behavior decision requiring its own ADR. It is out of scope
-for the docset and should not be resolved by quietly avoiding MDX in the site.
+Keeping the record because the sequence is the point: the limitation was found by building a graph
+from the docset and reading a number that disagreed with the corpus. Stating it plainly is what made
+it fixable — a limitation quietly designed around would still be there.
 
 ## Pages that map to no CUJ
 
@@ -218,9 +219,6 @@ manual obligation until a runner returns.
 
 Recorded so they are decisions rather than oversights:
 
-- **dockg does not parse MDX.** Links inside JSX components never become graph edges, so the docs
-  graph's own reference and orphan counts understate reality. Stated on `build/index.mdx` rather
-  than worked around; whether dockg should learn MDX needs its own ADR.
 - **Route coverage is not content quality.** Every CUJ step resolving to a page says nothing about
   whether the page serves the journey well. The journey walk-through test in
   [`proposed-ia.md`](proposed-ia.md) is the qualitative check, and it is run by a human.

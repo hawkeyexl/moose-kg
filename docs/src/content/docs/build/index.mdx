@@ -134,11 +134,28 @@ heading.
 **Coverage** is the fraction of documents carrying each field. A low first number is the normal
 starting point, not a failing grade.
 
-<Aside type="caution" title="dockg does not parse MDX">
-  Markdown parsing covers headings, prose links, and frontmatter in `.mdx` files, but JSX is
-  treated as raw text. Links inside components — `<LinkCard href="…">` and similar — **do not
-  become graph edges.** If your site is MDX-based and component-heavy, your reference counts and
-  orphan list will understate reality.
+<Aside type="note" title="MDX components are read too">
+  In an `.mdx` file, a JSX element's `href` becomes a link — on any element, since that is HTML's
+  hyperlink attribute wherever it appears. So `<LinkCard href="…" />` produces the same edge a
+  Markdown link would.
+
+  `src` becomes an image only on `<img>` and `<Image>`. HTML shares `src` with `iframe`, `video`,
+  and `script`, and calling an embedded video an image would be wrong rather than merely extra.
+
+  An attribute whose value is an expression (`href={route}`) is skipped rather than guessed at: its
+  value is not knowable without evaluating the module.
+</Aside>
+
+<Aside type="caution" title="MDX must actually parse">
+  Markdown accepts anything; MDX does not. An unclosed tag or an unparseable `{…}` expression fails
+  the build with an operational error naming the file:
+
+  ```
+  dockg: Could not parse MDX in docs/broken.mdx: Expected a closing tag for `<LinkCard>` (7:1-7:20)
+  ```
+
+  Exit `2`. This bites hardest on a corpus part-way through a `.md` → `.mdx` rename, where files
+  were never compiled as MDX by anything.
 </Aside>
 
 ## What you have now

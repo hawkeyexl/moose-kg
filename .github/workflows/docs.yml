@@ -55,10 +55,6 @@ jobs:
 
       # The bigger dogfood: build a graph from the documentation site itself, then
       # hold it to the same SHACL and coverage gates the docs tell readers to use.
-      #
-      # Note the link and orphan counts here are understated by design: dockg
-      # parses Markdown, not MDX, so hrefs inside JSX components never become
-      # edges. That limitation is documented rather than worked around.
       - name: Graph gate
         run: |
           node dist/cli.js build -c dockg.docs.yaml

@@ -8,10 +8,12 @@ import { unified } from "unified";
 import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
 import remarkFrontmatter from "remark-frontmatter";
+import remarkMdx from "remark-mdx";
 import { toString as mdastToString } from "mdast-util-to-string";
 import GithubSlugger from "github-slugger";
 import { extractFrontmatter } from "docmeta";
 import type { Root, Content, Definition } from "mdast";
+import { DockgError } from "../types.js";
 import type { DocImage, DocLink, DocModel, Section } from "../types.js";
 import {
   DEFAULT_INDEX_FILES,
@@ -29,6 +31,57 @@ const processor = unified()
   .use(remarkParse)
   .use(remarkGfm)
   .use(remarkFrontmatter, ["yaml", "toml"]);
+
+/**
+ * MDX gets its own processor, selected by extension (ADR 01022). It cannot be
+ * the default: MDX reads `{` as an expression delimiter, so ordinary Markdown
+ * prose containing braces would become a syntax error.
+ */
+const mdxProcessor = unified()
+  .use(remarkParse)
+  .use(remarkGfm)
+  .use(remarkFrontmatter, ["yaml", "toml"])
+  .use(remarkMdx);
+
+/** MDX JSX attribute, narrowed to the literal-string case we can act on. */
+interface JsxAttribute {
+  type: string;
+  name?: string;
+  value?: unknown;
+}
+
+/**
+ * Elements whose `src` is an image.
+ *
+ * `href` is HTML's hyperlink attribute wherever it appears, so reading it from
+ * any element only ever yields an extra edge. `src` is not analogous: it is the
+ * generic external-resource attribute, shared by `iframe`, `video`, `script`,
+ * `audio`, `source`, and `embed`. Emitting `schema:image` for a video embed or
+ * an analytics script would be a wrong *type* assertion rather than a merely
+ * extra one, so `src` is read only where it means an image (ADR 01022).
+ */
+const IMAGE_ELEMENTS = new Set(["img", "image"]);
+
+/**
+ * The value of a JSX attribute, when it is a plain string literal.
+ *
+ * An expression attribute (`href={route}`) yields undefined rather than a
+ * guess: its value is not knowable without evaluating the module, and a wrong
+ * edge asserted confidently is worse than an absent one.
+ */
+function jsxAttributeValue(
+  node: unknown,
+  attributeName: string,
+): string | undefined {
+  const attributes = (node as { attributes?: JsxAttribute[] }).attributes;
+  if (!Array.isArray(attributes)) return undefined;
+  for (const attribute of attributes) {
+    if (attribute.type !== "mdxJsxAttribute") continue;
+    if (attribute.name !== attributeName) continue;
+    return typeof attribute.value === "string" ? attribute.value : undefined;
+  }
+  return undefined;
+}
 
 /** True when the target has a URI scheme (http:, https:, mailto:, ...). */
 export function hasScheme(target: string): boolean {
@@ -260,7 +313,20 @@ export function analyzeDoc(
   const routes = options.routes ?? [];
   const path = normalizeDocPath(relPath);
   const meta = extractFrontmatter(content, "markdown");
-  const tree = processor.parse(content) as Root;
+  const isMdx = path.endsWith(".mdx");
+  let tree: Root;
+  try {
+    tree = (isMdx ? mdxProcessor : processor).parse(content) as Root;
+  } catch (error) {
+    // Parsing MDX makes parse *failures* possible where Markdown had none:
+    // remark-parse accepts anything, the MDX extension does not. Left raw, the
+    // micromark throw escapes cli.ts's `fail()` — which only converts
+    // DockgError — so the CLI dumps a stack trace, exits 1 (the code the
+    // contract reserves for findings), and never names the file. Convert it.
+    if (!isMdx) throw error;
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new DockgError(`Could not parse MDX in ${path}: ${reason}`);
+  }
 
   const sections: Section[] = [];
   const links: DocLink[] = [];
@@ -336,6 +402,23 @@ export function analyzeDoc(
       case "code": {
         const lang = (node as { lang?: string | null }).lang;
         if (lang) codeLanguages.add(lang);
+        break;
+      }
+      // A JSX element's `href` is a link and its `src` is an image, on any
+      // element (ADR 01022). Those are HTML's own names for the relationships,
+      // so this stays structural — dockg never learns what `<LinkCard>` means.
+      case "mdxJsxFlowElement":
+      case "mdxJsxTextElement": {
+        const href = jsxAttributeValue(node, "href");
+        if (href !== undefined) {
+          const link = classifyLink(path, href, allPaths, routes);
+          if (link) links.push(link);
+        }
+        const name = (node as { name?: string | null }).name ?? "";
+        if (IMAGE_ELEMENTS.has(name.toLowerCase())) {
+          const src = jsxAttributeValue(node, "src");
+          if (src !== undefined) images.push(classifyImage(path, src));
+        }
         break;
       }
     }
