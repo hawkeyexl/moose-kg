@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { analyzeDoc } from "../../src/core/analyze.js";
+import { DockgError } from "../../src/types.js";
 
 /**
- * MDX support (ADR 01022). A JSX element's `href` is a link and its `src` is an
- * image, on any element — dockg reads structure, not component semantics.
+ * MDX support (ADR 01022). A JSX element's `href` is a link on any element —
+ * dockg reads structure, not component semantics. `src` is narrower: it is
+ * HTML's generic external-resource attribute, so it means an image only on an
+ * image element.
  *
  * The motivating case is a Starlight/Docusaurus corpus where most navigation is
  * written as components, so a parser that only sees Markdown links reports an
@@ -24,13 +27,30 @@ describe("analyzeDoc over .mdx", () => {
     expect(doc.links[0]!.resolvedPath).toBe("docs/other.md");
   });
 
-  it("derives an image from a src attribute", () => {
-    const doc = analyzeDoc(
-      `<img src="img/arch.png" alt="Architecture" />\n`,
-      "docs/guide.mdx",
-      corpus,
-    );
-    expect(doc.images.map((i) => i.raw)).toEqual(["img/arch.png"]);
+  it("derives an image from a src attribute on an image element", () => {
+    for (const element of ["img", "Image"]) {
+      const doc = analyzeDoc(
+        `<${element} src="img/arch.png" alt="Architecture" />\n`,
+        "docs/guide.mdx",
+        corpus,
+      );
+      expect(doc.images.map((i) => i.raw)).toEqual(["img/arch.png"]);
+    }
+  });
+
+  it("does not call every src an image", () => {
+    // HTML's `src` is the generic external-resource attribute — iframe, video,
+    // script, audio, source, embed all use it. Emitting `schema:image` for a
+    // YouTube embed or a script tag would be a wrong type assertion, not a
+    // merely-extra edge, so only image elements are read (ADR 01022).
+    for (const source of [
+      `<iframe src="https://youtube.com/embed/x" />\n`,
+      `<video src="demo.mp4" />\n`,
+      `<script src="analytics.js" />\n`,
+    ]) {
+      const doc = analyzeDoc(source, "docs/guide.mdx", corpus);
+      expect(doc.images).toEqual([]);
+    }
   });
 
   it("reaches a JSX element nested inside another", () => {
@@ -73,6 +93,31 @@ describe("analyzeDoc over .mdx", () => {
       corpus,
     );
     expect(doc.links[0]!.kind).toBe("external");
+  });
+});
+
+describe("unparseable .mdx", () => {
+  // Parsing MDX means parse *failures* are now possible where Markdown never
+  // had any. A raw micromark throw escapes cli.ts's `fail()`, which only
+  // converts DockgError — so the CLI would dump a stack trace, exit 1 (which
+  // the contract reserves for findings), and never name the offending file.
+  const bad = `# Bad\n\n<LinkCard href="x">\n`;
+
+  it("raises a DockgError rather than letting the parser throw", () => {
+    expect(() => analyzeDoc(bad, "docs/broken.mdx", corpus)).toThrow(
+      DockgError,
+    );
+  });
+
+  it("names the file and the parser's reason", () => {
+    let message = "";
+    try {
+      analyzeDoc(bad, "docs/broken.mdx", corpus);
+    } catch (error) {
+      message = (error as Error).message;
+    }
+    expect(message).toContain("docs/broken.mdx");
+    expect(message).toContain("closing tag");
   });
 });
 

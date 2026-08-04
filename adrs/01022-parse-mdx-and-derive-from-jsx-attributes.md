@@ -55,12 +55,20 @@ Should dockg parse MDX, and if so, what should it derive from a JSX element?
 ## Decision Outcome
 
 Chosen: **option 2** — add `remark-mdx`, applied to `.mdx` inputs only, and treat an `href`
-attribute on any JSX element as a link and a `src` attribute as an image.
+attribute on any JSX element as a link. `src` is read as an image only on an image element.
 
-`href` and `src` are HTML's own names for these relationships, and the convention holds across every
-component library dockg is likely to meet precisely because those libraries render to HTML. Reading
-them requires no knowledge of any particular component — which keeps dockg structural, the same way
-it already reads a Markdown link without knowing what the link means.
+`href` is HTML's hyperlink attribute wherever it appears — `a`, `area`, `link`, `base` — so reading
+it from any element requires no knowledge of any particular component, and over-reading it only ever
+yields an extra `dcterms:references` edge. That keeps dockg structural, the same way it already
+reads a Markdown link without knowing what the link means.
+
+**`src` is not analogous, and treating it as such was wrong.** It is HTML's generic
+external-resource attribute, shared by `iframe`, `video`, `script`, `audio`, `source`, and `embed`.
+Emitting `schema:image` for an embedded video or an analytics script is a wrong *type* assertion,
+not a merely extra edge — the graph would assert that a YouTube embed is an image. So `src` is read
+only from `img` and `Image` elements, which covers plain HTML and the Astro/Next image components.
+A custom `<Screenshot src="…" />` is missed; that is the conservative direction, and unlike a wrong
+type it is visible as an absence rather than as false data.
 
 Option 3 was rejected because it makes the common case require configuration: a reader with a broken
 orphan list would first have to discover that an allowlist exists, then enumerate their component
@@ -85,13 +93,21 @@ evaluating the module, and a wrong edge asserted confidently is worse than an ab
   is untouched.
 - New broken links may appear where a component pointed at a route that never resolved. That is a
   real finding surfacing for the first time, and it can fail a `stats --check` gate on upgrade.
+- **Parse failures become possible.** `remark-parse` accepts anything; the MDX extension does not,
+  so an unclosed tag or an unparseable `{…}` expression now aborts the file. Left raw, the micromark
+  throw escapes `cli.ts`'s `fail()` — which only converts `DockgError` — and the CLI would dump a
+  stack trace, exit `1` (the code the contract reserves for findings), and never name the file.
+  `analyzeDoc` therefore converts it to a `DockgError` naming the path, so it exits `2` like every
+  other operational error. Only the MDX path converts; a `.md` throw would be a genuine internal
+  bug and still propagates.
 - dockg now depends on `remark-mdx`.
 
 ### Confirmation
 
-- `test/unit/analyze-mdx.test.ts` covers: an `href` on a JSX element becoming a link; `src`
-  becoming an image; a nested JSX child being reached; an expression attribute being skipped; and a
-  `.md` file with braces in prose parsing exactly as before.
+- `test/unit/analyze-mdx.test.ts` covers: an `href` on a JSX element becoming a link; `src` becoming
+  an image on `img`/`Image` and **not** on `iframe`/`video`/`script`; a nested JSX child being
+  reached; an expression attribute being skipped; an unparseable `.mdx` raising a `DockgError` that
+  names the file; and a `.md` file with braces in prose parsing exactly as before.
 - The golden determinism gate (`test/fixtures/golden/graph.ttl`) is unchanged, proving `.md`
   behavior did not move.
 - The docs graph gate in `.github/workflows/docs.yml` builds dockg's own MDX site; its orphan count
