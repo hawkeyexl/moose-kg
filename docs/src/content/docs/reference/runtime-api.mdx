@@ -1,0 +1,154 @@
+---
+title: Runtime API
+description: The exports, types, and return shapes of dockg/runtime — the browser-native, retrieval-only query surface that returns context, citations, and a trace and then stops.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+`@hawkeyexl/dockg/runtime` is a single browser-native module: no `node:` imports, embeddings behind
+a separate entry point, and no call to any model. For the guide, see
+[query from the browser](/dockg/retrieve/runtime/).
+
+```ts
+import { GraphIndex, findEntry, traverse, assemble } from "@hawkeyexl/dockg/runtime";
+```
+
+## Graph
+
+| Export | Purpose |
+|---|---|
+| `GraphIndex` | Parses Turtle and indexes it for lookup and traversal |
+| `matchQuads` | Triple-pattern match over the index |
+| `rdfjsQuads`, `storeToQuads` | Interop with RDF/JS consumers |
+| `namedNode`, `literal`, `defaultGraph` | RDF/JS term constructors |
+| `compactIri`, `expandTerm` | CURIE ⇄ IRI, using the emitted prefix table |
+| `splitFragment` | Split a section IRI into document IRI and heading slug |
+
+## Entry: what matched the query
+
+| Export | Purpose |
+|---|---|
+| `createLexicalIndex` | Build the lexical index from `search.json` |
+| `createVectorIndex`, `decodeVectorIndex`, `encodeVectorIndex` | The vector sidecar |
+| `findEntry` | Rank nodes for a query across the available legs |
+| `rrfMerge` | Reciprocal-rank fusion of the lexical and vector rankings |
+| `searchIndexDigest` | The corpus digest that makes a stale sidecar detectable |
+
+```ts
+interface EntryRankings {
+  lexical: EntryCandidate[];
+  vector: EntryCandidate[];   // empty when no embedder was in play
+  merged: EntryCandidate[];   // the ranking that actually seeded traversal
+}
+```
+
+All three are returned rather than only the fused one: retrieval answers both "what matched?" and
+"what is the graph connected to it?", and a consumer usually needs both.
+
+## Traverse: what the graph connects
+
+```ts
+interface TraverseOptions {
+  seeds: string[];
+  depth?: number;             // default 1
+  predicates?: string[];      // full IRIs; default every predicate
+  direction?: "out" | "in" | "both";   // default "out"
+  limit?: number;
+  variant?: string;           // IRI, dcterms:title, or slug
+  subject?: string;           // IRI or a kg.softwareSubject value
+  includeTypeEdges?: boolean; // default false — see below
+  trace?: QueryTrace;
+}
+```
+
+| Export | Purpose |
+|---|---|
+| `traverse` | Walk from seeds, honoring scope |
+| `impact` | Transitive inbound reach — what a change here affects |
+| `reverseReferences` | Direct inbound `dcterms:references` |
+| `reachedNodes` | Every node the trace records as reached |
+| `resolveVariant`, `resolveSubject` | Resolve a filter input to its IRI |
+| `scopeExclusion` | Why a node was excluded, if it was |
+
+<Aside type="caution" title="`includeTypeEdges` almost always stays false">
+  Every document shares `dockg:Document`, so following `rdf:type` makes every document reachable
+  from every other in two hops (`a → dockg:Document → b`). That is exactly the edge contamination
+  graph-governed retrieval exists to prevent.
+</Aside>
+
+## Assemble: the bundle
+
+```ts
+interface RetrievalBundle {
+  entry?: EntryRankings;    // absent when seeds were given explicitly
+  context: ContextBlock[];  // resolved text, nearest-first
+  citations: Citation[];
+  trace: QueryTrace;
+  refusal?: Refusal;        // present when nothing usable was found
+  truncated: boolean;       // true when maxChars dropped eligible blocks
+}
+
+interface Citation {
+  iri: string;
+  title?: string;
+  sourceUrl: string;
+}
+
+type RefusalReason = "no-route" | "no-content";
+```
+
+| Export | Purpose |
+|---|---|
+| `assemble` | Resolve traversed nodes to text and build the bundle |
+| `createFetchResolver` | Fetch source text over HTTP from a base URL |
+| `documentPreamble`, `sectionOwnText`, `sliceSection` | Extract the span a node owns |
+| `documentSectionOrder`, `sectionOccurrence`, `sectionOccurrences` | Section ordering and duplicate-heading disambiguation |
+
+**A refusal is a result, not an exception.** When nothing usable is found you get `refusal` with a
+reason and an empty `context` — never a plausible-looking empty answer.
+
+## Trace
+
+```ts
+interface QueryTrace {
+  entry: EntryCandidate[];
+  hops: Hop[];
+  exclusions: ScopeExclusion[];
+  resolutions: Resolution[];
+}
+```
+
+`createTrace()` starts one; pass it through `traverse` and `assemble` to accumulate.
+
+Every returned node must be explainable by a recorded event — a traversal's results are a subset of
+`reachedNodes(trace)`. That is a contract rather than a convention, which is what makes the trace
+usable as a reviewer-facing artifact instead of debug output.
+
+**Assert on `trace.exclusions`.** The value of a scope filter is what it removed; a traversal
+returning plausible results while dropping nothing is indistinguishable from an unfiltered one.
+
+## Errors
+
+| Export | Thrown when |
+|---|---|
+| `VectorMismatchError` | The sidecar's model, dtype, dimensions, or corpus digest disagree with the index |
+| `VectorIndexError` | The sidecar is unreadable or not a dockg vector index |
+
+Both are refusals rather than degradations: a stale sidecar produces plausible garbage, which is
+worse than an error.
+
+## Embeddings are a separate entry point
+
+```ts
+import { createLocalEmbedder, MODEL_PROFILES } from "@hawkeyexl/dockg/embed";
+```
+
+Kept apart so a consumer who only queries never resolves the model stack and bundlers can leave it
+alone. `@huggingface/transformers` is an optional peer dependency;
+`EmbedderUnavailableError` is thrown when it is absent. See
+[embedding models](/dockg/reference/embed-models/).
+
+## For Node-side automation
+
+Building graphs, validating, exporting, and the rest of the CLI's work is the main package entry,
+not this one. See the [library API](/dockg/reference/library-api/).

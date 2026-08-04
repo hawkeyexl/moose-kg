@@ -15,28 +15,28 @@ success_criteria: >-
 steps:
   - stage: orient
     doc: /dockg/concepts/open-world/
-    exists: false
-    note: "[GAP] Absence means unknown, not excluded. The single most consequential page for this reader."
+    exists: true
+    note: "Absence means unknown, not excluded. The single most consequential page for this reader."
   - stage: act
     doc: /dockg/model/variants/
-    exists: false
-    note: "[GAP] topicType, appliesTo, softwareLifecyclePhase, softwareSubject — values and emitted IRIs."
+    exists: true
+    note: "topicType, appliesTo, softwareLifecyclePhase, softwareSubject — values and emitted IRIs."
   - stage: act
     doc: /dockg/model/variants/
-    exists: false
-    note: "[GAP] notApplicableTo and notSoftwareSubject: when the stronger claim is required."
+    exists: true
+    note: "notApplicableTo and notSoftwareSubject: when the stronger claim is required."
   - stage: verify
     doc: /dockg/model/variants/
-    exists: false
-    note: "[GAP] traverse --variant to prove the scoped set is right, including what it excludes."
+    exists: true
+    note: "traverse --variant to prove the scoped set is right, including what it excludes."
   - stage: verify
     doc: /dockg/govern/
-    exists: false
-    note: "[GAP] check catches an appliesTo/notApplicableTo contradiction via sh:disjoint."
+    exists: true
+    note: "check catches an appliesTo/notApplicableTo contradiction via sh:disjoint."
   - stage: extend
     doc: /dockg/reference/vocabulary/
-    exists: false
-    note: "[GAP] The full iiRDS Core and Software-domain term set dockg references, with IRIs."
+    exists: true
+    note: "The full iiRDS Core and Software-domain term set dockg references, with IRIs."
 ---
 
 Ines makes applicability explicit, including the part that has to be said out loud.

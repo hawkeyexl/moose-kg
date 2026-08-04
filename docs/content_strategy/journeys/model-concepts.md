@@ -14,28 +14,28 @@ success_criteria: >-
 steps:
   - stage: orient
     doc: /dockg/model/
-    exists: false
-    note: "[GAP] What dockg models and what it does not — a mapping, not a SKOS tutorial."
+    exists: true
+    note: "What dockg models and what it does not — a mapping, not a SKOS tutorial."
   - stage: act
     doc: /dockg/model/concepts-skos/
-    exists: false
-    note: "[GAP] prefLabel establishes the concept; altLabels/broader/narrower/related depend on it."
+    exists: true
+    note: "prefLabel establishes the concept; altLabels/broader/narrower/related depend on it."
   - stage: verify
     doc: /dockg/model/concepts-skos/
-    exists: false
-    note: "[GAP] Inspect the emitted concept nodes with query; confirm IRIs converged as intended."
+    exists: true
+    note: "Inspect the emitted concept nodes with query; confirm IRIs converged as intended."
   - stage: verify
     doc: /dockg/govern/
-    exists: false
-    note: "[GAP] Run check: cycles, S27 broader/related conflicts, and the two-spellings warning."
+    exists: true
+    note: "Run check: cycles, S27 broader/related conflicts, and the two-spellings warning."
   - stage: extend
     doc: /dockg/reference/shapes/
-    exists: false
-    note: "[GAP] Every rule the shapes enforce, its severity, and what error it is protecting against."
+    exists: true
+    note: "Every rule the shapes enforce, its severity, and what error it is protecting against."
   - stage: extend
     doc: /dockg/reference/vocabulary/
-    exists: false
-    note: "[GAP] Which standard term each kg: key emits, with the published IRI."
+    exists: true
+    note: "Which standard term each kg: key emits, with the published IRI."
 ---
 
 Ines gets the vocabulary out of the spreadsheet and into the files, with enforcement.

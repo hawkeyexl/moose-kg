@@ -1,0 +1,123 @@
+---
+title: Emitted vocabulary
+description: Every namespace, class, and predicate a dockg graph contains — the deliberately minimal dockg namespace, the standard terms it prefers wherever one exists, and the iiRDS terms that appear only inside an exported package.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+dockg emits standard vocabulary wherever a standard term exists, and mints its own only where none does.
+That is a deliberate constraint: a graph full of bespoke predicates is a graph nobody else can read.
+
+## Namespaces
+
+Every emitted graph carries the same header, sorted by prefix.
+
+| Prefix | IRI |
+|---|---|
+| `dcterms` | `http://purl.org/dc/terms/` |
+| `dockg` | `https://dockg.dev/ns#` |
+| `foaf` | `http://xmlns.com/foaf/0.1/` |
+| `iirds` | `http://iirds.tekom.de/iirds#` |
+| `iirdsSft` | `http://iirds.tekom.de/iirds/domain/software#` |
+| `prov` | `http://www.w3.org/ns/prov#` |
+| `rdf` | `http://www.w3.org/1999/02/22-rdf-syntax-ns#` |
+| `schema` | `https://schema.org/` |
+| `skos` | `http://www.w3.org/2004/02/skos/core#` |
+| `xsd` | `http://www.w3.org/2001/XMLSchema#` |
+
+<Aside type="note" title="schema.org over HTTPS">
+  `https://schema.org/`, not `http://`. The HTTPS form is schema.org's current recommendation, and
+  mixing the two produces two nodes for one term.
+</Aside>
+
+## The `dockg` namespace
+
+Two classes and a small set of properties. Everything here exists because no standard term covers
+it — if you find yourself wanting to add one, check for a dcterms, SKOS, PROV-O, or schema.org term
+first.
+
+### Classes
+
+| Term | Applies to |
+|---|---|
+| `dockg:Document` | Every source document |
+| `dockg:Section` | Every heading |
+
+### Properties
+
+| Term | Meaning |
+|---|---|
+| `dockg:path` | Repo-relative source path — the join key from graph back to file |
+| `dockg:level` | Heading level, 1–6 |
+| `dockg:order` | 1-based position among sibling headings |
+| `dockg:codeLanguage` | Language of a fenced code block |
+| `dockg:brokenLink` | An internal link target that resolves to nothing |
+| `dockg:brokenSectionRef` | A `kg.sections` key matching no heading |
+| `dockg:notApplicableToVariant` | Explicit negative product scope |
+| `dockg:notSoftwareSubject` | Explicit negative subject scope |
+| `dockg:filledFieldEntry` | Links a fill activity to a per-field entry node |
+| `dockg:filledField` | Which field an entry describes |
+| `dockg:confidence` | Model confidence on a filled field |
+| `dockg:version` | The dockg version stamped on the build activity |
+
+### Role individuals
+
+Objects of `prov:hadRole` on qualified attribution and association nodes.
+
+| Term | Distinguishes |
+|---|---|
+| `dockg:authorRole` | A person who authored |
+| `dockg:generatorRole` | A software agent that generated |
+| `dockg:toolRole` | The tool that built the graph |
+
+## Standard terms emitted
+
+**Dublin Core** — `dcterms:title`, `description`, `creator`, `created`, `modified`, `language`,
+`subject`, `references`, `hasPart`.
+
+**SKOS** — classes `skos:Concept`, `skos:ConceptScheme`; properties `skos:prefLabel`, `altLabel`,
+`broader`, `narrower`, `related`, `inScheme`.
+
+**PROV-O** — classes `prov:Entity`, `Activity`, `Attribution`, `Association`, plus `prov:Person`,
+`prov:Organization`, `prov:SoftwareAgent` as agent types; properties `prov:wasAttributedTo`,
+`wasGeneratedBy`, `wasDerivedFrom`, `wasRevisionOf`, `wasAssociatedWith`, `generatedAtTime`,
+`endedAtTime`, `used`, `generated`, `agent`, `hadRole`, `qualifiedAttribution`,
+`qualifiedAssociation`.
+
+**schema.org** — `schema:image`.
+
+**FOAF** — `foaf:name`, `foaf:primaryTopic`.
+
+**iiRDS Core** — `iirds:has-topic-type`, `relates-to-product-variant`,
+`relates-to-product-lifecycle-phase`, `has-subject`; class `iirds:ProductVariant`; topic-type
+individuals `iirds:GenericTask`, `GenericConcept`, `GenericReference`, `GenericLearning`,
+`GenericTroubleshooting`, `GenericForm`.
+
+**iiRDS Software domain** — `iirdsSft:Administration`, `Customization`, `Update`, `Deployment`,
+`Integration`, `Deinstallation`, `Architecture`, `Interface`, `SystemRequirement`.
+
+## Package-only terms
+
+These appear in an [iiRDS export](/dockg/retrieve/export/)'s `META-INF/metadata.rdf` and **never in
+the built graph**. If you diff a package against `graph.ttl` and find vocabulary the Turtle does not
+have, this is why.
+
+`iirds:Package`, `iiRDSVersion`, `Topic`, `is-part-of-package`, `has-rendition`, `Rendition`,
+`source`, `format`, `title`, `language`, `Party`, `has-party-role`, `Creator`, `relates-to-party`,
+`relates-to-vcard`, plus `vcard:Organization` and `vcard:organization-name` from
+`http://www.w3.org/2006/vcard/ns#`.
+
+<Aside type="note" title="iiRDS is referenced, never vendored">
+  iiRDS is CC BY-ND. dockg only references published IRIs — the ones in `src/core/iirds.ts` are
+  verified against the consortium's published models, and the vocabulary is never copied,
+  re-serialized, or modified. Tools that copy it into their own namespace create a redistribution
+  obligation their users inherit.
+</Aside>
+
+## What is never emitted
+
+- **Blank nodes.** Every node gets a deterministic IRI, including provenance and attribution nodes.
+  See [determinism](/dockg/concepts/determinism/).
+- **Your prose.** See [an index, not a corpus](/dockg/concepts/index-not-corpus/).
+- **Inferred triples.** No transitive closure is materialized; what you assert is what the graph
+  contains.

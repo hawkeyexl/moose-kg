@@ -16,28 +16,28 @@ success_criteria: >-
 steps:
   - stage: trigger
     doc: /dockg/build/
-    exists: false
-    note: "[GAP] The coverage table is where this starts; a low number must route here, not read as failure."
+    exists: true
+    note: "The coverage table is where this starts; a low number must route here, not read as failure."
   - stage: orient
     doc: /dockg/build/backfill/
-    exists: false
-    note: "[GAP] fill proposes, humans accept. Frame as a review workflow, never as auto-annotation."
+    exists: true
+    note: "fill proposes, humans accept. Frame as a review workflow, never as auto-annotation."
   - stage: act
     doc: /dockg/build/backfill/
-    exists: false
-    note: "[GAP] Dry run first, on a subset, with a cost cap. Read the proposals before writing anything."
+    exists: true
+    note: "Dry run first, on a subset, with a cost cap. Read the proposals before writing anything."
   - stage: act
     doc: /dockg/build/backfill/
-    exists: false
-    note: "[GAP] Write for real, then review kg.provenance entries and delete them as they are cleared."
+    exists: true
+    note: "Write for real, then review kg.provenance entries and delete them as they are cleared."
   - stage: verify
     doc: /dockg/govern/coverage/
-    exists: false
-    note: "[GAP] Re-measure, then set the threshold just under the new number to hold the line."
+    exists: true
+    note: "Re-measure, then set the threshold just under the new number to hold the line."
   - stage: extend
     doc: /dockg/reference/frontmatter/
-    exists: false
-    note: "[GAP] The kg.provenance block shape, per-field confidence, and what deleting an entry means."
+    exists: true
+    note: "The kg.provenance block shape, per-field confidence, and what deleting an entry means."
 ---
 
 The corpus is large, almost none of it is annotated, and nobody is going to fix that by hand.

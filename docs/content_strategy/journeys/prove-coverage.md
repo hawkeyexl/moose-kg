@@ -15,28 +15,28 @@ success_criteria: >-
 steps:
   - stage: orient
     doc: /dockg/govern/
-    exists: false
-    note: "[GAP] The obligation-to-mechanism map, shared with the provenance journey."
+    exists: true
+    note: "The obligation-to-mechanism map, shared with the provenance journey."
   - stage: act
     doc: /dockg/govern/coverage/
-    exists: false
-    note: "[GAP] The per-field coverage table; what counts as covered for each of the seven fields."
+    exists: true
+    note: "The per-field coverage table; what counts as covered for each of the seven fields."
   - stage: act
     doc: /dockg/govern/coverage/
-    exists: false
-    note: "[GAP] Thresholds as a uniform number or a per-field map, and why per-field is usually right."
+    exists: true
+    note: "Thresholds as a uniform number or a per-field map, and why per-field is usually right."
   - stage: act
     doc: /dockg/govern/coverage/
-    exists: false
-    note: "[GAP] Gate with stats --check. Without --check nothing fails, which surprises people."
+    exists: true
+    note: "Gate with stats --check. Without --check nothing fails, which surprises people."
   - stage: verify
     doc: /dockg/govern/
-    exists: false
-    note: "[GAP] check catches appliesTo/notApplicableTo contradictions the same build."
+    exists: true
+    note: "check catches appliesTo/notApplicableTo contradictions the same build."
   - stage: extend
     doc: /dockg/build/backfill/
-    exists: false
-    note: "[GAP] When the gap is too large to close by hand — the brownfield route out."
+    exists: true
+    note: "When the gap is too large to close by hand — the brownfield route out."
 ---
 
 Renata converts a coverage spreadsheet into a build failure.

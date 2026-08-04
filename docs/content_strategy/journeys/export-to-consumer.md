@@ -15,24 +15,28 @@ success_criteria: >-
 steps:
   - stage: orient
     doc: /dockg/retrieve/export/
-    exists: false
-    note: "[GAP] Three formats, three consumers: jsonld, iirds, search. Pick by destination."
+    exists: true
+    note: "Three formats, three consumers: jsonld, iirds, search. Pick by destination."
   - stage: act
     doc: /dockg/retrieve/export/
-    exists: false
-    note: "[GAP] Export to JSON-LD; note the -f flag here selects format, unlike everywhere else."
+    exists: true
+    note: "Export to JSON-LD; note the -f flag here selects format, unlike everywhere else."
   - stage: act
     doc: /dockg/retrieve/export/
-    exists: false
-    note: "[GAP] Export an iiRDS package; the metadata.rdf and rendition structure inside the zip."
+    exists: true
+    note: "Export an iiRDS package; the metadata.rdf and rendition structure inside the zip."
   - stage: verify
     doc: /dockg/retrieve/export/
-    exists: false
-    note: "[GAP] Rebuild and compare bytes; projection warnings go to stderr and do not fail the run."
+    exists: true
+    note: "Rebuild and compare bytes; projection warnings go to stderr and do not fail the run."
   - stage: extend
     doc: /dockg/reference/vocabulary/
-    exists: false
-    note: "[GAP] Package-only terms that appear in an iiRDS export but never in the built graph."
+    exists: true
+    note: "Package-only terms that appear in an iiRDS export but never in the built graph."
+  - stage: extend
+    doc: /dockg/reference/library-api/
+    exists: true
+    note: "For a consumer wiring export into a Node pipeline rather than shelling out to the CLI."
 ---
 
 Kwame or Ines hands the graph to a system that does not speak Turtle.

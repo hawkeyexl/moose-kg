@@ -5,8 +5,9 @@ scope: docs/src/content/docs/
 generator: Astro + Starlight
 base_path: /dockg
 groups: 9
-pages_total: 34
+pages_total: 35
 pages_phase_1: 15
+pages_written: 35
 ---
 
 The proposed structure of dockg's published documentation set. **A proposal only** — it
@@ -164,6 +165,7 @@ none is flagged in [`ia-gap-analysis.md`](ia-gap-analysis.md).
 | `vocabulary.mdx` | `cuj-scope-by-variant` | | Namespace table, the minimal `dockg:` namespace, every standard term emitted, package-only terms. |
 | `shapes.mdx` | `cuj-model-concepts` | | Every rule `check` enforces, its severity, and what error it protects against. |
 | `runtime-api.mdx` | `cuj-serve-retrieval` | | Exact exports and signatures for `dockg/runtime`. |
+| `library-api.mdx` | `cuj-export-to-consumer` | | The Node package entry: every command as a function, plus IRI minting, derivation, and the emitters. |
 | `embed-models.mdx` | `cuj-serve-retrieval` | | Tested models, sizes, context limits, the short-context truncation trap. |
 | `glossary.mdx` | — *(support)* | | Term definitions as H2s. Supports navigation; drives none. |
 
@@ -181,6 +183,7 @@ is part of the change's definition of done.
 | `reference/shapes.mdx` | `shapes/dockg-0.5.ttl` |
 | `reference/output-and-exit-codes.mdx` | `src/cli.ts` `fail()`, each `src/commands/*.ts` core |
 | `reference/runtime-api.mdx` | `src/runtime.ts` exports, `package.json` `exports` |
+| `reference/library-api.mdx` | `src/index.ts` exports |
 | `reference/embed-models.mdx` | `src/embed.ts` `MODEL_PROFILES` |
 | `concepts/*.mdx` | The ADRs each cites — 01008, 01010, 01014, and the DESIGN.md thesis |
 
@@ -189,6 +192,9 @@ by running the built binary against a committed fixture — determinism means th
 is the output every reader will see.
 
 ## Phased rollout
+
+**All three phases are written.** The ordering is kept as the record of why the set was built in
+this sequence, and as the template for the next tranche of pages.
 
 **Phase 1 — Launch (15 ★ pages).** Both anchors complete end to end, plus the reference pages
 that the anchors link into. Landing · get-started · four concepts pages · `build/index` ·

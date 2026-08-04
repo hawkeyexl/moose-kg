@@ -16,28 +16,28 @@ highest_traffic: true
 steps:
   - stage: trigger
     doc: /dockg/fix/
-    exists: false
-    note: "[GAP] Must work cold, as the landing page for a link in CI output. No prior context."
+    exists: true
+    note: "Must work cold, as the landing page for a link in CI output. No prior context."
   - stage: orient
     doc: /dockg/fix/
-    exists: false
-    note: "[GAP] Error-line anatomy, part by part: which is the file, the field, the rule."
+    exists: true
+    note: "Error-line anatomy, part by part: which is the file, the field, the rule."
   - stage: orient
     doc: /dockg/fix/
-    exists: false
-    note: "[GAP] Whose fault is it: exit 1 is your page, exit 2 is the pipeline. Hand it back."
+    exists: true
+    note: "Whose fault is it: exit 1 is your page, exit 2 is the pipeline. Hand it back."
   - stage: act
     doc: /dockg/fix/
-    exists: false
-    note: "[GAP] Common-failures catalog, each fix shown as a frontmatter diff."
+    exists: true
+    note: "Common-failures catalog, each fix shown as a frontmatter diff."
   - stage: act
     doc: /dockg/fix/
-    exists: false
-    note: "[GAP] One reproduce-locally command, or an honest statement that pushing is faster."
+    exists: true
+    note: "One reproduce-locally command, or an honest statement that pushing is faster."
   - stage: extend
     doc: /dockg/fix/faq/
-    exists: false
-    note: "[GAP] Question-shaped headings for the cases that are not schema failures."
+    exists: true
+    note: "Question-shaped headings for the cases that are not schema failures."
 ---
 
 Sam's pull request is red and they want to merge.

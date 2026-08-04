@@ -11,10 +11,13 @@ get them wrong.
 
 | Model | Size (q8) | Dims | Context | Notes |
 |---|---|---|---|---|
-| `onnx-community/granite-embedding-small-english-r2-ONNX` | ~53 MB | 384 | 8192 tokens | **Default.** Sections are never truncated; no prefixes. |
+| `onnx-community/granite-embedding-small-english-r2-ONNX` | — | 384 | 8192 tokens | **Default.** Sections are never truncated; no prefixes. |
 | `Xenova/gte-small` | ~34 MB | 384 | 512 tokens | Lighter; no prefixes. |
-| `Xenova/bge-small-en-v1.5` | ~34 MB | 384 | 512 tokens | Needs a query prefix — applied for you, since omitting it degrades retrieval silently. |
+| `Xenova/bge-small-en-v1.5` | — | 384 | 512 tokens | Needs a query prefix — applied for you, since omitting it degrades retrieval silently. |
 | `Xenova/all-MiniLM-L6-v2` | ~23 MB | 384 | 256 wordpieces | Smallest, and **truncates long sections**. See below. |
+
+Sizes are quoted only where `MODEL_PROFILES` records one; download size is the model host's to state,
+not dockg's, and a figure with no source here is a figure nothing can keep honest.
 
 ```yaml title="dockg.config.yaml"
 embed:

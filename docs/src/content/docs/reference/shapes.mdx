@@ -1,0 +1,111 @@
+---
+title: Validation rules
+description: Every rule dockg check enforces against the assembled graph, its severity, and the error each one protects against — including the checks that run in TypeScript because SHACL cannot express them.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+`dockg check` validates the **assembled graph** against a published SHACL shapes contract. This page
+is the catalog: what each rule catches, and whether it gates.
+
+The shapes ship in the package at `shapes/dockg-0.5.ttl`. Point any SHACL tool at it, or override
+with `check.shapes` / `--shapes`.
+
+## Severities and exit codes
+
+| Severity | Exit code | Meaning |
+|---|---|---|
+| `sh:Violation` | **1** | The graph is wrong. Fix it. |
+| `sh:Warning` | 0 | Something is probably unintended, but the graph is coherent. |
+| `sh:Info` | 0 | Informational. |
+
+Only violations gate. A run reporting warnings exits `0` — see
+[output & exit codes](/dockg/reference/output-and-exit-codes/).
+
+## Shapes are closed
+
+Every node shape sets `sh:closed true`, targeting `dockg:Document`, `dockg:Section`,
+`skos:Concept`, `skos:ConceptScheme`, `iirds:ProductVariant`, `prov:Person`, `prov:Organization`,
+`prov:SoftwareAgent`, `prov:Activity`, `prov:Attribution`, and `prov:Association`.
+
+<Aside type="caution" title="A new derive predicate fails check until the shapes learn it">
+  That is the feature, not a bug. Closed shapes mean the emitted graph cannot quietly grow a
+  predicate nobody agreed to. If you add one, the shapes are part of the same change — and because
+  published shapes files are immutable, that means a new version file, not an edit.
+</Aside>
+
+## Concept rules
+
+| Rule | Severity | Protects against |
+|---|---|---|
+| No `skos:broader`/`narrower` cycle | violation | A concept being its own ancestor |
+| `skos:related` must not conflict with `skos:broaderTransitive` | violation | SKOS S27 — a concept both related to and an ancestor of another |
+| A concept carries `skos:prefLabel` | violation | Unlabelled nodes |
+| A concept carries `skos:inScheme` | violation | Concepts outside any scheme |
+| Relation targets are typed concepts | violation | Dangling hierarchy |
+| One concept, one `prefLabel` spelling | **warning** | Silent authoring drift after slug convergence |
+
+The last one is a warning because convergence is a designed feature: two spellings of a term become
+one node on purpose. The warning tells you two documents disagree about spelling, not that the graph
+is wrong.
+
+```
+warning: https://example.com/kg/concept/installation skos:prefLabel — concept carries multiple prefLabels (same slug, different spellings) — settle on one spelling [docs/configuration.md, docs/getting-started.md]
+```
+
+## Applicability rules
+
+| Rule | Severity | Protects against |
+|---|---|---|
+| `dockg:notApplicableToVariant` is `sh:disjoint` from `iirds:relates-to-product-variant` | violation | A topic claiming both to apply and not apply to one variant |
+| `dockg:notSoftwareSubject` is `sh:disjoint` from `iirds:has-subject` | violation | The same contradiction for subjects |
+
+Both are enforced on documents **and** on sections, so a section cannot contradict itself either.
+This is the defect a human reviewer does not catch and an auditor does. See
+[open-world semantics](/dockg/concepts/open-world/).
+
+## Subject rules
+
+| Rule | Severity | Protects against |
+|---|---|---|
+| `dcterms:subject` points at a `skos:Concept` | **warning** | Subject tags that will not resolve to anything |
+
+Enforced on both documents and sections.
+
+## Provenance rules
+
+| Rule | Severity | Protects against |
+|---|---|---|
+| Activities carry a type | violation | Untyped activity nodes |
+| Agents carry `foaf:name` | violation | Anonymous agents |
+| Attribution and association nodes are well formed | violation | Broken qualified-provenance wiring |
+
+## Rules that are not in the shapes file
+
+Cycle detection and the transitive SKOS S27 check run in **TypeScript**, because core SHACL cannot
+express transitive closure. They are part of `dockg check` regardless — you will not find them by
+reading `shapes/dockg-0.5.ttl`, which is worth knowing before you go looking.
+
+```
+violation: https://example.com/kg/concept/alpha skos:broader — skos:broader cycle through …/alpha, …/beta (…/alpha → …/beta) — a concept cannot be its own ancestor [docs/alpha.md, docs/beta.md]
+```
+
+## Every finding names the responsible files
+
+The bracketed list at the end of a finding is the set of documents that produced it. For a cycle or
+an S27 conflict that is several files, none of which is individually wrong — which is exactly why
+this check operates on the assembled graph and per-file
+[`dockg validate`](/dockg/govern/) cannot replace it.
+
+## The same rules guard `dockg fill`
+
+Before writing a proposed field, `fill` simulates its triples against this contract and rejects
+anything that would create a cycle, an S27 conflict, a second spelling of an existing concept, or an
+applicability contradiction. Rejections are routine operation and leave the exit code at `0`. See
+[backfilling](/dockg/build/backfill/).
+
+## Versioning
+
+Published shapes files are immutable. The contract evolves by adding a new version file, never by
+editing bytes in place — the same rule the [frontmatter schemas](/dockg/reference/frontmatter/)
+follow.

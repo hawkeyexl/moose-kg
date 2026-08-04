@@ -13,36 +13,36 @@ anchor: true
 steps:
   - stage: orient
     doc: /dockg/
-    exists: false
-    note: "[GAP] Landing router plus a 30-second proof — one command and its real output."
+    exists: true
+    note: "Landing router plus a 30-second proof — one command and its real output."
   - stage: act
     doc: /dockg/get-started/
-    exists: false
-    note: "[GAP] Install, run build with no config file, read the docs-and-triples line."
+    exists: true
+    note: "Install, run build with no config file, read the docs-and-triples line."
   - stage: verify
     doc: /dockg/get-started/
-    exists: false
-    note: "[GAP] Same page: run build twice and diff. Determinism proved, not asserted."
+    exists: true
+    note: "Same page: run build twice and diff. Determinism proved, not asserted."
   - stage: orient
     doc: /dockg/concepts/index-not-corpus/
-    exists: false
-    note: "[GAP] Answers the first question every reader asks — why is my prose not in here?"
+    exists: true
+    note: "Answers the first question every reader asks — why is my prose not in here?"
   - stage: act
     doc: /dockg/build/
-    exists: false
-    note: "[GAP] What each of the seven derive sources reads, and how to turn one off."
+    exists: true
+    note: "What each of the seven derive sources reads, and how to turn one off."
   - stage: verify
     doc: /dockg/build/
-    exists: false
-    note: "[GAP] Read the corpus back with stats: counts, orphans, broken links, coverage."
+    exists: true
+    note: "Read the corpus back with stats: counts, orphans, broken links, coverage."
   - stage: extend
     doc: /dockg/reference/configuration/
-    exists: false
-    note: "[GAP] Inputs, exclude, out — the first three keys anyone changes."
+    exists: true
+    note: "Inputs, exclude, out — the first three keys anyone changes."
   - stage: extend
     doc: /dockg/reference/cli/
-    exists: false
-    note: "[GAP] The command surface, once the reader wants a flag the on-ramp did not show."
+    exists: true
+    note: "The command surface, once the reader wants a flag the on-ramp did not show."
 ---
 
 Priya points dockg at a repo they already have, and finds out what it knows.

@@ -80,7 +80,14 @@ showing the resulting artifact *and* naming the command that produced it, rather
 
 ## Route coverage
 
-Every `steps[].doc` currently carries `exists: false` and a `[GAP]` note, because no page has
-been written yet. **That field is the live coverage gate**: as pages land it flips to `true`, and
-a journey with no remaining `false` steps is complete. The prioritized gap list lives in
-[`information_architecture/ia-gap-analysis.md`](../information_architecture/ia-gap-analysis.md).
+**Every journey is fully backed: all 76 `steps[].doc` entries resolve to a real page.**
+
+That field is the live coverage gate. A step carries `exists: false` and a `[GAP]` note while its
+page is unwritten, and flips to `true` once the route resolves — `scripts/check-content-strategy.mjs`
+fails the build both ways, so a step cannot claim a page that does not exist *or* keep claiming a
+gap that has been filled.
+
+Coverage of the routes is not coverage of the *content*: a page can exist and still serve its
+journey badly. The [journey walk-through
+test](../information_architecture/proposed-ia.md) is the qualitative check, and it is run by a
+human.

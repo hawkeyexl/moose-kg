@@ -14,28 +14,28 @@ success_criteria: >-
 steps:
   - stage: orient
     doc: /dockg/govern/
-    exists: false
-    note: "[GAP] Which of the three gates catches what: validate per file, check whole graph, stats thresholds."
+    exists: true
+    note: "Which of the three gates catches what: validate per file, check whole graph, stats thresholds."
   - stage: orient
     doc: /dockg/reference/output-and-exit-codes/
-    exists: false
-    note: "[GAP] The 0/1/2 contract is what carries the integration; it must be understood before wiring."
+    exists: true
+    note: "The 0/1/2 contract is what carries the integration; it must be understood before wiring."
   - stage: act
     doc: /dockg/govern/ci/
-    exists: false
-    note: "[GAP] A complete GitHub Actions workflow, plus a step to add to an existing one."
+    exists: true
+    note: "A complete GitHub Actions workflow, plus a step to add to an existing one."
   - stage: act
     doc: /dockg/govern/coverage/
-    exists: false
-    note: "[GAP] Set the first coverage threshold below current coverage so the gate holds the line."
+    exists: true
+    note: "Set the first coverage threshold below current coverage so the gate holds the line."
   - stage: verify
     doc: /dockg/govern/ci/
-    exists: false
-    note: "[GAP] Open a PR that regresses metadata on purpose and watch it fail."
+    exists: true
+    note: "Open a PR that regresses metadata on purpose and watch it fail."
   - stage: extend
     doc: /dockg/fix/
-    exists: false
-    note: "[GAP] The gate's failure message must link here — this is the contributor's destination."
+    exists: true
+    note: "The gate's failure message must link here — this is the contributor's destination."
 ---
 
 Priya turns metadata quality from a review comment into a build failure.

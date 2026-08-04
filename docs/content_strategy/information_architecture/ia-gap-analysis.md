@@ -1,28 +1,28 @@
 ---
 type: ia-gap-analysis
-status: proposal
-current_state: one README.md of 686 lines; no docs site, no docs directory, no doc tooling
-pages_existing: 0
-pages_proposed: 34
+status: built
+pages_proposed: 35
+pages_written: 35
+open_gaps: 1
 ---
 
-What exists today, where it goes, and what has to be written from nothing.
+What the docset replaced, what it added, and what is still open.
 
-## Current state
+## Where this started
 
-**There is no documentation set.** Every user-facing word lives in `README.md` — 686 lines doing
-the work of overview, concept explainer, vocabulary reference, frontmatter reference, config
-reference, command reference, runtime API guide, embeddings guide, export guide, standards
-backgrounder, and contributor guide.
+Every user-facing word lived in `README.md` — 686 lines doing the work of overview, concept
+explainer, vocabulary reference, frontmatter reference, config reference, command reference,
+runtime API guide, embeddings guide, export guide, standards backgrounder, and contributor guide.
+No page existed; every proposed page was `[NEW]`.
 
-So this is not a migration with gaps at the edges. **Every proposed page is `[NEW]`.** What the
-README provides is raw material for roughly two thirds of them, and the useful analysis is
-therefore two things: where each README section lands, and what has no source material at all.
+**All 35 are now written**, and all 76 CUJ steps resolve to a real page. The README is 66 lines and
+routes into the site; contributor mechanics live in `CONTRIBUTING.md`. What follows is kept as the
+record of where each thing went, and what remains open.
 
 ## Current → proposed mapping
 
-Each README section, and the page that inherits it. "Expand" means the README's treatment is a
-summary that the destination page must go beyond; "split" means one section feeds several pages.
+Each README section, and the page that inherited it. "Expand" means the README's treatment was a
+summary the destination page goes beyond; "split" means one section fed several pages.
 
 | README section | Destination | Disposition |
 |---|---|---|
@@ -50,10 +50,9 @@ summary that the destination page must go beyond; "split" means one section feed
 ### One thing that leaves the README and does not go to the site
 
 Contributor mechanics — quality gates, commit conventions, release channels — belong in a
-`CONTRIBUTING.md`, which **does not currently exist**. Putting them on the published site mixes
-audiences the IA is trying to separate, and leaving them in a slimmed README defeats the point of
-slimming it. Creating `CONTRIBUTING.md` is a prerequisite for the README slim, and is called out
-here so it does not get lost.
+`CONTRIBUTING.md`. Putting them on the published site mixes audiences the IA is trying to separate,
+and leaving them in a slimmed README defeats the point of slimming it. The file did not exist and
+was created as part of the README slim.
 
 ## Content with no source material at all
 
@@ -158,29 +157,65 @@ cross-check below is what catches it.
 
 ## Verifying this IA mechanically
 
-Two properties are checkable and should stay checkable as pages land:
+Three properties are checked by `scripts/check-content-strategy.mjs` on every CI run:
 
-1. **No dangling routes** — every `steps[].doc` in `journeys/` names a page the content set
-   plans. A journey pointing at a page nobody intends to write is a silent gap.
+1. **No dangling routes** — every `steps[].doc` in `journeys/` names a page the content set plans.
+   A journey pointing at a page nobody intends to write is a silent gap.
 2. **No unjustified pages** — every planned page is named by a journey step, except the three
    above.
+3. **`exists` tracks reality, both ways** — a step may not claim `exists: true` for a route that
+   resolves to nothing, *and* may not keep claiming a `[GAP]` for a page that now exists.
 
-Both were verified when this analysis was written, and the second caught a real defect:
-`reference/cli.mdx` was a Phase 1 page that no journey reached.
+The second caught a real defect when it was written: `reference/cli.mdx` was a launch page no
+journey reached. The third was added after all 75 steps sat at `exists: false` while 29 pages had
+already shipped — the coverage field the journeys overview calls "the live gate" had become
+fiction, and nothing noticed.
 
-## Prioritized gap list
+## Gaps that were closed
 
-Ordered by what unblocks the most downstream work:
+All ten of the originally prioritized gaps are addressed. Kept as a record of what the docset was
+built to fix:
 
-| # | Gap | Blocks | Phase |
-|---|---|---|---|
-| 1 | `fix/` track — troubleshooting exists nowhere | `cuj-fix-failing-check`; every gate the other personas install | 1 |
-| 2 | Exit-code contract as a set | `cuj-gate-metadata-in-ci`, `cuj-prove-coverage` | 1 |
-| 3 | The on-ramp with no RDF prerequisite | `cuj-first-graph`, and therefore everything | 1 |
-| 4 | `concepts/index-not-corpus` | `cuj-first-graph` — the first question every reader asks | 1 |
-| 5 | `concepts/open-world` | `cuj-scope-by-variant` — prevents a silent, dangerous failure | 1 |
-| 6 | CLI reference plus its drift check | Every journey; also the mechanism that keeps them accurate | 1 |
-| 7 | `CONTRIBUTING.md` does not exist | The README slim | 1 |
-| 8 | `fill` reframed as a review workflow | `cuj-backfill-metadata`; also an audit liability if left as-is | 2 |
-| 9 | Provenance for a non-CLI reader | `cuj-audit-provenance` | 2 |
-| 10 | The metadata dependency stated up front for retrieval | `cuj-serve-retrieval` | 3 |
+| # | Gap | Closed by |
+|---|---|---|
+| 1 | `fix/` track — troubleshooting existed nowhere | `fix/index.mdx`, `fix/faq.mdx` |
+| 2 | Exit-code contract as a set | `reference/output-and-exit-codes.mdx` |
+| 3 | The on-ramp with no RDF prerequisite | `get-started/index.mdx` |
+| 4 | Why prose is not in the graph | `concepts/index-not-corpus.mdx` |
+| 5 | Absence means unknown | `concepts/open-world.mdx` |
+| 6 | CLI reference plus its drift check | `reference/cli.mdx`, `scripts/check-cli-reference.mjs` |
+| 7 | `CONTRIBUTING.md` did not exist | Created with the README slim |
+| 8 | `fill` reframed as a review workflow | `build/backfill.mdx` |
+| 9 | Provenance for a non-CLI reader | `govern/provenance.mdx` |
+| 10 | The metadata dependency stated up front for retrieval | `retrieve/index.mdx` |
+
+Two gaps found later and also closed: the Node package entry (`.`) had no planned page at all —
+only `./runtime` and `./embed` did — now `reference/library-api.mdx`; and
+`reference/embed-models.mdx` quoted a model size with no source in the repo, now removed rather
+than left unfalsifiable.
+
+## What is still open
+
+### 1. Command output on a page is verified by nobody
+
+Automated doc testing was added and then removed, to be re-added separately. The pages show real
+output captured from committed fixtures, and determinism means it is reproducible — but **nothing
+fails when a command's output changes.**
+
+This is the largest remaining risk in the set, because it degrades silently: a page stays plausible
+long after it stops being true. `CLAUDE.md` and `CONTRIBUTING.md` name re-capturing output as a
+manual obligation until a runner returns.
+
+### 2. Deliberate non-gaps
+
+Recorded so they are decisions rather than oversights:
+
+- **`query` and `traverse` have no guide page.** Both are covered by `reference/cli.mdx` and used
+  inline where a journey needs them (`model-concepts`, `scope-by-variant`, `audit-provenance`). No
+  journey asks for a dedicated page, and the IA does not admit pages without one.
+- **dockg does not parse MDX.** Links inside JSX components never become graph edges, so the docs
+  graph's own reference and orphan counts understate reality. Stated on `build/index.mdx` rather
+  than worked around; whether dockg should learn MDX needs its own ADR.
+- **Route coverage is not content quality.** Every CUJ step resolving to a page says nothing about
+  whether the page serves the journey well. The journey walk-through test in
+  [`proposed-ia.md`](proposed-ia.md) is the qualitative check, and it is run by a human.

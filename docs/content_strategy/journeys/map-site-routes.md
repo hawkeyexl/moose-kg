@@ -14,24 +14,24 @@ success_criteria: >-
 steps:
   - stage: trigger
     doc: /dockg/build/
-    exists: false
-    note: "[GAP] The stats broken-links section is where this journey starts; it must link onward."
+    exists: true
+    note: "The stats broken-links section is where this journey starts; it must link onward."
   - stage: orient
     doc: /dockg/build/routes/
-    exists: false
-    note: "[GAP] Why a /docs/actions/find link cannot resolve without being told the mapping."
+    exists: true
+    note: "Why a /docs/actions/find link cannot resolve without being told the mapping."
   - stage: act
     doc: /dockg/build/routes/
-    exists: false
-    note: "[GAP] Configure routes[]: basePath, root, extensions, indexFiles. Worked example per generator."
+    exists: true
+    note: "Configure routes[]: basePath, root, extensions, indexFiles. Worked example per generator."
   - stage: verify
     doc: /dockg/build/routes/
-    exists: false
-    note: "[GAP] Re-run stats, compare the broken-link count, inspect one resolved edge with query."
+    exists: true
+    note: "Re-run stats, compare the broken-link count, inspect one resolved edge with query."
   - stage: extend
     doc: /dockg/reference/configuration/
-    exists: false
-    note: "[GAP] Full routes[] key reference including normalization of basePath and root."
+    exists: true
+    note: "Full routes[] key reference including normalization of basePath and root."
 ---
 
 Priya's corpus links the way the site publishes, and dockg resolved those links against the

@@ -200,6 +200,14 @@ for (const cuj of cujs) {
         cuj.file,
         `step ${i}: exists:true but ${step.doc} resolves to no file`,
       );
+    // The inverse matters just as much. Without it a journey keeps reporting a
+    // gap that has been filled, and the coverage field — which the overview
+    // calls the live gate — quietly becomes fiction.
+    if (step.exists === false && routeResolves(step.doc))
+      report(
+        cuj.file,
+        `step ${i}: exists:false but ${step.doc} now resolves — flip it to true and drop the [GAP] note`,
+      );
   }
 }
 

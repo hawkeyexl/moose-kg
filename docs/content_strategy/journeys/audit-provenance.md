@@ -16,32 +16,32 @@ success_criteria: >-
 steps:
   - stage: orient
     doc: /dockg/govern/
-    exists: false
-    note: "[GAP] Which obligation maps to which mechanism. Written to be handed to an engineer."
+    exists: true
+    note: "Which obligation maps to which mechanism. Written to be handed to an engineer."
   - stage: orient
     doc: /dockg/concepts/determinism/
-    exists: false
-    note: "[GAP] Why reproducibility is what makes this evidence rather than an anecdote."
+    exists: true
+    note: "Why reproducibility is what makes this evidence rather than an anecdote."
   - stage: act
     doc: /dockg/govern/provenance/
-    exists: false
-    note: "[GAP] What is derived by default, what git adds, and the tri-state provenance.git setting."
+    exists: true
+    note: "What is derived by default, what git adds, and the tri-state provenance.git setting."
   - stage: act
     doc: /dockg/govern/provenance/
-    exists: false
-    note: "[GAP] Qualified attribution and association: agents, roles, and why they are separate nodes."
+    exists: true
+    note: "Qualified attribution and association: agents, roles, and why they are separate nodes."
   - stage: act
     doc: /dockg/govern/provenance/
-    exists: false
-    note: "[GAP] kg.provenance as the machine-authorship record and the human review queue."
+    exists: true
+    note: "kg.provenance as the machine-authorship record and the human review queue."
   - stage: verify
     doc: /dockg/govern/provenance/
-    exists: false
-    note: "[GAP] Query one document's full provenance; show the report an auditor would receive."
+    exists: true
+    note: "Query one document's full provenance; show the report an auditor would receive."
   - stage: extend
     doc: /dockg/reference/vocabulary/
-    exists: false
-    note: "[GAP] The PROV-O term set dockg emits, and what each assertion does and does not prove."
+    exists: true
+    note: "The PROV-O term set dockg emits, and what each assertion does and does not prove."
 ---
 
 Renata answers the authorship question without a manual audit.

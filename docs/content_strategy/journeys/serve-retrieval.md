@@ -14,32 +14,32 @@ success_criteria: >-
 steps:
   - stage: orient
     doc: /dockg/retrieve/
-    exists: false
-    note: "[GAP] What the runtime does and where it stops. State the metadata dependency here, not later."
+    exists: true
+    note: "What the runtime does and where it stops. State the metadata dependency here, not later."
   - stage: act
     doc: /dockg/retrieve/search/
-    exists: false
-    note: "[GAP] Build the artifacts: export --format search, then embed. Name each file and its role."
+    exists: true
+    note: "Build the artifacts: export --format search, then embed. Name each file and its role."
   - stage: act
     doc: /dockg/retrieve/runtime/
-    exists: false
-    note: "[GAP] Load the graph and index in the browser; the {context, citations, trace} return shape."
+    exists: true
+    note: "Load the graph and index in the browser; the {context, citations, trace} return shape."
   - stage: act
     doc: /dockg/retrieve/runtime/
-    exists: false
-    note: "[GAP] Apply a variant or subject filter, and show what it excluded."
+    exists: true
+    note: "Apply a variant or subject filter, and show what it excluded."
   - stage: verify
     doc: /dockg/retrieve/search/
-    exists: false
-    note: "[GAP] Staleness: mismatched model, dtype, dims, or corpus digest is refused, not degraded."
+    exists: true
+    note: "Staleness: mismatched model, dtype, dims, or corpus digest is refused, not degraded."
   - stage: extend
     doc: /dockg/reference/runtime-api/
-    exists: false
-    note: "[GAP] Exact exports and type signatures; this reader reads signatures faster than prose."
+    exists: true
+    note: "Exact exports and type signatures; this reader reads signatures faster than prose."
   - stage: extend
     doc: /dockg/reference/embed-models/
-    exists: false
-    note: "[GAP] Tested models, sizes, context limits, and the truncation trap on short-context models."
+    exists: true
+    note: "Tested models, sizes, context limits, and the truncation trap on short-context models."
 ---
 
 Kwame puts a deterministic boundary in front of a ranker that cannot see one.
