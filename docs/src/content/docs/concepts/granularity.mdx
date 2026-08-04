@@ -1,0 +1,107 @@
+---
+title: Granularity
+description: A node should index exactly the text it owns and no more — so metadata on a long document that covers several variants is false for part of that document, and dockg lets you push it down to the heading level.
+---
+
+import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+A forty-page document tagged with one topic type and one product variant is telling the truth
+about a fraction of itself.
+
+The rule dockg is built around: **content granularity must match node granularity.** Every node
+should index exactly the text it owns.
+
+## Why document-level tagging breaks down
+
+Consider a maintenance guide covering three machine variants. At document level you have two
+options, and both are wrong:
+
+- **Tag it with all three variants.** Now a query scoped to one variant returns the whole
+  document, including the two thirds that do not apply. The reader has to filter by hand, which
+  is the job you were trying to automate.
+- **Tag it with none.** Now it is invisible to every scoped query, and
+  [absence means unknown](/dockg/concepts/open-world/) rather than "check manually".
+
+The document is simply not the right unit. The heading is.
+
+## Sections are addressable
+
+dockg derives a node per heading, whose IRI is the document's IRI plus the heading's
+GitHub-style slug:
+
+```turtle
+<https://example.com/kg/doc/docs/configuration.md#inputs>
+    a dockg:Section ;
+    dcterms:title "Inputs" ;
+    dockg:level 2 ;
+    dockg:order 1 .
+```
+
+That fragment is not decorative. It resolves to an exact span on disk, so *route with the graph,
+then read the text* works at section resolution — you narrow to the heading that matters and open
+the file at it, rather than handing a reader a whole document.
+
+You attach metadata to those sections with a slug-keyed map:
+
+```md title="docs/maintenance.md"
+---
+kg:
+  sections:
+    reset-the-interlock:
+      topicType: task
+      appliesTo:
+        - SP-X100
+    clean-the-optics:
+      topicType: task
+      appliesTo:
+        - SP-C40
+---
+```
+
+<Aside type="caution" title="Sections inherit nothing">
+  Section metadata is explicit-only. A section does not pick up the document's `appliesTo` or
+  `topicType`, and that is deliberate — inherited applicability would silently recreate the
+  document-level lie one level down, which is the exact problem sections exist to solve.
+</Aside>
+
+## The keys are derived from prose, so they can drift
+
+Section keys are slugs of heading text. Heading text is prose, and writers edit prose without
+thinking about metadata. Rename a heading and its key matches nothing — and the metadata that was
+scoping that section silently stops applying.
+
+dockg reports it rather than ignoring it:
+
+```
+Broken section refs (1):
+  docs/getting-started.md -> #missing-heading
+```
+
+That single behavior is what makes section metadata safe to depend on. Without it, section
+scoping would be a system that quietly degrades every time someone improves a heading.
+
+## What this costs
+
+Section-level metadata is more work to author and more work to review, and it is not free to
+maintain. Two things make it tractable:
+
+- **Do it where scope actually varies.** A document that genuinely covers one variant and one
+  topic type should be tagged at document level. Sections are for documents that are not
+  homogeneous.
+- **Measure before you invest.** Coverage and broken-section-ref counts tell you where the
+  document-level tagging is already lying.
+
+## Where to go next
+
+<CardGrid>
+  <LinkCard
+    title="Section-level metadata"
+    href="/dockg/model/sections/"
+    description="The slug-keyed map in practice: which keys are permitted, and which are meaningless per section."
+  />
+  <LinkCard
+    title="An index, not a corpus"
+    href="/dockg/concepts/index-not-corpus/"
+    description="Why a node points at text instead of containing it."
+  />
+</CardGrid>

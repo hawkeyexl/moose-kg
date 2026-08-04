@@ -1,0 +1,16 @@
+{
+  "name": "dockg-docs",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The dockg documentation site. A separate npm project so the published package never carries a docs toolchain.",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.41.1",
+    "astro": "^7.0.2"
+  }
+}

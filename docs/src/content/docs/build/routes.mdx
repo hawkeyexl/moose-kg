@@ -1,0 +1,145 @@
+---
+title: Map your site's routes
+description: If your docs link by published URL rather than file path, dockg cannot resolve those links until you tell it how routes map back to source files — and the broken links that remain afterwards are the ones worth fixing.
+---
+
+import { Aside, CardGrid, LinkCard, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+
+You ran `dockg stats` and got a long list of broken internal links that are not broken — they
+work fine on your published site. Your corpus links by route, and dockg resolved those links
+against the filesystem.
+
+By the end of this page those links will be real graph edges, and the broken-link list will
+contain only links that are actually broken.
+
+## Before you start
+
+You need a `graph.ttl` and a broken-link list from [`dockg stats`](/dockg/build/). Keep the
+current count — you will compare against it.
+
+## Why this is not automatic
+
+A page writes `[find](/docs/actions/find)`. Your site generator publishes that correctly because
+it knows `/docs/actions/find` is served from `src/content/docs/actions/find.mdx`. That mapping
+lives in the generator's config, in a convention, or in both.
+
+dockg does not read your generator's config — it would need one adapter per generator, and they
+change. It takes the mapping from you instead, once.
+
+## Configure the mapping
+
+A route entry answers two questions: what URL prefix the site serves, and which repo directory
+serves it.
+
+<Tabs>
+  <TabItem label="Astro / Starlight">
+    ```yaml title="dockg.config.yaml"
+    routes:
+      - basePath: /docs
+        root: src/content/docs
+        extensions: [".md", ".mdx"]
+    ```
+  </TabItem>
+  <TabItem label="Docusaurus">
+    ```yaml title="dockg.config.yaml"
+    routes:
+      - basePath: /docs
+        root: docs
+        extensions: [".md", ".mdx"]
+    ```
+  </TabItem>
+  <TabItem label="MkDocs">
+    ```yaml title="dockg.config.yaml"
+    routes:
+      - basePath: /
+        root: docs
+        extensions: [".md"]
+    ```
+  </TabItem>
+</Tabs>
+
+| Key | Default | What it does |
+|---|---|---|
+| `root` | **required** | The repo directory the route serves. |
+| `basePath` | `/` | The URL prefix. Normalized to a leading `/` with no trailing `/`; `/` means site root. |
+| `extensions` | `[".md", ".mdx"]` | Tried in order when the URL has no extension. |
+| `indexFiles` | `["index", "README"]` | Resolves a directory URL like `/docs/actions/`. |
+
+So `/docs/actions/find` becomes `src/content/docs/actions/find.mdx`, and `/docs/actions/` becomes
+`src/content/docs/actions/index.mdx`.
+
+## Multiple routes are normal
+
+A docs section and a blog usually publish under different prefixes from different directories.
+List them all; each is matched independently.
+
+```yaml title="dockg.config.yaml"
+routes:
+  - basePath: /docs
+    root: src/content/docs
+  - basePath: /blog
+    root: src/content/blog
+```
+
+<Aside type="note" title="Route mappings are config-only">
+  There is no CLI flag. Routes define what the corpus *means*, so a graph built with different
+  route rules is a different graph — it should not vary with how someone typed the command.
+</Aside>
+
+## Verify by delta
+
+<Steps>
+
+1. **Rebuild and re-run stats.**
+
+   ```sh
+   dockg build && dockg stats
+   ```
+
+   The broken-link count should drop sharply. If it does not move at all, your `root` probably
+   does not match where the files actually live.
+
+2. **Inspect one edge rather than trusting the number.**
+
+   ```sh
+   dockg query -p dcterms:references
+   ```
+
+   Confirm a link you know is route-style now points at the source file you expect.
+
+</Steps>
+
+## The remaining broken links are the point
+
+This is the outcome worth caring about. Before mapping, the broken-link list was noise you had to
+ignore. After mapping, everything left in it is a link that genuinely resolves to nothing —
+usually a page that was moved or deleted without its inbound links being updated.
+
+That list is now small enough to act on, and stable enough to
+[gate on in CI](/dockg/govern/ci/).
+
+<Aside type="caution" title="MDX components are still invisible">
+  dockg parses Markdown, not MDX. A link written as `<LinkCard href="/docs/actions/find" />` is
+  not a Markdown link, so route mapping cannot help it — it never becomes an edge at all. Prose
+  links inside `.mdx` files work fine.
+</Aside>
+
+## What you have now
+
+Site-style links resolved to real `dcterms:references` edges, impact analysis that reflects how
+your documentation actually cross-references itself, and a broken-link count that means something.
+
+## Where to go next
+
+<CardGrid>
+  <LinkCard
+    title="Govern it in CI"
+    href="/dockg/govern/ci/"
+    description="Make the broken-link count a gate, so the next moved page fails its pull request."
+  />
+  <LinkCard
+    title="Configuration reference"
+    href="/dockg/reference/configuration/"
+    description="The full routes[] key reference, including normalization rules."
+  />
+</CardGrid>

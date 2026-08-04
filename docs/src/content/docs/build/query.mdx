@@ -1,0 +1,237 @@
+---
+title: Query and traverse the graph
+description: Ask the graph what it actually knows — match triple patterns with dockg query, walk edges with dockg traverse, and find out what depends on a page before you move it.
+---
+
+import { Aside, CardGrid, LinkCard, Steps } from '@astrojs/starlight/components';
+
+`dockg stats` answers aggregate questions. This page is for the specific ones — *what points at
+this page? what does changing it reach? did that concept land the way I wrote it?*
+
+Both commands are read-only and exit `0` even when nothing matches. They are for exploring, not
+gating.
+
+## Before you start
+
+A built graph. Every example below runs against
+[`test/fixtures/corpus/`](https://github.com/hawkeyexl/dockg/tree/main/test/fixtures/corpus), so
+your IRIs will differ — the shapes will not.
+
+## Which command answers which question
+
+| Question | Command |
+|---|---|
+| Show me every X | `dockg query` — match a triple pattern, omit a term for a wildcard |
+| What is connected to this node | `dockg traverse` — walk edges from a starting point |
+
+Readers reach for the wrong one first. `query` is a filter over the whole graph; `traverse` is a
+walk from somewhere.
+
+## `dockg query`
+
+Give it a subject, predicate, object, or any combination. Whatever you omit is a wildcard.
+
+```sh
+dockg query -p dcterms:title
+```
+
+```
+<https://example.com/kg/doc/docs/configuration.md> dcterms:title "Configuration Reference"
+<https://example.com/kg/doc/docs/configuration.md#advanced> dcterms:title "Advanced"
+<https://example.com/kg/doc/docs/getting-started.md> dcterms:title "Getting Started"
+<https://example.com/kg/product/sp-x100> dcterms:title "SP-X100"
+
+16 match(es)
+```
+
+Everything the graph asserts about one node:
+
+```sh
+dockg query -s "https://example.com/kg/doc/docs/configuration.md"
+```
+
+```
+<…/configuration.md> iirds:has-topic-type <http://iirds.tekom.de/iirds#GenericReference>
+<…/configuration.md> iirds:relates-to-product-variant <https://example.com/kg/product/sp-x100>
+<…/configuration.md> dcterms:references <https://example.com/kg/doc/docs/getting-started.md>
+<…/configuration.md> dcterms:subject <https://example.com/kg/concept/configuration>
+<…/configuration.md> dcterms:title "Configuration Reference"
+```
+
+Filter by type:
+
+```sh
+dockg query -p rdf:type -o dockg:Section
+```
+
+<Aside type="tip" title="CURIEs, not full IRIs">
+  `dcterms:title` rather than `http://purl.org/dc/terms/title`. The prefix table is fixed and
+  emitted with every graph, so the short form is always safe. See the
+  [vocabulary reference](/dockg/reference/vocabulary/) for which predicate to ask for.
+</Aside>
+
+Objects that are literals match verbatim:
+
+```sh
+dockg query -p dcterms:title -o "Getting Started"
+```
+
+## `dockg traverse`
+
+Walk from a node. Default depth is one hop.
+
+```sh
+dockg traverse "https://example.com/kg/doc/docs/getting-started.md"
+```
+
+```
+https://example.com/kg/doc/docs/getting-started.md — Getting Started
+  iirds:GenericTask
+  iirdsSft:Deployment
+  https://example.com/kg/agent/person/jane-doe
+  https://example.com/kg/doc/docs/getting-started.md#getting-started — Getting Started
+  https://example.com/kg/doc/docs/configuration.md — Configuration Reference
+  https://example.com/kg/concept/installation
+
+10 nodes, 10 hops, 0 excluded
+```
+
+### What points at this page?
+
+Follow inbound edges, narrowed to link edges:
+
+```sh
+dockg traverse "https://example.com/kg/doc/docs/getting-started.md" \
+  --reverse --predicates dcterms:references
+```
+
+```
+https://example.com/kg/doc/docs/getting-started.md — Getting Started
+  https://example.com/kg/doc/docs/configuration.md — Configuration Reference
+
+2 nodes, 1 hop, 0 excluded
+```
+
+**Run this before you move, rename, or delete a page.** It is the whole reason link derivation
+exists, and it is the question `stats` cannot answer for one specific file.
+
+### What does changing this reach?
+
+```sh
+dockg traverse "https://example.com/kg/doc/docs/getting-started.md" --impact
+```
+
+```
+  https://example.com/kg/doc/docs/configuration.md — Configuration Reference
+  https://example.com/kg/activity/build
+    https://example.com/kg/doc/docs/windows-notes.md — Windows Notes
+    https://example.com/kg/graph
+
+4 nodes, 7 hops, 0 excluded
+```
+
+<Aside type="caution" title="`--impact` changes the depth default">
+  From 1 to 3. If you are comparing an `--impact` run against a plain one, that difference is the
+  flag doing two things, not one.
+</Aside>
+
+## Scope filters, and reading what they excluded
+
+```sh
+dockg traverse "https://example.com/kg/product/sp-x300" \
+  --reverse --depth 2 --variant SP-X300
+```
+
+```
+https://example.com/kg/product/sp-x300 — SP-X300
+
+excluded by scope:
+  https://example.com/kg/doc/docs/configuration.md — dockg:notApplicableToVariant https://example.com/kg/product/sp-x300
+
+1 node, 1 hop, 1 excluded
+```
+
+**Read the exclusions line, not just the nodes.** A filter that returns plausible results while
+excluding nothing is indistinguishable from no filter at all — and that is the failure
+[open-world semantics](/dockg/concepts/open-world/) warns about, one layer up.
+
+A variant that is not in the graph is an error rather than an empty result:
+
+```
+dockg: Unknown product variant: SP-X999 — no iirds:ProductVariant matches that IRI, title, or slug.
+```
+
+Exit `2`. An unresolvable filter would otherwise return exactly what it was meant to exclude.
+
+<Aside type="note" title="`rdf:type` is not followed by default">
+  Every document shares `dockg:Document`, so walking type edges would make every document reachable
+  from every other in two hops. If a traversal looks narrower than you expected, this is usually
+  why — and it is deliberate.
+</Aside>
+
+## Verifying what you modelled
+
+<Steps>
+
+1. **Check a concept converged the way you intended.** Slug convergence is silent by design: two
+   spellings become one node.
+
+   ```sh
+   dockg query -p skos:prefLabel
+   ```
+
+2. **Check a hierarchy is the shape you wrote.**
+
+   ```sh
+   dockg query -p skos:broader
+   ```
+
+3. **Check applicability landed**, including the negative side.
+
+   ```sh
+   dockg query -p dockg:notApplicableToVariant
+   ```
+
+</Steps>
+
+## Scripting it
+
+Both commands take `--format json` for stable, machine-readable output:
+
+```sh
+dockg query -p dcterms:references --format json > references.json
+```
+
+For anything more involved than a pattern match, use the
+[library API](/dockg/reference/library-api/) — `runQuery` and `runTraverse` return structured
+results, and `GraphIndex` gives you the index directly.
+
+## What you have now
+
+A way to answer questions about one specific node rather than the corpus as a whole — and the
+impact check to run before changing a page anything else depends on.
+
+## Where to go next
+
+<CardGrid>
+  <LinkCard
+    title="Map your site's routes"
+    href="/dockg/build/routes/"
+    description="If the answer revealed that half your expected edges are missing."
+  />
+  <LinkCard
+    title="Prove provenance"
+    href="/dockg/govern/provenance/"
+    description="When the question is about authorship rather than structure."
+  />
+  <LinkCard
+    title="CLI reference"
+    href="/dockg/reference/cli/"
+    description="Every flag on both commands."
+  />
+  <LinkCard
+    title="Emitted vocabulary"
+    href="/dockg/reference/vocabulary/"
+    description="Which predicate to ask for."
+  />
+</CardGrid>

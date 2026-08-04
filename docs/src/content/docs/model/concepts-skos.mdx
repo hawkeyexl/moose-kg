@@ -1,0 +1,118 @@
+---
+title: Concepts and SKOS
+description: How dockg maps the kg block onto SKOS concepts and relationships, how concept IRIs converge on slugified labels, and which vocabulary errors dockg check catches at which severity.
+---
+
+import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+This page maps dockg's frontmatter onto SKOS. It assumes you know SKOS and does not explain it.
+
+## The whole surface
+
+Six keys. That is all of it — you are probably braced for more.
+
+| Key | Cardinality | Emits |
+|---|---|---|
+| `prefLabel` | one string | `foaf:primaryTopic` → a `skos:Concept` carrying `skos:prefLabel` |
+| `altLabels` | list | `skos:altLabel` |
+| `broader` | list | `skos:broader` |
+| `narrower` | list | `skos:narrower` |
+| `related` | list | `skos:related` |
+| `subjects` | list | `dcterms:subject` — a plain subject tag, not a primary topic |
+
+```md title="docs/rate-limiting.md"
+---
+kg:
+  prefLabel: Rate limiting
+  altLabels:
+    - Request throttling
+  broader:
+    - Traffic management
+  related:
+    - Quotas
+---
+```
+
+Every concept lands in a single `skos:ConceptScheme` with `skos:inScheme`.
+
+## `prefLabel` is the subject of everything else
+
+`altLabels`, `broader`, `narrower`, and `related` all describe a concept, so the schema requires
+`prefLabel` alongside them via `dependentRequired`. Without it there is nothing for the
+relationship to hang from.
+
+`dockg fill` enforces the same rule at proposal time: if no `prefLabel` exists or is being proposed
+in the same pass, relationship proposals are dropped — and the check re-runs after every subsequent
+drop, so a `prefLabel` rejected for low confidence takes its dependents with it.
+
+## Concept IRIs converge on the slug
+
+Concepts are minted from the slugified label, so two spellings of the same term become the **same
+node**. `Rate Limiting`, `rate limiting`, and `Rate limiting` are one concept.
+
+That is usually what you want — it is how a taxonomy tolerates inconsistent authoring. It is
+occasionally a surprise, so dockg reports it:
+
+```
+warning: https://example.com/kg/concept/installation skos:prefLabel — concept carries multiple prefLabels (same slug, different spellings) — settle on one spelling [docs/configuration.md, docs/getting-started.md]
+```
+
+<Aside type="note" title="A warning, not a violation">
+  Convergence is a designed feature rather than a defect, so this exits `0` and does not fail a
+  build. It is telling you that two documents disagree about spelling, not that the graph is wrong.
+</Aside>
+
+## What `dockg check` enforces
+
+| Finding | Severity | What it protects against |
+|---|---|---|
+| `skos:broader` / `narrower` cycle | violation | A concept being its own ancestor |
+| `skos:related` conflicting with `skos:broaderTransitive` | violation | SKOS S27 — a concept both related to and an ancestor of another |
+| Concept missing `skos:prefLabel` or `skos:inScheme` | violation | Unlabelled or unscoped nodes |
+| Relation target that is not a typed concept | violation | Dangling hierarchy |
+| Unexpected predicate on a concept node | violation | The shapes are `sh:closed` |
+| Two spellings of one concept | warning | Silent authoring drift |
+| `dcterms:subject` pointing at a non-concept | warning | Subject tags that will not resolve |
+
+Cycle detection and the transitive S27 check run in TypeScript rather than SHACL, because core
+SHACL cannot express transitive closure. They are part of `dockg check` regardless — you will not
+find them by reading the shapes file, which is worth knowing if you go looking.
+
+Every finding names the responsible documents at the end of the line:
+
+```
+violation: https://example.com/kg/concept/alpha skos:broader — skos:broader cycle through …/alpha, …/beta (…/alpha → …/beta) — a concept cannot be its own ancestor [docs/alpha.md, docs/beta.md]
+```
+
+<Aside type="caution" title="A cycle is a property of several documents at once">
+  No single document is wrong. The file someone just edited is simply the one that closed the loop,
+  which is why per-file validation cannot catch this and `check` exists.
+</Aside>
+
+## Inspect what you actually emitted
+
+```sh
+dockg query -p skos:prefLabel
+```
+
+```sh
+dockg query -p skos:broader --format json
+```
+
+Checking that concepts converged the way you intended is worth doing once after your first
+vocabulary pass. Slug convergence is silent by design, and the query is how you see it.
+
+## Where to go next
+
+<CardGrid>
+  <LinkCard
+    title="Scope by product variant"
+    href="/dockg/model/variants/"
+    description="Concepts say what a document is about; applicability says what it applies to."
+  />
+  <LinkCard
+    title="Frontmatter reference"
+    href="/dockg/reference/frontmatter/"
+    description="Every key with its type and dependencies."
+  />
+</CardGrid>

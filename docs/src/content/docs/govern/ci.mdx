@@ -1,0 +1,168 @@
+---
+title: Add dockg to CI
+description: A complete GitHub Actions workflow and a step for a pipeline you already have, wired to dockg's exit-code contract so a metadata regression fails a pull request instead of surviving review.
+---
+
+import { Aside, CardGrid, LinkCard, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+
+Nothing you have built so far fails when the numbers get worse. This page fixes that.
+
+By the end you will have a pull request that goes red on a metadata regression, and a failure
+message a contributor who has never heard of dockg can act on.
+
+## Before you start
+
+You need a committed `dockg.config.yaml`, a `dockg build` that succeeds locally, and a current
+`dockg stats` reading — you will set your first threshold just below it.
+
+## Set a threshold that holds the line
+
+This is the most important decision on the page, and the least obvious.
+
+**Set the threshold just below your current coverage, not at your goal.** A gate pinned at the
+number you eventually want is red from day one, and a permanently red gate teaches everyone to
+ignore it. A gate pinned just below where you are today fails only on regression — which is
+exactly what you want on day one — and can be ratcheted up as the backlog shrinks.
+
+```yaml title="dockg.config.yaml"
+stats:
+  coverageThreshold:
+    title: 100
+    description: 25
+    prefLabel: 20
+```
+
+<Aside type="tip" title="Ratchet, don't leap">
+  Raise these numbers when the backlog moves, in the same pull request that moves it. See
+  [backfilling](/dockg/build/backfill/) for closing a large gap.
+</Aside>
+
+## Add the workflow
+
+<Tabs>
+  <TabItem label="A new workflow">
+    ```yaml title=".github/workflows/dockg.yml" {24-26}
+    name: dockg
+
+    on:
+      pull_request:
+      push:
+        branches: [main]
+
+    permissions:
+      contents: read
+
+    jobs:
+      graph:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v4
+          - uses: actions/setup-node@v4
+            with:
+              node-version: 24
+          - run: npm install -g @hawkeyexl/dockg
+
+          - name: Validate frontmatter
+            run: dockg validate --format json
+
+          - name: Build the graph
+            run: dockg build
+
+          - name: Check the graph
+            run: dockg check
+
+          - name: Gate on links and coverage
+            run: dockg stats --check
+    ```
+  </TabItem>
+  <TabItem label="A step in an existing workflow">
+    ```yaml title=".github/workflows/docs.yml"
+          - name: Install dockg
+            run: npm install -g @hawkeyexl/dockg
+
+          - name: Gate documentation metadata
+            run: |
+              dockg validate
+              dockg build
+              dockg check
+              dockg stats --check
+    ```
+  </TabItem>
+</Tabs>
+
+<Aside type="caution" title="Order matters, and so does fail-fast">
+  `check` and `stats` read the built graph, so `build` has to run first. Each step exits non-zero
+  on findings and the job stops there, which means a `validate` failure hides whatever `check`
+  would have said. That is usually what you want — fix the frontmatter, then look again — but it
+  is worth knowing when a contributor asks why the error changed after their fix.
+</Aside>
+
+## Should the graph be committed?
+
+Both answers are defensible.
+
+**Commit `kg/graph.ttl`.** It is deterministic, so it diffs cleanly and metadata changes get
+reviewed alongside content changes. Add a CI step asserting the committed graph matches a fresh
+build, so it cannot go stale:
+
+```sh
+dockg build --out /tmp/fresh.ttl && diff kg/graph.ttl /tmp/fresh.ttl
+```
+
+**Do not commit it.** Build it in CI and in your deploy pipeline. Less review signal, no chance of
+staleness, no merge conflicts on a generated file.
+
+Do **not** commit `kg/vectors.bin` either way — it is a binary that requires a model download to
+regenerate, and it is gitignored by default for that reason.
+
+## Verify the gate actually gates
+
+<Steps>
+
+1. **Break something on purpose.** Delete a `description` from a page, or add a link to a file
+   that does not exist.
+
+2. **Open a pull request and watch it fail.**
+
+   ```
+   Broken internal links (1):
+     docs/no-frontmatter.md -> missing.md
+   ```
+
+   Exit `1`, job red.
+
+3. **Confirm the failure names the file.** If it does not, every future failure becomes a question
+   for whoever owns the pipeline — and a gate that generates support load gets removed.
+
+</Steps>
+
+## Point failures at the fix page
+
+Your contributors will hit this gate with no context. Link them somewhere useful — in the job
+summary, in a PR comment, or in your contributing guide:
+
+```yaml title=".github/workflows/dockg.yml"
+      - name: Gate on links and coverage
+        run: dockg stats --check
+      - if: failure()
+        run: echo "::notice::Metadata check failed — see https://hawkeyexl.github.io/dockg/fix/"
+```
+
+## What you have now
+
+A gate that fails on regression rather than on aspiration, and a path for the person who trips it.
+
+## Where to go next
+
+<CardGrid>
+  <LinkCard
+    title="Prove coverage"
+    href="/dockg/govern/coverage/"
+    description="Per-field thresholds when the obligation comes from outside the team."
+  />
+  <LinkCard
+    title="Fix a failing check"
+    href="/dockg/fix/"
+    description="The page your contributors will land on. Read it before you ship the gate."
+  />
+</CardGrid>

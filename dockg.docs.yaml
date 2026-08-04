@@ -1,0 +1,46 @@
+# dockg, pointed at dockg's own documentation site.
+#
+# Deliberately *not* named dockg.config.yaml: that is the filename dockg
+# discovers implicitly, and a config sitting at the repo root would be picked up
+# by every bare `dockg` invocation — including the integration tests, which run
+# the CLI from here. Always pass it explicitly:
+#
+#   dockg validate -c dockg.docs.yaml
+#   dockg build -c dockg.docs.yaml --out .tmp/docs-graph.ttl
+#
+# Paths below are relative to the repo root, because input globs resolve against
+# the working directory rather than this file's location.
+version: 1
+baseIri: https://hawkeyexl.github.io/dockg/kg/
+
+# Both extensions: Starlight's docsLoader publishes `.md` as readily as `.mdx`,
+# and Starlight's own schema leaves `description` optional — so a `.md` page
+# matched by neither would ship with no description and nothing would object.
+inputs:
+  - "docs/src/content/docs/**/*.{md,mdx}"
+
+out: .tmp/docs-graph.ttl
+
+# The published site serves src/content/docs/ under /dockg/, so cross-links
+# written as absolute site routes resolve to real edges.
+routes:
+  - basePath: /dockg
+    root: docs/src/content/docs
+    extensions: [".md", ".mdx"]
+
+validate:
+  schemas:
+    - docs/doc-frontmatter.schema.json
+
+provenance:
+  # The docs graph is a gate, not an artifact we ship, and deriving committer
+  # history for every page on every CI run buys nothing here.
+  git: false
+
+stats:
+  # These pages carry title and description only — that is what the frontmatter
+  # gate enforces — so title/description are the fields worth gating. The rest
+  # would be gating dockg's docs against a vocabulary they do not use.
+  coverageThreshold:
+    title: 100
+    description: 100

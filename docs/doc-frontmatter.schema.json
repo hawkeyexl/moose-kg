@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dockg.dev/schemas/doc-frontmatter-0.1.json",
+  "title": "dockg docs page frontmatter",
+  "description": "Every published page carries a title and a description. The description doubles as the LinkCard subtitle and the page meta description, so an empty one is a real defect rather than a style preference. Validated by dockg's own `validate` in .github/workflows/docs.yml, which gates the Pages deploy.",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Rendered as the page H1 by Starlight. Pages must not repeat it as a body heading."
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "One full sentence stating what the page is for."
+    }
+  },
+  "required": ["title", "description"],
+  "additionalProperties": true
+}

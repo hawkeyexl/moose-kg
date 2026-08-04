@@ -1,0 +1,138 @@
+---
+title: Build the search artifacts
+description: Export a lexical index beside the graph, compute vectors locally with no API call, and understand the staleness rules that make dockg refuse a mismatched sidecar rather than rank with it.
+---
+
+import { Aside, CardGrid, LinkCard, Steps } from '@astrojs/starlight/components';
+
+Retrieval needs two artifacts beside the graph: a lexical index, and optionally a vector sidecar.
+This page builds both and explains what keeps them honest.
+
+## Before you start
+
+A built `kg/graph.ttl`. For real (non-mock) vectors you also need the optional peer dependency:
+
+```sh
+npm install @huggingface/transformers
+```
+
+## Build them
+
+<Steps>
+
+1. **Export the lexical index.**
+
+   ```sh
+   dockg export --format search
+   ```
+
+   ```
+   Wrote 17 nodes to kg/search.json
+   ```
+
+   The index lives beside the graph rather than inside it. Prose belongs in neither — the index
+   holds the short, searchable strings a node already carries (titles, labels), not document text.
+
+2. **Compute vectors.**
+
+   ```sh
+   dockg embed
+   ```
+
+   ```
+   Wrote 17 vectors (384-d, onnx-community/granite-embedding-small-english-r2-ONNX) to kg/vectors.bin
+     17 embedded, 0 from cache
+   ```
+
+   For an offline or CI run with no model download, use deterministic hash vectors:
+
+   ```sh
+   dockg embed --model mock
+   ```
+
+3. **Query it.**
+
+   ```sh
+   dockg search "configuration" --limit 3
+   ```
+
+   ```
+   0.0164  https://example.com/kg/concept/configuration [skos:Concept] — Configuration
+   0.0164  https://example.com/kg/doc/docs/getting-started.md#getting-started [dockg:Section] — Getting Started
+   0.0161  https://example.com/kg/doc/docs/configuration.md#advanced [dockg:Section] — Advanced
+
+   3 results (hybrid)
+   ```
+
+</Steps>
+
+## Embedding is local by contract
+
+No API, no key, no spend, and **no corpus text leaves the machine**. That is a procurement fact as
+much as a technical one, and it is worth having quotable.
+
+The model runs through WASM on both Node and the browser deliberately, so build-time and query-time
+vectors come from the same function. A vector computed in CI and a vector computed in a user's
+browser agree.
+
+## The three modes
+
+| `--mode` | Runs | When |
+|---|---|---|
+| `hybrid` | Lexical and vector, fused | Default when a sidecar and embedder are both available |
+| `lexical` | Lexical only | Always available; no sidecar needed |
+| `vector` | Vector only | Diagnosing the vector leg in isolation |
+
+A missing embedder **degrades to lexical** — unless you asked for `vector` or `hybrid` explicitly,
+in which case it errors. Silent degradation is fine when you did not express a preference and wrong
+when you did.
+
+## Staleness is refused, not ranked
+
+A vector sidecar built from a different corpus, model, dtype, or dimension count would still
+produce numbers. Those numbers would be meaningless, and the results would look normal.
+
+dockg refuses instead:
+
+```
+dockg: Vector index was built from a different search index — the corpus changed. Re-run `dockg embed`.
+```
+
+```
+dockg: Not a dockg vector index: bad magic — is this the right file? — re-run `dockg embed`, or use `--mode lexical`.
+```
+
+Exit `2` in both cases.
+
+<Aside type="caution" title="Rebuild order matters">
+  The sidecar is keyed to the search index, which is keyed to the graph. Change the corpus and all
+  three must be rebuilt in order:
+
+  ```sh
+  dockg build && dockg export --format search && dockg embed
+  ```
+
+  Skipping the last step gives you a refusal at query time rather than bad results, which is the
+  intended failure — but it will fail your pipeline, so wire the three together.
+</Aside>
+
+## Do not commit the sidecar
+
+`kg/vectors.bin` is gitignored by default. It is a binary, it is derived, and regenerating it
+requires a model download — so it belongs in your deploy pipeline rather than your repository.
+The graph and the search index are text and can reasonably be committed.
+
+## Where to go next
+
+<CardGrid>
+  <LinkCard
+    title="Query from the browser"
+    href="/dockg/retrieve/runtime/"
+    description="Load these artifacts and apply a scope filter, with the trace."
+  />
+  <LinkCard
+    title="Embedding models"
+    href="/dockg/reference/embed-models/"
+    description="The tested set, their context limits, and the truncation trap."
+  />
+</CardGrid>

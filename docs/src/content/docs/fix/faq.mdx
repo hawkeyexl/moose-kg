@@ -1,0 +1,146 @@
+---
+title: FAQ
+description: Answers to the questions a blocked contributor asks that are not schema failures — whose fault a failure is, why a check passed locally, and what to do when the offending page is not yours.
+---
+
+import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+For the failure catalog, see [fix a failing check](/dockg/fix/). This page covers everything else
+people ask when a check goes red.
+
+## The error names a file I did not touch. Is it mine?
+
+Possibly not. Graph-level findings — `broader` cycles, `related`/`broader` conflicts — are properties
+of several documents together, and no single file is wrong on its own. Your page may just be the one
+that closed the loop.
+
+The bracketed list at the end of the finding names every document involved:
+
+```
+violation: … skos:broader cycle through …/alpha, …/beta … [docs/alpha.md, docs/beta.md]
+```
+
+If none of those files are yours, this needs whoever owns the vocabulary rather than a quick fix.
+
+## It passes locally but fails in CI. Why?
+
+The usual causes, in order of likelihood:
+
+- **You ran it from a subdirectory.** Input globs resolve against your working directory, not the
+  config file. Run from the repository root.
+- **Your branch and CI disagree about the config.** Check whether `dockg.config.yaml` changed on the
+  base branch.
+- **You ran `stats` without `--check`.** Plain `stats` never fails, however bad the numbers are.
+- **You ran `validate` but CI runs `check` too.** They catch different things — per-file frontmatter
+  versus the assembled graph.
+
+## It fails locally but passes in CI
+
+Almost always a stale build. The integration path runs the built CLI, so:
+
+```sh
+npm run build
+```
+
+## Do I need to install anything to reproduce it?
+
+No. Both checks run through `npx`:
+
+```sh
+npx @hawkeyexl/dockg validate
+```
+
+```sh
+npx @hawkeyexl/dockg build && npx @hawkeyexl/dockg check
+```
+
+If that still does not reproduce what CI saw, pushing a fix and re-running is usually faster than
+chasing the difference.
+
+## What is the difference between `validate` and `check`?
+
+`validate` checks each file's frontmatter against a JSON Schema. `check` validates the **assembled
+graph** against SHACL.
+
+A cycle spanning three documents is invisible to `validate` by construction — every file is
+individually valid. That is why both exist. See [which gate catches what](/dockg/govern/).
+
+## The job is red but I only see warnings
+
+Then the warnings are not why. Warnings exit `0` and never gate; only `sh:Violation` findings exit
+`1`. Look further up the log for a violation, a `validate` failure, or a `stats --check` breach.
+
+## What does exit code 2 mean?
+
+That dockg could not run properly at all — a missing file, an unreadable config, a broken
+environment. Nothing you write in your page will fix it.
+
+```
+dockg: Graph not found: kg/graph.ttl — run `dockg build` first.
+dockg: No input files matched: docs/**/*.md (cwd: /repo/docs)
+```
+
+Hand it back to whoever owns the pipeline, and say it exited `2` — it is a distinction the tool makes
+deliberately.
+
+## Can I just add the field to make it pass?
+
+For a missing `title` or `description`, yes — write a real one.
+
+For anything describing meaning — `topicType`, `appliesTo`, `prefLabel` — no. A guessed value is
+worse than a missing one, because absence is
+[recorded as unknown](/dockg/concepts/open-world/) while a wrong value is recorded as fact. If you do
+not know the right value, ask whoever owns the vocabulary.
+
+<Aside type="caution" title="Especially applicability">
+  `appliesTo` and `notApplicableTo` drive scoped queries. Guessing one to turn a build green can make
+  a safety-relevant topic invisible to the query that should have found it.
+</Aside>
+
+## My page has no frontmatter at all. Is that allowed?
+
+Yes. A document with no frontmatter still becomes a node — dockg derives headings, links, images, and
+code from the body. It simply contributes nothing to metadata coverage.
+
+Whether your repo *requires* frontmatter is a separate policy question, set by
+[coverage thresholds](/dockg/govern/coverage/).
+
+## Why is my `kg.sections` key not matching?
+
+Section keys are GitHub-style slugs of the heading text. Rename the heading and the key stops
+matching:
+
+```diff lang="md" title="docs/guide.md"
+  kg:
+    sections:
+-     install-the-cli:
++     installation:
+
+- ## Install the CLI
++ ## Installation
+```
+
+## Two documents use the same concept spelled differently. Which wins?
+
+Neither — they converge on one node, because concept IRIs come from the slugified label. dockg
+reports it as a **warning** so you can settle on a spelling; it does not fail the build.
+
+## Does dockg check my prose?
+
+No. It reads frontmatter, headings, links, tags, images, and code-fence languages. Your sentences
+never enter the graph — see [an index, not a corpus](/dockg/concepts/index-not-corpus/).
+
+## Where do I go next?
+
+<CardGrid>
+  <LinkCard
+    title="Fix a failing check"
+    href="/dockg/fix/"
+    description="The failure catalog, with each fix as a frontmatter diff."
+  />
+  <LinkCard
+    title="Frontmatter reference"
+    href="/dockg/reference/frontmatter/"
+    description="Every key dockg accepts and its permitted values."
+  />
+</CardGrid>

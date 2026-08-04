@@ -1,0 +1,178 @@
+---
+title: Configuration reference
+description: Every key in dockg.config.yaml with its type and default, how the file is discovered, and which settings can be overridden by a CLI flag versus which are config-only.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+dockg reads `dockg.config.yaml` from the directory you run it in, or from `--config <path>`.
+**The file is optional** — with none present, dockg runs on the defaults below, which is the
+supported way to try it on a repo you have not set up.
+
+Unknown keys are a hard error at every level. A typo fails loudly rather than being ignored.
+
+## Discovery and precedence
+
+```
+dockg.config.yaml  →  schema validation  →  CLI flag override  →  runtime
+```
+
+Settings that vary per invocation (output paths, cost caps, provider overrides) have CLI flags.
+Settings that define the corpus itself — `inputs`, `routes`, `build.derive` — are **config-only**,
+because a graph built with different corpus rules is a different graph and should not depend on
+how someone typed the command.
+
+## Top level
+
+| Key | Type | Default | Notes |
+|---|---|---|---|
+| `version` | `1` | — | **Required.** The only accepted value. |
+| `baseIri` | string | `urn:dockg:` | Prefix for every minted IRI. http(s) values get a trailing slash added. |
+| `inputs` | string[] | `["**/*.md"]` | Resolved against the **working directory**. |
+| `exclude` | string[] | `["**/node_modules/**"]` | |
+| `out` | string | `kg/graph.ttl` | Overridable with `--out`. |
+| `routes` | object[] | `[]` | See [route mappings](/dockg/build/routes/). |
+
+<Aside type="caution" title="`inputs` differs between no-config and `dockg init`">
+  The code default is `["**/*.md"]` — everything. The starter file `dockg init` writes says
+  `["docs/**/*.md"]`. A repo with no config file therefore ingests more than one scaffolded with
+  `init`, including `README.md`, `CHANGELOG.md`, and any Markdown under `test/`.
+</Aside>
+
+<Aside type="tip" title="Set a real `baseIri` before anyone consumes the graph">
+  The `urn:dockg:` placeholder works, but IRIs are the graph's stable identity. Changing
+  `baseIri` later rewrites every subject in the file.
+</Aside>
+
+## `routes[]`
+
+Teaches dockg how your published site's URLs map back to source files, so site-style links
+become real edges.
+
+| Key | Type | Default | Notes |
+|---|---|---|---|
+| `routes[].root` | string | — | **Required.** Repo directory the route serves. |
+| `routes[].basePath` | string | `/` | Normalized: leading `/`, no trailing `/`; `/` becomes site root. |
+| `routes[].extensions` | string[] | `[".md", ".mdx"]` | Must start with a dot. |
+| `routes[].indexFiles` | string[] | `["index", "README"]` | Resolves `/docs/actions/` to a file. |
+
+## `build`
+
+| Key | Type | Default | Notes |
+|---|---|---|---|
+| `build.derive` | enum[] | all seven | `frontmatter`, `sections`, `links`, `tags`, `images`, `code`, `provenance`. Unique items. |
+
+## `validate` and `check`
+
+| Key | Type | Default | Notes |
+|---|---|---|---|
+| `validate.schemas` | string[] | `[]` → bundled `schemas/frontmatter-0.8.json` | File paths, URLs, or docmeta built-in ids. |
+| `check.shapes` | string[] | `[]` → bundled `shapes/dockg-0.5.ttl` | Overridable with `--shapes`. |
+
+Both bundled files ship in the npm package, so any JSON Schema or SHACL tool can be pointed at
+them directly. Published versions are immutable — evolution adds a new version file.
+
+## `provenance`
+
+| Key | Type | Default | Notes |
+|---|---|---|---|
+| `provenance.git` | `boolean \| "auto"` | `"auto"` | `auto` derives where possible and warns otherwise; `true` requires git (exit 2); `false` skips the subprocess. |
+| `provenance.qualified` | boolean | `true` | Emit qualified attribution and association nodes with roles. |
+
+## `stats`
+
+| Key | Type | Default | Notes |
+|---|---|---|---|
+| `stats.coverageThreshold` | number (0–100) or map | `{}` | Gates nothing by default. Only enforced under `stats --check`. |
+
+A number applies to all seven fields. A map sets them individually, which is usually what a real
+obligation looks like:
+
+```yaml title="dockg.config.yaml"
+stats:
+  coverageThreshold:
+    title: 100
+    description: 80
+    prefLabel: 40
+```
+
+Map keys: `title`, `description`, `creator`, `created`, `modified`, `subject`, `prefLabel`. The
+per-field map is **config-only**; `--coverage-threshold` can only set one number for all fields.
+
+## `fill`
+
+| Key | Type | Default | Notes |
+|---|---|---|---|
+| `fill.provider` | enum | `anthropic` | `anthropic`, `openai`, `claude-cli`, `mock`. |
+| `fill.model` | string | `null` | Provider default. |
+| `fill.apiKeyEnv` | string | `null` | The **name** of the env var, not the key. |
+| `fill.baseUrl` | string | `https://api.openai.com/v1` | Any OpenAI-compatible endpoint. |
+| `fill.command` | string | `claude` | Executable for the `claude-cli` provider. |
+| `fill.temperature` | number (0–2) | `0` | |
+| `fill.maxCostUsd` | number or `null` | `5` | `null` is unbounded. |
+| `fill.cacheDir` | string | `.dockg/cache` | |
+| `fill.minConfidence` | number (0–1) | `0.7` | Fields scored below this are not written. |
+| `fill.writeProvenance` | boolean | `true` | Record `kg.provenance` on filled docs. |
+| `fill.validateGraph` | boolean | `true` | SHACL guardrail on proposals. |
+| `fill.fields` | enum[] | all twelve | Restrict what may ever be proposed. |
+| `fill.pricing.inputPerMTok` | number | — | Both pricing keys required together. |
+| `fill.pricing.outputPerMTok` | number | — | Overrides the built-in price table. |
+
+<Aside type="note" title="`fill` is the only thing that spends money">
+  Nothing here is reachable by default. Every other feature is hermetic — no network, no
+  credentials — and `fill` runs only when you invoke it.
+</Aside>
+
+## `embed`
+
+| Key | Type | Default | Notes |
+|---|---|---|---|
+| `embed.model` | string | `onnx-community/granite-embedding-small-english-r2-ONNX` | Any hub repo id; `mock` for offline. |
+| `embed.dtype` | string | `q8` | Weight quantization. |
+| `embed.out` | string | `kg/vectors.bin` | Gitignored by default — it is a rebuildable binary. |
+| `embed.cacheDir` | string | `.dockg/embed-cache` | Keyed on text, model, and dtype. |
+
+Embedding runs locally: no API, no key, no spend, and no corpus text leaves the machine. See
+[embedding models](/dockg/reference/embed-models/) for the tested set and their context limits.
+
+## `export`
+
+| Key | Type | Default | Notes |
+|---|---|---|---|
+| `export.iirds.title` | string | `dockg export` | Package title. |
+| `export.iirds.creator` | string | — | Emitted as an iiRDS Party and vCard organization. |
+| `export.iirds.version` | `"1.2" \| "1.3"` | `"1.3"` | iiRDS version the package declares. |
+
+## A complete example
+
+```yaml title="dockg.config.yaml"
+version: 1
+baseIri: https://docs.example.com/kg/
+inputs:
+  - "docs/**/*.md"
+exclude:
+  - "**/node_modules/**"
+  - "docs/drafts/**"
+out: kg/graph.ttl
+
+routes:
+  - basePath: /docs
+    root: docs
+    extensions: [".md", ".mdx"]
+
+build:
+  derive: [frontmatter, sections, links, tags, images, code, provenance]
+
+provenance:
+  git: auto
+
+stats:
+  coverageThreshold:
+    title: 100
+    description: 70
+
+fill:
+  provider: anthropic
+  maxCostUsd: 2
+  minConfidence: 0.75
+```

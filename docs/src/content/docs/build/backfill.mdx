@@ -1,0 +1,143 @@
+---
+title: Backfill metadata
+description: dockg fill proposes kg fields and a human accepts them — how to run it safely on a large unannotated corpus with a cost cap, review what it wrote through the provenance block, and ratchet a coverage threshold behind it.
+---
+
+import { Aside, CardGrid, LinkCard, Steps } from '@astrojs/starlight/components';
+
+Your coverage numbers are low, the corpus is large, and nobody is going to annotate the backlog by
+hand. That is the normal starting condition, not a failure — nobody adopts a metadata tool before
+they have too much documentation.
+
+`dockg fill` proposes `kg` fields with a language model. **It proposes; you accept.** Everything
+about how it behaves follows from that, and reading it as "annotate my corpus automatically" will
+get you a large revert and an audit problem.
+
+## Before you start
+
+You need a working `dockg build`, a baseline `dockg stats` reading, and credentials for a provider
+— `fill` is the only part of dockg that touches the network or spends money. Nothing else here
+does.
+
+## Three safety mechanisms you should know about first
+
+**A confidence gate.** Every proposed field carries a model-assigned confidence. Anything below
+`fill.minConfidence` (default `0.7`) is dropped and reported. A field with *no* score is also
+dropped — no score, no write.
+
+**A graph guardrail.** Proposals are simulated against the SHACL shapes before being written, so a
+proposal that would create a `broader` cycle, conflict with an existing `related` edge, introduce
+a second spelling of an existing concept, or contradict an `appliesTo` is rejected. The guardrail
+sees your whole corpus, not just the files in this run, and accepted proposals accumulate within
+the run — so two documents cannot jointly form a cycle.
+
+**A cost cap.** `fill.maxCostUsd` defaults to `5`. Past it, remaining documents are skipped with a
+`skipped-budget` status rather than silently costing more.
+
+<Aside type="caution" title="Exit 0 does not mean everything was written">
+  Low-confidence drops and guardrail rejections are **routine operation**, and the run still exits
+  `0`. Only a per-document `error` status exits `1`. This is deliberate — an orchestrating script
+  must not read a normal run as a failure — but it means you have to read the report rather than
+  the exit code.
+</Aside>
+
+## Run it
+
+<Steps>
+
+1. **Dry run a subset, with a small cap.**
+
+   ```sh
+   dockg fill "docs/api/**/*.md" --dry-run --max-cost 0.50
+   ```
+
+   Nothing is written. Read what it wanted to do. The guardrail is still applied, so a dry run
+   predicts exactly what a real run would write.
+
+2. **Judge the proposals against your vocabulary, not against plausibility.**
+
+   This is the step people skip. A model proposing `prefLabel: Rate limiting` when your governed
+   term is `Request throttling` is confidently, plausibly wrong — and once written it converges on
+   a concept IRI that will need cleaning up. If you maintain a controlled vocabulary, this is the
+   point at which someone who owns it should look.
+
+3. **Narrow what may be proposed, if the dry run showed drift.**
+
+   ```yaml title="dockg.config.yaml"
+   fill:
+     fields: [prefLabel, topicType, subjects]
+     minConfidence: 0.8
+     maxCostUsd: 2
+   ```
+
+   Restricting `fill.fields` is usually better than raising confidence alone. Applicability fields
+   in particular — `appliesTo`, `notApplicableTo`, `notSoftwareSubject` — require explicit textual
+   evidence and are the ones you least want guessed.
+
+4. **Write, on a subset first.**
+
+   ```sh
+   dockg fill "docs/api/**/*.md"
+   ```
+
+   Only YAML frontmatter is edited; the body is preserved byte-for-byte. A TOML or JSON
+   frontmatter fence is an operational error rather than a skipped file.
+
+5. **Review through the provenance block.**
+
+   Every written field is recorded with the model that proposed it and its confidence:
+
+   ```yaml title="docs/api-keys.md"
+   kg:
+     prefLabel: API keys
+     provenance:
+       - generatedBy: claude-opus-4-6
+         fields: [prefLabel, topicType]
+         confidence:
+           prefLabel: 0.92
+           topicType: 0.81
+   ```
+
+   **Delete the entry when you have reviewed it.** The block is the outstanding-review queue, and
+   it empties as review progresses. That is what turns machine-assisted authoring from an audit
+   liability into something trackable.
+
+6. **Re-measure and set a threshold behind it.**
+
+   ```sh
+   dockg stats
+   ```
+
+   Set the coverage threshold just below the new number so the gate holds the line, then raise it
+   as the backlog shrinks. See [prove coverage](/dockg/govern/coverage/).
+
+</Steps>
+
+## The cache
+
+Proposals are cached by content hash, provider, model, prompt version, and requested fields, so
+re-running over an unchanged corpus costs nothing. Cached entries are re-validated against the
+schema, so a stale or hand-edited entry is treated as a miss.
+
+The guardrail sits *downstream* of the cache. A proposal rejected today because it would have
+formed a cycle can be admitted later once the corpus changes, without re-asking the model.
+
+## What you have now
+
+A measurably better-annotated corpus, a record of exactly which fields a machine proposed and how
+confident it was, and a review queue that shrinks as humans work through it.
+
+## Where to go next
+
+<CardGrid>
+  <LinkCard
+    title="Prove coverage"
+    href="/dockg/govern/coverage/"
+    description="Set the threshold that holds your new line, and ratchet it."
+  />
+  <LinkCard
+    title="Concepts and SKOS"
+    href="/dockg/model/concepts-skos/"
+    description="Machine-proposed concepts still have to fit a governed vocabulary."
+  />
+</CardGrid>
