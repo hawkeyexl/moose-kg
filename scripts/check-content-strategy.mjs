@@ -72,6 +72,10 @@ function plannedRoutes() {
   const planned = new Set();
   let directory = null;
   for (const line of readFileSync(IA_FILE, "utf8").split(/\r?\n/)) {
+    // Leaving the content-set sections ends the mapping, so a `*.mdx` row in a
+    // later table (the source-of-truth map, say) is not misread as a planned
+    // page in whatever directory happened to be last.
+    if (/^## /.test(line)) directory = null;
     if (/^### Landing\b/.test(line)) directory = "";
     const group = line.match(/^### .*\(`([a-z-]+)\/`\)/);
     if (group) directory = group[1];
@@ -131,6 +135,18 @@ const byType = (type) =>
   [...declared.values()].filter((d) => d.frontmatter.type === type);
 const personas = byType("persona");
 const cujs = byType("cuj");
+
+// A gate with nothing to check passes. If the directory is ever restructured so
+// that frontmatter stops being found, every invariant below becomes vacuously
+// true — fail loudly instead.
+if (!personas.length || !cujs.length) {
+  console.error(
+    `dockg: found ${personas.length} personas and ${cujs.length} CUJs in ${STRATEGY_DIR} — ` +
+      "nothing to verify",
+  );
+  process.exit(2);
+}
+
 const personasNamedByCujs = new Set(
   cujs.flatMap((c) => c.frontmatter.personas ?? []),
 );

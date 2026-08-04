@@ -36,9 +36,10 @@ if (!existsSync(DIST)) {
 }
 
 const unresolved = new Map();
+const pages = filesUnder(SRC).filter((f) => /\.mdx?$/.test(f));
 let checked = 0;
 
-for (const file of filesUnder(SRC).filter((f) => f.endsWith(".mdx"))) {
+for (const file of pages) {
   const raw = readFileSync(file, "utf8");
   // Matches both Markdown `](/dockg/…)` and JSX `href="/dockg/…"`.
   for (const [, href] of raw.matchAll(/["(](\/dockg\/[^"()\s#]*)/g)) {
@@ -51,9 +52,17 @@ for (const file of filesUnder(SRC).filter((f) => f.endsWith(".mdx"))) {
   }
 }
 
-console.log(
-  `${checked} internal links checked across ${filesUnder(SRC).length} files`,
-);
+console.log(`${checked} internal links checked across ${pages.length} files`);
+
+// A gate that checks nothing passes silently. The most likely cause is the site
+// `base` changing in docs/astro.config.mjs without BASE here following it, which
+// would make every link stop matching rather than start failing.
+if (checked === 0) {
+  console.error(
+    `dockg: no links matching ${BASE} found — is the site base still "${BASE.replace(/\/$/, "")}"?`,
+  );
+  process.exit(2);
+}
 
 if (unresolved.size) {
   console.error(`\n${unresolved.size} unresolved target(s):`);

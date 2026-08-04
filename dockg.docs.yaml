@@ -13,8 +13,11 @@
 version: 1
 baseIri: https://hawkeyexl.github.io/dockg/kg/
 
+# Both extensions: Starlight's docsLoader publishes `.md` as readily as `.mdx`,
+# and Starlight's own schema leaves `description` optional — so a `.md` page
+# matched by neither would ship with no description and nothing would object.
 inputs:
-  - "docs/src/content/docs/**/*.mdx"
+  - "docs/src/content/docs/**/*.{md,mdx}"
 
 out: .tmp/docs-graph.ttl
 

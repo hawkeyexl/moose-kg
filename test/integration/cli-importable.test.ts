@@ -33,27 +33,23 @@ describe("dist/cli.js as an importable module", () => {
     expect(r.stderr).not.toMatch(/Usage: dockg/);
   });
 
-  it("exports the commander program with every command registered", () => {
+  // Deliberately not an exhaustive command list: scripts/check-cli-reference.mjs
+  // already diffs commander's full surface against the CLI reference page, and
+  // duplicating it here would mean two edits per command with no extra coverage.
+  // What this asserts is only what that script depends on — that the export is
+  // present and populated.
+  it("exports a populated commander program", () => {
     const r = evaluate(
       `const m = await import(${JSON.stringify(cliUrl)});
-       console.log(m.program.commands.map((c) => c.name()).sort().join(","));`,
+       console.log(JSON.stringify({
+         count: m.program.commands.length,
+         hasBuild: m.program.commands.some((c) => c.name() === "build"),
+       }));`,
     );
     expect(r.status).toBe(0);
-    expect(r.stdout.trim()).toBe(
-      [
-        "build",
-        "check",
-        "embed",
-        "export",
-        "fill",
-        "init",
-        "query",
-        "search",
-        "stats",
-        "traverse",
-        "validate",
-      ].join(","),
-    );
+    const { count, hasBuild } = JSON.parse(r.stdout.trim());
+    expect(count).toBeGreaterThan(1);
+    expect(hasBuild).toBe(true);
   });
 
   it("still runs as a CLI when executed directly", () => {

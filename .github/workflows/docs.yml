@@ -19,11 +19,6 @@ on:
 permissions:
   contents: read
 
-# One in-flight deploy at a time; a superseded run has nothing worth finishing.
-concurrency:
-  group: pages
-  cancel-in-progress: false
-
 jobs:
   # Everything that can say "this documentation is wrong" runs here, before the
   # site is allowed to build. A page that fails any of these does not ship.
@@ -101,6 +96,12 @@ jobs:
     needs: build
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
+    # Scoped to this job rather than the workflow: Pages allows one in-flight
+    # deploy, but the validate and build jobs also run on every pull request, and
+    # a workflow-level group would serialize every PR's checks behind each other.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     permissions:
       pages: write
       id-token: write
