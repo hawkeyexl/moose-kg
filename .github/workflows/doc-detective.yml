@@ -1,0 +1,57 @@
+name: Doc Detective
+
+on:
+  pull_request:
+    paths:
+      - "docs/**"
+      - "src/**"
+      - "test/fixtures/dd/**"
+      - ".doc-detective.json"
+      - ".github/workflows/doc-detective.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inline-tests:
+    # The inline tests execute shell commands from the pull request's own
+    # content, so they must not run on code from a fork.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      # npm install, not ci — see the note in ci.yml.
+      - run: npm install
+      - run: npm run build
+
+      # Expose the freshly built CLI as `dockg`, so the pages can show the
+      # published command form while CI tests the working tree. dockg is
+      # published, so without the link `npx dockg` could silently fetch a
+      # different version than the one under test.
+      - name: Link the local build as `dockg`
+        run: |
+          npm link
+          npm link @hawkeyexl/dockg
+          dockg --version
+
+      - uses: doc-detective/github-action@49c73785b0ff864356ec2ef71b728f0623a8621d # v1.6.1
+        with:
+          config: .doc-detective.json
+          exit_on_fail: true
+
+      # Doc Detective is not the authoritative gate: its inline runner has been
+      # observed to execute only a subset of the declared steps without reporting
+      # the omissions. test/integration/docs-claims.test.ts reads the same inline
+      # blocks and runs every one of them, and it runs in the main CI job. This
+      # workflow adds what that test cannot: the published `dockg …` command form,
+      # resolved through the link above.
+      - name: Every declared step (authoritative)
+        run: npx vitest run test/integration/docs-claims.test.ts

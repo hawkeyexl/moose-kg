@@ -1,0 +1,112 @@
+name: Docs
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - "docs/**"
+      - "src/**"
+      - "schemas/**"
+      - "shapes/**"
+      - "scripts/check-cli-reference.mjs"
+      - "scripts/check-content-strategy.mjs"
+      - "scripts/check-docs-links.mjs"
+      - "dockg.docs.yaml"
+      - ".github/workflows/docs.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One in-flight deploy at a time; a superseded run has nothing worth finishing.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  # Everything that can say "this documentation is wrong" runs here, before the
+  # site is allowed to build. A page that fails any of these does not ship.
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      # npm install, not ci — see the note in ci.yml about the Windows-generated
+      # lock and rolldown's Linux-side optional deps.
+      - run: npm install
+      - run: npm run build
+
+      # The strategy is only useful while its invariants hold: every
+      # aud-/persona-/cuj- reference resolves, personas and CUJs cover each other,
+      # and the IA plans exactly the pages the journeys name.
+      - name: Content strategy invariants
+        run: npm run docs:check-strategy
+
+      # Adding a command or flag without documenting it fails here rather than in
+      # a user's terminal. Descriptions stay hand-written; the surface does not.
+      - name: CLI reference drift
+        run: npm run docs:check-cli
+
+      # Dogfooding: dockg's own validate (which wraps docmeta) enforces that every
+      # published page carries a title and a description. The site does not ship
+      # without them — they are the LinkCard subtitle and the meta description.
+      - name: Page frontmatter
+        run: node dist/cli.js validate -c dockg.docs.yaml
+
+      # The bigger dogfood: build a graph from the documentation site itself, then
+      # hold it to the same SHACL and coverage gates the docs tell readers to use.
+      #
+      # Note the link and orphan counts here are understated by design: dockg
+      # parses Markdown, not MDX, so hrefs inside JSX components never become
+      # edges. That limitation is documented rather than worked around.
+      - name: Graph gate
+        run: |
+          node dist/cli.js build -c dockg.docs.yaml
+          node dist/cli.js check -c dockg.docs.yaml
+          node dist/cli.js stats -c dockg.docs.yaml --check
+
+  build:
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+
+      # The docs site is its own npm project, so the published dockg package never
+      # carries a docs toolchain.
+      - run: npm install
+        working-directory: docs
+      - run: npm run build
+        working-directory: docs
+
+      # Starlight does not fail a build on a dead internal link, and this IA is
+      # heavily cross-linked, so check the built output.
+      - name: Internal links
+        run: npm run docs:check-links
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/dist
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
