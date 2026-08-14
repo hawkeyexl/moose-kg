@@ -8,33 +8,33 @@ personas:
 trigger: >-
   coverage obligations exist per product variant and per metadata field, and gaps are
   currently found by auditors rather than by the team
-entry_point: /dockg/govern/coverage/
+entry_point: /moose-kg/govern/coverage/
 success_criteria: >-
   Coverage is a number per field with a threshold behind it, a gap fails the build, a
   self-contradictory topic fails check, and the same report regenerates identically.
 steps:
   - stage: orient
-    doc: /dockg/govern/
+    doc: /moose-kg/govern/
     exists: true
     note: "The obligation-to-mechanism map, shared with the provenance journey."
   - stage: act
-    doc: /dockg/govern/coverage/
+    doc: /moose-kg/govern/coverage/
     exists: true
     note: "The per-field coverage table; what counts as covered for each of the seven fields."
   - stage: act
-    doc: /dockg/govern/coverage/
+    doc: /moose-kg/govern/coverage/
     exists: true
     note: "Thresholds as a uniform number or a per-field map, and why per-field is usually right."
   - stage: act
-    doc: /dockg/govern/coverage/
+    doc: /moose-kg/govern/coverage/
     exists: true
     note: "Gate with stats --check. Without --check nothing fails, which surprises people."
   - stage: verify
-    doc: /dockg/govern/
+    doc: /moose-kg/govern/
     exists: true
     note: "check catches appliesTo/notApplicableTo contradictions the same build."
   - stage: extend
-    doc: /dockg/build/backfill/
+    doc: /moose-kg/build/backfill/
     exists: true
     note: "When the gap is too large to close by hand — the brownfield route out."
 ---

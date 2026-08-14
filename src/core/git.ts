@@ -8,7 +8,7 @@
  * Author emails are deliberately not collected into the result (privacy):
  * names only, matching frontmatter author handling.
  */
-import { DockgError } from "../types.js";
+import { MooseKgError } from "../types.js";
 import { realExec, type ExecFn } from "@hawkeyexl/inference";
 import { normalizeDocPath } from "./iri.js";
 
@@ -74,7 +74,7 @@ export function unquoteGitPath(path: string): string {
  * git exports GIT_DIR, GIT_INDEX_FILE, GIT_WORK_TREE and friends to the
  * subprocesses it runs — every hook, and anything spawned from one. Inheriting
  * them makes `git log` read *that* repository instead of `cwd`, so the same
- * inputs would yield a different graph depending on who invoked dockg, and a
+ * inputs would yield a different graph depending on who invoked moose-kg, and a
  * build outside a repo would silently succeed against an unrelated one. Both
  * break the determinism contract, so the ambient state is dropped wholesale
  * rather than enumerated: git keeps adding variables to this namespace.
@@ -111,18 +111,18 @@ export async function collectGitHistory(
   // knows whether it was demanded (`provenance.git: true`) or inherited
   // (`"auto"`) and frames the failure as an error or a warning accordingly.
   if (result.spawnError) {
-    throw new DockgError(
+    throw new MooseKgError(
       `git could not be run: ${result.spawnError} (is git installed and on PATH?)`,
     );
   }
   if (result.timedOut) {
-    throw new DockgError(
+    throw new MooseKgError(
       "`git log` timed out after 60s — the repo history may be too large for whole-history provenance",
     );
   }
   if (result.code !== 0 || result.stdout.trim() === "") {
     const detail = result.stderr.trim().slice(-300);
-    throw new DockgError(
+    throw new MooseKgError(
       `git history could not be read (is ${cwd} a git repo with at least one commit?)${detail ? ` — git said: ${detail}` : ""}`,
     );
   }

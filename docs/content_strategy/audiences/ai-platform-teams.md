@@ -19,7 +19,7 @@ personas:
   - persona-ai-platform-engineer
 evidence_basis:
   - DESIGN.md's edge-contamination argument — semantically close chunks let a model blend content across product boundaries, and a typed graph prevents it deterministically
-  - ADR 01018 (GraphRAG runtime — browser-native, retrieval-only, explainable) and the dockg/runtime entry point
+  - ADR 01018 (GraphRAG runtime — browser-native, retrieval-only, explainable) and the moose-kg/runtime entry point
   - ADR 01019 (a lexical search artifact beside the graph) and ADR 01020 (vector entry with local-only embeddings)
   - the three published package entry points in package.json exports (., ./runtime, ./embed) — a deliberate split so the runtime never pulls in the model stack
   - the runtime's {context, citations, trace} return contract, which stops before calling a model
@@ -45,19 +45,19 @@ chunks that are semantically close but belong to the wrong product, the wrong va
 wrong version, and the model blends them into an answer that is fluent and wrong. Reranking does
 not fix it, because the problem is not ranking — the wrong chunk genuinely is similar.
 
-What they want from dockg is a **deterministic filter to put in front of or beside the ranker**:
+What they want from moose-kg is a **deterministic filter to put in front of or beside the ranker**:
 typed edges that let them exclude by variant or subject before similarity is ever considered, and
-a citation trail that survives review. dockg's retrieval-only contract matters here — the runtime
+a citation trail that survives review. moose-kg's retrieval-only contract matters here — the runtime
 returns context, citations, and a trace, then stops. It does not call a model, so it drops into
 an existing stack rather than replacing it.
 
 Three secondary requirements shape their reference needs sharply:
 
-- **Browser-native.** `dockg/runtime` has no `node:` imports and is a single small bundle.
+- **Browser-native.** `moose-kg/runtime` has no `node:` imports and is a single small bundle.
   A tool that only runs in Node is not usable in their product.
 - **Explainability.** Every result carries a trace. This is often a compliance requirement
   arriving from a different department, not an engineering preference.
-- **Sync safety.** A stale vector sidecar produces plausible garbage, so dockg refuses a
+- **Sync safety.** A stale vector sidecar produces plausible garbage, so moose-kg refuses a
   mismatched model, dtype, dimension, or corpus digest rather than ranking with it. This
   audience has been burned by the silent version of this failure.
 
@@ -65,7 +65,7 @@ Three secondary requirements shape their reference needs sharply:
 
 They are the only segment consuming an artifact rather than producing one, which inverts the
 documentation problem. They do not need to be persuaded to annotate — they cannot annotate. So
-their track cannot depend on a well-annotated corpus, and must be honest that dockg's value to
+their track cannot depend on a well-annotated corpus, and must be honest that moose-kg's value to
 them scales with metadata someone *else* has to add. That dependency is worth stating plainly on
 their pages rather than discovering at integration time.
 

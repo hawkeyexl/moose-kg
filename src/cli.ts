@@ -1,9 +1,9 @@
-/** dockg CLI entry point. */
+/** moose-kg CLI entry point. */
 import { realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { Command } from "commander";
 import pc from "picocolors";
-import { DockgError } from "./types.js";
+import { MooseKgError } from "./types.js";
 import { toolVersion } from "./core/pkg.js";
 import { runBuild } from "./commands/build.js";
 import { renderCheck, runCheck } from "./commands/check.js";
@@ -26,15 +26,15 @@ import { renderTraverse, runTraverse } from "./commands/traverse.js";
 export const program = new Command();
 
 program
-  .name("dockg")
+  .name("moose-kg")
   .description(
     "Deterministic knowledge graphs derived from documentation frontmatter and formatting.",
   )
   .version(toolVersion(import.meta.url));
 
 function fail(e: unknown): never {
-  if (e instanceof DockgError) {
-    console.error(pc.red(`dockg: ${e.message}`));
+  if (e instanceof MooseKgError) {
+    console.error(pc.red(`moose-kg: ${e.message}`));
     process.exit(2);
   }
   throw e;
@@ -42,10 +42,17 @@ function fail(e: unknown): never {
 
 program
   .command("init")
-  .description("Create a starter dockg.config.yaml in the current directory")
+  .description(
+    "Add a starter `kg:` section to moose.config.yaml (creating it if absent)",
+  )
   .action(() => {
     try {
-      console.log(`Created ${runInit()}`);
+      const { path, mode } = runInit();
+      console.log(
+        mode === "created"
+          ? `Created ${path}`
+          : `Added a \`kg:\` section to ${path}`,
+      );
     } catch (e) {
       fail(e);
     }
@@ -55,7 +62,7 @@ program
   .command("build")
   .description("Derive the knowledge graph and write deterministic Turtle")
   .argument("[globs...]", "Input globs (default: config inputs)")
-  .option("-c, --config <path>", "Path to dockg.config.yaml")
+  .option("-c, --config <path>", "Path to moose.config.yaml")
   .option("-o, --out <path>", "Output .ttl path (default: config out)")
   .action(async (globs: string[], opts: { config?: string; out?: string }) => {
     try {
@@ -67,7 +74,7 @@ program
       // Warnings go to stderr so stdout stays the machine-readable summary;
       // a degraded build is still a successful one, so the exit code is 0.
       for (const warning of result.warnings) {
-        console.error(pc.yellow(`dockg: ${warning}`));
+        console.error(pc.yellow(`moose-kg: ${warning}`));
       }
       console.log(
         `Wrote ${result.outPath} (${result.docs} docs, ${result.quads} triples)`,
@@ -80,9 +87,9 @@ program
 program
   .command("check")
   .description(
-    "Validate the built graph against the dockg SHACL shapes (violations exit 1)",
+    "Validate the built graph against the moose-kg SHACL shapes (violations exit 1)",
   )
-  .option("-c, --config <path>", "Path to dockg.config.yaml")
+  .option("-c, --config <path>", "Path to moose.config.yaml")
   .option("-g, --graph <path>", "Graph .ttl path (default: config out)")
   .option(
     "--shapes <paths...>",
@@ -110,7 +117,7 @@ program
   .command("validate")
   .description("Check docs are KG-ready (frontmatter validated via docmeta)")
   .argument("[globs...]", "Input globs (default: config inputs)")
-  .option("-c, --config <path>", "Path to dockg.config.yaml")
+  .option("-c, --config <path>", "Path to moose.config.yaml")
   .option("-f, --format <format>", "Output format: pretty | json", "pretty")
   .action(
     async (globs: string[], opts: { config?: string; format: string }) => {
@@ -130,7 +137,7 @@ program
     "Propose `kg:` frontmatter fields with an LLM, gated by confidence, and write them back",
   )
   .argument("[globs...]", "Input globs (default: config inputs)")
-  .option("-c, --config <path>", "Path to dockg.config.yaml")
+  .option("-c, --config <path>", "Path to moose.config.yaml")
   .option("-f, --format <format>", "Output format: pretty | json", "pretty")
   .option("--dry-run", "Report proposals without writing files")
   .option("--force", "Overwrite human-set kg fields")
@@ -178,7 +185,7 @@ program
   .option("-s, --s <term>", "Subject IRI or prefixed name")
   .option("-p, --p <term>", "Predicate IRI or prefixed name")
   .option("-o, --o <term>", "Object IRI, prefixed name, or literal value")
-  .option("-c, --config <path>", "Path to dockg.config.yaml")
+  .option("-c, --config <path>", "Path to moose.config.yaml")
   .option("-g, --graph <path>", "Graph .ttl path (default: config out)")
   .option("-f, --format <format>", "Output format: pretty | json", "pretty")
   .action(
@@ -204,7 +211,7 @@ program
   .description(
     "Summarize the built graph: counts, orphans, broken links, hubs, metadata coverage",
   )
-  .option("-c, --config <path>", "Path to dockg.config.yaml")
+  .option("-c, --config <path>", "Path to moose.config.yaml")
   .option("-g, --graph <path>", "Graph .ttl path (default: config out)")
   .option("-f, --format <format>", "Output format: pretty | json", "pretty")
   .option(
@@ -244,7 +251,7 @@ program
     "Rank graph nodes for a text query (needs `export --format search`)",
   )
   .argument("<query>", "Text query")
-  .option("-c, --config <path>", "Path to dockg.config.yaml")
+  .option("-c, --config <path>", "Path to moose.config.yaml")
   .option("-g, --graph <path>", "Graph .ttl path (default: config out)")
   .option(
     "-i, --index <path>",
@@ -287,7 +294,7 @@ program
     "Walk the graph from a node, honoring scope rules, with the full trace",
   )
   .argument("<node>", "Starting node: a full IRI or a prefix:local CURIE")
-  .option("-c, --config <path>", "Path to dockg.config.yaml")
+  .option("-c, --config <path>", "Path to moose.config.yaml")
   .option("-g, --graph <path>", "Graph .ttl path (default: config out)")
   .option(
     "-d, --depth <n>",
@@ -336,7 +343,7 @@ program
   .description(
     "Compute local embeddings for the search index (needs @huggingface/transformers)",
   )
-  .option("-c, --config <path>", "Path to dockg.config.yaml")
+  .option("-c, --config <path>", "Path to moose.config.yaml")
   .option("-g, --graph <path>", "Graph .ttl path (default: config out)")
   .option(
     "-i, --index <path>",
@@ -378,7 +385,7 @@ program
   .description(
     "Reserialize the built graph into a consumer format (jsonld file, iirds package, or search index)",
   )
-  .option("-c, --config <path>", "Path to dockg.config.yaml")
+  .option("-c, --config <path>", "Path to moose.config.yaml")
   .option("-g, --graph <path>", "Graph .ttl path (default: config out)")
   .option(
     "-f, --format <format>",
@@ -404,7 +411,7 @@ program
           out: opts.out,
         });
         for (const warning of result.warnings) {
-          console.error(pc.yellow(`dockg: ${warning}`));
+          console.error(pc.yellow(`moose-kg: ${warning}`));
         }
         console.log(
           `Wrote ${result.nodes} node${result.nodes === 1 ? "" : "s"} to ${result.outPath}`,
@@ -421,7 +428,7 @@ program
  * `realpathSync` on both sides because `npm link` puts a symlink on argv[1]
  * while `import.meta.url` resolves to the real file — comparing the raw paths
  * would make a linked CLI silently do nothing, which is how a locally linked
- * `dockg` is normally exercised.
+ * `moose-kg` is normally exercised.
  */
 function isMain(): boolean {
   const entry = process.argv[1];

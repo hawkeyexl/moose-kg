@@ -7,33 +7,33 @@ personas:
 trigger: >-
   metadata quality is visible in stats but nothing enforces it, so it decays between
   reviews exactly like every previous attempt
-entry_point: /dockg/govern/ci/
+entry_point: /moose-kg/govern/ci/
 success_criteria: >-
   A pull request with a metadata regression goes red, the failure names the responsible
-  file, and a contributor who has never seen dockg can fix it without asking Priya.
+  file, and a contributor who has never seen moose-kg can fix it without asking Priya.
 steps:
   - stage: orient
-    doc: /dockg/govern/
+    doc: /moose-kg/govern/
     exists: true
     note: "Which of the three gates catches what: validate per file, check whole graph, stats thresholds."
   - stage: orient
-    doc: /dockg/reference/output-and-exit-codes/
+    doc: /moose-kg/reference/output-and-exit-codes/
     exists: true
     note: "The 0/1/2 contract is what carries the integration; it must be understood before wiring."
   - stage: act
-    doc: /dockg/govern/ci/
+    doc: /moose-kg/govern/ci/
     exists: true
     note: "A complete GitHub Actions workflow, plus a step to add to an existing one."
   - stage: act
-    doc: /dockg/govern/coverage/
+    doc: /moose-kg/govern/coverage/
     exists: true
     note: "Set the first coverage threshold below current coverage so the gate holds the line."
   - stage: verify
-    doc: /dockg/govern/ci/
+    doc: /moose-kg/govern/ci/
     exists: true
     note: "Open a PR that regresses metadata on purpose and watch it fail."
   - stage: extend
-    doc: /dockg/fix/
+    doc: /moose-kg/fix/
     exists: true
     note: "The gate's failure message must link here — this is the contributor's destination."
 ---
@@ -43,7 +43,7 @@ Priya turns metadata quality from a review comment into a build failure.
 ## The journey
 
 Every previous metadata effort this reader tried decayed because nothing enforced it. This
-journey is where dockg either becomes permanent or becomes another abandoned convention, and it
+journey is where moose-kg either becomes permanent or becomes another abandoned convention, and it
 is the point at which the tool starts affecting people other than Priya.
 
 The mechanics are small — three commands and an exit code contract. The judgment is not: **which

@@ -9,33 +9,33 @@ lens: aud-brownfield-corpora
 trigger: >-
   the first stats run over a large existing corpus reports coverage in the single or low
   double digits, and hand-annotating the backlog is not going to happen
-entry_point: /dockg/build/backfill/
+entry_point: /moose-kg/build/backfill/
 success_criteria: >-
   Coverage rises measurably, every machine-written field is recorded with its model and
   confidence, a human has reviewed a sample, and a threshold is set that holds the new line.
 steps:
   - stage: trigger
-    doc: /dockg/build/
+    doc: /moose-kg/build/
     exists: true
     note: "The coverage table is where this starts; a low number must route here, not read as failure."
   - stage: orient
-    doc: /dockg/build/backfill/
+    doc: /moose-kg/build/backfill/
     exists: true
     note: "fill proposes, humans accept. Frame as a review workflow, never as auto-annotation."
   - stage: act
-    doc: /dockg/build/backfill/
+    doc: /moose-kg/build/backfill/
     exists: true
     note: "Dry run first, on a subset, with a cost cap. Read the proposals before writing anything."
   - stage: act
-    doc: /dockg/build/backfill/
+    doc: /moose-kg/build/backfill/
     exists: true
     note: "Write for real, then review kg.provenance entries and delete them as they are cleared."
   - stage: verify
-    doc: /dockg/govern/coverage/
+    doc: /moose-kg/govern/coverage/
     exists: true
     note: "Re-measure, then set the threshold just under the new number to hold the line."
   - stage: extend
-    doc: /dockg/reference/frontmatter/
+    doc: /moose-kg/reference/frontmatter/
     exists: true
     note: "The kg.provenance block shape, per-field confidence, and what deleting an entry means."
 ---

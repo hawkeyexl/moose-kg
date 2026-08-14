@@ -1,6 +1,6 @@
 ---
 title: Granularity
-description: A node should index exactly the text it owns and no more — so metadata on a long document that covers several variants is false for part of that document, and dockg lets you push it down to the heading level.
+description: A node should index exactly the text it owns and no more — so metadata on a long document that covers several variants is false for part of that document, and moose-kg lets you push it down to the heading level.
 ---
 
 import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
@@ -8,7 +8,7 @@ import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
 A forty-page document tagged with one topic type and one product variant is telling the truth
 about a fraction of itself.
 
-The rule dockg is built around: **content granularity must match node granularity.** Every node
+The rule moose-kg is built around: **content granularity must match node granularity.** Every node
 should index exactly the text it owns.
 
 ## Why document-level tagging breaks down
@@ -20,21 +20,21 @@ options, and both are wrong:
   document, including the two thirds that do not apply. The reader has to filter by hand, which
   is the job you were trying to automate.
 - **Tag it with none.** Now it is invisible to every scoped query, and
-  [absence means unknown](/dockg/concepts/open-world/) rather than "check manually".
+  [absence means unknown](/moose-kg/concepts/open-world/) rather than "check manually".
 
 The document is simply not the right unit. The heading is.
 
 ## Sections are addressable
 
-dockg derives a node per heading, whose IRI is the document's IRI plus the heading's
+moose-kg derives a node per heading, whose IRI is the document's IRI plus the heading's
 GitHub-style slug:
 
 ```turtle
 <https://example.com/kg/doc/docs/configuration.md#inputs>
-    a dockg:Section ;
+    a moose-kg:Section ;
     dcterms:title "Inputs" ;
-    dockg:level 2 ;
-    dockg:order 1 .
+    moose-kg:level 2 ;
+    moose-kg:order 1 .
 ```
 
 That fragment is not decorative. It resolves to an exact span on disk, so *route with the graph,
@@ -70,7 +70,7 @@ Section keys are slugs of heading text. Heading text is prose, and writers edit 
 thinking about metadata. Rename a heading and its key matches nothing — and the metadata that was
 scoping that section silently stops applying.
 
-dockg reports it rather than ignoring it:
+moose-kg reports it rather than ignoring it:
 
 ```
 Broken section refs (1):
@@ -96,12 +96,12 @@ maintain. Two things make it tractable:
 <CardGrid>
   <LinkCard
     title="Section-level metadata"
-    href="/dockg/model/sections/"
+    href="/moose-kg/model/sections/"
     description="The slug-keyed map in practice: which keys are permitted, and which are meaningless per section."
   />
   <LinkCard
     title="An index, not a corpus"
-    href="/dockg/concepts/index-not-corpus/"
+    href="/moose-kg/concepts/index-not-corpus/"
     description="Why a node points at text instead of containing it."
   />
 </CardGrid>

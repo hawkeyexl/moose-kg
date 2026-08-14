@@ -1,6 +1,6 @@
 ---
 title: Glossary
-description: Definitions of the terms dockg's documentation uses — graph vocabulary, dockg's own concepts, and the standards it references.
+description: Definitions of the terms moose-kg's documentation uses — graph vocabulary, moose-kg's own concepts, and the standards it references.
 ---
 
 Definitions only. Where a term has a page, this points at it rather than re-explaining it.
@@ -8,24 +8,24 @@ Definitions only. Where a term has a page, this points at it rather than re-expl
 ## Base IRI
 
 The prefix every minted IRI is built from, set by `baseIri` in config. Defaults to the placeholder
-`urn:dockg:`. Changing it rewrites every subject in the graph, so set a real one before anything
+`urn:moose-kg:`. Changing it rewrites every subject in the graph, so set a real one before anything
 consumes the output.
 
 ## Broken link
 
-An internal link whose target does not exist on disk, emitted as `dockg:brokenLink` and counted by
-`dockg stats`. If your corpus links by published URL rather than file path, see
-[route mappings](/dockg/build/routes/) before treating these as real.
+An internal link whose target does not exist on disk, emitted as `moose-kg:brokenLink` and counted by
+`moose-kg stats`. If your corpus links by published URL rather than file path, see
+[route mappings](/moose-kg/build/routes/) before treating these as real.
 
 ## Broken section ref
 
-A `kg.sections` key matching no heading in the document, emitted as `dockg:brokenSectionRef`.
+A `kg.sections` key matching no heading in the document, emitted as `moose-kg:brokenSectionRef`.
 Almost always a renamed heading.
 
 ## Closed shape
 
 A SHACL node shape declaring `sh:closed true`: any predicate it does not name is a violation. Every
-dockg node shape is closed, so the emitted graph cannot grow an unagreed predicate silently.
+moose-kg node shape is closed, so the emitted graph cannot grow an unagreed predicate silently.
 
 ## Concept
 
@@ -35,22 +35,22 @@ from the slugified label, so two spellings converge on one node.
 ## Coverage
 
 The fraction of documents carrying a given metadata field, over seven fields. Reported by
-`dockg stats` and gated by [thresholds](/dockg/govern/coverage/) under `--check`.
+`moose-kg stats` and gated by [thresholds](/moose-kg/govern/coverage/) under `--check`.
 
 ## CUJ
 
-Critical user journey. A complete outcome a reader must be able to reach. dockg's documentation is
+Critical user journey. A complete outcome a reader must be able to reach. moose-kg's documentation is
 organized around these rather than by document type; they live in `docs/content_strategy/journeys/`.
 
 ## Derive source
 
-One of the seven things dockg reads: `frontmatter`, `sections`, `links`, `tags`, `images`, `code`,
+One of the seven things moose-kg reads: `frontmatter`, `sections`, `links`, `tags`, `images`, `code`,
 `provenance`. All on by default, controlled by `build.derive`.
 
 ## Determinism
 
 The contract that two builds over unchanged inputs produce byte-identical output. See
-[determinism](/dockg/concepts/determinism/).
+[determinism](/moose-kg/concepts/determinism/).
 
 ## Edge contamination
 
@@ -60,19 +60,19 @@ cannot.
 
 ## Frontmatter
 
-The metadata block at the top of a Markdown file, between `---` lines. dockg reads YAML; TOML and
+The metadata block at the top of a Markdown file, between `---` lines. moose-kg reads YAML; TOML and
 JSON fences are an operational error for `fill`. See the
-[frontmatter reference](/dockg/reference/frontmatter/).
+[frontmatter reference](/moose-kg/reference/frontmatter/).
 
 ## Graph guardrail
 
-The check `dockg fill` runs before writing a proposed field: simulate its triples against the SHACL
+The check `moose-kg fill` runs before writing a proposed field: simulate its triples against the SHACL
 shapes and reject anything that would corrupt the graph. Rejections are routine and exit `0`.
 
 ## iiRDS
 
 The intelligent information Request and Delivery Standard, from tekom — the technical-communication
-industry's RDF vocabulary for documentation semantics. dockg references its published IRIs for topic
+industry's RDF vocabulary for documentation semantics. moose-kg references its published IRIs for topic
 typing, product applicability, lifecycle phases, and subjects. Licensed CC BY-ND, so the vocabulary
 is referenced and never vendored.
 
@@ -82,15 +82,15 @@ Internationalized Resource Identifier — the stable identity of a node. A docum
 repo-relative path under the base IRI; a section's is its document's plus the heading slug as a
 fragment.
 
-## `kg:` versus `dockg:`
+## `kg:` versus `moose-kg:`
 
-`kg:` is the **frontmatter key** you write in Markdown. `dockg:` is the **RDF namespace prefix**
-(`https://dockg.dev/ns#`) in the emitted graph. Not the same thing, and easy to conflate.
+`kg:` is the **frontmatter key** you write in Markdown. `moose-kg:` is the **RDF namespace prefix**
+(`https://moose-tools.dev/kg/ns#`) in the emitted graph. Not the same thing, and easy to conflate.
 
 ## Negative scope
 
 An explicit assertion that something does **not** apply — `kg.notApplicableTo` and
-`kg.notSoftwareSubject`. Necessary because [absence means unknown](/dockg/concepts/open-world/).
+`kg.notSoftwareSubject`. Necessary because [absence means unknown](/moose-kg/concepts/open-world/).
 
 ## Open-world semantics
 
@@ -99,11 +99,11 @@ exclusion returns a set that is wrong in the dangerous direction.
 
 ## Orphan document
 
-A document with no inbound or outbound `dcterms:references`. Reported by `dockg stats`.
+A document with no inbound or outbound `dcterms:references`. Reported by `moose-kg stats`.
 
 ## PROV-O
 
-The W3C provenance ontology. dockg uses it for authorship, derivation, revision, and the qualified
+The W3C provenance ontology. moose-kg uses it for authorship, derivation, revision, and the qualified
 attribution and association nodes that distinguish a human author from a tool from a model.
 
 ## Qualified attribution
@@ -113,23 +113,23 @@ generated, and which tool built — rather than collapsing them into one `creato
 
 ## Route mapping
 
-Configuration telling dockg how published site URLs map back to source files, so site-style links
-become real graph edges. See [map your site's routes](/dockg/build/routes/).
+Configuration telling moose-kg how published site URLs map back to source files, so site-style links
+become real graph edges. See [map your site's routes](/moose-kg/build/routes/).
 
 ## Section
 
-A `dockg:Section` node, one per heading, whose IRI addresses an exact span on disk. Metadata can be
+A `moose-kg:Section` node, one per heading, whose IRI addresses an exact span on disk. Metadata can be
 attached per section via `kg.sections`.
 
 ## SHACL
 
-Shapes Constraint Language — the W3C standard `dockg check` validates the assembled graph against.
-See [validation rules](/dockg/reference/shapes/).
+Shapes Constraint Language — the W3C standard `moose-kg check` validates the assembled graph against.
+See [validation rules](/moose-kg/reference/shapes/).
 
 ## SKOS
 
 Simple Knowledge Organization System — the W3C vocabulary for concepts and their relationships.
-dockg maps `kg.prefLabel` and its dependents onto it.
+moose-kg maps `kg.prefLabel` and its dependents onto it.
 
 ## Slug
 
@@ -138,7 +138,7 @@ both derive from slugs, which is why renaming a heading can orphan its metadata.
 
 ## Turtle
 
-The RDF text serialization dockg emits. Canonically sorted, with no blank nodes, so it diffs cleanly
+The RDF text serialization moose-kg emits. Canonically sorted, with no blank nodes, so it diffs cleanly
 in git.
 
 ## Vector sidecar

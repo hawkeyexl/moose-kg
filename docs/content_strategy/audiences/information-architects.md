@@ -22,7 +22,7 @@ evidence_basis:
   - ADR 01012 (adopt iiRDS Core and the Software domain) — a standard chosen for interoperability with an existing practice, not invented
   - ADR 01013 (section-level iiRDS metadata via a slug-keyed kg.sections map) and DESIGN.md's granularity golden rule
   - ADR 01014 (explicit negative scope) — a distinction only someone modeling applicability cares about
-  - the SKOS surface in schemas/frontmatter-0.8.json (prefLabel, altLabels, broader, narrower, related) and the SKOS S27 / cycle checks in shapes/dockg-0.5.ttl
+  - the SKOS surface in schemas/frontmatter-0.8.json (prefLabel, altLabels, broader, narrower, related) and the SKOS S27 / cycle checks in shapes/moose-kg-0.5.ttl
 ---
 
 Information architects who already have a metadata standard, and need it enforced by something
@@ -43,17 +43,17 @@ or DITA. What they typically do **not** bring is Node tooling or CI internals; s
 Their standard, expressed in the files, enforced automatically, and readable by something other
 than a human. Specifically:
 
-- **Typing that maps to a real standard**, not a bespoke enum. dockg's `topicType`,
+- **Typing that maps to a real standard**, not a bespoke enum. moose-kg's `topicType`,
   `softwareLifecyclePhase`, and `softwareSubject` are closed vocabularies bound to published
   iiRDS IRIs — this audience recognizes them on sight, and that recognition is the credibility
   moment.
 - **Applicability modeling with teeth.** Which topics apply to which product variant is the
   question their whole taxonomy exists to answer, and the one most often answered wrongly.
-  dockg's open-world default (absence means *unknown*, not *does not apply*) plus explicit
+  moose-kg's open-world default (absence means *unknown*, not *does not apply*) plus explicit
   negative scope is unusually precise about this, and precision is what they are shopping for.
 - **Granularity that matches the content.** A 40-page document tagged as one node is a lie.
   `kg.sections` lets metadata sit on the heading that owns the text.
-- **Enforcement that catches vocabulary errors, not just typos.** `dockg check` finding a
+- **Enforcement that catches vocabulary errors, not just typos.** `moose-kg check` finding a
   `skos:broader` cycle, a `related`/`broader` conflict, or a concept with two spellings is
   catching the errors their review process misses.
 
@@ -61,8 +61,8 @@ than a human. Specifically:
 
 They are the audience most likely to know more about the standard than the docs do. A page that
 explains SKOS to them wastes their time; a page that gets SKOS subtly wrong loses them. The
-docset's job is to explain **dockg's mapping onto vocabulary they already know** — this
-frontmatter key becomes that triple — and to be precise about where dockg deliberately diverges.
+docset's job is to explain **moose-kg's mapping onto vocabulary they already know** — this
+frontmatter key becomes that triple — and to be precise about where moose-kg deliberately diverges.
 
 They are also the audience for whom the single most important sentence in the docset is the
 open-world one, because the failure it prevents is silent: an interlock query that returns

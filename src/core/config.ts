@@ -1,14 +1,17 @@
 /**
- * Loads and validates `dockg.config.yaml`. Validation is JSON Schema (2020-12)
- * via Ajv; defaults are applied in code afterward so the resolved shape is
- * fully typed. Mirrors the docevals config pattern.
+ * Loads and validates `moose.config.yaml` — the config file shared by the
+ * moose tool family, of which moose-kg reads the top-level `kg:` section.
+ * Validation is JSON Schema (2020-12) via Ajv; defaults are applied in code
+ * afterward so the resolved shape is fully typed. The root is open (sibling
+ * tools own the other sections); the `kg:` subtree is closed, so a typo in a
+ * key that IS ours still fails loudly.
  */
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, isAbsolute, resolve } from "node:path";
 import { parse as parseYaml } from "yaml";
 import { Ajv2020 } from "ajv/dist/2020.js";
 import configSchema from "./config-schema.json" with { type: "json" };
-import { DockgError } from "../types.js";
+import { MooseKgError } from "../types.js";
 import { resolveBaseIri } from "./iri.js";
 import { COVERAGE_FIELD_NAMES } from "./coverage.js";
 // Pure data module (no transformers import), so config stays Node-light.
@@ -80,9 +83,9 @@ export interface RouteMapping {
   indexFiles: string[];
 }
 
-export interface DockgConfig {
+export interface MooseKgConfig {
   version: 1;
-  /** Normalized base IRI (trailing slash for http(s); `urn:dockg:` default). */
+  /** Normalized base IRI (trailing slash for http(s); `urn:moose-kg:` default). */
   baseIri: string;
   inputs: string[];
   exclude: string[];
@@ -91,9 +94,9 @@ export interface DockgConfig {
   routes: RouteMapping[];
   build: { derive: DeriveSource[] };
   validate: { schemas: string[] };
-  /** Graph-level SHACL validation (`dockg check`). */
+  /** Graph-level SHACL validation (`moose-kg check`). */
   check: {
-    /** Shapes .ttl paths; empty = the shapes bundled with dockg. */
+    /** Shapes .ttl paths; empty = the shapes bundled with moose-kg. */
     shapes: string[];
   };
   provenance: {
@@ -147,7 +150,7 @@ export interface DockgConfig {
     /**
      * Embedding model id (ADR 01020). An open string, not an enum: the
      * documented table is the *tested* set, not the permitted set, so a newer
-     * model works without a dockg release.
+     * model works without a moose-kg release.
      */
     model: string;
     /** Weight quantization. `q8` keeps int32 accumulation, which is associative. */
@@ -174,7 +177,7 @@ export interface DockgConfig {
   configDir: string;
 }
 
-export const DEFAULT_CONFIG_FILENAME = "dockg.config.yaml";
+export const DEFAULT_CONFIG_FILENAME = "moose.config.yaml";
 
 export const ALL_DERIVE_SOURCES: DeriveSource[] = [
   "frontmatter",
@@ -216,18 +219,26 @@ function resolveCoverageThreshold(
   return { ...raw };
 }
 
-/** Parse and validate config YAML text. `configPath` is used for messages and path resolution. */
-export function parseConfig(text: string, configPath: string): DockgConfig {
+/**
+ * Parse and validate config YAML text. `configPath` is used for messages and
+ * path resolution. `requireKgSection` makes a file with no `kg:` section an
+ * error rather than a fall back to defaults — see `loadConfig`.
+ */
+export function parseConfig(
+  text: string,
+  configPath: string,
+  options: { requireKgSection?: boolean } = {},
+): MooseKgConfig {
   let raw: unknown;
   try {
     raw = parseYaml(text);
   } catch (e) {
-    throw new DockgError(
+    throw new MooseKgError(
       `Invalid YAML in ${configPath}: ${e instanceof Error ? e.message : "parse error"}`,
     );
   }
   if (raw == null || typeof raw !== "object" || Array.isArray(raw)) {
-    throw new DockgError(
+    throw new MooseKgError(
       `Invalid config in ${configPath}: root must be an object`,
     );
   }
@@ -235,14 +246,29 @@ export function parseConfig(text: string, configPath: string): DockgConfig {
     const details = (validateConfig.errors ?? [])
       .map((e) => `  ${e.instancePath || "/"}: ${e.message}`)
       .join("\n");
-    throw new DockgError(`Invalid config in ${configPath}:\n${details}`);
+    throw new MooseKgError(`Invalid config in ${configPath}:\n${details}`);
   }
 
   // Past this point Ajv has validated `raw` against config-schema.json, so the
   // shape is known-good and reading fields off it is safe. `unknown` would buy
   // nothing here but a cast at every access.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const r = raw as Record<string, any>;
+  const root = raw as Record<string, any>;
+
+  // moose.config.yaml is shared across the moose tool family — each tool reads
+  // its own top-level section and ignores its siblings'. So the root cannot be
+  // a closed schema, and a missing `kg:` section is not automatically wrong:
+  // a repo may use other moose tools and not this one. But a file named
+  // *explicitly* on the command line and carrying nothing for moose-kg is a
+  // mistake, and silently applying defaults would hide it.
+  if (options.requireKgSection && root.kg === undefined) {
+    throw new MooseKgError(
+      `Invalid config in ${configPath}: no \`kg:\` section. ` +
+        `moose.config.yaml is shared across the moose tools; moose-kg reads \`kg:\`.`,
+    );
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const r = (root.kg ?? {}) as Record<string, any>;
   const abs = resolve(configPath);
   const dir = dirname(abs);
 
@@ -266,11 +292,11 @@ export function parseConfig(text: string, configPath: string): DockgConfig {
       derive: r.build?.derive ?? [...ALL_DERIVE_SOURCES],
     },
     validate: {
-      // Empty means: use the newest schema bundled with dockg (see bundledSchemaPath).
+      // Empty means: use the newest schema bundled with moose-kg (see bundledSchemaPath).
       schemas: r.validate?.schemas ?? [],
     },
     check: {
-      // Empty means: use the shapes bundled with dockg (see bundledShapesPath).
+      // Empty means: use the shapes bundled with moose-kg (see bundledShapesPath).
       shapes: r.check?.shapes ?? [],
     },
     provenance: {
@@ -288,7 +314,7 @@ export function parseConfig(text: string, configPath: string): DockgConfig {
       command: r.fill?.command ?? "claude",
       temperature: r.fill?.temperature ?? 0,
       maxCostUsd: r.fill?.maxCostUsd === undefined ? 5 : r.fill.maxCostUsd,
-      cacheDir: r.fill?.cacheDir ?? ".dockg/cache",
+      cacheDir: r.fill?.cacheDir ?? ".moose-kg/cache",
       fields: r.fill?.fields ?? [...ALL_FILL_FIELDS],
       minConfidence: r.fill?.minConfidence ?? 0.7,
       writeProvenance: r.fill?.writeProvenance ?? true,
@@ -299,7 +325,7 @@ export function parseConfig(text: string, configPath: string): DockgConfig {
       model: r.embed?.model ?? DEFAULT_EMBED_MODEL,
       dtype: r.embed?.dtype ?? "q8",
       out: r.embed?.out ?? "kg/vectors.bin",
-      cacheDir: r.embed?.cacheDir ?? ".dockg/embed-cache",
+      cacheDir: r.embed?.cacheDir ?? ".moose-kg/embed-cache",
     },
     export: {
       iirds: {
@@ -314,20 +340,25 @@ export function parseConfig(text: string, configPath: string): DockgConfig {
 }
 
 /**
- * Load config from an explicit path, or find `dockg.config.yaml` in the
- * working directory. With no config file present, built-in defaults apply.
+ * Load config from an explicit path, or find `moose.config.yaml` in the
+ * working directory. With no config file present, built-in defaults apply —
+ * as they do for a discovered file that carries no `kg:` section, since the
+ * file is shared with the rest of the moose tools. An explicitly named file
+ * with no `kg:` section throws instead: naming it states the intent.
  */
-export function loadConfig(path?: string, cwd = process.cwd()): DockgConfig {
+export function loadConfig(path?: string, cwd = process.cwd()): MooseKgConfig {
   if (path) {
     const abs = isAbsolute(path) ? path : resolve(cwd, path);
     if (!existsSync(abs)) {
-      throw new DockgError(`Config file not found: ${abs}`);
+      throw new MooseKgError(`Config file not found: ${abs}`);
     }
-    return parseConfig(readFileSync(abs, "utf8"), abs);
+    return parseConfig(readFileSync(abs, "utf8"), abs, {
+      requireKgSection: true,
+    });
   }
   const candidate = resolve(cwd, DEFAULT_CONFIG_FILENAME);
   if (existsSync(candidate)) {
     return parseConfig(readFileSync(candidate, "utf8"), candidate);
   }
-  return parseConfig("version: 1\n", candidate);
+  return parseConfig("kg:\n  version: 1\n", candidate);
 }

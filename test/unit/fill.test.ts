@@ -4,12 +4,13 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { runFill } from "../../src/commands/fill.js";
 import { MockProvider } from "@hawkeyexl/inference";
+import { underKg } from "../helpers/config.js";
 
 function setup(files: Record<string, string>, config = ""): string {
-  const dir = mkdtempSync(join(tmpdir(), "dockg-fill-"));
+  const dir = mkdtempSync(join(tmpdir(), "moose-kg-fill-"));
   writeFileSync(
-    join(dir, "dockg.config.yaml"),
-    `version: 1\ninputs: ["*.md"]\n${config}`,
+    join(dir, "moose.config.yaml"),
+    `kg:\n  version: 1\n  inputs: ["*.md"]\n${underKg(config)}`,
   );
   for (const [name, content] of Object.entries(files)) {
     writeFileSync(join(dir, name), content);
@@ -200,8 +201,8 @@ describe("runFill", () => {
     // second run with a broader field set fills subjects too — different model
     const { writeFileSync: write } = await import("node:fs");
     write(
-      join(dir, "dockg.config.yaml"),
-      'version: 1\ninputs: ["*.md"]\nfill:\n  fields: [prefLabel, subjects]\n',
+      join(dir, "moose.config.yaml"),
+      'kg:\n  version: 1\n  inputs: ["*.md"]\n  fill:\n    fields: [prefLabel, subjects]\n',
     );
     await runFill({
       cwd: dir,
@@ -305,7 +306,7 @@ describe("runFill", () => {
     const good = new MockProvider([{ json: PROPOSAL }]);
     await runFill({ cwd: dir, providerInstance: good, dryRun: true });
     // corrupt the cache entry on disk
-    const cacheDir = join(dir, ".dockg", "cache");
+    const cacheDir = join(dir, ".moose-kg", "cache");
     const { readdirSync, writeFileSync: write } = await import("node:fs");
     const entry = readdirSync(cacheDir)[0]!;
     write(join(cacheDir, entry), JSON.stringify({ prefLabel: 42 }));

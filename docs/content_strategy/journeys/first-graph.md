@@ -4,48 +4,48 @@ type: cuj
 title: Get a graph out of my repo and understand what it says
 personas:
   - persona-docs-engineer
-trigger: evaluating dockg against an existing Markdown docs repo, with no config file
-entry_point: /dockg/get-started/
+trigger: evaluating moose-kg against an existing Markdown docs repo, with no config file
+entry_point: /moose-kg/get-started/
 success_criteria: >-
   A graph file exists, the reader can name what each part of it came from, and they
   can rebuild it byte-identically. They have not had to learn RDF to get here.
 anchor: true
 steps:
   - stage: orient
-    doc: /dockg/
+    doc: /moose-kg/
     exists: true
     note: "Landing router plus a 30-second proof — one command and its real output."
   - stage: act
-    doc: /dockg/get-started/
+    doc: /moose-kg/get-started/
     exists: true
     note: "Install, run build with no config file, read the docs-and-triples line."
   - stage: verify
-    doc: /dockg/get-started/
+    doc: /moose-kg/get-started/
     exists: true
     note: "Same page: run build twice and diff. Determinism proved, not asserted."
   - stage: orient
-    doc: /dockg/concepts/index-not-corpus/
+    doc: /moose-kg/concepts/index-not-corpus/
     exists: true
     note: "Answers the first question every reader asks — why is my prose not in here?"
   - stage: act
-    doc: /dockg/build/
+    doc: /moose-kg/build/
     exists: true
     note: "What each of the seven derive sources reads, and how to turn one off."
   - stage: verify
-    doc: /dockg/build/
+    doc: /moose-kg/build/
     exists: true
     note: "Read the corpus back with stats: counts, orphans, broken links, coverage."
   - stage: extend
-    doc: /dockg/reference/configuration/
+    doc: /moose-kg/reference/configuration/
     exists: true
     note: "Inputs, exclude, out — the first three keys anyone changes."
   - stage: extend
-    doc: /dockg/reference/cli/
+    doc: /moose-kg/reference/cli/
     exists: true
     note: "The command surface, once the reader wants a flag the on-ramp did not show."
 ---
 
-Priya points dockg at a repo they already have, and finds out what it knows.
+Priya points moose-kg at a repo they already have, and finds out what it knows.
 
 ## The journey
 
@@ -54,13 +54,13 @@ and this is the one that produces it. If it fails, nothing downstream is reachab
 
 The reader arrives skeptical, usually having been promised low-effort metadata before. They need
 to reach a real artifact in a couple of minutes, from a repo they did not prepare, without
-writing a config file. dockg's defaults are built for exactly this — the hermetic derive sources
-are all on, and a missing `dockg.config.yaml` is a supported state rather than an error — so the
+writing a config file. moose-kg's defaults are built for exactly this — the hermetic derive sources
+are all on, and a missing `moose.config.yaml` is a supported state rather than an error — so the
 journey's job is to not get in the way.
 
 ## What they need to reach, in order
 
-1. **An artifact, fast.** `dockg build` over an unprepared repo, and the reported document and
+1. **An artifact, fast.** `moose-kg build` over an unprepared repo, and the reported document and
    triple count.
 2. **An explanation of what they are looking at**, at the level of "this line came from your
    heading, this one from your frontmatter `title`, this one from a link in your prose." Not at

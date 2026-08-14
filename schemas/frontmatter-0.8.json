@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://dockg.dev/schemas/frontmatter-0.8.json",
-  "title": "dockg knowledge-graph frontmatter (0.8)",
-  "description": "SKOS concept fields plus PROV-O provenance plus iiRDS Core/Software typing under the top-level `kg` key, consumed by dockg build and fill. 0.8 lets kg.provenance carry per-field confidence and expands its fields enum to every fillable field (dockg fill proposes all fields, confidence-gated). Earlier 0.x forms remain accepted. Files without a `kg` key pass.",
+  "$id": "https://moose-tools.dev/kg/schemas/frontmatter-0.8.json",
+  "title": "moose-kg knowledge-graph frontmatter (0.8)",
+  "description": "SKOS concept fields plus PROV-O provenance plus iiRDS Core/Software typing under the top-level `kg` key, consumed by moose-kg build and fill. 0.8 lets kg.provenance carry per-field confidence and expands its fields enum to every fillable field (moose-kg fill proposes all fields, confidence-gated). Earlier 0.x forms remain accepted. Files without a `kg` key pass.",
   "type": "object",
   "properties": {
     "kg": {
@@ -88,7 +88,7 @@
           "type": "array",
           "items": { "type": "string", "minLength": 1 },
           "uniqueItems": true,
-          "description": "Product/variant labels this document explicitly does NOT apply to (dockg:notApplicableToVariant). Disjoint from appliesTo."
+          "description": "Product/variant labels this document explicitly does NOT apply to (moose-kg:notApplicableToVariant). Disjoint from appliesTo."
         },
         "notSoftwareSubject": {
           "type": "array",
@@ -96,12 +96,12 @@
             "enum": ["architecture", "interface", "system-requirement"]
           },
           "uniqueItems": true,
-          "description": "iiRDS Software-domain subjects this document is explicitly NOT about (dockg:notSoftwareSubject). Disjoint from softwareSubject."
+          "description": "iiRDS Software-domain subjects this document is explicitly NOT about (moose-kg:notSoftwareSubject). Disjoint from softwareSubject."
         },
         "sections": {
           "type": "object",
           "additionalProperties": { "$ref": "#/$defs/sectionMetadata" },
-          "description": "Per-section iiRDS typing, keyed by GitHub-style heading slug. A key matching no heading derives dockg:brokenSectionRef."
+          "description": "Per-section iiRDS typing, keyed by GitHub-style heading slug. A key matching no heading derives moose-kg:brokenSectionRef."
         },
         "revisionOf": {
           "type": "array",
@@ -125,7 +125,7 @@
             {
               "type": "array",
               "items": { "$ref": "#/$defs/provenanceEntry" },
-              "description": "One attribution entry per model (written by dockg fill)."
+              "description": "One attribution entry per model (written by moose-kg fill)."
             },
             { "$ref": "#/$defs/provenanceEntry" }
           ],
@@ -190,7 +190,7 @@
           "type": "array",
           "items": { "type": "string", "minLength": 1 },
           "uniqueItems": true,
-          "description": "Product/variant labels this section explicitly does NOT apply to (dockg:notApplicableToVariant)."
+          "description": "Product/variant labels this section explicitly does NOT apply to (moose-kg:notApplicableToVariant)."
         },
         "notSoftwareSubject": {
           "type": "array",
@@ -198,7 +198,7 @@
             "enum": ["architecture", "interface", "system-requirement"]
           },
           "uniqueItems": true,
-          "description": "iiRDS Software-domain subjects this section is explicitly NOT about (dockg:notSoftwareSubject)."
+          "description": "iiRDS Software-domain subjects this section is explicitly NOT about (moose-kg:notSoftwareSubject)."
         },
         "subjects": {
           "type": "array",
@@ -237,7 +237,7 @@
             ]
           },
           "uniqueItems": true,
-          "description": "Which kg fields this model proposed (written by dockg fill)."
+          "description": "Which kg fields this model proposed (written by moose-kg fill)."
         },
         "confidence": {
           "type": "object",

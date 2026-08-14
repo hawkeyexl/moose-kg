@@ -37,7 +37,7 @@ evidence_basis:
   - the PROV-O qualified attribution and association design in ADRs 01002, 01003, and 01004
   - the kg.provenance frontmatter block with per-field confidence (ADR 01015), which functions as a human review queue over machine output
   - ADR 01011's per-field coverage thresholds and the stats --check exit-1 gate
-  - the sh:disjoint contradiction checks between appliesTo and notApplicableTo in shapes/dockg-0.5.ttl
+  - the sh:disjoint contradiction checks between appliesTo and notApplicableTo in shapes/moose-kg-0.5.ttl
   - the determinism contract, which is what makes a generated report submittable rather than anecdotal
 ---
 
@@ -66,7 +66,7 @@ someone else pipes to them, and CI results — and they specify gates that
 **This changes how their pages must be written.** Every journey Renata has ends with someone
 else running something. Their success criteria are artifacts to receive, not commands to run,
 and their pages need to be handable to an engineer. A page that assumes this reader will run
-`dockg query` has misjudged them; a page that shows the resulting report and names the command
+`moose-kg query` has misjudged them; a page that shows the resulting report and names the command
 that produced it has not.
 
 ## Why determinism is their headline, not a footnote
@@ -82,7 +82,7 @@ persona should make it explicit.
 
 ## The provenance block is a review queue
 
-The most useful thing to tell Renata about `dockg fill` is not that it annotates a corpus. It is
+The most useful thing to tell Renata about `moose-kg fill` is not that it annotates a corpus. It is
 that everything it writes is recorded in `kg.provenance` with the model that proposed it and the
 confidence it had — and that **humans delete entries as they review them**. The block is the
 outstanding-review list. That reframing turns AI-assisted authoring from an audit liability into

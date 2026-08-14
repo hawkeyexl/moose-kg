@@ -8,40 +8,40 @@ personas:
 trigger: >-
   an auditor asks for authorship and derivation evidence, and today the answer is
   assembled by hand from git history and a meeting
-entry_point: /dockg/govern/provenance/
+entry_point: /moose-kg/govern/provenance/
 success_criteria: >-
   A single reproducible command produces attribution, timing, derivation, and
   machine-authorship evidence for any document, and the same command produces the same
   answer next quarter.
 steps:
   - stage: orient
-    doc: /dockg/govern/
+    doc: /moose-kg/govern/
     exists: true
     note: "Which obligation maps to which mechanism. Written to be handed to an engineer."
   - stage: orient
-    doc: /dockg/concepts/determinism/
+    doc: /moose-kg/concepts/determinism/
     exists: true
     note: "Why reproducibility is what makes this evidence rather than an anecdote."
   - stage: act
-    doc: /dockg/govern/provenance/
+    doc: /moose-kg/govern/provenance/
     exists: true
     note: "What is derived by default, what git adds, and the tri-state provenance.git setting."
   - stage: act
-    doc: /dockg/govern/provenance/
+    doc: /moose-kg/govern/provenance/
     exists: true
     note: "Qualified attribution and association: agents, roles, and why they are separate nodes."
   - stage: act
-    doc: /dockg/govern/provenance/
+    doc: /moose-kg/govern/provenance/
     exists: true
     note: "kg.provenance as the machine-authorship record and the human review queue."
   - stage: verify
-    doc: /dockg/govern/provenance/
+    doc: /moose-kg/govern/provenance/
     exists: true
     note: "Query one document's full provenance; show the report an auditor would receive."
   - stage: extend
-    doc: /dockg/reference/vocabulary/
+    doc: /moose-kg/reference/vocabulary/
     exists: true
-    note: "The PROV-O term set dockg emits, and what each assertion does and does not prove."
+    note: "The PROV-O term set moose-kg emits, and what each assertion does and does not prove."
 ---
 
 Renata answers the authorship question without a manual audit.
@@ -58,7 +58,7 @@ readers; showing only the command serves neither.
 
 1. **An obligation-to-mechanism map.** Renata thinks in requirements — *authorship must be
    attributable*, *machine-generated content must be identifiable* — and needs each one bound to
-   something dockg actually produces. This table is the page that gets forwarded.
+   something moose-kg actually produces. This table is the page that gets forwarded.
 2. **Why determinism makes this evidence.** For everyone else, byte-identical rebuilds keep diffs
    clean. Here it is the difference between a submittable report and an anecdote: a report that
    changes between runs over unchanged inputs cannot be used. This connection is not obvious from
@@ -79,7 +79,7 @@ readers; showing only the command serves neither.
 
 ## What the evidence does not prove
 
-Worth an explicit section, because overclaiming here is worse than underclaiming. dockg records
+Worth an explicit section, because overclaiming here is worse than underclaiming. moose-kg records
 what the files and git history assert. It does not verify that the named author wrote the text,
 and a `kg.provenance` entry that a human deleted without actually reviewing is indistinguishable
 from one that was reviewed properly. The mechanism supports an audit; it does not replace one.

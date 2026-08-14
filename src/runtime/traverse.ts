@@ -2,7 +2,7 @@
  * The deterministic walker (ADR 01018) — breadth-first traversal over a
  * `GraphIndex` with scope filtering, recording every hop and every exclusion
  * into a `QueryTrace`. This is the engine: generic RDF engines return bindings
- * without the path that produced them, and dockg's scope rules (ADR 01014)
+ * without the path that produced them, and moose-kg's scope rules (ADR 01014)
  * are domain semantics no general engine knows.
  *
  * Determinism: neighbors come back sorted from the index, the frontier is
@@ -12,16 +12,16 @@
  * Platform-neutral: no `node:` imports, no npm dependencies.
  */
 import { byCodeUnit } from "../core/sort.js";
-import { NS, RDF_TYPE } from "../core/vocab.js";
 import {
-  DOCKG_NOT_APPLICABLE_TO_VARIANT,
-  DOCKG_NOT_SOFTWARE_SUBJECT,
+  MOOSE_KG_NOT_APPLICABLE_TO_VARIANT,
+  MOOSE_KG_NOT_SOFTWARE_SUBJECT,
   IIRDS_HAS_SUBJECT,
   IIRDS_RELATES_TO_PRODUCT_VARIANT,
   SOFTWARE_SUBJECT_IRIS,
 } from "../core/iirds.js";
 import type { GraphIndex } from "./graph.js";
 import { createTrace, type QueryTrace, type ScopeExclusion } from "./trace.js";
+import { NS, RDF_TYPE } from "../core/vocab.js";
 
 const DCTERMS_TITLE = `${NS.dcterms}title`;
 const DCTERMS_REFERENCES = `${NS.dcterms}references`;
@@ -50,7 +50,7 @@ export interface TraverseOptions extends ScopeFilter {
    * Follow `rdf:type` edges into class nodes. Default false, deliberately:
    * class nodes are schema, not content, and every document shares them — so
    * traversing them makes every document reachable from every other in two
-   * hops (`a → dockg:Document → b`). That is exactly the edge contamination
+   * hops (`a → moose-kg:Document → b`). That is exactly the edge contamination
    * graph-governed retrieval exists to avoid.
    */
   includeTypeEdges?: boolean;
@@ -105,8 +105,8 @@ export function resolveSubject(
  *
  * Rules, in the spirit of ADR 01014 (absence of a positive claim is not a
  * negative claim, so both polarities are explicit):
- * - An explicit negative (`dockg:notApplicableToVariant` /
- *   `dockg:notSoftwareSubject`) naming the target **excludes** the node.
+ * - An explicit negative (`moose-kg:notApplicableToVariant` /
+ *   `moose-kg:notSoftwareSubject`) naming the target **excludes** the node.
  * - A node that declares a positive set which omits the target is **excluded**
  *   — it scoped itself elsewhere — recorded under the positive predicate so
  *   the trace distinguishes this from an explicit negative.
@@ -121,9 +121,9 @@ export function scopeExclusion(
     [
       scope.variantIri,
       IIRDS_RELATES_TO_PRODUCT_VARIANT,
-      DOCKG_NOT_APPLICABLE_TO_VARIANT,
+      MOOSE_KG_NOT_APPLICABLE_TO_VARIANT,
     ],
-    [scope.subjectIri, IIRDS_HAS_SUBJECT, DOCKG_NOT_SOFTWARE_SUBJECT],
+    [scope.subjectIri, IIRDS_HAS_SUBJECT, MOOSE_KG_NOT_SOFTWARE_SUBJECT],
   ];
   for (const [target, positive, negative] of checks) {
     if (!target) continue;

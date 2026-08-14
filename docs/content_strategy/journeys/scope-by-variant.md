@@ -7,36 +7,36 @@ personas:
 trigger: >-
   documentation covers several products or model lines, and "does this topic apply to
   variant X?" is currently answered by the absence of a tag — which is not an answer
-entry_point: /dockg/model/variants/
+entry_point: /moose-kg/model/variants/
 success_criteria: >-
   Topics carry a standard topic type and explicit applicability, a variant-scoped
   traversal returns the right set, and a topic that claims both applies and does-not-apply
   fails check.
 steps:
   - stage: orient
-    doc: /dockg/concepts/open-world/
+    doc: /moose-kg/concepts/open-world/
     exists: true
     note: "Absence means unknown, not excluded. The single most consequential page for this reader."
   - stage: act
-    doc: /dockg/model/variants/
+    doc: /moose-kg/model/variants/
     exists: true
     note: "topicType, appliesTo, softwareLifecyclePhase, softwareSubject — values and emitted IRIs."
   - stage: act
-    doc: /dockg/model/variants/
+    doc: /moose-kg/model/variants/
     exists: true
     note: "notApplicableTo and notSoftwareSubject: when the stronger claim is required."
   - stage: verify
-    doc: /dockg/model/variants/
+    doc: /moose-kg/model/variants/
     exists: true
     note: "traverse --variant to prove the scoped set is right, including what it excludes."
   - stage: verify
-    doc: /dockg/govern/
+    doc: /moose-kg/govern/
     exists: true
     note: "check catches an appliesTo/notApplicableTo contradiction via sh:disjoint."
   - stage: extend
-    doc: /dockg/reference/vocabulary/
+    doc: /moose-kg/reference/vocabulary/
     exists: true
-    note: "The full iiRDS Core and Software-domain term set dockg references, with IRIs."
+    note: "The full iiRDS Core and Software-domain term set moose-kg references, with IRIs."
 ---
 
 Ines makes applicability explicit, including the part that has to be said out loud.
@@ -57,13 +57,13 @@ will look right — the results are plausible, the count is reasonable, and noth
 
 This is why the journey's first step is a concepts page rather than a modeling page. A reader who
 starts writing `appliesTo` values without this framing will build a scoping scheme that fails
-exactly when it matters. The mitigation is dockg's negative predicates: when the stronger claim
+exactly when it matters. The mitigation is moose-kg's negative predicates: when the stronger claim
 is true, say it explicitly with `notApplicableTo`, and query the negative edge rather than
 inferring from silence.
 
 ## The recognition problem, which comes second
 
-Ines will judge the tool by whether its vocabularies are real. dockg's `topicType`,
+Ines will judge the tool by whether its vocabularies are real. moose-kg's `topicType`,
 `softwareLifecyclePhase`, and `softwareSubject` are closed sets bound to **published iiRDS
 IRIs** — referenced, never vendored or re-serialized. Showing the emitted IRI beside the
 frontmatter value is the credibility moment for this reader, and it is cheap to do.

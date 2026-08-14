@@ -28,7 +28,7 @@ function run(args: string[], cwd: string): { stdout: string; status: number } {
 
 /** Build the corpus and its search index into a fresh temp dir. */
 function buildIndexed(): { dir: string; graph: string; index: string } {
-  const dir = mkdtempSync(join(tmpdir(), "dockg-search-"));
+  const dir = mkdtempSync(join(tmpdir(), "moose-kg-search-"));
   const graph = join(dir, "graph.ttl");
   execFileSync(process.execPath, [cli, "build", "--out", graph], {
     encoding: "utf8",
@@ -50,7 +50,7 @@ function search(args: string[], cwd = corpus): SearchJson {
   return JSON.parse(run(args, cwd).stdout) as SearchJson;
 }
 
-describe("dockg export --format search (integration)", () => {
+describe("moose-kg export --format search (integration)", () => {
   it("matches the search golden byte-for-byte", () => {
     const { index } = buildIndexed();
     expect(readFileSync(index, "utf8")).toBe(readFileSync(golden, "utf8"));
@@ -85,7 +85,7 @@ describe("dockg export --format search (integration)", () => {
   });
 });
 
-describe("dockg search (integration)", () => {
+describe("moose-kg search (integration)", () => {
   it("ranks the configuration nodes first for a title query", () => {
     const { graph } = buildIndexed();
     const out = search(["search", "configuration", "-g", graph, "-f", "json"]);
@@ -155,11 +155,11 @@ describe("dockg search (integration)", () => {
     writeFileSync(wrong, JSON.stringify({ "@graph": [] }), "utf8");
     const shape = run(["search", "anything", "-g", graph, "-i", wrong], corpus);
     expect(shape.status).toBe(2);
-    expect(shape.stdout).toContain("Not a dockg search index");
+    expect(shape.stdout).toContain("Not a moose-kg search index");
   });
 
   it("exits 2 when the search index is missing", () => {
-    const dir = mkdtempSync(join(tmpdir(), "dockg-search-none-"));
+    const dir = mkdtempSync(join(tmpdir(), "moose-kg-search-none-"));
     const graph = join(dir, "graph.ttl");
     execFileSync(process.execPath, [cli, "build", "--out", graph], {
       encoding: "utf8",

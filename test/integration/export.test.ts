@@ -67,12 +67,15 @@ function run(args: string[], cwd: string): { stdout: string; status: number } {
 /** The tool version is stamped into the graph; normalize it so release
  *  version bumps don't invalidate the golden. */
 function normalizeVersion(jsonld: string): string {
-  return jsonld.replace(/"dockg:version": "[^"]+"/g, '"dockg:version": "X"');
+  return jsonld.replace(
+    /"moose-kg:version": "[^"]+"/g,
+    '"moose-kg:version": "X"',
+  );
 }
 
 /** Build the corpus into a fresh temp dir and return its graph path. */
 function buildGraph(): { dir: string; graph: string } {
-  const dir = mkdtempSync(join(tmpdir(), "dockg-export-"));
+  const dir = mkdtempSync(join(tmpdir(), "moose-kg-export-"));
   const graph = join(dir, "graph.ttl");
   execFileSync(process.execPath, [cli, "build", "--out", graph], {
     encoding: "utf8",
@@ -81,7 +84,7 @@ function buildGraph(): { dir: string; graph: string } {
   return { dir, graph };
 }
 
-describe("dockg export (integration)", () => {
+describe("moose-kg export (integration)", () => {
   it("matches the JSON-LD golden byte-for-byte (modulo tool version)", () => {
     const { dir, graph } = buildGraph();
     const out = join(dir, "graph.jsonld");
@@ -113,7 +116,7 @@ describe("dockg export (integration)", () => {
     );
     const doc = JSON.parse(readFileSync(out, "utf8"));
     expect(Array.isArray(doc["@graph"])).toBe(true);
-    expect(doc["@context"].dockg).toBe("https://dockg.dev/ns#");
+    expect(doc["@context"]["moose-kg"]).toBe("https://moose-tools.dev/kg/ns#");
     const ids = doc["@graph"].map((n: { "@id": string }) => n["@id"]);
     expect(new Set(ids).size).toBe(ids.length);
     expect(stdout).toContain(`${ids.length} node`);
@@ -177,10 +180,10 @@ describe("dockg export (integration)", () => {
 
   it("adds a Creator Party + vcard org when export.iirds.creator is set", () => {
     const { dir, graph } = buildGraph();
-    const cfg = join(dir, "dockg.config.yaml");
+    const cfg = join(dir, "moose.config.yaml");
     writeFileSync(
       cfg,
-      "version: 1\nbaseIri: https://example.com/kg/\nexport:\n  iirds:\n    creator: Acme Docs\n",
+      "kg:\n  version: 1\n  baseIri: https://example.com/kg/\n  export:\n    iirds:\n      creator: Acme Docs\n",
     );
     const out = join(dir, "pkg.iirds");
     run(["export", "-f", "iirds", "-g", graph, "-c", cfg, "-o", out], corpus);
@@ -197,10 +200,10 @@ describe("dockg export (integration)", () => {
 
   it("writes export.iirds.title as the package title in metadata.rdf", () => {
     const { dir, graph } = buildGraph();
-    const cfg = join(dir, "dockg.config.yaml");
+    const cfg = join(dir, "moose.config.yaml");
     writeFileSync(
       cfg,
-      "version: 1\nbaseIri: https://example.com/kg/\nexport:\n  iirds:\n    title: My Corpus\n",
+      "kg:\n  version: 1\n  baseIri: https://example.com/kg/\n  export:\n    iirds:\n      title: My Corpus\n",
     );
     const out = join(dir, "pkg.iirds");
     run(["export", "-f", "iirds", "-g", graph, "-c", cfg, "-o", out], corpus);
@@ -213,8 +216,8 @@ describe("dockg export (integration)", () => {
   it("exits 2 when a Document's source content file is missing", () => {
     const { graph } = buildGraph();
     // Run from a directory that lacks the corpus `docs/` sources: the graph's
-    // dockg:path entries resolve to files that do not exist here → exit 2.
-    const elsewhere = mkdtempSync(join(tmpdir(), "dockg-export-nosrc-"));
+    // moose-kg:path entries resolve to files that do not exist here → exit 2.
+    const elsewhere = mkdtempSync(join(tmpdir(), "moose-kg-export-nosrc-"));
     const { status, stdout } = run(
       ["export", "-f", "iirds", "-g", graph, "-o", join(elsewhere, "p.iirds")],
       elsewhere,
@@ -234,7 +237,7 @@ describe("dockg export (integration)", () => {
   });
 
   it("exits 2 when the graph is missing", () => {
-    const dir = mkdtempSync(join(tmpdir(), "dockg-export-"));
+    const dir = mkdtempSync(join(tmpdir(), "moose-kg-export-"));
     const { status, stdout } = run(
       ["export", "-f", "jsonld", "-g", join(dir, "nope.ttl")],
       dir,

@@ -8,16 +8,16 @@ decision-makers: [manuel.r.b.silva]
 
 ## Context and Problem Statement
 
-dockg's graph reaches consumers only as Turtle. Turtle is the canonical
+moose-kg's graph reaches consumers only as Turtle. Turtle is the canonical
 git-diff form (`src/core/emit.ts`), but the wider web — answer engines, search
-crawlers, JSON tooling — consumes RDF as **JSON-LD**. Because dockg already
+crawlers, JSON tooling — consumes RDF as **JSON-LD**. Because moose-kg already
 emits `schema.org` terms, a JSON-LD rendering of the same graph is directly
 usable by that audience with no lossy remapping. The roadmap's export arc
-(Phase 6) starts here: a `dockg export --format jsonld` command that
+(Phase 6) starts here: a `moose-kg export --format jsonld` command that
 reserializes the built graph as JSON-LD.
 
 The question is not _whether_ to emit JSON-LD but _how_ to keep it inside
-dockg's determinism contract: two exports over the same graph must be
+moose-kg's determinism contract: two exports over the same graph must be
 byte-identical, with no wall clock and no blank nodes, exactly as the Turtle
 emitter guarantees.
 
@@ -27,7 +27,7 @@ emitter guarantees.
   and regression-gated by a golden, like the Turtle output.
 - **Losslessness.** The endgame is a GraphRAG index; an export that silently
   drops triples would corrupt any round-trip. Every triple must survive.
-- **No new heavy dependencies.** dockg has no `jsonld` library and deliberately
+- **No new heavy dependencies.** moose-kg has no `jsonld` library and deliberately
   hand-rolls its Turtle emitter so formatting is controlled, not incidental
   library behavior.
 - **Stable flag surface.** The `--format` flag should name the formats the
@@ -50,7 +50,7 @@ emitter guarantees.
 
 Chosen: **option 1** — a hand-rolled `emitJsonLd(quads)` in
 `src/core/emit-jsonld.ts`, delivered through a standalone
-`dockg export --format jsonld` command (`src/commands/export.ts`) that reads the
+`moose-kg export --format jsonld` command (`src/commands/export.ts`) that reads the
 built graph the same way `stats` and `check` do.
 
 Output shape: `{ "@context": <PREFIXES table>, "@graph": [ …nodes ] }`. Nodes
@@ -59,15 +59,15 @@ other predicates use compacted CURIE keys (`compactIri`); IRI objects become
 `{ "@id": … }`, plain literals the bare string, typed literals
 `{ "@value": …, "@type": "xsd:…" }`. Single-valued predicates emit a scalar,
 multi-valued a sorted array — a cardinality-driven rule that is still fully
-deterministic. dockg emits no blank nodes and no language-tagged literals, so
+deterministic. moose-kg emits no blank nodes and no language-tagged literals, so
 neither needs handling.
 
 Determinism: `@graph` sorted by `@id`; within a node, predicate keys sorted and
 each value array sorted; `@type` sorted; objects built in sorted key order so
-`JSON.stringify` is byte-stable. The only variable is the `dockg:version`
+`JSON.stringify` is byte-stable. The only variable is the `moose-kg:version`
 literal, normalized in the golden exactly as for Turtle.
 
-`--format` recognizes `iirds` but returns a `DockgError` ("not yet supported
+`--format` recognizes `iirds` but returns a `MooseKgError` ("not yet supported
 (Phase 6b)") so the flag surface is stable while the iiRDS package serializer is
 built out separately.
 
@@ -87,7 +87,7 @@ built out separately.
 
 - Unit test over a hand-built quad set: `@type` folding, IRI/plain/typed
   literal rendering, `@context` presence, sorting, valid JSON.
-- Integration test: `dockg export --format jsonld` over the corpus matches a
+- Integration test: `moose-kg export --format jsonld` over the corpus matches a
   version-normalized golden `test/fixtures/golden/graph.jsonld`; double-export
   byte-identical; `@graph` node count equals the graph's distinct-subject count;
   `--format iirds` and a missing graph both exit 2.

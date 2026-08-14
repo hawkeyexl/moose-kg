@@ -1,10 +1,10 @@
 /**
- * Provider construction for `dockg fill`: map the config's `fill` section onto
+ * Provider construction for `moose-kg fill`: map the config's `fill` section onto
  * the shared inference library's `ProviderSpec`.
  *
  * The providers themselves, the response cache, the price table, and the
  * schema-validated retry all live in `@hawkeyexl/inference` (ADR 01021). What
- * stays here is the one thing only dockg can decide: which of its own config
+ * stays here is the one thing only moose-kg can decide: which of its own config
  * keys mean what.
  */
 import {
@@ -13,7 +13,7 @@ import {
   type InferenceProvider,
   type ProviderSpec,
 } from "@hawkeyexl/inference";
-import type { DockgConfig } from "../core/config.js";
+import type { MooseKgConfig } from "../core/config.js";
 
 export interface ProviderOptions {
   provider?: string;
@@ -22,7 +22,7 @@ export interface ProviderOptions {
 
 /** Translate `config.fill` (plus CLI overrides) into a library ProviderSpec. */
 export function providerSpecFor(
-  config: DockgConfig,
+  config: MooseKgConfig,
   options: ProviderOptions = {},
 ): ProviderSpec {
   const fill = config.fill;
@@ -46,14 +46,14 @@ export function providerSpecFor(
  * cache keys and pricing still need the identity.
  */
 export function resolveProviderIdentity(
-  config: DockgConfig,
+  config: MooseKgConfig,
   options: ProviderOptions = {},
 ): { provider: string; model: string } {
   return resolveIdentity(providerSpecFor(config, options));
 }
 
 export function makeProvider(
-  config: DockgConfig,
+  config: MooseKgConfig,
   options: ProviderOptions = {},
 ): InferenceProvider {
   return makeInferenceProvider(providerSpecFor(config, options));

@@ -8,33 +8,33 @@ personas:
 trigger: >-
   a downstream system — a triple store, a content delivery portal, a partner's ingest —
   needs the graph in a format that is not Turtle
-entry_point: /dockg/retrieve/export/
+entry_point: /moose-kg/retrieve/export/
 success_criteria: >-
   The exported artifact loads in the target system, is byte-identical across rebuilds, and
   the reader knows which parts of the graph each format carries and which it drops.
 steps:
   - stage: orient
-    doc: /dockg/retrieve/export/
+    doc: /moose-kg/retrieve/export/
     exists: true
     note: "Three formats, three consumers: jsonld, iirds, search. Pick by destination."
   - stage: act
-    doc: /dockg/retrieve/export/
+    doc: /moose-kg/retrieve/export/
     exists: true
     note: "Export to JSON-LD; note the -f flag here selects format, unlike everywhere else."
   - stage: act
-    doc: /dockg/retrieve/export/
+    doc: /moose-kg/retrieve/export/
     exists: true
     note: "Export an iiRDS package; the metadata.rdf and rendition structure inside the zip."
   - stage: verify
-    doc: /dockg/retrieve/export/
+    doc: /moose-kg/retrieve/export/
     exists: true
     note: "Rebuild and compare bytes; projection warnings go to stderr and do not fail the run."
   - stage: extend
-    doc: /dockg/reference/vocabulary/
+    doc: /moose-kg/reference/vocabulary/
     exists: true
     note: "Package-only terms that appear in an iiRDS export but never in the built graph."
   - stage: extend
-    doc: /dockg/reference/library-api/
+    doc: /moose-kg/reference/library-api/
     exists: true
     note: "For a consumer wiring export into a Node pipeline rather than shelling out to the CLI."
 ---
@@ -67,7 +67,7 @@ want the same thing.
 
 ## The iiRDS licensing note
 
-iiRDS is CC BY-ND. dockg only *references* published IRIs — it never vendors, re-serializes, or
+iiRDS is CC BY-ND. moose-kg only *references* published IRIs — it never vendors, re-serializes, or
 modifies the vocabulary, and the IRIs in the source are byte-verified against the consortium's
 published models.
 
@@ -84,5 +84,5 @@ difference and should find it explained rather than have to work it out.
 
 ## Where it goes next
 
-Back to [`cuj-serve-retrieval`](serve-retrieval.md) if the destination turns out to be dockg's own
+Back to [`cuj-serve-retrieval`](serve-retrieval.md) if the destination turns out to be moose-kg's own
 runtime after all, which is the common discovery for a reader who arrived wanting JSON-LD.

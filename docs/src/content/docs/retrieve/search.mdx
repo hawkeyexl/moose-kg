@@ -1,6 +1,6 @@
 ---
 title: Build the search artifacts
-description: Export a lexical index beside the graph, compute vectors locally with no API call, and understand the staleness rules that make dockg refuse a mismatched sidecar rather than rank with it.
+description: Export a lexical index beside the graph, compute vectors locally with no API call, and understand the staleness rules that make moose-kg refuse a mismatched sidecar rather than rank with it.
 ---
 
 import { Aside, CardGrid, LinkCard, Steps } from '@astrojs/starlight/components';
@@ -23,7 +23,7 @@ npm install @huggingface/transformers
 1. **Export the lexical index.**
 
    ```sh
-   dockg export --format search
+   moose-kg export --format search
    ```
 
    ```
@@ -36,7 +36,7 @@ npm install @huggingface/transformers
 2. **Compute vectors.**
 
    ```sh
-   dockg embed
+   moose-kg embed
    ```
 
    ```
@@ -47,19 +47,19 @@ npm install @huggingface/transformers
    For an offline or CI run with no model download, use deterministic hash vectors:
 
    ```sh
-   dockg embed --model mock
+   moose-kg embed --model mock
    ```
 
 3. **Query it.**
 
    ```sh
-   dockg search "configuration" --limit 3
+   moose-kg search "configuration" --limit 3
    ```
 
    ```
    0.0164  https://example.com/kg/concept/configuration [skos:Concept] — Configuration
-   0.0164  https://example.com/kg/doc/docs/getting-started.md#getting-started [dockg:Section] — Getting Started
-   0.0161  https://example.com/kg/doc/docs/configuration.md#advanced [dockg:Section] — Advanced
+   0.0164  https://example.com/kg/doc/docs/getting-started.md#getting-started [moose-kg:Section] — Getting Started
+   0.0161  https://example.com/kg/doc/docs/configuration.md#advanced [moose-kg:Section] — Advanced
 
    3 results (hybrid)
    ```
@@ -92,14 +92,14 @@ when you did.
 A vector sidecar built from a different corpus, model, dtype, or dimension count would still
 produce numbers. Those numbers would be meaningless, and the results would look normal.
 
-dockg refuses instead:
+moose-kg refuses instead:
 
 ```
-dockg: Vector index was built from a different search index — the corpus changed. Re-run `dockg embed`.
+moose-kg: Vector index was built from a different search index — the corpus changed. Re-run `moose-kg embed`.
 ```
 
 ```
-dockg: Not a dockg vector index: bad magic — is this the right file? — re-run `dockg embed`, or use `--mode lexical`.
+moose-kg: Not a moose-kg vector index: bad magic — is this the right file? — re-run `moose-kg embed`, or use `--mode lexical`.
 ```
 
 Exit `2` in both cases.
@@ -109,7 +109,7 @@ Exit `2` in both cases.
   three must be rebuilt in order:
 
   ```sh
-  dockg build && dockg export --format search && dockg embed
+  moose-kg build && moose-kg export --format search && moose-kg embed
   ```
 
   Skipping the last step gives you a refusal at query time rather than bad results, which is the
@@ -127,12 +127,12 @@ The graph and the search index are text and can reasonably be committed.
 <CardGrid>
   <LinkCard
     title="Query from the browser"
-    href="/dockg/retrieve/runtime/"
+    href="/moose-kg/retrieve/runtime/"
     description="Load these artifacts and apply a scope filter, with the trace."
   />
   <LinkCard
     title="Embedding models"
-    href="/dockg/reference/embed-models/"
+    href="/moose-kg/reference/embed-models/"
     description="The tested set, their context limits, and the truncation trap."
   />
 </CardGrid>

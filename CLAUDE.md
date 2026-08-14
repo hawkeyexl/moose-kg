@@ -1,6 +1,6 @@
 # Claude Code Configuration
 
-Repo-wide guidance for AI agents working on dockg. Conventions here are ported from
+Repo-wide guidance for AI agents working on moose-kg. Conventions here are ported from
 [doc-detective](https://github.com/doc-detective/doc-detective)'s repo guidance, adapted to this
 codebase.
 
@@ -13,7 +13,7 @@ git fetch origin
 git rebase origin/main
 ```
 
-**Install dependencies.** dockg consumes [docmeta](https://www.npmjs.com/package/docmeta)
+**Install dependencies.** moose-kg consumes [docmeta](https://www.npmjs.com/package/docmeta)
 from the npm registry (`^1.3.0`), so a clean checkout needs nothing but:
 
 ```bash
@@ -25,7 +25,7 @@ generated on Windows and omits the Linux-side optional dependencies of
 `@napi-rs/wasm-runtime` (rolldown's wasm binding), so a strict lock check cannot pass on
 both platforms. Regenerating the lock on Linux would just invert the problem.
 
-There is no sibling-checkout step: dockg depended on `file:../docmeta` while docmeta's
+There is no sibling-checkout step: moose-kg depended on `file:../docmeta` while docmeta's
 `extractFrontmatter` export was unreleased, and that dependency is gone — never
 reintroduce a `file:`/`link:` spec, since npm publishes them verbatim and
 `prepublishOnly` (scripts/check-publishable.mjs) now refuses to.
@@ -36,7 +36,7 @@ across the PR's commit range, so a bypassed hook becomes a failed PR.
 
 ## Persistent knowledge: repo instructions, not Claude memory (required)
 
-Do **not** use Claude Code's auto-memory for dockg knowledge. When you learn something durable — a
+Do **not** use Claude Code's auto-memory for moose-kg knowledge. When you learn something durable — a
 gotcha, a decision, a convention — record it **in the repo, in the same change**:
 
 | Kind of knowledge | Home |
@@ -50,31 +50,38 @@ gotcha, a decision, a convention — record it **in the repo, in the same change
 
 ## Invariants of this codebase (required reading)
 
-- **Determinism is the product contract.** `dockg build` twice over unchanged inputs must be
+- **Determinism is the product contract.** `moose-kg build` twice over unchanged inputs must be
   byte-identical: canonically sorted Turtle from the custom emitter (`src/core/emit.ts`), no wall
   clock anywhere (dates come from frontmatter first, then git committer times — never
   `Date.now()`), no blank nodes ever (every node gets a deterministic IRI), IRIs sanitized so
   output always parses. The corpus golden (`test/fixtures/golden/graph.ttl`) is the regression
   gate — update it only deliberately, after inspecting the diff line by line. Golden comparisons
-  normalize the `dockg:version` literal. The corpus fixture pins `provenance.git: false`
+  normalize the `moose-kg:version` literal. The corpus fixture pins `provenance.git: false`
   ([ADR 01010](adrs/01010-provenance-defaults-and-degradation.md)) so the golden captures
   derivation, not this repo's HEAD committer date; git-derived output is covered by the
   temp-repo tests instead.
-- **Naming:** the *frontmatter key* is `kg:`; the *RDF namespace prefix* is `dockg:`
-  (`https://dockg.dev/ns#`). Never conflate them. The custom namespace stays minimal — prefer
-  dcterms/skos/prov/schema.org/foaf terms wherever one exists.
-- **Schemas and shapes are self-hosted.** dockg's frontmatter JSON Schemas live in
+- **Naming:** `kg` names two different things and `moose-kg` a third. The *frontmatter key* is
+  `kg:`; the *config section* in the shared `moose.config.yaml` is also `kg:`; the *RDF namespace
+  prefix* is `moose-kg:` (`https://moose-tools.dev/kg/ns#`). Never conflate them. `moose-kg` is a
+  legal Turtle prefix but not a legal JS identifier, so `NS` in
+  [src/core/vocab.ts](src/core/vocab.ts) holds it as a quoted key with a `MOOSE_KG` alias — the key
+  stays the single source of truth for what gets emitted. The custom namespace stays minimal —
+  prefer dcterms/skos/prov/schema.org/foaf terms wherever one exists.
+- **Schemas and shapes are self-hosted.** moose-kg's frontmatter JSON Schemas live in
   [schemas/](schemas) and its SHACL shapes contract in [shapes/](shapes); both ship in the npm
-  package, and `dockg validate` / `dockg check` default to the bundled newest version by file
-  path. Never add dockg schemas to docmeta's built-in registry — that pattern was deliberately
+  package, and `moose-kg validate` / `moose-kg check` default to the bundled newest version by file
+  path. Never add moose-kg schemas to docmeta's built-in registry — that pattern was deliberately
   removed. Published schema and shapes files are immutable; evolve by adding a new version file.
+  (The `dockg` → `moose-kg` rename rewrote them in place instead — a one-time exception argued in
+  [ADR 01023](adrs/01023-rename-to-moose-kg-and-share-one-family-config.md) on the grounds that
+  nothing had ever been published. It is not a precedent.)
 - **Exit codes:** `0` ok · `1` findings (validation failures, `check` violations, `stats --check`
-  broken links, fill errors) · `2` operational error (`DockgError`). `cli.ts fail()` rethrows
-  non-DockgError. SHACL severities map onto this: `sh:Violation` → 1, `sh:Warning`/`sh:Info` →
+  broken links, fill errors) · `2` operational error (`MooseKgError`). `cli.ts fail()` rethrows
+  non-MooseKgError. SHACL severities map onto this: `sh:Violation` → 1, `sh:Warning`/`sh:Info` →
   reported but 0.
 - **The inference layer is [`@hawkeyexl/inference`](https://github.com/hawkeyexl/inference), not
   local code** (ADR 01021). Providers, the response cache, the price table, and the
-  schema-validated retry all live there. `src/llm/` keeps only what is dockg's own: the SKOS
+  schema-validated retry all live there. `src/llm/` keeps only what is moose-kg's own: the SKOS
   prompt and proposal schema (`prompt.ts`), the cache-key composition (`cache.ts`), and the
   config → `ProviderSpec` mapping (`provider.ts`). Never reimplement a provider here — three
   copies of this code drifted apart once already; a fix belongs upstream.
@@ -149,7 +156,7 @@ key, CLI flag, output shape) also needs:
 
 Behavior change → answer explicitly: does this add, change, or remove something a user can see,
 run, configure, or rely on? **If yes, the docs are part of the change's definition-of-done**: the
-affected page under [docs/src/content/docs/](docs/src/content/docs), the `dockg init` starter
+affected page under [docs/src/content/docs/](docs/src/content/docs), the `moose-kg init` starter
 template, and command `--help` text all land in the same commit. If no (pure refactor,
 internal-only), say so in the commit body. Rule of thumb: a change that warrants an ADR has docs
 impact.
@@ -180,8 +187,8 @@ point, and these are pointers into it, not a summary of it.
 
 Three gates run in CI and all of them block: `npm run docs:check-strategy` (anchor and coverage
 invariants), `npm run docs:check-cli` (reference/cli.mdx vs commander), and
-`npm run docs:check-links` (every `/dockg/…` target resolves). The docs workflow also builds a
-graph from the docs themselves and holds it to `dockg check` and `dockg stats --check`.
+`npm run docs:check-links` (every `/moose-kg/…` target resolves). The docs workflow also builds a
+graph from the docs themselves and holds it to `moose-kg check` and `moose-kg stats --check`.
 
 **Automated doc testing is deliberately absent.** Command output on a page is currently verified
 by whoever captures it, not by CI. Re-adding a runner is planned; until then, treat a changed
@@ -193,9 +200,9 @@ Behavior change → answer explicitly: does this change what the emitted graph c
 (new predicates, new node types, changed cardinalities)? **If yes, the SHACL shapes are part of
 the change's definition-of-done**: update [shapes/](shapes) (a new version file when the
 published contract must change — shipped shapes are immutable), keep the clean-corpus
-`dockg check` gate green (`test/integration/check.test.ts`), and note the shapes impact in the
+`moose-kg check` gate green (`test/integration/check.test.ts`), and note the shapes impact in the
 commit body. If no, say so in the commit body. The closed shapes (`sh:closed`) mean a new derive
-predicate **will** fail `dockg check` until the shapes learn it — that failure is the feature.
+predicate **will** fail `moose-kg check` until the shapes learn it — that failure is the feature.
 
 ## Commit messages (required)
 
@@ -236,7 +243,7 @@ Releases are fully automated by **semantic-release** ([.releaserc.json](.release
   published schemas. Keep `.prettierignore` covering them.
 - Don't disable an ESLint rule repo-wide to silence one call site; disable it inline, with the
   reason (see the post-Ajv boundary in [src/core/config.ts](src/core/config.ts)).
-- Don't write dockg knowledge to Claude auto-memory — put it in this repo.
+- Don't write moose-kg knowledge to Claude auto-memory — put it in this repo.
 
 ## Testing behavior
 
@@ -251,22 +258,29 @@ mkdir -p .tmp && npm test > .tmp/test-output.txt 2>&1
 
 ## Config keys ↔ CLI flags (required pattern)
 
-Every user-facing knob lives in `dockg.config.yaml`, schema-first. Knobs that vary
+Every user-facing knob lives under the `kg:` section of `moose.config.yaml`, schema-first.
+That file is **shared with the rest of the moose tools** ([ADR
+01023](adrs/01023-rename-to-moose-kg-and-share-one-family-config.md)): each tool reads its own
+top-level section, so the schema root is deliberately open and only the `kg:` subtree is closed.
+A file reached via `--config` with no `kg:` section is an error; a discovered one without it
+falls back to defaults. Knobs that vary
 per invocation (output paths, dry-run, cost caps, provider overrides) also get CLI
 flags that override the resolved config; corpus-defining settings (routes,
 provenance, derive sources) may be config-only. Command cores read the merged
 result, never raw argv. Adding a knob:
 
-1. **Schema first:** add the field to [src/core/config-schema.json](src/core/config-schema.json)
-   (`additionalProperties: false` everywhere — unknown keys must fail loudly).
-2. **Type + default:** extend `DockgConfig` and apply the code-side default in `parseConfig`
+1. **Schema first:** add the field under `$defs.kg.properties` in
+   [src/core/config-schema.json](src/core/config-schema.json) (`additionalProperties: false`
+   everywhere *inside* `kg` — unknown keys of ours must fail loudly; the root stays open for
+   sibling tools).
+2. **Type + default:** extend `MooseKgConfig` and apply the code-side default in `parseConfig`
    ([src/core/config.ts](src/core/config.ts)) so the resolved shape is total.
 3. **Commander option** in [src/cli.ts](src/cli.ts), thin `.action` delegating to the `runX` core.
 4. **Override in the command core:** `opts.x ?? config.section.x` inside `src/commands/*.ts`.
 5. **Red→green test per step:** config default + rejection test in `test/unit/config.test.ts`,
    behavior tests at the layer the knob affects.
 
-Precedence: `dockg.config.yaml` → Ajv validation → CLI override → runtime.
+Precedence: `moose.config.yaml` (`kg:` section) → Ajv validation → CLI override → runtime.
 
 ## Automated review
 
@@ -283,11 +297,11 @@ the repo's `CLAUDE_CODE_OAUTH_TOKEN` secret.
 
 - [.github/workflows/ci.yml](.github/workflows/ci.yml) — the full loop plus the determinism gate
 - [.github/workflows/docs.yml](.github/workflows/docs.yml) — strategy invariants, CLI drift, page
-  frontmatter, the graph gate over dockg's own docs, then the Pages deploy
+  frontmatter, the graph gate over moose-kg's own docs, then the Pages deploy
 - [scripts/](scripts) — `check-content-strategy.mjs`, `check-cli-reference.mjs`,
   `check-docs-links.mjs`, `check-publishable.mjs`
-- [dockg.docs.yaml](dockg.docs.yaml) — dockg pointed at its own documentation. Not named
-  `dockg.config.yaml` deliberately: that filename is discovered implicitly and would apply to
+- [moose.docs.yaml](moose.docs.yaml) — moose-kg pointed at its own documentation. Not named
+  `moose.config.yaml` deliberately: that filename is discovered implicitly and would apply to
   every bare invocation from the repo root, including the integration tests
 - [.releaserc.json](.releaserc.json) · [commitlint.config.cjs](commitlint.config.cjs)
 - [.husky/](.husky) — `commit-msg` (commitlint), `pre-commit` (lint-staged + typecheck),

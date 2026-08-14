@@ -15,18 +15,18 @@ first behavior change of the roadmap, and the naive flip does not work.
 Three obstacles, all confirmed against the code:
 
 - **`provenance.git` fails hard when git is unavailable.** `collectGitHistory`
-  throws `DockgError` (exit 2) when the cwd is not a git repo, has no commits,
+  throws `MooseKgError` (exit 2) when the cwd is not a git repo, has no commits,
   or git is not on PATH. Defaulting it on would turn every non-git corpus from
   a working build into an operational error — precisely the "on by default must
   not mean broken by default" case ADR 01009 forbids.
-- **There is no warning channel.** dockg command cores return report objects and
+- **There is no warning channel.** moose-kg command cores return report objects and
   `cli.ts` renders them; the only diagnostic path is `fail()`'s `console.error`
   for a thrown error. Degrading "with a warning" has nothing to warn through.
 - **Git provenance destabilizes the golden.** The build activity's
   `prov:endedAtTime` comes from the **HEAD committer date**. Building the
   regression corpus with git on emits
   `prov:endedAtTime "2026-07-22T14:40:31-07:00"^^xsd:dateTime`, which changes on
-  every commit to this repo. The golden normalizes only `dockg:version`, so the
+  every commit to this repo. The golden normalizes only `moose-kg:version`, so the
   corpus golden would fail on literally every commit.
 
 `provenance.qualified` has none of these problems: it derives from data already
@@ -40,7 +40,7 @@ in the graph and emits only stable nodes (`prov:Attribution`,
   gate that fails for reasons unrelated to derivation is worse than no gate.
 - Some users genuinely require git provenance (reproducible attribution in CI);
   silently continuing without it would be its own failure.
-- Config should be legible: a reader of `dockg.config.yaml` should be able to
+- Config should be legible: a reader of `moose.config.yaml` should be able to
   tell what will happen without knowing which values were defaulted.
 - Minimal new surface; warnings must stay testable without capturing console
   output.
@@ -91,10 +91,10 @@ repositories with `provenance.git: true`.
 
 - Good: the opinionated default arrives without breaking non-git corpora, and
   users who need enforcement have an explicit, documented way to ask for it.
-- Good: dockg gains a general diagnostic path it did not have; later phases
+- Good: moose-kg gains a general diagnostic path it did not have; later phases
   (coverage, iiRDS derivation, exports) can warn instead of failing or staying
   silent.
-- Good: `dockg build` in a git repo now emits richer provenance with no
+- Good: `moose-kg build` in a git repo now emits richer provenance with no
   configuration — the point of the policy.
 - Bad: the corpus golden no longer exercises the *default* value of
   `provenance.git`. Mitigated by a config unit test pinning the default and by

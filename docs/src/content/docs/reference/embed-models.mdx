@@ -1,11 +1,11 @@
 ---
 title: Embedding models
-description: The embedding models dockg has been tested against, their sizes, dimensions, and context limits — including the short-context model that truncates long sections without saying so.
+description: The embedding models moose-kg has been tested against, their sizes, dimensions, and context limits — including the short-context model that truncates long sections without saying so.
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 
-`embed.model` accepts any Hugging Face repo id. These four are the ones dockg has profiles for,
+`embed.model` accepts any Hugging Face repo id. These four are the ones moose-kg has profiles for,
 which means their quirks are applied automatically on both the build and query sides so you cannot
 get them wrong.
 
@@ -17,13 +17,14 @@ get them wrong.
 | `Xenova/all-MiniLM-L6-v2` | ~23 MB | 384 | 256 wordpieces | Smallest, and **truncates long sections**. See below. |
 
 Sizes are quoted only where `MODEL_PROFILES` records one; download size is the model host's to state,
-not dockg's, and a figure with no source here is a figure nothing can keep honest.
+not moose-kg's, and a figure with no source here is a figure nothing can keep honest.
 
-```yaml title="dockg.config.yaml"
-embed:
-  model: onnx-community/granite-embedding-small-english-r2-ONNX
-  dtype: q8
-  out: kg/vectors.bin
+```yaml title="moose.config.yaml"
+kg:
+  embed:
+    model: onnx-community/granite-embedding-small-english-r2-ONNX
+    dtype: q8
+    out: kg/vectors.bin
 ```
 
 <Aside type="caution" title="The truncation trap">
@@ -38,7 +39,7 @@ embed:
 ## `mock`
 
 ```sh
-dockg embed --model mock
+moose-kg embed --model mock
 ```
 
 Deterministic hash vectors. No download, no `@huggingface/transformers`, no network. Useful in CI
@@ -54,7 +55,7 @@ quality.
 less accurate.
 
 The dtype is recorded in the sidecar, and querying with a different one is
-[refused rather than ranked with](/dockg/retrieve/search/) — so changing it means rebuilding.
+[refused rather than ranked with](/moose-kg/retrieve/search/) — so changing it means rebuilding.
 
 ## The optional dependency
 
@@ -64,11 +65,11 @@ The dtype is recorded in the sidecar, and querying with a different one is
 npm install @huggingface/transformers
 ```
 
-Without it, `dockg embed` exits `2` with an install hint, and `dockg search` degrades to lexical —
+Without it, `moose-kg embed` exits `2` with an install hint, and `moose-kg search` degrades to lexical —
 unless `--mode vector` or `--mode hybrid` was requested explicitly, which errors instead.
 
-This split is why the package has a separate `dockg/embed` entry point: a consumer who only uses
-`dockg/runtime` never resolves the model stack, and bundlers can leave it alone.
+This split is why the package has a separate `moose-kg/embed` entry point: a consumer who only uses
+`moose-kg/runtime` never resolves the model stack, and bundlers can leave it alone.
 
 ## Everything runs locally
 

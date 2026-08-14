@@ -1,11 +1,11 @@
 ---
 title: Query and traverse the graph
-description: Ask the graph what it actually knows — match triple patterns with dockg query, walk edges with dockg traverse, and find out what depends on a page before you move it.
+description: Ask the graph what it actually knows — match triple patterns with moose-kg query, walk edges with moose-kg traverse, and find out what depends on a page before you move it.
 ---
 
 import { Aside, CardGrid, LinkCard, Steps } from '@astrojs/starlight/components';
 
-`dockg stats` answers aggregate questions. This page is for the specific ones — *what points at
+`moose-kg stats` answers aggregate questions. This page is for the specific ones — *what points at
 this page? what does changing it reach? did that concept land the way I wrote it?*
 
 Both commands are read-only and exit `0` even when nothing matches. They are for exploring, not
@@ -14,25 +14,25 @@ gating.
 ## Before you start
 
 A built graph. Every example below runs against
-[`test/fixtures/corpus/`](https://github.com/hawkeyexl/dockg/tree/main/test/fixtures/corpus), so
+[`test/fixtures/corpus/`](https://github.com/hawkeyexl/moose-kg/tree/main/test/fixtures/corpus), so
 your IRIs will differ — the shapes will not.
 
 ## Which command answers which question
 
 | Question | Command |
 |---|---|
-| Show me every X | `dockg query` — match a triple pattern, omit a term for a wildcard |
-| What is connected to this node | `dockg traverse` — walk edges from a starting point |
+| Show me every X | `moose-kg query` — match a triple pattern, omit a term for a wildcard |
+| What is connected to this node | `moose-kg traverse` — walk edges from a starting point |
 
 Readers reach for the wrong one first. `query` is a filter over the whole graph; `traverse` is a
 walk from somewhere.
 
-## `dockg query`
+## `moose-kg query`
 
 Give it a subject, predicate, object, or any combination. Whatever you omit is a wildcard.
 
 ```sh
-dockg query -p dcterms:title
+moose-kg query -p dcterms:title
 ```
 
 ```
@@ -47,7 +47,7 @@ dockg query -p dcterms:title
 Everything the graph asserts about one node:
 
 ```sh
-dockg query -s "https://example.com/kg/doc/docs/configuration.md"
+moose-kg query -s "https://example.com/kg/doc/docs/configuration.md"
 ```
 
 ```
@@ -61,27 +61,27 @@ dockg query -s "https://example.com/kg/doc/docs/configuration.md"
 Filter by type:
 
 ```sh
-dockg query -p rdf:type -o dockg:Section
+moose-kg query -p rdf:type -o moose-kg:Section
 ```
 
 <Aside type="tip" title="CURIEs, not full IRIs">
   `dcterms:title` rather than `http://purl.org/dc/terms/title`. The prefix table is fixed and
   emitted with every graph, so the short form is always safe. See the
-  [vocabulary reference](/dockg/reference/vocabulary/) for which predicate to ask for.
+  [vocabulary reference](/moose-kg/reference/vocabulary/) for which predicate to ask for.
 </Aside>
 
 Objects that are literals match verbatim:
 
 ```sh
-dockg query -p dcterms:title -o "Getting Started"
+moose-kg query -p dcterms:title -o "Getting Started"
 ```
 
-## `dockg traverse`
+## `moose-kg traverse`
 
 Walk from a node. Default depth is one hop.
 
 ```sh
-dockg traverse "https://example.com/kg/doc/docs/getting-started.md"
+moose-kg traverse "https://example.com/kg/doc/docs/getting-started.md"
 ```
 
 ```
@@ -101,7 +101,7 @@ https://example.com/kg/doc/docs/getting-started.md — Getting Started
 Follow inbound edges, narrowed to link edges:
 
 ```sh
-dockg traverse "https://example.com/kg/doc/docs/getting-started.md" \
+moose-kg traverse "https://example.com/kg/doc/docs/getting-started.md" \
   --reverse --predicates dcterms:references
 ```
 
@@ -118,7 +118,7 @@ exists, and it is the question `stats` cannot answer for one specific file.
 ### What does changing this reach?
 
 ```sh
-dockg traverse "https://example.com/kg/doc/docs/getting-started.md" --impact
+moose-kg traverse "https://example.com/kg/doc/docs/getting-started.md" --impact
 ```
 
 ```
@@ -138,7 +138,7 @@ dockg traverse "https://example.com/kg/doc/docs/getting-started.md" --impact
 ## Scope filters, and reading what they excluded
 
 ```sh
-dockg traverse "https://example.com/kg/product/sp-x300" \
+moose-kg traverse "https://example.com/kg/product/sp-x300" \
   --reverse --depth 2 --variant SP-X300
 ```
 
@@ -146,25 +146,25 @@ dockg traverse "https://example.com/kg/product/sp-x300" \
 https://example.com/kg/product/sp-x300 — SP-X300
 
 excluded by scope:
-  https://example.com/kg/doc/docs/configuration.md — dockg:notApplicableToVariant https://example.com/kg/product/sp-x300
+  https://example.com/kg/doc/docs/configuration.md — moose-kg:notApplicableToVariant https://example.com/kg/product/sp-x300
 
 1 node, 1 hop, 1 excluded
 ```
 
 **Read the exclusions line, not just the nodes.** A filter that returns plausible results while
 excluding nothing is indistinguishable from no filter at all — and that is the failure
-[open-world semantics](/dockg/concepts/open-world/) warns about, one layer up.
+[open-world semantics](/moose-kg/concepts/open-world/) warns about, one layer up.
 
 A variant that is not in the graph is an error rather than an empty result:
 
 ```
-dockg: Unknown product variant: SP-X999 — no iirds:ProductVariant matches that IRI, title, or slug.
+moose-kg: Unknown product variant: SP-X999 — no iirds:ProductVariant matches that IRI, title, or slug.
 ```
 
 Exit `2`. An unresolvable filter would otherwise return exactly what it was meant to exclude.
 
 <Aside type="note" title="`rdf:type` is not followed by default">
-  Every document shares `dockg:Document`, so walking type edges would make every document reachable
+  Every document shares `moose-kg:Document`, so walking type edges would make every document reachable
   from every other in two hops. If a traversal looks narrower than you expected, this is usually
   why — and it is deliberate.
 </Aside>
@@ -177,19 +177,19 @@ Exit `2`. An unresolvable filter would otherwise return exactly what it was mean
    spellings become one node.
 
    ```sh
-   dockg query -p skos:prefLabel
+   moose-kg query -p skos:prefLabel
    ```
 
 2. **Check a hierarchy is the shape you wrote.**
 
    ```sh
-   dockg query -p skos:broader
+   moose-kg query -p skos:broader
    ```
 
 3. **Check applicability landed**, including the negative side.
 
    ```sh
-   dockg query -p dockg:notApplicableToVariant
+   moose-kg query -p moose-kg:notApplicableToVariant
    ```
 
 </Steps>
@@ -199,11 +199,11 @@ Exit `2`. An unresolvable filter would otherwise return exactly what it was mean
 Both commands take `--format json` for stable, machine-readable output:
 
 ```sh
-dockg query -p dcterms:references --format json > references.json
+moose-kg query -p dcterms:references --format json > references.json
 ```
 
 For anything more involved than a pattern match, use the
-[library API](/dockg/reference/library-api/) — `runQuery` and `runTraverse` return structured
+[library API](/moose-kg/reference/library-api/) — `runQuery` and `runTraverse` return structured
 results, and `GraphIndex` gives you the index directly.
 
 ## What you have now
@@ -216,22 +216,22 @@ impact check to run before changing a page anything else depends on.
 <CardGrid>
   <LinkCard
     title="Map your site's routes"
-    href="/dockg/build/routes/"
+    href="/moose-kg/build/routes/"
     description="If the answer revealed that half your expected edges are missing."
   />
   <LinkCard
     title="Prove provenance"
-    href="/dockg/govern/provenance/"
+    href="/moose-kg/govern/provenance/"
     description="When the question is about authorship rather than structure."
   />
   <LinkCard
     title="CLI reference"
-    href="/dockg/reference/cli/"
+    href="/moose-kg/reference/cli/"
     description="Every flag on both commands."
   />
   <LinkCard
     title="Emitted vocabulary"
-    href="/dockg/reference/vocabulary/"
+    href="/moose-kg/reference/vocabulary/"
     description="Which predicate to ask for."
   />
 </CardGrid>

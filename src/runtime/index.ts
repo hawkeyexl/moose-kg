@@ -1,7 +1,7 @@
 /**
- * `dockg/runtime` — the browser-native GraphRAG runtime (ADR 01018).
+ * `moose-kg/runtime` — the browser-native GraphRAG runtime (ADR 01018).
  *
- * Retrieval over a built dockg graph, with no Node APIs and no dependencies:
+ * Retrieval over a built moose-kg graph, with no Node APIs and no dependencies:
  * load `graph.jsonld`, walk it with scope rules honored, resolve node text, and
  * assemble the bundle an inference engine consumes. Every result carries the
  * trace that produced it.
@@ -10,7 +10,7 @@
  * refusal? }` and stops; wiring a model is the host's job.
  *
  * ```js
- * import { GraphIndex, traverse, createFetchResolver, assemble } from "dockg/runtime";
+ * import { GraphIndex, traverse, createFetchResolver, assemble } from "moose-kg/runtime";
  *
  * const graph = GraphIndex.fromJsonLd(await (await fetch("/kg/graph.jsonld")).text());
  * const { nodes, trace } = traverse(graph, {

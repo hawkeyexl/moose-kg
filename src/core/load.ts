@@ -1,7 +1,7 @@
 /** Load a built .ttl into an in-memory N3 store for query/stats. */
 import { existsSync, readFileSync } from "node:fs";
 import { Parser, Store } from "n3";
-import { DockgError } from "../types.js";
+import { MooseKgError } from "../types.js";
 import type { Quad, Term } from "./derive.js";
 import { NS, PREFIXES } from "./vocab.js";
 
@@ -9,8 +9,8 @@ const XSD_STRING = `${NS.xsd}string`;
 
 export function loadGraph(ttlPath: string): Store {
   if (!existsSync(ttlPath)) {
-    throw new DockgError(
-      `Graph not found: ${ttlPath} — run \`dockg build\` first.`,
+    throw new MooseKgError(
+      `Graph not found: ${ttlPath} — run \`moose-kg build\` first.`,
     );
   }
   const parser = new Parser({ format: "text/turtle" });
@@ -18,7 +18,7 @@ export function loadGraph(ttlPath: string): Store {
   try {
     quads = parser.parse(readFileSync(ttlPath, "utf8"));
   } catch (e) {
-    throw new DockgError(
+    throw new MooseKgError(
       `Failed to parse ${ttlPath}: ${e instanceof Error ? e.message : "parse error"}`,
     );
   }
@@ -26,7 +26,7 @@ export function loadGraph(ttlPath: string): Store {
 }
 
 /**
- * Convert an in-memory N3 store back to dockg's internal quad shape — the
+ * Convert an in-memory N3 store back to moose-kg's internal quad shape — the
  * bridge from the Turtle-reading Node side to the platform-neutral emitters and
  * runtime. A redundant `xsd:string` datatype is dropped so the result matches
  * what the JSON-LD path produces.

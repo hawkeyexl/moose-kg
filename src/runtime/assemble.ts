@@ -2,10 +2,10 @@
  * Context assembly (ADR 01018) — the runtime's terminal stage.
  *
  * Turns traversed nodes into the bundle an inference engine consumes:
- * `{ context, citations, trace, refusal? }`. **dockg stops here**: it never
+ * `{ context, citations, trace, refusal? }`. **moose-kg stops here**: it never
  * calls a model. A different tool (an agent over MCP, a site backend) takes the
  * bundle onward, which keeps this runtime fully deterministic and keeps API
- * keys and inference cost outside dockg entirely.
+ * keys and inference cost outside moose-kg entirely.
  *
  * When nothing survives retrieval the result is a *structured refusal*, never
  * empty context — a caller must be able to tell "no route exists" apart from

@@ -1,11 +1,11 @@
 /**
- * `dockg embed` — compute vectors for the search index (ADR 01020).
+ * `moose-kg embed` — compute vectors for the search index (ADR 01020).
  *
  * Embeds the text already in `kg/search.json` rather than re-reading markdown:
  * vectors then cover exactly what the lexical index covers, with the Phase 8
  * granularity rule already applied, so both ranking legs score the same units.
  *
- * This is the one dockg command that needs a model. It is local — no API, no
+ * This is the one moose-kg command that needs a model. It is local — no API, no
  * key, no spend — but the weights are a download, so unlike every other
  * artifact `kg/vectors.bin` cannot be regenerated in CI.
  */
@@ -19,7 +19,7 @@ import {
   type SearchIndexDoc,
 } from "../core/search-index.js";
 import { encodeVectorIndex } from "../core/vector-index.js";
-import { DockgError } from "../types.js";
+import { MooseKgError } from "../types.js";
 import {
   createLocalEmbedder,
   EmbedderUnavailableError,
@@ -114,11 +114,11 @@ async function makeEmbedder(
     return await createLocalEmbedder({ model, dtype, role: "passage" });
   } catch (e) {
     if (e instanceof EmbedderUnavailableError) {
-      throw new DockgError(e.message);
+      throw new MooseKgError(e.message);
     }
     // Everything else the model stack can fail on — an unknown id, a 404 on the
     // hub, corrupt weights — is operational (exit 2), not a raw stack trace.
-    throw new DockgError(
+    throw new MooseKgError(
       `Failed to load embedding model ${model}: ${e instanceof Error ? e.message : String(e)}`,
     );
   }
@@ -133,8 +133,8 @@ export async function runEmbed(opts: EmbedOptions = {}): Promise<EmbedReport> {
     : join(dirname(graphPath), SEARCH_INDEX_FILENAME);
 
   if (!existsSync(indexPath)) {
-    throw new DockgError(
-      `Search index not found: ${indexPath} — run \`dockg export --format search\` first.`,
+    throw new MooseKgError(
+      `Search index not found: ${indexPath} — run \`moose-kg export --format search\` first.`,
     );
   }
   const raw = readFileSync(indexPath, "utf8");
@@ -142,14 +142,14 @@ export async function runEmbed(opts: EmbedOptions = {}): Promise<EmbedReport> {
   try {
     parsed = JSON.parse(raw);
   } catch (e) {
-    throw new DockgError(
-      `Failed to parse ${indexPath}: ${e instanceof Error ? e.message : "parse error"} — re-run \`dockg export --format search\`.`,
+    throw new MooseKgError(
+      `Failed to parse ${indexPath}: ${e instanceof Error ? e.message : "parse error"} — re-run \`moose-kg export --format search\`.`,
     );
   }
   const entries = (parsed as SearchIndexDoc | null)?.entries;
   if (!Array.isArray(entries)) {
-    throw new DockgError(
-      `Not a dockg search index: ${indexPath} — expected an \`entries\` array.`,
+    throw new MooseKgError(
+      `Not a moose-kg search index: ${indexPath} — expected an \`entries\` array.`,
     );
   }
 

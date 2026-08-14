@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://dockg.dev/schemas/doc-frontmatter-0.1.json",
-  "title": "dockg docs page frontmatter",
-  "description": "Every published page carries a title and a description. The description doubles as the LinkCard subtitle and the page meta description, so an empty one is a real defect rather than a style preference. Validated by dockg's own `validate` in .github/workflows/docs.yml, which gates the Pages deploy.",
+  "$id": "https://moose-tools.dev/kg/schemas/doc-frontmatter-0.1.json",
+  "title": "moose-kg docs page frontmatter",
+  "description": "Every published page carries a title and a description. The description doubles as the LinkCard subtitle and the page meta description, so an empty one is a real defect rather than a style preference. Validated by moose-kg's own `validate` in .github/workflows/docs.yml, which gates the Pages deploy.",
   "type": "object",
   "properties": {
     "title": {

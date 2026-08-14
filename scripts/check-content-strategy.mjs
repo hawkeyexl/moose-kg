@@ -23,9 +23,9 @@ const IA_FILE = `${STRATEGY_DIR}/information_architecture/proposed-ia.md`;
 /** Pages that exist for navigation and are deliberately named by no journey.
  *  Kept in sync with the "Pages that map to no CUJ" table in the gap analysis. */
 const NAVIGATION_ONLY = new Set([
-  "/dockg/concepts/",
-  "/dockg/reference/",
-  "/dockg/reference/glossary/",
+  "/moose-kg/concepts/",
+  "/moose-kg/reference/",
+  "/moose-kg/reference/glossary/",
 ]);
 
 /** Frontmatter fields whose values are ids and must therefore resolve. */
@@ -67,7 +67,7 @@ function readDoc(file) {
   }
 }
 
-/** Routes the content-set tables in proposed-ia.md plan, e.g. `/dockg/build/routes/`. */
+/** Routes the content-set tables in proposed-ia.md plan, e.g. `/moose-kg/build/routes/`. */
 function plannedRoutes() {
   const planned = new Set();
   let directory = null;
@@ -81,7 +81,7 @@ function plannedRoutes() {
     if (group) directory = group[1];
     const page = line.match(/^\| `([a-z0-9-]+)\.mdx` \|/);
     if (!page || directory === null) continue;
-    const base = directory ? `/dockg/${directory}/` : "/dockg/";
+    const base = directory ? `/moose-kg/${directory}/` : "/moose-kg/";
     planned.add(page[1] === "index" ? base : `${base}${page[1]}/`);
   }
   return planned;
@@ -91,13 +91,13 @@ function plannedRoutes() {
 function routeResolves(route) {
   const stem = join(
     CONTENT_ROOT,
-    route.replace(/^\/dockg\//, "").replace(/\/$/, ""),
+    route.replace(/^\/moose-kg\//, "").replace(/\/$/, ""),
   );
   return existsSync(`${stem}.mdx`) || existsSync(`${stem}/index.mdx`);
 }
 
 if (!existsSync(STRATEGY_DIR)) {
-  console.error(`dockg: ${STRATEGY_DIR} not found`);
+  console.error(`moose-kg: ${STRATEGY_DIR} not found`);
   process.exit(2);
 }
 
@@ -141,7 +141,7 @@ const cujs = byType("cuj");
 // true — fail loudly instead.
 if (!personas.length || !cujs.length) {
   console.error(
-    `dockg: found ${personas.length} personas and ${cujs.length} CUJs in ${STRATEGY_DIR} — ` +
+    `moose-kg: found ${personas.length} personas and ${cujs.length} CUJs in ${STRATEGY_DIR} — ` +
       "nothing to verify",
   );
   process.exit(2);

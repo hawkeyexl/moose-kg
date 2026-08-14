@@ -1,5 +1,5 @@
 /**
- * `dockg stats` — graph health summary: node/edge counts, orphan docs
+ * `moose-kg stats` — graph health summary: node/edge counts, orphan docs
  * (no incoming or outgoing references), broken internal links, the
  * most-connected docs, and metadata coverage. `--check` exits 1 when broken
  * links exist or a coverage threshold is unmet.
@@ -8,8 +8,8 @@ import { resolve } from "node:path";
 import { DataFactory, type Store } from "n3";
 import { loadConfig } from "../core/config.js";
 import { compactIri, loadGraph } from "../core/load.js";
-import { NS, RDF_TYPE } from "../core/vocab.js";
 import { COVERAGE_FIELDS } from "../core/coverage.js";
+import { MOOSE_KG, NS, RDF_TYPE } from "../core/vocab.js";
 
 const { namedNode } = DataFactory;
 
@@ -44,10 +44,10 @@ export interface StatsReport {
   sections: number;
   concepts: number;
   references: number;
-  /** dockg:path of docs with no in/out dcterms:references. */
+  /** moose-kg:path of docs with no in/out dcterms:references. */
   orphans: string[];
   brokenLinks: Array<{ doc: string; target: string }>;
-  /** kg.sections keys that matched no heading (dockg:brokenSectionRef). */
+  /** kg.sections keys that matched no heading (moose-kg:brokenSectionRef). */
   brokenSectionRefs: Array<{ doc: string; slug: string }>;
   mostConnected: Array<{ doc: string; degree: number }>;
   /** Per-field metadata coverage, in report order. */
@@ -81,13 +81,13 @@ export function runStats(opts: StatsOptions = {}): StatsReport {
   const store = loadGraph(resolve(cwd, opts.graph ?? config.out));
   const top = opts.top ?? 5;
 
-  const docIris = subjectsOfType(store, `${NS.dockg}Document`);
+  const docIris = subjectsOfType(store, `${MOOSE_KG}Document`);
   const docSet = new Set(docIris);
   // One indexed scan for all paths instead of a per-doc lookup.
   const pathOf = new Map<string, string>(docIris.map((d) => [d, d]));
   for (const quad of store.getQuads(
     null,
-    namedNode(`${NS.dockg}path`),
+    namedNode(`${MOOSE_KG}path`),
     null,
     null,
   )) {
@@ -115,7 +115,7 @@ export function runStats(opts: StatsOptions = {}): StatsReport {
     .sort();
 
   const brokenLinks = store
-    .getQuads(null, namedNode(`${NS.dockg}brokenLink`), null, null)
+    .getQuads(null, namedNode(`${MOOSE_KG}brokenLink`), null, null)
     .map((q) => ({
       doc: pathOf.get(q.subject.value) ?? q.subject.value,
       target: q.object.value,
@@ -123,7 +123,7 @@ export function runStats(opts: StatsOptions = {}): StatsReport {
     .sort((a, b) => (a.doc + a.target < b.doc + b.target ? -1 : 1));
 
   const brokenSectionRefs = store
-    .getQuads(null, namedNode(`${NS.dockg}brokenSectionRef`), null, null)
+    .getQuads(null, namedNode(`${MOOSE_KG}brokenSectionRef`), null, null)
     .map((q) => ({
       doc: pathOf.get(q.subject.value) ?? q.subject.value,
       slug: q.object.value,
@@ -184,7 +184,7 @@ export function runStats(opts: StatsOptions = {}): StatsReport {
     sections: store.countQuads(
       null,
       namedNode(RDF_TYPE),
-      namedNode(`${NS.dockg}Section`),
+      namedNode(`${MOOSE_KG}Section`),
       null,
     ),
     concepts: store.countQuads(

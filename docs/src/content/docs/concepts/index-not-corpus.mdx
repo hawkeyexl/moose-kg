@@ -1,27 +1,27 @@
 ---
 title: An index, not a corpus
-description: Your prose never enters the graph, and that is the design rather than a limitation — dockg indexes documentation so you can route, filter, audit, and attribute, then read the files themselves.
+description: Your prose never enters the graph, and that is the design rather than a limitation — moose-kg indexes documentation so you can route, filter, audit, and attribute, then read the files themselves.
 ---
 
 import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
 You built a graph, opened it, and could not find a single sentence you wrote. Nothing is broken.
-dockg stores metadata about your documentation and never the documentation itself.
+moose-kg stores metadata about your documentation and never the documentation itself.
 
 This is the decision the rest of the tool follows from, so it is worth the few minutes.
 
 ## What is in there instead
 
-Every document becomes a node with a `dockg:path` pointing at the file. Every heading becomes a
+Every document becomes a node with a `moose-kg:path` pointing at the file. Every heading becomes a
 section node whose IRI is the document's IRI plus the heading's slug — which means it addresses
 an exact span on disk:
 
 ```turtle
 <https://example.com/kg/doc/docs/configuration.md#inputs>
-    a dockg:Section ;
+    a moose-kg:Section ;
     dcterms:title "Inputs" ;
-    dockg:level 2 ;
-    dockg:order 1 .
+    moose-kg:level 2 ;
+    moose-kg:order 1 .
 ```
 
 The text under that heading is not here. The address of it is.
@@ -42,7 +42,7 @@ close enough to slip through.
   embedding space, so a ranker cannot reliably separate them — the wrong chunk genuinely is
   similar. A typed edge separates them every time, with no ranking involved.
 
-  dockg is not a replacement for that ranker. It is the boundary you put in front of it.
+  moose-kg is not a replacement for that ranker. It is the boundary you put in front of it.
 </Aside>
 
 ## What this design buys
@@ -69,7 +69,7 @@ its frontmatter says so, then a variant-scoped query will not know. The sentence
 The gap is silent, and it is silent in the dangerous direction — you get a plausible answer
 rather than an error.
 
-The mitigation is measurement rather than vigilance: `dockg stats` reports metadata coverage per
+The mitigation is measurement rather than vigilance: `moose-kg stats` reports metadata coverage per
 field, which turns "how much of what we know is actually machine-readable?" into a number you can
 watch and gate on.
 
@@ -83,7 +83,7 @@ Coverage:
 <Aside type="caution" title="This is the failure mode to design against">
   Every other page on this site assumes you have internalized this one. A missing edge is not an
   error; it is a quieter, worse thing. Coverage thresholds and
-  [open-world semantics](/dockg/concepts/open-world/) exist precisely to make the silence
+  [open-world semantics](/moose-kg/concepts/open-world/) exist precisely to make the silence
   audible.
 </Aside>
 
@@ -92,12 +92,12 @@ Coverage:
 <CardGrid>
   <LinkCard
     title="Open-world semantics"
-    href="/dockg/concepts/open-world/"
-    description="The other half of this idea: what dockg assumes when a value is absent."
+    href="/moose-kg/concepts/open-world/"
+    description="The other half of this idea: what moose-kg assumes when a value is absent."
   />
   <LinkCard
     title="Granularity"
-    href="/dockg/concepts/granularity/"
+    href="/moose-kg/concepts/granularity/"
     description="If a node indexes more text than it describes, it is lying about part of it."
   />
 </CardGrid>

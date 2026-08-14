@@ -47,7 +47,7 @@ jobs:
       - run: npm test
 
       # Determinism gate: byte-identical output is the product contract.
-      # (Golden comparison normalizes the dockg:version literal so release
+      # (Golden comparison normalizes the moose-kg:version literal so release
       # version bumps don't invalidate it.)
       - name: Determinism gate
         working-directory: test/fixtures/corpus
@@ -55,6 +55,6 @@ jobs:
           node ../../../dist/cli.js build --out /tmp/gate-a.ttl
           node ../../../dist/cli.js build --out /tmp/gate-b.ttl
           cmp /tmp/gate-a.ttl /tmp/gate-b.ttl
-          sed 's/dockg:version "[^"]*"/dockg:version "X"/' /tmp/gate-a.ttl > /tmp/gate-a-norm.ttl
-          sed 's/dockg:version "[^"]*"/dockg:version "X"/' ../golden/graph.ttl > /tmp/golden-norm.ttl
+          sed 's/moose-kg:version "[^"]*"/moose-kg:version "X"/' /tmp/gate-a.ttl > /tmp/gate-a-norm.ttl
+          sed 's/moose-kg:version "[^"]*"/moose-kg:version "X"/' ../golden/graph.ttl > /tmp/golden-norm.ttl
           cmp /tmp/gate-a-norm.ttl /tmp/golden-norm.ttl

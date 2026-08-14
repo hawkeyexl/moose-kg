@@ -3,20 +3,20 @@ type: information-architecture
 status: proposal
 scope: docs/src/content/docs/
 generator: Astro + Starlight
-base_path: /dockg
+base_path: /moose-kg
 groups: 9
 pages_total: 36
 pages_phase_1: 15
 pages_written: 36
 ---
 
-The proposed structure of dockg's published documentation set. **A proposal only** — it
+The proposed structure of moose-kg's published documentation set. **A proposal only** — it
 describes what should exist; it does not build it.
 
 ## Scope
 
 This IA covers exactly one subtree: **`docs/src/content/docs/`**, the Starlight content
-collection published to `https://hawkeyexl.github.io/dockg`. It does not cover `adrs/`,
+collection published to `https://hawkeyexl.github.io/moose-kg`. It does not cover `adrs/`,
 `DESIGN.md`, `CLAUDE.md`, or `README.md`, except to say what moves out of the README and where
 it lands.
 
@@ -74,7 +74,7 @@ journey hub — no hand-maintained page lists in `astro.config.mjs`.
 **"Understand the model" (`concepts/`) is cross-cutting**, and that is a deliberate exception to
 CUJ-first structure rather than an oversight.
 
-It exists because dockg's single most load-bearing idea — *the graph is an index and governance
+It exists because moose-kg's single most load-bearing idea — *the graph is an index and governance
 layer, not a retrieval corpus; prose never enters it* — is also its most counter-intuitive, and
 every persona's first journey stalls without it. The question "why aren't my sentences in here?"
 arrives within about thirty seconds of opening the Turtle output, and an unanswered version of it
@@ -124,7 +124,7 @@ none is flagged in [`ia-gap-analysis.md`](ia-gap-analysis.md).
 
 | Page | CUJ | ★ | Notes |
 |---|---|:--:|---|
-| `index.mdx` | — *(hub)* | | What dockg models and what it does not. A mapping, not a SKOS tutorial. |
+| `index.mdx` | — *(hub)* | | What moose-kg models and what it does not. A mapping, not a SKOS tutorial. |
 | `concepts-skos.mdx` | `cuj-model-concepts` | | `prefLabel` and its four dependents; how concept IRIs converge; why two spellings is a warning, not a violation. |
 | `variants.mdx` | `cuj-scope-by-variant` | | The four iiRDS typing keys with their published IRIs shown; negative scope; the disjointness check. |
 | `sections.mdx` | `cuj-section-granularity` | | The slug-keyed map; **nothing is inherited**; `brokenSectionRef` as the reason it is safe to rely on. |
@@ -163,9 +163,9 @@ none is flagged in [`ia-gap-analysis.md`](ia-gap-analysis.md).
 | `configuration.mdx` | all | ★ | Every config key with type and default. Note the `inputs` default differs from the `init` template. |
 | `frontmatter.mdx` | `cuj-model-concepts` | ★ | The `kg:` block, plus the page-level aliases that are accepted but unvalidated. |
 | `output-and-exit-codes.mdx` | `cuj-gate-metadata-in-ci` | ★ | The 0/1/2 contract and its counter-intuitive cases. Two different `-f` flags. |
-| `vocabulary.mdx` | `cuj-scope-by-variant` | | Namespace table, the minimal `dockg:` namespace, every standard term emitted, package-only terms. |
+| `vocabulary.mdx` | `cuj-scope-by-variant` | | Namespace table, the minimal `moose-kg:` namespace, every standard term emitted, package-only terms. |
 | `shapes.mdx` | `cuj-model-concepts` | | Every rule `check` enforces, its severity, and what error it protects against. |
-| `runtime-api.mdx` | `cuj-serve-retrieval` | | Exact exports and signatures for `dockg/runtime`. |
+| `runtime-api.mdx` | `cuj-serve-retrieval` | | Exact exports and signatures for `moose-kg/runtime`. |
 | `library-api.mdx` | `cuj-export-to-consumer` | | The Node package entry: every command as a function, plus IRI minting, derivation, and the emitters. |
 | `embed-models.mdx` | `cuj-serve-retrieval` | | Tested models, sizes, context limits, the short-context truncation trap. |
 | `glossary.mdx` | — *(support)* | | Term definitions as H2s. Supports navigation; drives none. |
@@ -181,7 +181,7 @@ is part of the change's definition of done.
 | `reference/configuration.mdx` | `src/core/config-schema.json`, `src/core/config.ts` |
 | `reference/frontmatter.mdx` | `schemas/frontmatter-0.8.json`, `src/core/derive.ts` |
 | `reference/vocabulary.mdx` | `src/core/vocab.ts`, `src/core/iirds.ts` |
-| `reference/shapes.mdx` | `shapes/dockg-0.5.ttl` |
+| `reference/shapes.mdx` | `shapes/moose-kg-0.5.ttl` |
 | `reference/output-and-exit-codes.mdx` | `src/cli.ts` `fail()`, each `src/commands/*.ts` core |
 | `reference/runtime-api.mdx` | `src/runtime.ts` exports, `package.json` `exports` |
 | `reference/library-api.mdx` | `src/index.ts` exports |

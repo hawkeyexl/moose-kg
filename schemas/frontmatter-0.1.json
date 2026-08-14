@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://dockg.dev/schemas/frontmatter-0.1.json",
-  "title": "dockg knowledge-graph frontmatter (0.1)",
-  "description": "SKOS concept fields under the top-level `kg` key, consumed by dockg build and fill. Files without a `kg` key pass. Superseded by 0.2, which adds provenance fields.",
+  "$id": "https://moose-tools.dev/kg/schemas/frontmatter-0.1.json",
+  "title": "moose-kg knowledge-graph frontmatter (0.1)",
+  "description": "SKOS concept fields under the top-level `kg` key, consumed by moose-kg build and fill. Files without a `kg` key pass. Superseded by 0.2, which adds provenance fields.",
   "type": "object",
   "properties": {
     "kg": {

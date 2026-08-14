@@ -1,13 +1,13 @@
 /**
  * Lexical entry (ADR 01019) — text query → ranked seed nodes.
  *
- * Loads the `search.json` artifact (produced by `dockg export --format search`)
+ * Loads the `search.json` artifact (produced by `moose-kg export --format search`)
  * and scores it with MiniSearch. The artifact carries body text, which the graph
  * deliberately does not (ADR 01008), so a query can match what a document *says*
  * and not merely what it is titled.
  *
  * MiniSearch is this runtime's one production dependency; the bundle-purity gate
- * allow-lists exactly it. Two guards keep ranking a dockg contract rather than a
+ * allow-lists exactly it. Two guards keep ranking a moose-kg contract rather than a
  * library's: ties are broken by IRI here (MiniSearch does not define tie order),
  * and the on-disk artifact format is ours, so upgrading MiniSearch can never
  * change a committed artifact.

@@ -10,13 +10,13 @@ A safety caution scoped to the wrong variant is not a metadata problem.
 
 ## Read this first
 
-[Open-world semantics](/dockg/concepts/open-world/). Absence of `appliesTo` means **unknown**, not
+[Open-world semantics](/moose-kg/concepts/open-world/). Absence of `appliesTo` means **unknown**, not
 "does not apply", and a scoping scheme built without taking that seriously fails silently in the
 dangerous direction. It is not recoverable by better tagging afterwards.
 
 ## The four typing keys
 
-Closed vocabularies bound to IRIs published by the iiRDS consortium. dockg references them; it
+Closed vocabularies bound to IRIs published by the iiRDS consortium. moose-kg references them; it
 never vendors, re-serializes, or modifies the vocabulary.
 
 | Key | Value | Emitted IRI |
@@ -36,8 +36,8 @@ never vendors, re-serializes, or modifies the vocabulary.
 `iirds:relates-to-product-variant`.
 
 <Aside type="note" title="iiRDS is CC BY-ND, and that shapes the implementation">
-  dockg only references published IRIs — the ones in the source are byte-verified against the
-  consortium's published models. Nothing is copied into dockg's namespace, so no redistribution
+  moose-kg only references published IRIs — the ones in the source are byte-verified against the
+  consortium's published models. Nothing is copied into moose-kg's namespace, so no redistribution
   obligation reaches your users. Worth having quotable if a standards or legal reviewer asks.
 </Aside>
 
@@ -55,8 +55,8 @@ kg:
 ---
 ```
 
-`notApplicableTo` emits `dockg:notApplicableToVariant`; `notSoftwareSubject` does the same for
-subjects. These are the only predicates dockg mints in its own namespace for scoping, and they
+`notApplicableTo` emits `moose-kg:notApplicableToVariant`; `notSoftwareSubject` does the same for
+subjects. These are the only predicates moose-kg mints in its own namespace for scoping, and they
 exist because the standard has no way to state the negative.
 
 **Use them where the exclusion is a reviewed fact** — safety, regulatory, and interlock content
@@ -70,7 +70,7 @@ reviewed assertion from a bulk one, and you will be asserting things nobody chec
 1. **Traverse with a variant filter.**
 
    ```sh
-   dockg traverse "https://docs.example.com/kg/doc/docs/maintenance.md" --variant SP-X100 --depth 2
+   moose-kg traverse "https://docs.example.com/kg/doc/docs/maintenance.md" --variant SP-X100 --depth 2
    ```
 
    The variant can be given as an IRI, a `dcterms:title`, or a slug.
@@ -84,15 +84,15 @@ reviewed assertion from a bulk one, and you will be asserting things nobody chec
 3. **Confirm a bad filter fails rather than returning nothing.**
 
    ```sh
-   dockg traverse "https://docs.example.com/kg/doc/docs/maintenance.md" --variant SP-X999
+   moose-kg traverse "https://docs.example.com/kg/doc/docs/maintenance.md" --variant SP-X999
    ```
 
    ```
-   dockg: Unknown product variant: SP-X999
+   moose-kg: Unknown product variant: SP-X999
    ```
 
    Exit `2`. An unresolvable filter would otherwise return exactly what it was meant to exclude,
-   so dockg refuses instead of guessing.
+   so moose-kg refuses instead of guessing.
 
 </Steps>
 
@@ -102,7 +102,7 @@ Asserting the same variant on both `appliesTo` and `notApplicableTo` is caught b
 disjointness, as a **violation** — exit `1`.
 
 ```
-violation: … dockg:notApplicableToVariant — appliesTo and notApplicableTo share a value
+violation: … moose-kg:notApplicableToVariant — appliesTo and notApplicableTo share a value
 ```
 
 This is the defect a human reviewer does not catch and an auditor does.
@@ -111,19 +111,19 @@ This is the defect a human reviewer does not catch and an auditor does.
 
 If a page covers three variants, no document-level `appliesTo` is true for all of it. Push the
 metadata down to the heading that owns the text — see
-[section-level metadata](/dockg/model/sections/).
+[section-level metadata](/moose-kg/model/sections/).
 
 ## Where to go next
 
 <CardGrid>
   <LinkCard
     title="Section-level metadata"
-    href="/dockg/model/sections/"
+    href="/moose-kg/model/sections/"
     description="When one document covers more than one variant."
   />
   <LinkCard
     title="Prove coverage"
-    href="/dockg/govern/coverage/"
+    href="/moose-kg/govern/coverage/"
     description="Turn how much of the corpus is actually scoped into a gated number."
   />
 </CardGrid>

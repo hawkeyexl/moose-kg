@@ -25,19 +25,19 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { compactIri } from "./load.js";
 import { byCodeUnit } from "./sort.js";
-import { NS } from "./vocab.js";
 import type { GraphIndex } from "../runtime/graph.js";
 import {
   documentPreamble,
   sectionOccurrences,
   sectionOwnText,
 } from "../runtime/resolve.js";
+import { MOOSE_KG, NS } from "./vocab.js";
 
-const DOCKG_DOCUMENT = `${NS.dockg}Document`;
-const DOCKG_SECTION = `${NS.dockg}Section`;
+const MOOSE_KG_DOCUMENT = `${MOOSE_KG}Document`;
+const MOOSE_KG_SECTION = `${MOOSE_KG}Section`;
 const SKOS_CONCEPT = `${NS.skos}Concept`;
-const DOCKG_PATH = `${NS.dockg}path`;
-const DOCKG_LEVEL = `${NS.dockg}level`;
+const MOOSE_KG_PATH = `${MOOSE_KG}path`;
+const MOOSE_KG_LEVEL = `${MOOSE_KG}level`;
 const DCTERMS_TITLE = `${NS.dcterms}title`;
 const DCTERMS_DESCRIPTION = `${NS.dcterms}description`;
 const SKOS_PREF_LABEL = `${NS.skos}prefLabel`;
@@ -47,7 +47,7 @@ const SKOS_ALT_LABEL = `${NS.skos}altLabel`;
 export interface SearchEntry {
   /** Node IRI. */
   id: string;
-  /** Compacted class IRI, e.g. `dockg:Section`. */
+  /** Compacted class IRI, e.g. `moose-kg:Section`. */
   type: string;
   title?: string;
   /** Space-joined alternative labels, deduped case-insensitively. */
@@ -132,7 +132,7 @@ export function buildSearchIndex(
   // Group sections by their parent document once. Re-scanning every section per
   // document is quadratic across the corpus, and the section loop below needs
   // the same grouping anyway.
-  const allSections = graph.instancesOf(DOCKG_SECTION);
+  const allSections = graph.instancesOf(MOOSE_KG_SECTION);
   const sectionsOf = new Map<string, string[]>();
   for (const section of allSections) {
     const hash = section.indexOf("#");
@@ -145,8 +145,8 @@ export function buildSearchIndex(
 
   // Documents. Sections resolve their slice from the parent's source, so read
   // each document once and remember it.
-  for (const doc of graph.instancesOf(DOCKG_DOCUMENT)) {
-    const path = graph.literal(doc, DOCKG_PATH);
+  for (const doc of graph.instancesOf(MOOSE_KG_DOCUMENT)) {
+    const path = graph.literal(doc, MOOSE_KG_PATH);
     const source = path === undefined ? undefined : readDoc(path);
     sourceOf.set(doc, source);
     if (path !== undefined && source === undefined) {
@@ -174,7 +174,7 @@ export function buildSearchIndex(
           : body;
 
     entries.push(
-      entry(doc, compactIri(DOCKG_DOCUMENT), {
+      entry(doc, compactIri(MOOSE_KG_DOCUMENT), {
         title: graph.literal(doc, DCTERMS_TITLE),
         description: graph.literal(doc, DCTERMS_DESCRIPTION),
         text,
@@ -190,7 +190,7 @@ export function buildSearchIndex(
     const doc = hash < 0 ? section : section.slice(0, hash);
     const title = graph.literal(section, DCTERMS_TITLE);
     const source = sourceOf.get(doc);
-    const levelText = graph.literal(section, DOCKG_LEVEL);
+    const levelText = graph.literal(section, MOOSE_KG_LEVEL);
     const parsed =
       levelText === undefined ? NaN : Number.parseInt(levelText, 10);
     const level = Number.isNaN(parsed) ? undefined : parsed;
@@ -208,7 +208,7 @@ export function buildSearchIndex(
         ? sectionOwnText(source, title, level, occurrences.get(section) ?? 0)
         : undefined;
 
-    entries.push(entry(section, compactIri(DOCKG_SECTION), { title, text }));
+    entries.push(entry(section, compactIri(MOOSE_KG_SECTION), { title, text }));
   }
 
   // Concepts: label surface only — they are index nodes with no body of their

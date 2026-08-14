@@ -1,5 +1,5 @@
 /**
- * `dockg export` — reserialize the built graph into a consumer format. Reads
+ * `moose-kg export` — reserialize the built graph into a consumer format. Reads
  * the graph the same way `stats`/`check` do (loadGraph over the config `out`,
  * missing graph → exit 2) and writes a deterministic rendering. `jsonld` emits a
  * whole-graph JSON-LD file; `iirds` projects the graph into a conformant,
@@ -7,7 +7,7 @@
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { DockgError } from "../types.js";
+import { MooseKgError } from "../types.js";
 import { loadConfig } from "../core/config.js";
 import { emitJsonLd } from "../core/emit-jsonld.js";
 import { emitRdfXml } from "../core/emit-rdfxml.js";
@@ -19,9 +19,9 @@ import {
   SEARCH_INDEX_FILENAME,
 } from "../core/search-index.js";
 import { byCodeUnit } from "../core/sort.js";
-import { PREFIXES } from "../core/vocab.js";
 import { GraphIndex } from "../runtime/graph.js";
 import { writeZip, type ZipEntry } from "../core/zip.js";
+import { PREFIXES } from "../core/vocab.js";
 
 export type ExportFormat = "jsonld" | "iirds" | "search";
 
@@ -145,7 +145,7 @@ const FORMATS: ExportFormat[] = ["jsonld", "iirds", "search"];
 export async function runExport(opts: ExportOptions): Promise<ExportResult> {
   const cwd = opts.cwd ?? process.cwd();
   if (!FORMATS.includes(opts.format)) {
-    throw new DockgError(
+    throw new MooseKgError(
       `Unknown export format: ${opts.format} (expected: ${FORMATS.join(" | ")}).`,
     );
   }

@@ -1,8 +1,8 @@
 @prefix dcterms: <http://purl.org/dc/terms/> .
-@prefix dockg: <https://dockg.dev/ns#> .
 @prefix foaf: <http://xmlns.com/foaf/0.1/> .
 @prefix iirds: <http://iirds.tekom.de/iirds#> .
 @prefix iirdsSft: <http://iirds.tekom.de/iirds/domain/software#> .
+@prefix moose-kg: <https://moose-tools.dev/kg/ns#> .
 @prefix prov: <http://www.w3.org/ns/prov#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix schema: <https://schema.org/> .
@@ -10,20 +10,20 @@
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 <https://example.com/kg/activity/build> a prov:Activity ;
-  prov:qualifiedAssociation <https://example.com/kg/activity/build.assoc.dockg> ;
+  prov:qualifiedAssociation <https://example.com/kg/activity/build.assoc.moose-kg> ;
   prov:used <https://example.com/kg/doc/docs/configuration.md>, <https://example.com/kg/doc/docs/getting-started.md>, <https://example.com/kg/doc/docs/no-frontmatter.md>, <https://example.com/kg/doc/docs/windows-notes.md> ;
-  prov:wasAssociatedWith <https://example.com/kg/agent/software/dockg> .
+  prov:wasAssociatedWith <https://example.com/kg/agent/software/moose-kg> .
 
-<https://example.com/kg/activity/build.assoc.dockg> a prov:Association ;
-  prov:agent <https://example.com/kg/agent/software/dockg> ;
-  prov:hadRole dockg:toolRole .
+<https://example.com/kg/activity/build.assoc.moose-kg> a prov:Association ;
+  prov:agent <https://example.com/kg/agent/software/moose-kg> ;
+  prov:hadRole moose-kg:toolRole .
 
 <https://example.com/kg/agent/person/jane-doe> a prov:Person ;
   foaf:name "Jane Doe" .
 
-<https://example.com/kg/agent/software/dockg> a prov:SoftwareAgent ;
-  foaf:name "dockg" ;
-  dockg:version "0.1.0" .
+<https://example.com/kg/agent/software/moose-kg> a prov:SoftwareAgent ;
+  foaf:name "moose-kg" ;
+  moose-kg:version "0.1.0" .
 
 <https://example.com/kg/concept/administration> a skos:Concept ;
   skos:inScheme <https://example.com/kg/scheme> ;
@@ -48,7 +48,7 @@
   skos:inScheme <https://example.com/kg/scheme> ;
   skos:prefLabel "setup" .
 
-<https://example.com/kg/doc/docs/configuration.md> a prov:Entity, dockg:Document ;
+<https://example.com/kg/doc/docs/configuration.md> a prov:Entity, moose-kg:Document ;
   iirds:has-subject iirdsSft:Interface ;
   iirds:has-topic-type iirds:GenericReference ;
   iirds:relates-to-product-variant <https://example.com/kg/product/sp-x100>, <https://example.com/kg/product/sp-x200> ;
@@ -57,28 +57,28 @@
   dcterms:subject <https://example.com/kg/concept/configuration>, <https://example.com/kg/concept/reference> ;
   dcterms:title "Configuration Reference" ;
   foaf:primaryTopic <https://example.com/kg/concept/configuration> ;
-  dockg:notApplicableToVariant <https://example.com/kg/product/sp-x300> ;
-  dockg:path "docs/configuration.md" .
+  moose-kg:notApplicableToVariant <https://example.com/kg/product/sp-x300> ;
+  moose-kg:path "docs/configuration.md" .
 
-<https://example.com/kg/doc/docs/configuration.md#advanced> a dockg:Section ;
+<https://example.com/kg/doc/docs/configuration.md#advanced> a moose-kg:Section ;
   dcterms:title "Advanced" ;
-  dockg:level 3 ;
-  dockg:order 1 .
+  moose-kg:level 3 ;
+  moose-kg:order 1 .
 
-<https://example.com/kg/doc/docs/configuration.md#configuration> a dockg:Section ;
+<https://example.com/kg/doc/docs/configuration.md#configuration> a moose-kg:Section ;
   dcterms:hasPart <https://example.com/kg/doc/docs/configuration.md#options> ;
   dcterms:title "Configuration" ;
-  dockg:level 1 ;
-  dockg:order 1 .
+  moose-kg:level 1 ;
+  moose-kg:order 1 .
 
-<https://example.com/kg/doc/docs/configuration.md#options> a dockg:Section ;
+<https://example.com/kg/doc/docs/configuration.md#options> a moose-kg:Section ;
   dcterms:hasPart <https://example.com/kg/doc/docs/configuration.md#advanced> ;
   dcterms:title "Options" ;
-  dockg:level 2 ;
-  dockg:notSoftwareSubject iirdsSft:Architecture ;
-  dockg:order 1 .
+  moose-kg:level 2 ;
+  moose-kg:notSoftwareSubject iirdsSft:Architecture ;
+  moose-kg:order 1 .
 
-<https://example.com/kg/doc/docs/getting-started.md> a prov:Entity, dockg:Document ;
+<https://example.com/kg/doc/docs/getting-started.md> a prov:Entity, moose-kg:Document ;
   iirds:has-topic-type iirds:GenericTask ;
   iirds:relates-to-product-lifecycle-phase iirdsSft:Deployment ;
   dcterms:created "2026-05-01"^^xsd:date ;
@@ -92,56 +92,56 @@
   prov:generatedAtTime "2026-05-01"^^xsd:date ;
   prov:qualifiedAttribution <https://example.com/kg/doc/docs/getting-started.md#prov.attribution.jane-doe> ;
   prov:wasAttributedTo <https://example.com/kg/agent/person/jane-doe> ;
-  dockg:brokenSectionRef "missing-heading" ;
-  dockg:codeLanguage "bash", "python" ;
-  dockg:path "docs/getting-started.md" ;
+  moose-kg:brokenSectionRef "missing-heading" ;
+  moose-kg:codeLanguage "bash", "python" ;
+  moose-kg:path "docs/getting-started.md" ;
   schema:image <https://example.com/kg/file/docs/img/arch.png> .
 
-<https://example.com/kg/doc/docs/getting-started.md#getting-started> a dockg:Section ;
+<https://example.com/kg/doc/docs/getting-started.md#getting-started> a moose-kg:Section ;
   dcterms:hasPart <https://example.com/kg/doc/docs/getting-started.md#install>, <https://example.com/kg/doc/docs/getting-started.md#install-1> ;
   dcterms:title "Getting Started" ;
-  dockg:level 1 ;
-  dockg:order 1 .
+  moose-kg:level 1 ;
+  moose-kg:order 1 .
 
-<https://example.com/kg/doc/docs/getting-started.md#install> a dockg:Section ;
+<https://example.com/kg/doc/docs/getting-started.md#install> a moose-kg:Section ;
   iirds:has-topic-type iirds:GenericReference ;
   iirds:relates-to-product-variant <https://example.com/kg/product/sp-x200> ;
   dcterms:subject <https://example.com/kg/concept/installation> ;
   dcterms:title "Install" ;
-  dockg:level 2 ;
-  dockg:order 1 .
+  moose-kg:level 2 ;
+  moose-kg:order 1 .
 
-<https://example.com/kg/doc/docs/getting-started.md#install-1> a dockg:Section ;
+<https://example.com/kg/doc/docs/getting-started.md#install-1> a moose-kg:Section ;
   dcterms:title "Install" ;
-  dockg:level 2 ;
-  dockg:order 2 .
+  moose-kg:level 2 ;
+  moose-kg:order 2 .
 
 <https://example.com/kg/doc/docs/getting-started.md#prov.attribution.jane-doe> a prov:Attribution ;
   prov:agent <https://example.com/kg/agent/person/jane-doe> ;
-  prov:hadRole dockg:authorRole .
+  prov:hadRole moose-kg:authorRole .
 
-<https://example.com/kg/doc/docs/no-frontmatter.md> a prov:Entity, dockg:Document ;
+<https://example.com/kg/doc/docs/no-frontmatter.md> a prov:Entity, moose-kg:Document ;
   dcterms:hasPart <https://example.com/kg/doc/docs/no-frontmatter.md#loose-notes> ;
   dcterms:references <https://example.org/page> ;
   dcterms:title "Loose Notes" ;
-  dockg:brokenLink "missing.md" ;
-  dockg:path "docs/no-frontmatter.md" .
+  moose-kg:brokenLink "missing.md" ;
+  moose-kg:path "docs/no-frontmatter.md" .
 
-<https://example.com/kg/doc/docs/no-frontmatter.md#loose-notes> a dockg:Section ;
+<https://example.com/kg/doc/docs/no-frontmatter.md#loose-notes> a moose-kg:Section ;
   dcterms:title "Loose Notes" ;
-  dockg:level 1 ;
-  dockg:order 1 .
+  moose-kg:level 1 ;
+  moose-kg:order 1 .
 
-<https://example.com/kg/doc/docs/windows-notes.md> a prov:Entity, dockg:Document ;
+<https://example.com/kg/doc/docs/windows-notes.md> a prov:Entity, moose-kg:Document ;
   dcterms:hasPart <https://example.com/kg/doc/docs/windows-notes.md#windows-notes> ;
   dcterms:references <https://example.com/kg/doc/docs/configuration.md> ;
   dcterms:title "Windows Notes" ;
-  dockg:path "docs/windows-notes.md" .
+  moose-kg:path "docs/windows-notes.md" .
 
-<https://example.com/kg/doc/docs/windows-notes.md#windows-notes> a dockg:Section ;
+<https://example.com/kg/doc/docs/windows-notes.md#windows-notes> a moose-kg:Section ;
   dcterms:title "Windows Notes" ;
-  dockg:level 1 ;
-  dockg:order 1 .
+  moose-kg:level 1 ;
+  moose-kg:order 1 .
 
 <https://example.com/kg/graph> a prov:Entity ;
   prov:wasGeneratedBy <https://example.com/kg/activity/build> .
@@ -156,4 +156,4 @@
   dcterms:title "SP-X300" .
 
 <https://example.com/kg/scheme> a skos:ConceptScheme ;
-  dcterms:title "dockg concepts" .
+  dcterms:title "moose-kg concepts" .

@@ -20,8 +20,8 @@ personas:
 evidence_basis:
   - the PROV-O surface — qualified attribution and association with role individuals (ADR 01002), collision-proof provenance IRIs and per-model fill attribution (ADR 01003), agent IRIs segmented by PROV agent kind (ADR 01004)
   - ADR 01015 (fill proposes all fields, gated by model confidence) plus the kg.provenance frontmatter block with per-field confidence — a machine-vs-human authorship record
-  - ADR 01011 (metadata coverage in dockg stats, gated by per-field thresholds) and the --check exit-1 contract
-  - the sh:disjoint contradiction checks between appliesTo and notApplicableTo in shapes/dockg-0.5.ttl
+  - ADR 01011 (metadata coverage in moose-kg stats, gated by per-field thresholds) and the --check exit-1 contract
+  - the sh:disjoint contradiction checks between appliesTo and notApplicableTo in shapes/moose-kg-0.5.ttl
   - the determinism contract itself — reproducible output is what makes graph-derived evidence admissible rather than anecdotal
 ---
 
@@ -44,7 +44,7 @@ Four questions, answered without a manual audit:
 1. **Who wrote this, when, and from what?** PROV-O qualified attribution with role individuals
    gives a real answer rather than a git log they must interpret.
 2. **Which parts were machine-generated?** As soon as AI-assisted authoring enters a regulated
-   corpus, "did a human write this?" becomes a finding. dockg's `kg.provenance` block records
+   corpus, "did a human write this?" becomes a finding. moose-kg's `kg.provenance` block records
    which model proposed which fields at what confidence, per model, and humans delete entries as
    they review them — so the block itself is the review queue.
 3. **Is every variant covered?** Coverage thresholds per field, gated by `stats --check`,

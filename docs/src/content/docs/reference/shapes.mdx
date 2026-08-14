@@ -1,14 +1,14 @@
 ---
 title: Validation rules
-description: Every rule dockg check enforces against the assembled graph, its severity, and the error each one protects against — including the checks that run in TypeScript because SHACL cannot express them.
+description: Every rule moose-kg check enforces against the assembled graph, its severity, and the error each one protects against — including the checks that run in TypeScript because SHACL cannot express them.
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 
-`dockg check` validates the **assembled graph** against a published SHACL shapes contract. This page
+`moose-kg check` validates the **assembled graph** against a published SHACL shapes contract. This page
 is the catalog: what each rule catches, and whether it gates.
 
-The shapes ship in the package at `shapes/dockg-0.5.ttl`. Point any SHACL tool at it, or override
+The shapes ship in the package at `shapes/moose-kg-0.5.ttl`. Point any SHACL tool at it, or override
 with `check.shapes` / `--shapes`.
 
 ## Severities and exit codes
@@ -20,11 +20,11 @@ with `check.shapes` / `--shapes`.
 | `sh:Info` | 0 | Informational. |
 
 Only violations gate. A run reporting warnings exits `0` — see
-[output & exit codes](/dockg/reference/output-and-exit-codes/).
+[output & exit codes](/moose-kg/reference/output-and-exit-codes/).
 
 ## Shapes are closed
 
-Every node shape sets `sh:closed true`, targeting `dockg:Document`, `dockg:Section`,
+Every node shape sets `sh:closed true`, targeting `moose-kg:Document`, `moose-kg:Section`,
 `skos:Concept`, `skos:ConceptScheme`, `iirds:ProductVariant`, `prov:Person`, `prov:Organization`,
 `prov:SoftwareAgent`, `prov:Activity`, `prov:Attribution`, and `prov:Association`.
 
@@ -57,12 +57,12 @@ warning: https://example.com/kg/concept/installation skos:prefLabel — concept 
 
 | Rule | Severity | Protects against |
 |---|---|---|
-| `dockg:notApplicableToVariant` is `sh:disjoint` from `iirds:relates-to-product-variant` | violation | A topic claiming both to apply and not apply to one variant |
-| `dockg:notSoftwareSubject` is `sh:disjoint` from `iirds:has-subject` | violation | The same contradiction for subjects |
+| `moose-kg:notApplicableToVariant` is `sh:disjoint` from `iirds:relates-to-product-variant` | violation | A topic claiming both to apply and not apply to one variant |
+| `moose-kg:notSoftwareSubject` is `sh:disjoint` from `iirds:has-subject` | violation | The same contradiction for subjects |
 
 Both are enforced on documents **and** on sections, so a section cannot contradict itself either.
 This is the defect a human reviewer does not catch and an auditor does. See
-[open-world semantics](/dockg/concepts/open-world/).
+[open-world semantics](/moose-kg/concepts/open-world/).
 
 ## Subject rules
 
@@ -83,8 +83,8 @@ Enforced on both documents and sections.
 ## Rules that are not in the shapes file
 
 Cycle detection and the transitive SKOS S27 check run in **TypeScript**, because core SHACL cannot
-express transitive closure. They are part of `dockg check` regardless — you will not find them by
-reading `shapes/dockg-0.5.ttl`, which is worth knowing before you go looking.
+express transitive closure. They are part of `moose-kg check` regardless — you will not find them by
+reading `shapes/moose-kg-0.5.ttl`, which is worth knowing before you go looking.
 
 ```
 violation: https://example.com/kg/concept/alpha skos:broader — skos:broader cycle through …/alpha, …/beta (…/alpha → …/beta) — a concept cannot be its own ancestor [docs/alpha.md, docs/beta.md]
@@ -95,17 +95,17 @@ violation: https://example.com/kg/concept/alpha skos:broader — skos:broader cy
 The bracketed list at the end of a finding is the set of documents that produced it. For a cycle or
 an S27 conflict that is several files, none of which is individually wrong — which is exactly why
 this check operates on the assembled graph and per-file
-[`dockg validate`](/dockg/govern/) cannot replace it.
+[`moose-kg validate`](/moose-kg/govern/) cannot replace it.
 
-## The same rules guard `dockg fill`
+## The same rules guard `moose-kg fill`
 
 Before writing a proposed field, `fill` simulates its triples against this contract and rejects
 anything that would create a cycle, an S27 conflict, a second spelling of an existing concept, or an
 applicability contradiction. Rejections are routine operation and leave the exit code at `0`. See
-[backfilling](/dockg/build/backfill/).
+[backfilling](/moose-kg/build/backfill/).
 
 ## Versioning
 
 Published shapes files are immutable. The contract evolves by adding a new version file, never by
-editing bytes in place — the same rule the [frontmatter schemas](/dockg/reference/frontmatter/)
+editing bytes in place — the same rule the [frontmatter schemas](/moose-kg/reference/frontmatter/)
 follow.

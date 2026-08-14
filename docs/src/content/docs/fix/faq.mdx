@@ -5,7 +5,7 @@ description: Answers to the questions a blocked contributor asks that are not sc
 
 import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-For the failure catalog, see [fix a failing check](/dockg/fix/). This page covers everything else
+For the failure catalog, see [fix a failing check](/moose-kg/fix/). This page covers everything else
 people ask when a check goes red.
 
 ## The error names a file I did not touch. Is it mine?
@@ -28,7 +28,7 @@ The usual causes, in order of likelihood:
 
 - **You ran it from a subdirectory.** Input globs resolve against your working directory, not the
   config file. Run from the repository root.
-- **Your branch and CI disagree about the config.** Check whether `dockg.config.yaml` changed on the
+- **Your branch and CI disagree about the config.** Check whether `moose.config.yaml` changed on the
   base branch.
 - **You ran `stats` without `--check`.** Plain `stats` never fails, however bad the numbers are.
 - **You ran `validate` but CI runs `check` too.** They catch different things — per-file frontmatter
@@ -47,11 +47,11 @@ npm run build
 No. Both checks run through `npx`:
 
 ```sh
-npx @hawkeyexl/dockg validate
+npx moose-kg validate
 ```
 
 ```sh
-npx @hawkeyexl/dockg build && npx @hawkeyexl/dockg check
+npx moose-kg build && npx moose-kg check
 ```
 
 If that still does not reproduce what CI saw, pushing a fix and re-running is usually faster than
@@ -63,7 +63,7 @@ chasing the difference.
 graph** against SHACL.
 
 A cycle spanning three documents is invisible to `validate` by construction — every file is
-individually valid. That is why both exist. See [which gate catches what](/dockg/govern/).
+individually valid. That is why both exist. See [which gate catches what](/moose-kg/govern/).
 
 ## The job is red but I only see warnings
 
@@ -72,12 +72,12 @@ Then the warnings are not why. Warnings exit `0` and never gate; only `sh:Violat
 
 ## What does exit code 2 mean?
 
-That dockg could not run properly at all — a missing file, an unreadable config, a broken
+That moose-kg could not run properly at all — a missing file, an unreadable config, a broken
 environment. Nothing you write in your page will fix it.
 
 ```
-dockg: Graph not found: kg/graph.ttl — run `dockg build` first.
-dockg: No input files matched: docs/**/*.md (cwd: /repo/docs)
+moose-kg: Graph not found: kg/graph.ttl — run `moose-kg build` first.
+moose-kg: No input files matched: docs/**/*.md (cwd: /repo/docs)
 ```
 
 Hand it back to whoever owns the pipeline, and say it exited `2` — it is a distinction the tool makes
@@ -89,7 +89,7 @@ For a missing `title` or `description`, yes — write a real one.
 
 For anything describing meaning — `topicType`, `appliesTo`, `prefLabel` — no. A guessed value is
 worse than a missing one, because absence is
-[recorded as unknown](/dockg/concepts/open-world/) while a wrong value is recorded as fact. If you do
+[recorded as unknown](/moose-kg/concepts/open-world/) while a wrong value is recorded as fact. If you do
 not know the right value, ask whoever owns the vocabulary.
 
 <Aside type="caution" title="Especially applicability">
@@ -99,11 +99,11 @@ not know the right value, ask whoever owns the vocabulary.
 
 ## My page has no frontmatter at all. Is that allowed?
 
-Yes. A document with no frontmatter still becomes a node — dockg derives headings, links, images, and
+Yes. A document with no frontmatter still becomes a node — moose-kg derives headings, links, images, and
 code from the body. It simply contributes nothing to metadata coverage.
 
 Whether your repo *requires* frontmatter is a separate policy question, set by
-[coverage thresholds](/dockg/govern/coverage/).
+[coverage thresholds](/moose-kg/govern/coverage/).
 
 ## Why is my `kg.sections` key not matching?
 
@@ -122,25 +122,25 @@ matching:
 
 ## Two documents use the same concept spelled differently. Which wins?
 
-Neither — they converge on one node, because concept IRIs come from the slugified label. dockg
+Neither — they converge on one node, because concept IRIs come from the slugified label. moose-kg
 reports it as a **warning** so you can settle on a spelling; it does not fail the build.
 
-## Does dockg check my prose?
+## Does moose-kg check my prose?
 
 No. It reads frontmatter, headings, links, tags, images, and code-fence languages. Your sentences
-never enter the graph — see [an index, not a corpus](/dockg/concepts/index-not-corpus/).
+never enter the graph — see [an index, not a corpus](/moose-kg/concepts/index-not-corpus/).
 
 ## Where do I go next?
 
 <CardGrid>
   <LinkCard
     title="Fix a failing check"
-    href="/dockg/fix/"
+    href="/moose-kg/fix/"
     description="The failure catalog, with each fix as a frontmatter diff."
   />
   <LinkCard
     title="Frontmatter reference"
-    href="/dockg/reference/frontmatter/"
-    description="Every key dockg accepts and its permitted values."
+    href="/moose-kg/reference/frontmatter/"
+    description="Every key moose-kg accepts and its permitted values."
   />
 </CardGrid>

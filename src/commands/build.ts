@@ -1,11 +1,11 @@
 /**
- * `dockg build` — derive the knowledge graph from discovered docs and write
+ * `moose-kg build` — derive the knowledge graph from discovered docs and write
  * deterministic Turtle. Running twice over unchanged inputs produces
  * byte-identical output.
  */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { DockgError } from "../types.js";
+import { MooseKgError } from "../types.js";
 import { analyzeDoc } from "../core/analyze.js";
 import { loadConfig } from "../core/config.js";
 import { deriveGraph } from "../core/derive.js";
@@ -44,7 +44,7 @@ export async function runBuild(opts: BuildOptions = {}): Promise<BuildResult> {
 
   const files = discoverFiles(inputs, config.exclude, cwd);
   if (files.length === 0) {
-    throw new DockgError(
+    throw new MooseKgError(
       `No input files matched: ${inputs.join(", ")} (cwd: ${cwd})`,
     );
   }
@@ -71,7 +71,7 @@ export async function runBuild(opts: BuildOptions = {}): Promise<BuildResult> {
     } catch (e) {
       const detail = e instanceof Error ? e.message : String(e);
       if (config.provenance.git === true) {
-        throw new DockgError(`provenance.git is true but ${detail}`);
+        throw new MooseKgError(`provenance.git is true but ${detail}`);
       }
       warnings.push(
         `provenance.git is "auto" and ${detail} — continuing without git-derived provenance`,

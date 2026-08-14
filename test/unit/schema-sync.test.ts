@@ -13,8 +13,8 @@ import {
 
 /**
  * Drift guard: fill's proposal field schemas must stay a subset of the
- * bundled frontmatter schema's kg properties, or `dockg fill` writes
- * frontmatter that `dockg validate` rejects.
+ * bundled frontmatter schema's kg properties, or `moose-kg fill` writes
+ * frontmatter that `moose-kg validate` rejects.
  */
 describe("prompt FIELD_SCHEMAS ↔ bundled schema", () => {
   const schema = JSON.parse(
@@ -68,12 +68,18 @@ describe("COVERAGE_FIELD_NAMES ↔ config schema", () => {
       ),
       "utf8",
     ),
+    // moose-kg's settings live under `kg:` in the shared moose.config.yaml, so
+    // the schema roots them at $defs.kg rather than at the document root.
   ) as {
-    properties: {
-      stats: {
+    $defs: {
+      kg: {
         properties: {
-          coverageThreshold: {
-            anyOf: Array<{ properties?: Record<string, unknown> }>;
+          stats: {
+            properties: {
+              coverageThreshold: {
+                anyOf: Array<{ properties?: Record<string, unknown> }>;
+              };
+            };
           };
         };
       };
@@ -82,7 +88,7 @@ describe("COVERAGE_FIELD_NAMES ↔ config schema", () => {
 
   it("the per-field threshold map names exactly the measured fields", () => {
     const mapForm =
-      configSchema.properties.stats.properties.coverageThreshold.anyOf.find(
+      configSchema.$defs.kg.properties.stats.properties.coverageThreshold.anyOf.find(
         (s) => s.properties,
       );
     expect(mapForm, "no object form in coverageThreshold anyOf").toBeDefined();

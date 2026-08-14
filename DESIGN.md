@@ -1,4 +1,4 @@
-# dockg long-term design: standards-typed graphs → GraphRAG
+# moose-kg long-term design: standards-typed graphs → GraphRAG
 
 Status: living document. This is the roadmap and decision framework, not the
 decisions themselves — each phase opens by making its own decisions as ADRs
@@ -7,7 +7,7 @@ time**; do not start a phase while the previous one has open decisions.
 
 ## Vision
 
-dockg becomes the standards-typed knowledge layer for documentation
+moose-kg becomes the standards-typed knowledge layer for documentation
 repositories: a deterministic, governed RDF graph derived from docs, exported
 in the formats the outside world consumes (Turtle, JSON-LD/schema.org, iiRDS
 packages), and — ultimately — the substrate of a full hybrid GraphRAG system
@@ -24,7 +24,7 @@ plus companion posts). The load-bearing findings:
   silence instead of helpful fabrication.
 - **Graphs are irreplaceable for governance jobs** (variant filtering, impact
   analysis, compliance audit), while flat retrieval is adequate for ordinary
-  Q&A. dockg's differentiation lives in the governance jobs.
+  Q&A. moose-kg's differentiation lives in the governance jobs.
 - **"Information evaporation" (the 5 mm silence)**: a system that treats the
   graph as the sole truth surface loses every fact not lifted into a node.
   The countermeasures are hybrid consumption (graph routes, files carry
@@ -39,7 +39,7 @@ plus companion posts). The load-bearing findings:
 
 1. **Opinionated defaults.** Every optional *hermetic* feature is on by
    default (git provenance, qualified provenance, new derive sources,
-   coverage reporting, all export formats emitted by `dockg build`). The
+   coverage reporting, all export formats emitted by `moose-kg build`). The
    boundary: anything that costs network or money (`fill`, future
    `index`/`ask`) stays an explicit invocation — with strict guardrails as
    *its* defaults. Suppression knobs remain (opinionated ≠ non-configurable).
@@ -48,14 +48,14 @@ plus companion posts). The load-bearing findings:
    (`feat!:`/`BREAKING CHANGE:`) because commitlint and semantic-release
    consume them.
 3. **iiRDS is in, starting with the Core vocabulary.** Adopt iiRDS Core terms
-   wherever a dockg concept maps; research domain extensions (see Phase 2
+   wherever a moose-kg concept maps; research domain extensions (see Phase 2
    research list) before choosing more. Reference published iiRDS IRIs —
    never vendor or modify the spec (CC BY-ND).
 4. **iiRDS package export is in scope** — a first-class deliverable, not
    demand-gated.
 5. **Section-level metadata is in scope** — the graph already has per-section
    nodes; metadata must be able to attach to them.
-6. **GraphRAG is the endgame** — dockg grows a runtime (traversal, hybrid
+6. **GraphRAG is the endgame** — moose-kg grows a runtime (traversal, hybrid
    entry, synthesis, MCP serving, eval harness) on top of the build tool.
 
 ## Standing invariants (unchanged by this roadmap)
@@ -67,7 +67,7 @@ plus companion posts). The load-bearing findings:
 - The golden corpus comparison stays the regression gate; goldens change only
   deliberately, diff inspected line by line.
 - Published schemas and shapes are immutable; evolve by new version files.
-- Custom `dockg:` namespace stays minimal; prefer external vocabularies.
+- Custom `moose-kg:` namespace stays minimal; prefer external vocabularies.
 - Exit-code contract: 0 ok · 1 findings · 2 operational.
 - Every behavior change: ADR + docs + shapes review in the same change.
 
@@ -81,7 +81,7 @@ Decided:
 - **Graph-as-index contract** — ratified as proposed
   ([ADR 01008](adrs/01008-graph-as-index-not-corpus.md)): the graph is an index
   and governance layer, prose never enters it, consumers join graph → files via
-  `dockg:path` + section slug. Binds the roadmap in two ways — retrieval
+  `moose-kg:path` + section slug. Binds the roadmap in two ways — retrieval
   features need a content resolver, and metadata coverage becomes a
   first-class measurable concern.
 - **Opinionated defaults get their own umbrella ADR**
@@ -111,7 +111,7 @@ Decided ([ADR 01010](adrs/01010-provenance-defaults-and-degradation.md)):
 - **`provenance.qualified` flipped to `true`** outright — no external
   dependency, no degradation path, stable output.
 - **Builds gained a warnings channel** — `BuildResult.warnings`, rendered to
-  stderr by the CLI, never affecting the exit code. dockg had no diagnostic
+  stderr by the CLI, never affecting the exit code. moose-kg had no diagnostic
   path between "silent" and "fatal" before this; later phases can use it.
 - **The regression corpus pins `provenance.git: false`.** Discovered during
   implementation: the build activity's `prov:endedAtTime` is HEAD's committer
@@ -121,7 +121,7 @@ Decided ([ADR 01010](adrs/01010-provenance-defaults-and-degradation.md)):
 Delivered: config schema + defaults, degradation path, warnings channel, golden
 regenerated (8 qualified-provenance triples, diff inspected), CLAUDE.md
 determinism invariant amended, README provenance section + config sample +
-opinionated-defaults statement, `dockg init` template.
+opinionated-defaults statement, `moose-kg init` template.
 
 ## Phase 1 — Metadata coverage in `stats` — **done**
 
@@ -146,12 +146,12 @@ Delivered: `src/core/coverage.ts` (shared field list), coverage in `stats`
 (pretty + JSON) and its `--check` gate, `stats.coverageThreshold` config knob,
 `--coverage-threshold` flag, a schema-sync drift guard pinning the field list
 to the config schema, corpus-exact tests, README (coverage subsection, config
-sample, commands table) + `dockg init` template + `--help`. Shapes and golden
+sample, commands table) + `moose-kg init` template + `--help`. Shapes and golden
 untouched — `stats` only reads the graph.
 
 ## Phase 2 — iiRDS Core (+ Software domain) vocabulary adoption — **done**
 
-**Goal:** dockg graphs speak the tech-comm industry's RDF dialect where a
+**Goal:** moose-kg graphs speak the tech-comm industry's RDF dialect where a
 term fits.
 
 Research findings (three parallel agents, byte-verified against
@@ -163,7 +163,7 @@ Research findings (three parallel agents, byte-verified against
 - A **Software domain exists** (`.../domain/software#`, iiRDS 1.2) — the earlier
   assumption that none did was wrong. Its 9 values split across two predicates
   (6 lifecycle phases, 3 subjects). Adopted this phase.
-- **No official SHACL** — dockg authors its own (as it already does).
+- **No official SHACL** — moose-kg authors its own (as it already does).
 - **DIN SPEC 91526 was mischaracterized** here and in the README: it is a
   general KG-for-LLMs DIN SPEC, not iiRDS and not the AAS integration (that is
   IDTA 02063-1-0). Corrected.
@@ -181,7 +181,7 @@ Decided ([ADR 01012](adrs/01012-iirds-core-vocabulary.md)):
   IRIs.
 
 Delivered: `src/core/iirds.ts` (byte-verified IRI maps), `iirds:`/`iirdsSft:`
-namespaces, schema `frontmatter-0.5.json`, shapes `dockg-0.2.ttl` (four new
+namespaces, schema `frontmatter-0.5.json`, shapes `moose-kg-0.2.ttl` (four new
 closed Document predicates + a ProductVariant shape, `sh:in`-constrained),
 derive support, schema-sync drift guards for all three enums, corpus
 permutations + regenerated golden, and the README/init/DIN-SPEC-correction
@@ -202,18 +202,18 @@ Decided ([ADR 01013](adrs/01013-section-level-metadata.md)):
   `prefLabel`/hierarchy (a "primary topic per section" is meaningless).
 - **Inheritance: explicit-only** — a section gets exactly what its block
   declares; nothing from the doc. Keeps the graph small and provenance clear.
-- **Slug drift: `dockg:brokenSectionRef`** — a key naming no heading derives
-  `<doc> dockg:brokenSectionRef "slug"`, surfaced by `stats` and gated by
+- **Slug drift: `moose-kg:brokenSectionRef`** — a key naming no heading derives
+  `<doc> moose-kg:brokenSectionRef "slug"`, surfaced by `stats` and gated by
   `stats --check`, mirroring `brokenLink`. Never a silent drop.
 
 Delivered: schema `frontmatter-0.6.json` (a `sectionMetadata` `$def`), shapes
-`dockg-0.3.ttl` (Section learns four iiRDS predicates + `dcterms:subject`,
+`moose-kg-0.3.ttl` (Section learns four iiRDS predicates + `dcterms:subject`,
 Document learns `brokenSectionRef`), a shared `emitIirdsTyping` helper in
 `derive.ts` (doc + section share one mapping), `stats` reporting + `--check`
 gating of broken section refs, corpus permutations (matched section, broken
 key, absent, sections-source-off) + regenerated golden, drift guards pinning
 both doc- and section-level enums to `iirds.ts`, and the README/init docs. The
-`dockg:` namespace grew by one property (`brokenSectionRef`).
+`moose-kg:` namespace grew by one property (`brokenSectionRef`).
 
 ## Phase 4 — Negative scope and closed-world semantics — **done**
 
@@ -228,8 +228,8 @@ nothing to validate, and has weak consumer support. So Wakabayashi's
 `what_it_is_not` was necessarily custom.
 
 Decided:
-- **Mint two `dockg:` predicates** — `dockg:notApplicableToVariant` and
-  `dockg:notSoftwareSubject`, as `kg.notApplicableTo` (variant labels) and
+- **Mint two `moose-kg:` predicates** — `moose-kg:notApplicableToVariant` and
+  `moose-kg:notSoftwareSubject`, as `kg.notApplicableTo` (variant labels) and
   `kg.notSoftwareSubject` (enum), at **document and section** level via the
   shared `emitIirdsTyping` helper. Plain triples, no blank nodes.
 - **Conflict = `sh:disjoint` violation** — a variant/subject on both the
@@ -239,11 +239,11 @@ Decided:
   retrieval interlock queries the negative edge, never infers from a missing
   positive one.
 
-Delivered: schema `frontmatter-0.7.json`, shapes `dockg-0.4.ttl` (Document +
+Delivered: schema `frontmatter-0.7.json`, shapes `moose-kg-0.4.ttl` (Document +
 Section learn both negative predicates with `sh:disjoint`), the two predicate
 constants in `iirds.ts`, `emitIirdsTyping` extended (one place, both levels),
 drift guards pinning the negative-subject enum, corpus permutations +
-regenerated golden, and README/init docs. The `dockg:` namespace grew by two
+regenerated golden, and README/init docs. The `moose-kg:` namespace grew by two
 properties (6 → 8). Lifecycle-phase and topic-type negation were left out of
 scope.
 
@@ -264,14 +264,14 @@ Decided ([ADR 01015](adrs/01015-fill-confidence.md)):
   agent must not read routine drops as failure. Exit 1 stays for real errors.
 - **Confidence persisted** in `kg.provenance` (schema 0.8) and the emitted
   graph: the fill activity reifies each field into an entry node
-  (`dockg:filledFieldEntry` → `dockg:filledField` + `dockg:confidence`).
+  (`moose-kg:filledFieldEntry` → `moose-kg:filledField` + `moose-kg:confidence`).
 - **Section-level fill deferred** (fill is doc-level).
 
 Delivered: all-fields config + `fill.minConfidence` + `--min-confidence`; the
 confidence/reasoning prompt contract (`PROMPT_VERSION` bump); the `fillOne`
 confidence gate + report surface; the fill-guard extended to the iiRDS
 `sh:disjoint` conflict; schema `frontmatter-0.8.json`; the reified emitter +
-`shapes/dockg-0.5.ttl`; drift guards; README/init docs. `dockg:` namespace grew
+`shapes/moose-kg-0.5.ttl`; drift guards; README/init docs. `moose-kg:` namespace grew
 by two (`filledFieldEntry`, `confidence`, 8 → 10). Golden unchanged (no corpus
 doc carries `kg.provenance`). MockProvider-only tests; build determinism intact.
 
@@ -281,7 +281,7 @@ doc carries `kg.provenance`). MockProvider-only tests; build determinism intact.
 deterministically.
 
 Delivered ([ADR 01016](adrs/01016-jsonld-export.md)):
-- **`dockg export --format jsonld`** — a standalone command that reads the built
+- **`moose-kg export --format jsonld`** — a standalone command that reads the built
   graph (like `stats`/`check`) and reserializes it as JSON-LD. Not a default
   `build` output; the standalone command is the chosen delivery.
 - **Whole-graph, lossless** rendering: `{ "@context": <PREFIXES>, "@graph":
@@ -298,7 +298,7 @@ Delivered ([ADR 01016](adrs/01016-jsonld-export.md)):
 
 ## Phase 6b — iiRDS package export — **done**
 
-**Goal:** `dockg export --format iirds` produces a conformant iiRDS package.
+**Goal:** `moose-kg export --format iirds` produces a conformant iiRDS package.
 
 Delivered ([ADR 01017](adrs/01017-iirds-package-export.md)):
 - **Unrestricted iiRDS 1.3** target — the only variant achievable without a
@@ -328,7 +328,7 @@ twin); rendered-HTML renditions; iiRDS **ingest**; a `DirectoryNode` ToC tree.
 **Constraint set by the maintainer:** triples compilation stays in Node; the
 layer that *serves* the graph must be **browser-safe**, ideally browser-native,
 and may eventually become its own project. Plus two scope decisions:
-**every result carries its trace**, and **generation is out of scope** — dockg
+**every result carries its trace**, and **generation is out of scope** — moose-kg
 returns the bundle an inference engine consumes and stops.
 
 The pipeline therefore splits at the artifact boundary:
@@ -359,7 +359,7 @@ retroactively became the runtime's foundation.
 identically in a browser and in the CLI.
 
 Delivered ([ADR 01018](adrs/01018-graphrag-runtime-architecture.md)):
-- **`dockg/runtime` subpath export** — `platform: neutral`, no `node:` imports,
+- **`moose-kg/runtime` subpath export** — `platform: neutral`, no `node:` imports,
   no dependencies, 21 KB raw / ~6 KB gzipped, enforced by a **bundle-purity
   gate** that scans the built bundle.
 - **`GraphIndex`** (`fromJsonLd` / `fromQuads`), **`traverse`** (BFS, depth- and
@@ -372,7 +372,7 @@ Delivered ([ADR 01018](adrs/01018-graphrag-runtime-architecture.md)):
 - **`ContentResolver`** (fetch-based, injectable; sections slice their parent
   document by heading, so no line-span predicates were added to the graph) and
   **`assemble`** → `{ context, citations, trace, refusal?, truncated }`.
-- **`dockg traverse`** CLI; **JSON-LD ⇄ Turtle equivalence gate**; custom SPARQL
+- **`moose-kg traverse`** CLI; **JSON-LD ⇄ Turtle equivalence gate**; custom SPARQL
   proven by running real Comunica over `rdfjsQuads()`.
 
 Decided during implementation: **`rdf:type` is not traversed by default** —
@@ -384,11 +384,11 @@ reachable from everything (the edge contamination this project exists to avoid).
 **Goal:** a text question reaches the right nodes, hermetically.
 
 Delivered ([ADR 01019](adrs/01019-lexical-entry.md)):
-- **`dockg export --format search` → `kg/search.json`** — the artifact that
+- **`moose-kg export --format search` → `kg/search.json`** — the artifact that
   makes body text findable. Forced by the graph-as-index contract: sections
   carry only titles, so an index built from the graph alone can never match what
   a document *says*. Built in Node from local markdown, so entry stays hermetic.
-  Plain JSON dockg owns (not MiniSearch's serialized index), sorted, byte-stable.
+  Plain JSON moose-kg owns (not MiniSearch's serialized index), sorted, byte-stable.
 - **Granularity golden rule enforced — every node indexes the text it owns**: a
   section carries its text down to the next heading of any rank; a document
   carries title + description
@@ -396,10 +396,10 @@ Delivered ([ADR 01019](adrs/01019-lexical-entry.md)):
   no sections). Duplicating would shadow sections in the rankings; carrying
   nothing would leave preamble prose findable nowhere.
 - **`createLexicalIndex` / `findEntry`** in the runtime, with ties broken by IRI
-  so ranking is a dockg contract rather than a library's.
+  so ranking is a moose-kg contract rather than a library's.
 - **`rrfMerge`** shipped and tested though only one ranking exists — it fixes the
   fusion contract before the vector leg arrives.
-- **`dockg search <query>`** CLI; `EntryCandidate.via` tightened to a union.
+- **`moose-kg search <query>`** CLI; `EntryCandidate.via` tightened to a union.
 
 Traded deliberately: the runtime is no longer dependency-free. MiniSearch is
 bundled in (6.4 → 22.7 KB gzipped as shipped, ~10.6 KB minified), and the
@@ -411,19 +411,19 @@ text.** The corpus has two `## Install` headings, and slicing matched by title,
 so both sections got the *first* one's body — wrong content under a confident
 citation, in the Phase 7 resolver as well as the new index. Sections now derive
 their occurrence from true document order (the `dcterms:hasPart` tree ordered by
-`dockg:order`).
+`moose-kg:order`).
 
 ## Phase 8b — Vector entry with local embeddings — **done**
 
 **Goal:** semantic entry alongside the lexical leg, computed by local models.
 
 Delivered ([ADR 01020](adrs/01020-local-embeddings.md)):
-- **`dockg embed` → `kg/vectors.bin`** — embeds the text already in
+- **`moose-kg embed` → `kg/vectors.bin`** — embeds the text already in
   `search.json`, so both ranking legs score the same units. Deterministic binary
   layout (magic + JSON header + L2-normalized float32), header recording model,
   dtype, dims, sorted IRIs, and a digest of the search index.
 - **Local-only, hard requirement.** No API, no key, no spend. Model runs under
-  `@huggingface/transformers` as an **optional peer** behind `dockg/embed`, so
+  `@huggingface/transformers` as an **optional peer** behind `moose-kg/embed`, so
   the runtime never grows a model stack and most users never install it.
 - **Node and browser compute the same function.** transformers.js uses a native
   runtime in Node and WASM in the browser, and they measurably disagree — which
@@ -450,7 +450,7 @@ years stale, no maintained micro-package handles typed arrays (the popular one
 throws on `Float32Array`), and Orama — the credible alternative — runs
 `Date.now()` at module load, which collides with the no-wall-clock invariant.
 
-Unlike every other dockg artifact, `kg/vectors.bin` **cannot be regenerated in
+Unlike every other moose-kg artifact, `kg/vectors.bin` **cannot be regenerated in
 CI** (weights are a download), so it is gitignored, built in the deploy
 pipeline, and gated in tests with a deterministic mock embedder.
 
@@ -462,8 +462,8 @@ same thing exposed to agents.
 Decisions to make (ADRs):
 - `retrieve()` orchestration: entry → traversal (scope honored) → resolution →
   assembly, with mandatory citations and structured refusal. **No generation.**
-- `dockg retrieve <question>` printing the bundle as JSON.
-- `dockg mcp`: which tools (`retrieve`, `traverse`, `impact`), transport, auth —
+- `moose-kg retrieve <question>` printing the bundle as JSON.
+- `moose-kg mcp`: which tools (`retrieve`, `traverse`, `impact`), transport, auth —
   each returning `{context, citations, trace}` for the *agent* to reason over.
 - A browser integration example wiring the runtime to a docs site.
 
@@ -498,7 +498,7 @@ of the phase that needs it, not before):
 | Software-specific iiRDS extensions/profiles (existing or emerging); machinery extension as reference | Phase 2 |
 | iiRDS/H and DIN SPEC 91526 relationship to Core; what to track vs. adopt | Phase 2 |
 | Official iiRDS SHACL/validation assets | Phase 2 |
-| Negative-scope precedent in iiRDS/schema.org (verify none before minting `dockg:` term) | Phase 4 |
+| Negative-scope precedent in iiRDS/schema.org (verify none before minting `moose-kg:` term) | Phase 4 |
 | iiRDS 1.3 package conformance rules; CDP intake validation practices | Phase 6b |
 | QUDT adoption for quantitative properties (sizes, torques) lifted by fill | Phase 5/6 |
 | Browser vector-search options if the sidecar outgrows brute-force cosine | Phase 8b |

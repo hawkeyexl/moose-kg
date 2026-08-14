@@ -1,10 +1,10 @@
 {
   "@context": {
     "dcterms": "http://purl.org/dc/terms/",
-    "dockg": "https://dockg.dev/ns#",
     "foaf": "http://xmlns.com/foaf/0.1/",
     "iirds": "http://iirds.tekom.de/iirds#",
     "iirdsSft": "http://iirds.tekom.de/iirds/domain/software#",
+    "moose-kg": "https://moose-tools.dev/kg/ns#",
     "prov": "http://www.w3.org/ns/prov#",
     "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
     "schema": "https://schema.org/",
@@ -16,7 +16,7 @@
       "@id": "https://example.com/kg/activity/build",
       "@type": "prov:Activity",
       "prov:qualifiedAssociation": {
-        "@id": "https://example.com/kg/activity/build.assoc.dockg"
+        "@id": "https://example.com/kg/activity/build.assoc.moose-kg"
       },
       "prov:used": [
         {
@@ -33,17 +33,17 @@
         }
       ],
       "prov:wasAssociatedWith": {
-        "@id": "https://example.com/kg/agent/software/dockg"
+        "@id": "https://example.com/kg/agent/software/moose-kg"
       }
     },
     {
-      "@id": "https://example.com/kg/activity/build.assoc.dockg",
+      "@id": "https://example.com/kg/activity/build.assoc.moose-kg",
       "@type": "prov:Association",
       "prov:agent": {
-        "@id": "https://example.com/kg/agent/software/dockg"
+        "@id": "https://example.com/kg/agent/software/moose-kg"
       },
       "prov:hadRole": {
-        "@id": "https://dockg.dev/ns#toolRole"
+        "@id": "https://moose-tools.dev/kg/ns#toolRole"
       }
     },
     {
@@ -52,10 +52,10 @@
       "foaf:name": "Jane Doe"
     },
     {
-      "@id": "https://example.com/kg/agent/software/dockg",
+      "@id": "https://example.com/kg/agent/software/moose-kg",
       "@type": "prov:SoftwareAgent",
-      "foaf:name": "dockg",
-      "dockg:version": "0.1.0"
+      "foaf:name": "moose-kg",
+      "moose-kg:version": "0.1.0"
     },
     {
       "@id": "https://example.com/kg/concept/administration",
@@ -116,7 +116,7 @@
     {
       "@id": "https://example.com/kg/doc/docs/configuration.md",
       "@type": [
-        "dockg:Document",
+        "moose-kg:Document",
         "prov:Entity"
       ],
       "iirds:has-subject": {
@@ -159,55 +159,55 @@
       "foaf:primaryTopic": {
         "@id": "https://example.com/kg/concept/configuration"
       },
-      "dockg:notApplicableToVariant": {
+      "moose-kg:notApplicableToVariant": {
         "@id": "https://example.com/kg/product/sp-x300"
       },
-      "dockg:path": "docs/configuration.md"
+      "moose-kg:path": "docs/configuration.md"
     },
     {
       "@id": "https://example.com/kg/doc/docs/configuration.md#advanced",
-      "@type": "dockg:Section",
+      "@type": "moose-kg:Section",
       "dcterms:title": "Advanced",
-      "dockg:level": {
+      "moose-kg:level": {
         "@value": "3",
         "@type": "xsd:integer"
       },
-      "dockg:order": {
+      "moose-kg:order": {
         "@value": "1",
         "@type": "xsd:integer"
       }
     },
     {
       "@id": "https://example.com/kg/doc/docs/configuration.md#configuration",
-      "@type": "dockg:Section",
+      "@type": "moose-kg:Section",
       "dcterms:hasPart": {
         "@id": "https://example.com/kg/doc/docs/configuration.md#options"
       },
       "dcterms:title": "Configuration",
-      "dockg:level": {
+      "moose-kg:level": {
         "@value": "1",
         "@type": "xsd:integer"
       },
-      "dockg:order": {
+      "moose-kg:order": {
         "@value": "1",
         "@type": "xsd:integer"
       }
     },
     {
       "@id": "https://example.com/kg/doc/docs/configuration.md#options",
-      "@type": "dockg:Section",
+      "@type": "moose-kg:Section",
       "dcterms:hasPart": {
         "@id": "https://example.com/kg/doc/docs/configuration.md#advanced"
       },
       "dcterms:title": "Options",
-      "dockg:level": {
+      "moose-kg:level": {
         "@value": "2",
         "@type": "xsd:integer"
       },
-      "dockg:notSoftwareSubject": {
+      "moose-kg:notSoftwareSubject": {
         "@id": "http://iirds.tekom.de/iirds/domain/software#Architecture"
       },
-      "dockg:order": {
+      "moose-kg:order": {
         "@value": "1",
         "@type": "xsd:integer"
       }
@@ -215,7 +215,7 @@
     {
       "@id": "https://example.com/kg/doc/docs/getting-started.md",
       "@type": [
-        "dockg:Document",
+        "moose-kg:Document",
         "prov:Entity"
       ],
       "iirds:has-topic-type": {
@@ -261,19 +261,19 @@
       "prov:wasAttributedTo": {
         "@id": "https://example.com/kg/agent/person/jane-doe"
       },
-      "dockg:brokenSectionRef": "missing-heading",
-      "dockg:codeLanguage": [
+      "moose-kg:brokenSectionRef": "missing-heading",
+      "moose-kg:codeLanguage": [
         "bash",
         "python"
       ],
-      "dockg:path": "docs/getting-started.md",
+      "moose-kg:path": "docs/getting-started.md",
       "schema:image": {
         "@id": "https://example.com/kg/file/docs/img/arch.png"
       }
     },
     {
       "@id": "https://example.com/kg/doc/docs/getting-started.md#getting-started",
-      "@type": "dockg:Section",
+      "@type": "moose-kg:Section",
       "dcterms:hasPart": [
         {
           "@id": "https://example.com/kg/doc/docs/getting-started.md#install"
@@ -283,18 +283,18 @@
         }
       ],
       "dcterms:title": "Getting Started",
-      "dockg:level": {
+      "moose-kg:level": {
         "@value": "1",
         "@type": "xsd:integer"
       },
-      "dockg:order": {
+      "moose-kg:order": {
         "@value": "1",
         "@type": "xsd:integer"
       }
     },
     {
       "@id": "https://example.com/kg/doc/docs/getting-started.md#install",
-      "@type": "dockg:Section",
+      "@type": "moose-kg:Section",
       "iirds:has-topic-type": {
         "@id": "http://iirds.tekom.de/iirds#GenericReference"
       },
@@ -305,24 +305,24 @@
         "@id": "https://example.com/kg/concept/installation"
       },
       "dcterms:title": "Install",
-      "dockg:level": {
+      "moose-kg:level": {
         "@value": "2",
         "@type": "xsd:integer"
       },
-      "dockg:order": {
+      "moose-kg:order": {
         "@value": "1",
         "@type": "xsd:integer"
       }
     },
     {
       "@id": "https://example.com/kg/doc/docs/getting-started.md#install-1",
-      "@type": "dockg:Section",
+      "@type": "moose-kg:Section",
       "dcterms:title": "Install",
-      "dockg:level": {
+      "moose-kg:level": {
         "@value": "2",
         "@type": "xsd:integer"
       },
-      "dockg:order": {
+      "moose-kg:order": {
         "@value": "2",
         "@type": "xsd:integer"
       }
@@ -334,13 +334,13 @@
         "@id": "https://example.com/kg/agent/person/jane-doe"
       },
       "prov:hadRole": {
-        "@id": "https://dockg.dev/ns#authorRole"
+        "@id": "https://moose-tools.dev/kg/ns#authorRole"
       }
     },
     {
       "@id": "https://example.com/kg/doc/docs/no-frontmatter.md",
       "@type": [
-        "dockg:Document",
+        "moose-kg:Document",
         "prov:Entity"
       ],
       "dcterms:hasPart": {
@@ -350,18 +350,18 @@
         "@id": "https://example.org/page"
       },
       "dcterms:title": "Loose Notes",
-      "dockg:brokenLink": "missing.md",
-      "dockg:path": "docs/no-frontmatter.md"
+      "moose-kg:brokenLink": "missing.md",
+      "moose-kg:path": "docs/no-frontmatter.md"
     },
     {
       "@id": "https://example.com/kg/doc/docs/no-frontmatter.md#loose-notes",
-      "@type": "dockg:Section",
+      "@type": "moose-kg:Section",
       "dcterms:title": "Loose Notes",
-      "dockg:level": {
+      "moose-kg:level": {
         "@value": "1",
         "@type": "xsd:integer"
       },
-      "dockg:order": {
+      "moose-kg:order": {
         "@value": "1",
         "@type": "xsd:integer"
       }
@@ -369,7 +369,7 @@
     {
       "@id": "https://example.com/kg/doc/docs/windows-notes.md",
       "@type": [
-        "dockg:Document",
+        "moose-kg:Document",
         "prov:Entity"
       ],
       "dcterms:hasPart": {
@@ -379,17 +379,17 @@
         "@id": "https://example.com/kg/doc/docs/configuration.md"
       },
       "dcterms:title": "Windows Notes",
-      "dockg:path": "docs/windows-notes.md"
+      "moose-kg:path": "docs/windows-notes.md"
     },
     {
       "@id": "https://example.com/kg/doc/docs/windows-notes.md#windows-notes",
-      "@type": "dockg:Section",
+      "@type": "moose-kg:Section",
       "dcterms:title": "Windows Notes",
-      "dockg:level": {
+      "moose-kg:level": {
         "@value": "1",
         "@type": "xsd:integer"
       },
-      "dockg:order": {
+      "moose-kg:order": {
         "@value": "1",
         "@type": "xsd:integer"
       }
@@ -419,7 +419,7 @@
     {
       "@id": "https://example.com/kg/scheme",
       "@type": "skos:ConceptScheme",
-      "dcterms:title": "dockg concepts"
+      "dcterms:title": "moose-kg concepts"
     }
   ]
 }

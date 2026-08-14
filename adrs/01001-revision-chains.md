@@ -29,7 +29,7 @@ single-snapshot graph where old versions may no longer exist as files?
 
 Chosen option 3. `kg.revisionOf` (schema 0.3) resolves exactly like
 `kg.derivedFrom` — doc-relative, then repo-relative, then URL; unresolvable
-entries surface as `dockg:brokenLink` — via one shared helper
+entries surface as `moose-kg:brokenLink` — via one shared helper
 (`provTargetEdge`/`resolveProvDocPath` in src/core/derive.ts). Under
 `provenance.git`, each rename hop old→new additionally emits
 `<newDoc> prov:wasRevisionOf <{base}doc/{oldPath}>` and types the

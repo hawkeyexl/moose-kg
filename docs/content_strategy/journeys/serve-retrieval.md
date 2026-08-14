@@ -7,37 +7,37 @@ personas:
 trigger: >-
   a production RAG pipeline returns semantically close passages from the wrong product or
   variant, and reranking did not fix it because the wrong chunk genuinely is similar
-entry_point: /dockg/retrieve/
+entry_point: /moose-kg/retrieve/
 success_criteria: >-
   A browser-side query returns context, citations, and a trace; a variant filter provably
   excludes out-of-scope material; and a stale artifact is refused rather than silently ranked.
 steps:
   - stage: orient
-    doc: /dockg/retrieve/
+    doc: /moose-kg/retrieve/
     exists: true
     note: "What the runtime does and where it stops. State the metadata dependency here, not later."
   - stage: act
-    doc: /dockg/retrieve/search/
+    doc: /moose-kg/retrieve/search/
     exists: true
     note: "Build the artifacts: export --format search, then embed. Name each file and its role."
   - stage: act
-    doc: /dockg/retrieve/runtime/
+    doc: /moose-kg/retrieve/runtime/
     exists: true
     note: "Load the graph and index in the browser; the {context, citations, trace} return shape."
   - stage: act
-    doc: /dockg/retrieve/runtime/
+    doc: /moose-kg/retrieve/runtime/
     exists: true
     note: "Apply a variant or subject filter, and show what it excluded."
   - stage: verify
-    doc: /dockg/retrieve/search/
+    doc: /moose-kg/retrieve/search/
     exists: true
     note: "Staleness: mismatched model, dtype, dims, or corpus digest is refused, not degraded."
   - stage: extend
-    doc: /dockg/reference/runtime-api/
+    doc: /moose-kg/reference/runtime-api/
     exists: true
     note: "Exact exports and type signatures; this reader reads signatures faster than prose."
   - stage: extend
-    doc: /dockg/reference/embed-models/
+    doc: /moose-kg/reference/embed-models/
     exists: true
     note: "Tested models, sizes, context limits, and the truncation trap on short-context models."
 ---
@@ -50,20 +50,20 @@ The arriving failure is specific: retrieval returns a passage that is genuinely 
 belongs to a different product, and the model produces a fluent, wrong, correctly-cited answer.
 Reranking did not help, because ranking is not the problem.
 
-What dockg offers is a typed filter applied before similarity is considered, plus a citation and
+What moose-kg offers is a typed filter applied before similarity is considered, plus a citation and
 trace trail that survives review. The runtime is retrieval-only — it returns context, citations,
 and a trace, then stops, without calling a model — so it drops into an existing stack rather than
 competing with it.
 
 ## The dependency that goes on the first page
 
-**dockg's value here scales with metadata someone else has to add.** A corpus with no `appliesTo`
+**moose-kg's value here scales with metadata someone else has to add.** A corpus with no `appliesTo`
 values cannot be filtered by variant no matter how good the runtime is.
 
 This is uncomfortable and it belongs in the opening section of the track, not at integration
 time. A reader who builds the integration, gets no lift, and *then* discovers the dependency
 concludes the tool does not work. A reader who is told up front can go measure their corpus with
-`dockg stats` coverage and take a number to the documentation team — which is a better outcome
+`moose-kg stats` coverage and take a number to the documentation team — which is a better outcome
 for everyone, and is the honest version of the pitch.
 
 ## What they need to reach, in order
@@ -78,7 +78,7 @@ for everyone, and is the honest version of the pitch.
    what did not, so the demonstration has to show the excluded set.
 5. **The staleness contract.** A mismatched model, dtype, dimension count, or corpus digest is
    refused with an error rather than ranked with. This reader has been burned by the silent
-   version of this failure and will specifically look for how dockg handles it.
+   version of this failure and will specifically look for how moose-kg handles it.
 
 ## Design notes
 
@@ -92,5 +92,5 @@ for everyone, and is the honest version of the pitch.
 
 ## Where it goes next
 
-[`cuj-export-to-consumer`](export-to-consumer.md) when the graph has to leave dockg's runtime
+[`cuj-export-to-consumer`](export-to-consumer.md) when the graph has to leave moose-kg's runtime
 entirely and feed a system that speaks JSON-LD or iiRDS.

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { emitJsonLd } from "../../src/core/emit-jsonld.js";
 import type { Quad } from "../../src/core/derive.js";
-import { NS, RDF_TYPE } from "../../src/core/vocab.js";
+import { MOOSE_KG, NS, RDF_TYPE } from "../../src/core/vocab.js";
 
 const iri = (value: string): Quad["o"] => ({ kind: "iri", value });
 const lit = (value: string, datatype?: string): Quad["o"] => ({
@@ -26,7 +26,7 @@ function parse(ttl: string): {
 describe("emitJsonLd", () => {
   it("carries the full prefix table as @context", () => {
     const { context } = parse(emitJsonLd([]));
-    expect(context.dockg).toBe(NS.dockg);
+    expect(context["moose-kg"]).toBe(MOOSE_KG);
     expect(context.iirds).toBe(NS.iirds);
     expect(context.xsd).toBe(NS.xsd);
     // Keys are in prefix (alphabetical) order.
@@ -34,43 +34,43 @@ describe("emitJsonLd", () => {
   });
 
   it("folds rdf:type into a compacted @type", () => {
-    const s = `${NS.dockg}doc/a`;
+    const s = `${MOOSE_KG}doc/a`;
     const quads: Quad[] = [
-      { s, p: RDF_TYPE, o: iri(`${NS.dockg}Document`) },
+      { s, p: RDF_TYPE, o: iri(`${MOOSE_KG}Document`) },
       { s, p: RDF_TYPE, o: iri(`${NS.prov}Entity`) },
     ];
     const { graph } = parse(emitJsonLd(quads));
     expect(graph).toHaveLength(1);
     // Multiple types → sorted array of compacted class IRIs.
-    expect(graph[0]!["@type"]).toEqual(["dockg:Document", "prov:Entity"]);
+    expect(graph[0]!["@type"]).toEqual(["moose-kg:Document", "prov:Entity"]);
   });
 
   it("emits a single @type as a scalar, not an array", () => {
-    const s = `${NS.dockg}doc/a`;
-    const quads: Quad[] = [{ s, p: RDF_TYPE, o: iri(`${NS.dockg}Document`) }];
+    const s = `${MOOSE_KG}doc/a`;
+    const quads: Quad[] = [{ s, p: RDF_TYPE, o: iri(`${MOOSE_KG}Document`) }];
     const { graph } = parse(emitJsonLd(quads));
-    expect(graph[0]!["@type"]).toBe("dockg:Document");
+    expect(graph[0]!["@type"]).toBe("moose-kg:Document");
   });
 
   it("renders IRI objects as {@id}, plain literals as strings, typed as {@value,@type}", () => {
-    const s = `${NS.dockg}doc/a`;
+    const s = `${MOOSE_KG}doc/a`;
     const quads: Quad[] = [
-      { s, p: `${NS.dcterms}references`, o: iri(`${NS.dockg}doc/b`) },
+      { s, p: `${NS.dcterms}references`, o: iri(`${MOOSE_KG}doc/b`) },
       { s, p: `${NS.dcterms}title`, o: lit("Hello") },
-      { s, p: `${NS.dockg}wordCount`, o: lit("42", `${NS.xsd}integer`) },
+      { s, p: `${MOOSE_KG}wordCount`, o: lit("42", `${NS.xsd}integer`) },
     ];
     const { graph } = parse(emitJsonLd(quads));
     const node = graph[0]!;
-    expect(node["dcterms:references"]).toEqual({ "@id": `${NS.dockg}doc/b` });
+    expect(node["dcterms:references"]).toEqual({ "@id": `${MOOSE_KG}doc/b` });
     expect(node["dcterms:title"]).toBe("Hello");
-    expect(node["dockg:wordCount"]).toEqual({
+    expect(node["moose-kg:wordCount"]).toEqual({
       "@value": "42",
       "@type": "xsd:integer",
     });
   });
 
   it("treats an xsd:string datatype as a plain literal", () => {
-    const s = `${NS.dockg}doc/a`;
+    const s = `${MOOSE_KG}doc/a`;
     const quads: Quad[] = [
       { s, p: `${NS.dcterms}title`, o: lit("Hi", `${NS.xsd}string`) },
     ];
@@ -79,30 +79,30 @@ describe("emitJsonLd", () => {
   });
 
   it("collapses a single value to a scalar and keeps multiples as a sorted array", () => {
-    const s = `${NS.dockg}doc/a`;
+    const s = `${MOOSE_KG}doc/a`;
     const quads: Quad[] = [
-      { s, p: `${NS.dcterms}references`, o: iri(`${NS.dockg}doc/c`) },
-      { s, p: `${NS.dcterms}references`, o: iri(`${NS.dockg}doc/b`) },
+      { s, p: `${NS.dcterms}references`, o: iri(`${MOOSE_KG}doc/c`) },
+      { s, p: `${NS.dcterms}references`, o: iri(`${MOOSE_KG}doc/b`) },
       { s, p: `${NS.dcterms}title`, o: lit("One") },
     ];
     const { graph } = parse(emitJsonLd(quads));
     expect(graph[0]!["dcterms:title"]).toBe("One");
     expect(graph[0]!["dcterms:references"]).toEqual([
-      { "@id": `${NS.dockg}doc/b` },
-      { "@id": `${NS.dockg}doc/c` },
+      { "@id": `${MOOSE_KG}doc/b` },
+      { "@id": `${MOOSE_KG}doc/c` },
     ]);
   });
 
   it("sorts @graph nodes by @id and predicate keys within a node", () => {
     const quads: Quad[] = [
-      { s: `${NS.dockg}doc/z`, p: `${NS.dcterms}title`, o: lit("Z") },
-      { s: `${NS.dockg}doc/a`, p: `${NS.dockg}path`, o: lit("a.md") },
-      { s: `${NS.dockg}doc/a`, p: `${NS.dcterms}title`, o: lit("A") },
+      { s: `${MOOSE_KG}doc/z`, p: `${NS.dcterms}title`, o: lit("Z") },
+      { s: `${MOOSE_KG}doc/a`, p: `${MOOSE_KG}path`, o: lit("a.md") },
+      { s: `${MOOSE_KG}doc/a`, p: `${NS.dcterms}title`, o: lit("A") },
     ];
     const { graph } = parse(emitJsonLd(quads));
     expect(graph.map((n) => n["@id"])).toEqual([
-      `${NS.dockg}doc/a`,
-      `${NS.dockg}doc/z`,
+      `${MOOSE_KG}doc/a`,
+      `${MOOSE_KG}doc/z`,
     ]);
     // Within the first node, @id leads, then predicate keys sorted.
     const keys = Object.keys(graph[0]!);
@@ -111,11 +111,11 @@ describe("emitJsonLd", () => {
   });
 
   it("is byte-identical regardless of input quad order", () => {
-    const s = `${NS.dockg}doc/a`;
+    const s = `${MOOSE_KG}doc/a`;
     const forward: Quad[] = [
-      { s, p: RDF_TYPE, o: iri(`${NS.dockg}Document`) },
+      { s, p: RDF_TYPE, o: iri(`${MOOSE_KG}Document`) },
       { s, p: `${NS.dcterms}title`, o: lit("A") },
-      { s, p: `${NS.dcterms}references`, o: iri(`${NS.dockg}doc/b`) },
+      { s, p: `${NS.dcterms}references`, o: iri(`${MOOSE_KG}doc/b`) },
     ];
     const reversed = [...forward].reverse();
     expect(emitJsonLd(reversed)).toBe(emitJsonLd(forward));
@@ -123,7 +123,7 @@ describe("emitJsonLd", () => {
 
   it("ends with exactly one trailing newline and is valid JSON", () => {
     const out = emitJsonLd([
-      { s: `${NS.dockg}doc/a`, p: `${NS.dcterms}title`, o: lit("A") },
+      { s: `${MOOSE_KG}doc/a`, p: `${NS.dcterms}title`, o: lit("A") },
     ]);
     expect(out.endsWith("}\n")).toBe(true);
     expect(out.endsWith("}\n\n")).toBe(false);

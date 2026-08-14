@@ -8,7 +8,7 @@ decision-makers: [hawkeyexl, Claude]
 
 ## Context and Problem Statement
 
-dockg has accumulated features that are off unless asked for — git-derived
+moose-kg has accumulated features that are off unless asked for — git-derived
 provenance, qualified provenance — and the roadmap adds many more (iiRDS
 vocabulary derivation, section-level metadata, negative scope, JSON-LD and
 iiRDS package export, coverage reporting). Every one of them raises the same
@@ -22,7 +22,7 @@ is not lifted into the graph is invisible to graph-side consumers, so a
 conservative default set literally produces a poorer product for the median
 user, silently.
 
-The maintainer has set the direction — dockg should be opinionated and enable
+The maintainer has set the direction — moose-kg should be opinionated and enable
 what it can by default. What that means precisely, and where it stops, needs to
 be recorded once so phase ADRs cite it instead of relitigating it.
 
@@ -30,14 +30,14 @@ be recorded once so phase ADRs cite it instead of relitigating it.
 
 - A tool whose strongest configuration is opt-in teaches most users its weakest
   configuration. The graph's value compounds with what is in it.
-- Defaults must not make dockg require network access or spend the user's money
+- Defaults must not make moose-kg require network access or spend the user's money
   without them asking. Those are categorically different from "derive more
   triples from files you already have."
 - **On by default must not mean broken by default.** A feature that cannot run
   in a given corpus must not turn a working build into a failure.
 - Determinism is unaffected by the flips under consideration: git-derived dates
   are committer timestamps, stable per commit, never the wall clock.
-- dockg is pre-release. There is no installed base to migrate, so the cost of
+- moose-kg is pre-release. There is no installed base to migrate, so the cost of
   changing defaults now is a golden regeneration and a docs pass, not an
   ecosystem event.
 - Opinionated is not the same as inflexible: every default-on feature must stay
@@ -54,14 +54,14 @@ be recorded once so phase ADRs cite it instead of relitigating it.
 
 Chosen option 1. The policy:
 
-**Hermetic features default to on.** Anything dockg can do with the files
+**Hermetic features default to on.** Anything moose-kg can do with the files
 already on disk — derive sources, vocabulary mappings, provenance, coverage
-reporting, export formats — ships enabled. `dockg build` produces the richest
+reporting, export formats — ships enabled. `moose-kg build` produces the richest
 graph and the full set of export artifacts without configuration.
 
 **Network and spend stay explicit.** Anything that calls a paid API or requires
-connectivity is never triggered by a default-on path. Today that is `dockg
-fill`; on the roadmap it is `dockg index`, `ask`, and `mcp`. These remain
+connectivity is never triggered by a default-on path. Today that is `moose-kg
+fill`; on the roadmap it is `moose-kg index`, `ask`, and `mcp`. These remain
 separately invoked commands. CI never touches the network — mock providers
 only — and that constraint is what keeps this boundary honest.
 
@@ -114,11 +114,11 @@ implements; until then no default has actually changed.
 ### Consequences
 
 - Good: one policy replaces N default debates; phase ADRs cite it and move on.
-- Good: the median user gets dockg's full hermetic capability without reading
+- Good: the median user gets moose-kg's full hermetic capability without reading
   the configuration reference.
 - Good: the network/spend boundary is stated in a form that is testable — CI's
   no-network rule enforces it.
-- Bad: `dockg build` will do more work per run once the flips land (git history
+- Bad: `moose-kg build` will do more work per run once the flips land (git history
   pass, extra derivations, extra artifacts). Acceptable for documentation-sized
   corpora; if it stops being acceptable, that is a performance ADR, not a
   reason to hide features.

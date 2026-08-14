@@ -32,7 +32,7 @@ function prepare(withVectors = true): {
   graph: string;
   vectors: string;
 } {
-  const dir = mkdtempSync(join(tmpdir(), "dockg-embed-"));
+  const dir = mkdtempSync(join(tmpdir(), "moose-kg-embed-"));
   const graph = join(dir, "graph.ttl");
   const vectors = join(dir, "vectors.bin");
   execFileSync(process.execPath, [cli, "build", "--out", graph], {
@@ -71,7 +71,7 @@ interface SearchJson {
   trace: { entry: Array<{ iri: string }> };
 }
 
-describe("dockg embed (integration)", () => {
+describe("moose-kg embed (integration)", () => {
   it("matches the vectors golden byte-for-byte", () => {
     const { vectors } = prepare();
     expect(readFileSync(vectors).equals(readFileSync(golden))).toBe(true);
@@ -98,11 +98,11 @@ describe("dockg embed (integration)", () => {
 
   it("serves repeat runs from the cache", () => {
     const { dir, graph } = prepare(false);
-    const cacheHome = mkdtempSync(join(tmpdir(), "dockg-embed-cache-"));
-    const cfg = join(cacheHome, "dockg.config.yaml");
+    const cacheHome = mkdtempSync(join(tmpdir(), "moose-kg-embed-cache-"));
+    const cfg = join(cacheHome, "moose.config.yaml");
     writeFileSync(
       cfg,
-      `version: 1\nbaseIri: https://example.com/kg/\nembed:\n  cacheDir: ${JSON.stringify(join(cacheHome, "cache"))}\n`,
+      `kg:\n  version: 1\n  baseIri: https://example.com/kg/\n  embed:\n    cacheDir: ${JSON.stringify(join(cacheHome, "cache"))}\n`,
     );
     const args = [
       "embed",
@@ -157,7 +157,7 @@ describe("dockg embed (integration)", () => {
   });
 
   it("exits 2 when the search index is missing", () => {
-    const dir = mkdtempSync(join(tmpdir(), "dockg-embed-none-"));
+    const dir = mkdtempSync(join(tmpdir(), "moose-kg-embed-none-"));
     const graph = join(dir, "graph.ttl");
     execFileSync(process.execPath, [cli, "build", "--out", graph], {
       encoding: "utf8",
@@ -184,7 +184,7 @@ describe("dockg embed (integration)", () => {
   });
 });
 
-describe("dockg search with vectors (integration)", () => {
+describe("moose-kg search with vectors (integration)", () => {
   const search = (args: string[]): SearchJson =>
     JSON.parse(run(args, corpus).stdout) as SearchJson;
 
@@ -261,7 +261,7 @@ describe("dockg search with vectors (integration)", () => {
       corpus,
     );
     expect(status).toBe(2);
-    expect(stdout).toContain("dockg embed");
+    expect(stdout).toContain("moose-kg embed");
   });
 
   it("refuses a sidecar built from a different search index", () => {
@@ -275,7 +275,7 @@ describe("dockg search with vectors (integration)", () => {
     };
     doc.entries.push({
       id: "https://example.com/kg/doc/docs/brand-new.md",
-      type: "dockg:Document",
+      type: "moose-kg:Document",
       title: "Brand new",
       text: "content that did not exist when the vectors were built",
     });
@@ -365,10 +365,10 @@ describe("dockg search with vectors (integration)", () => {
       corpus,
     );
     // Point the query side at a model the sidecar was not built with.
-    const cfg = join(dir, "dockg.config.yaml");
+    const cfg = join(dir, "moose.config.yaml");
     writeFileSync(
       cfg,
-      "version: 1\nbaseIri: https://example.com/kg/\nembed:\n  model: some/other-model\n",
+      "kg:\n  version: 1\n  baseIri: https://example.com/kg/\n  embed:\n    model: some/other-model\n",
     );
     const { status, stdout } = run(
       [

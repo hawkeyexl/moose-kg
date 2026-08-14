@@ -9,7 +9,7 @@
  *
  * Deliberately hand-rolled rather than the `jsonld` library, for the same
  * reason the Turtle emitter avoids N3.Writer: library formatting and ordering
- * are incidental, not a stability contract. dockg emits no blank nodes and no
+ * are incidental, not a stability contract. moose-kg emits no blank nodes and no
  * language-tagged literals, so neither is handled here.
  */
 import { compactIri } from "./load.js";

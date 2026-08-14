@@ -17,9 +17,9 @@ For most readers, byte-identical rebuilds are a convenience that keeps diffs cle
 makes the output **evidence**.
 
 A report that changes between runs over unchanged inputs cannot be submitted. One that does not can
-be regenerated in front of the person asking, from inputs they can see. dockg emits no wall-clock
+be regenerated in front of the person asking, from inputs they can see. moose-kg emits no wall-clock
 time, no blank nodes, and no unordered output precisely so that this holds — see
-[determinism](/dockg/concepts/determinism/).
+[determinism](/moose-kg/concepts/determinism/).
 
 ## What is derived, and from where
 
@@ -35,9 +35,10 @@ time, no blank nodes, and no unordered output precisely so that this holds — s
 
 ## The tri-state git setting
 
-```yaml title="dockg.config.yaml"
-provenance:
-  git: auto    # auto | true | false
+```yaml title="moose.config.yaml"
+kg:
+  provenance:
+    git: auto    # auto | true | false
 ```
 
 | Value | Behavior |
@@ -61,19 +62,19 @@ A `dcterms:creator` string answers "whose name is on this". It does not distingu
 wrote a document from the tool that generated it from the model that proposed one of its fields —
 and that distinction is exactly what an AI-authorship question is asking about.
 
-With `provenance.qualified: true` (the default), dockg emits attribution and association nodes
+With `provenance.qualified: true` (the default), moose-kg emits attribution and association nodes
 carrying **roles**, so the graph separates:
 
-- a **person** who authored, via `dockg:authorRole`
-- a **software agent** that generated, via `dockg:generatorRole`
-- the **tool** that built the graph, via `dockg:toolRole`
+- a **person** who authored, via `moose-kg:authorRole`
+- a **software agent** that generated, via `moose-kg:generatorRole`
+- the **tool** that built the graph, via `moose-kg:toolRole`
 
 Agent IRIs are segmented by kind — `agent/person/…`, `agent/software/…`, `agent/org/…` — so a
 person and a tool that happen to share a name never collide into one node.
 
 ## The machine-authorship record
 
-`dockg fill` writes one `kg.provenance` entry per model, naming the fields it proposed and its
+`moose-kg fill` writes one `kg.provenance` entry per model, naming the fields it proposed and its
 confidence in each:
 
 ```yaml title="docs/api-keys.md"
@@ -95,24 +96,24 @@ Fields union across runs, and one model's entries are preserved when another mod
 ## Query it
 
 ```sh
-dockg traverse "https://docs.example.com/kg/doc/docs/api-keys.md" --predicates prov:wasAttributedTo prov:wasGeneratedBy
+moose-kg traverse "https://docs.example.com/kg/doc/docs/api-keys.md" --predicates prov:wasAttributedTo prov:wasGeneratedBy
 ```
 
 ```sh
-dockg query -p prov:wasAttributedTo --format json > attribution.json
+moose-kg query -p prov:wasAttributedTo --format json > attribution.json
 ```
 
 For an impact question — what a change to this document affects — walk inbound edges:
 
 ```sh
-dockg traverse "https://docs.example.com/kg/doc/docs/api-keys.md" --impact
+moose-kg traverse "https://docs.example.com/kg/doc/docs/api-keys.md" --impact
 ```
 
 ## What this evidence does not prove
 
 Worth stating plainly, because overclaiming here is worse than underclaiming.
 
-dockg records what your files and git history **assert**. It does not verify that the named author
+moose-kg records what your files and git history **assert**. It does not verify that the named author
 wrote the text, it cannot tell a `kg.provenance` entry deleted after careful review from one
 deleted to clear a warning, and a document with no author simply has no attribution rather than an
 anonymous one.
@@ -124,12 +125,12 @@ The mechanism supports an audit. It does not replace one.
 <CardGrid>
   <LinkCard
     title="Prove coverage"
-    href="/dockg/govern/coverage/"
+    href="/moose-kg/govern/coverage/"
     description="The other half of most audit conversations: is everything covered?"
   />
   <LinkCard
     title="Determinism"
-    href="/dockg/concepts/determinism/"
+    href="/moose-kg/concepts/determinism/"
     description="Why a regenerable report is admissible where a changing one is not."
   />
 </CardGrid>

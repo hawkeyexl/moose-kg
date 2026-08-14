@@ -11,18 +11,18 @@ lenses:
   - aud-brownfield-corpora
 ---
 
-Who dockg's documentation serves, segmented bottom-up from the product surface.
+Who moose-kg's documentation serves, segmented bottom-up from the product surface.
 
 ## The segmentation axis
 
 Segments are cut on **who owns the documentation × how mature that organization's
 documentation practice is.** That axis was chosen because it is the one that actually predicts
-which dockg commands a reader reaches for. A team whose docs are owned by an engineer with a CI
+which moose-kg commands a reader reaches for. A team whose docs are owned by an engineer with a CI
 pipeline starts at `build` and `stats`; a team whose docs are owned by an information architect
 with an existing controlled vocabulary starts at the `kg:` block and `check`; a team that does
 not own the docs at all but consumes them starts at `export` and the runtime.
 
-Note what the axis is *not* cut on: company size, industry, or seat count. Nothing in dockg's
+Note what the axis is *not* cut on: company size, industry, or seat count. Nothing in moose-kg's
 surface varies by those, so segmenting on them would produce distinctions the docset could not
 act on.
 
@@ -45,7 +45,7 @@ segments at the same time.
 
 It earns a file of its own because it changes the shape of the advice rather than just the
 volume. A greenfield corpus gets metadata as it is written; a brownfield corpus needs
-`dockg fill`, a coverage threshold that starts below where it should end up, and a ratchet.
+`moose-kg fill`, a coverage threshold that starts below where it should end up, and a ratchet.
 That is a different journey ([`cuj-backfill-metadata`](../journeys/backfill-metadata.md)), not a
 longer version of the same one.
 
@@ -57,6 +57,6 @@ before they have documentation; they adopt it once they have too much.
 - **"Beginners."** Proficiency is modeled per-persona as prerequisites the reader brings, not
   as a segment. See [`personas/_overview.md`](../personas/_overview.md).
 - **Open-source vs. enterprise.** Nothing in the product surface branches on it.
-- **Downstream tool vendors** (someone building *on* `dockg/runtime` rather than *with* dockg).
+- **Downstream tool vendors** (someone building *on* `moose-kg/runtime` rather than *with* moose-kg).
   Real, but served by `aud-ai-platform-teams`' reference needs; splitting it would produce two
   audiences with one shared journey.

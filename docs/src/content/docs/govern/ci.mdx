@@ -1,6 +1,6 @@
 ---
-title: Add dockg to CI
-description: A complete GitHub Actions workflow and a step for a pipeline you already have, wired to dockg's exit-code contract so a metadata regression fails a pull request instead of surviving review.
+title: Add moose-kg to CI
+description: A complete GitHub Actions workflow and a step for a pipeline you already have, wired to moose-kg's exit-code contract so a metadata regression fails a pull request instead of surviving review.
 ---
 
 import { Aside, CardGrid, LinkCard, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
@@ -8,12 +8,12 @@ import { Aside, CardGrid, LinkCard, Steps, Tabs, TabItem } from '@astrojs/starli
 Nothing you have built so far fails when the numbers get worse. This page fixes that.
 
 By the end you will have a pull request that goes red on a metadata regression, and a failure
-message a contributor who has never heard of dockg can act on.
+message a contributor who has never heard of moose-kg can act on.
 
 ## Before you start
 
-You need a committed `dockg.config.yaml`, a `dockg build` that succeeds locally, and a current
-`dockg stats` reading — you will set your first threshold just below it.
+You need a committed `moose.config.yaml`, a `moose-kg build` that succeeds locally, and a current
+`moose-kg stats` reading — you will set your first threshold just below it.
 
 ## Set a threshold that holds the line
 
@@ -24,25 +24,26 @@ number you eventually want is red from day one, and a permanently red gate teach
 ignore it. A gate pinned just below where you are today fails only on regression — which is
 exactly what you want on day one — and can be ratcheted up as the backlog shrinks.
 
-```yaml title="dockg.config.yaml"
-stats:
-  coverageThreshold:
-    title: 100
-    description: 25
-    prefLabel: 20
+```yaml title="moose.config.yaml"
+kg:
+  stats:
+    coverageThreshold:
+      title: 100
+      description: 25
+      prefLabel: 20
 ```
 
 <Aside type="tip" title="Ratchet, don't leap">
   Raise these numbers when the backlog moves, in the same pull request that moves it. See
-  [backfilling](/dockg/build/backfill/) for closing a large gap.
+  [backfilling](/moose-kg/build/backfill/) for closing a large gap.
 </Aside>
 
 ## Add the workflow
 
 <Tabs>
   <TabItem label="A new workflow">
-    ```yaml title=".github/workflows/dockg.yml" {24-26}
-    name: dockg
+    ```yaml title=".github/workflows/moose-kg.yml" {24-26}
+    name: moose-kg
 
     on:
       pull_request:
@@ -60,32 +61,32 @@ stats:
           - uses: actions/setup-node@v4
             with:
               node-version: 24
-          - run: npm install -g @hawkeyexl/dockg
+          - run: npm install -g moose-kg
 
           - name: Validate frontmatter
-            run: dockg validate --format json
+            run: moose-kg validate --format json
 
           - name: Build the graph
-            run: dockg build
+            run: moose-kg build
 
           - name: Check the graph
-            run: dockg check
+            run: moose-kg check
 
           - name: Gate on links and coverage
-            run: dockg stats --check
+            run: moose-kg stats --check
     ```
   </TabItem>
   <TabItem label="A step in an existing workflow">
     ```yaml title=".github/workflows/docs.yml"
-          - name: Install dockg
-            run: npm install -g @hawkeyexl/dockg
+          - name: Install moose-kg
+            run: npm install -g moose-kg
 
           - name: Gate documentation metadata
             run: |
-              dockg validate
-              dockg build
-              dockg check
-              dockg stats --check
+              moose-kg validate
+              moose-kg build
+              moose-kg check
+              moose-kg stats --check
     ```
   </TabItem>
 </Tabs>
@@ -106,7 +107,7 @@ reviewed alongside content changes. Add a CI step asserting the committed graph 
 build, so it cannot go stale:
 
 ```sh
-dockg build --out /tmp/fresh.ttl && diff kg/graph.ttl /tmp/fresh.ttl
+moose-kg build --out /tmp/fresh.ttl && diff kg/graph.ttl /tmp/fresh.ttl
 ```
 
 **Do not commit it.** Build it in CI and in your deploy pipeline. Less review signal, no chance of
@@ -141,11 +142,11 @@ regenerate, and it is gitignored by default for that reason.
 Your contributors will hit this gate with no context. Link them somewhere useful — in the job
 summary, in a PR comment, or in your contributing guide:
 
-```yaml title=".github/workflows/dockg.yml"
+```yaml title=".github/workflows/moose-kg.yml"
       - name: Gate on links and coverage
-        run: dockg stats --check
+        run: moose-kg stats --check
       - if: failure()
-        run: echo "::notice::Metadata check failed — see https://hawkeyexl.github.io/dockg/fix/"
+        run: echo "::notice::Metadata check failed — see https://hawkeyexl.github.io/moose-kg/fix/"
 ```
 
 ## What you have now
@@ -157,12 +158,12 @@ A gate that fails on regression rather than on aspiration, and a path for the pe
 <CardGrid>
   <LinkCard
     title="Prove coverage"
-    href="/dockg/govern/coverage/"
+    href="/moose-kg/govern/coverage/"
     description="Per-field thresholds when the obligation comes from outside the team."
   />
   <LinkCard
     title="Fix a failing check"
-    href="/dockg/fix/"
+    href="/moose-kg/fix/"
     description="The page your contributors will land on. Read it before you ship the gate."
   />
 </CardGrid>

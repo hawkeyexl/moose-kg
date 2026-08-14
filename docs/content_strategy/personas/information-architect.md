@@ -39,10 +39,10 @@ journeys:
   - cuj-query-the-graph
 evidence_basis:
   - DESIGN.md's grounding in tekom/iiRDS practice, addressed to this professional community
-  - ADR 01012's choice to adopt published iiRDS terms rather than mint dockg equivalents
+  - ADR 01012's choice to adopt published iiRDS terms rather than mint moose-kg equivalents
   - ADR 01013's slug-keyed kg.sections map, which exists because document granularity is too coarse
   - ADR 01014's negative-scope predicates, a distinction only an applicability modeler asks for
-  - the SKOS cycle and S27 checks in shapes/dockg-0.5.ttl, which encode vocabulary-governance rules
+  - the SKOS cycle and S27 checks in shapes/moose-kg-0.5.ttl, which encode vocabulary-governance rules
 ---
 
 The person who owns what the words mean, and needs the files to agree with them.
@@ -72,19 +72,19 @@ gentle about mechanics — the opposite of pages for Priya.
 
 ## The two things that win them, and the one that loses them
 
-**Wins:** that dockg's typing vocabularies are *published iiRDS terms*, referenced rather than
+**Wins:** that moose-kg's typing vocabularies are *published iiRDS terms*, referenced rather than
 reinvented — recognition is the credibility moment; and that absence of applicability means
 **unknown**, not "does not apply", with explicit negative predicates when they need to say the
 stronger thing. That distinction is one they have usually had to argue for elsewhere.
 
 **Loses:** a page that explains SKOS to them, or gets it subtly wrong. They know this material
-better than the docs do. The docset's job is to explain **dockg's mapping onto vocabulary they
-already have** — this frontmatter key becomes that triple — and to be exact about where dockg
+better than the docs do. The docset's job is to explain **moose-kg's mapping onto vocabulary they
+already have** — this frontmatter key becomes that triple — and to be exact about where moose-kg
 diverges from the standard and why.
 
 ## What success looks like for them
 
-The vocabulary is in the files, `dockg check` fails when someone violates it, and a query can
+The vocabulary is in the files, `moose-kg check` fails when someone violates it, and a query can
 answer "what applies to variant X" correctly — including the negative case, without a human
 interpreting silence.
 

@@ -1,20 +1,19 @@
 /**
  * Graph → iiRDS package projection (ADR 01017). Reads the built graph and emits
  * the metadata quads + content-file manifest for an unrestricted iiRDS package:
- * one `iirds:Package`, each `dockg:Document` re-typed as an `iirds:Topic` linked
+ * one `iirds:Package`, each `moose-kg:Document` re-typed as an `iirds:Topic` linked
  * via `iirds:is-part-of-package`, each source file exposed as an `iirds:Rendition`
  * (`iirds:source` + `iirds:format`), and the Phase-2 iiRDS classification carried
  * across. This is a *projection* — it builds a fresh quad set (never the whole
- * store), so the package graph contains only iiRDS terms, not dockg-internal
+ * store), so the package graph contains only iiRDS terms, not moose-kg-internal
  * types. Deterministic: baseIri-derived IRIs (no random UUIDs), no blank nodes.
  */
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { DataFactory, type Store } from "n3";
-import { DockgError } from "../types.js";
+import { MooseKgError } from "../types.js";
 import type { Quad, Term } from "./derive.js";
 import { byCodeUnit } from "./sort.js";
-import { NS, RDF_TYPE } from "./vocab.js";
 import {
   IIRDS_CREATOR,
   IIRDS_HAS_PARTY_ROLE,
@@ -40,9 +39,10 @@ import {
   VCARD_ORGANIZATION,
   VCARD_ORGANIZATION_NAME,
 } from "./iirds.js";
+import { MOOSE_KG, NS, RDF_TYPE } from "./vocab.js";
 
 const { namedNode } = DataFactory;
-const DOCKG_DOCUMENT = `${NS.dockg}Document`;
+const MOOSE_KG_DOCUMENT = `${MOOSE_KG}Document`;
 const XSD_STRING = `${NS.xsd}string`;
 
 /** iiRDS classification edges carried from each Document verbatim. */
@@ -98,7 +98,7 @@ export function projectPackage(
   const pkg = `${opts.baseIri}package`;
   add(pkg, RDF_TYPE, iri(IIRDS_PACKAGE));
   add(pkg, IIRDS_IIRDS_VERSION, lit(opts.version));
-  add(pkg, IIRDS_TITLE, lit(opts.title ?? "dockg export"));
+  add(pkg, IIRDS_TITLE, lit(opts.title ?? "moose-kg export"));
 
   if (opts.creator) {
     const party = `${opts.baseIri}party/creator`;
@@ -112,7 +112,7 @@ export function projectPackage(
   }
 
   const docs = store
-    .getQuads(null, namedNode(RDF_TYPE), namedNode(DOCKG_DOCUMENT), null)
+    .getQuads(null, namedNode(RDF_TYPE), namedNode(MOOSE_KG_DOCUMENT), null)
     .map((q) => q.subject.value)
     .sort(byCodeUnit);
 
@@ -126,12 +126,12 @@ export function projectPackage(
     const language = firstObject(store, doc, `${NS.dcterms}language`);
     if (language) add(doc, IIRDS_LANGUAGE, lit(language));
 
-    const path = firstObject(store, doc, `${NS.dockg}path`);
+    const path = firstObject(store, doc, `${MOOSE_KG}path`);
     if (path) {
       const absPath = resolve(cwd, path);
       if (!existsSync(absPath)) {
-        throw new DockgError(
-          `Content file for ${path} not found at ${absPath} — re-run \`dockg build\`, or the source moved.`,
+        throw new MooseKgError(
+          `Content file for ${path} not found at ${absPath} — re-run \`moose-kg build\`, or the source moved.`,
         );
       }
       const zipPath = `content/${path}`;
@@ -143,7 +143,7 @@ export function projectPackage(
       contentFiles.push({ zipPath, absPath });
     } else {
       warnings.push(
-        `Document ${doc} has no dockg:path — no rendition emitted.`,
+        `Document ${doc} has no moose-kg:path — no rendition emitted.`,
       );
     }
 

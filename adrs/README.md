@@ -1,10 +1,10 @@
 # Architecture Decision Records
 
-Behavior changes in dockg ship with an ADR in [MADR 4.0.0](https://adr.github.io/madr/) format —
+Behavior changes in moose-kg ship with an ADR in [MADR 4.0.0](https://adr.github.io/madr/) format —
 see the "Architecture Decision Records" section of [CLAUDE.md](../CLAUDE.md) for when one is
 required and what it must contain.
 
 - Filename: `NNNNN-kebab-case-title.md`, 5-digit zero-padded.
 - Numbering starts at `01000`. The range `00001`–`00999` is reserved for backfilling
-  pre-existing decisions (the v1 determinism contract, the `kg:`/`dockg:` naming split,
+  pre-existing decisions (the v1 determinism contract, the `kg:`/`moose-kg:` naming split,
   self-hosted schemas, route mappings) if and when that becomes useful.

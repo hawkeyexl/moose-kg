@@ -22,12 +22,15 @@ function build(outPath: string): string {
 /** The tool version is stamped into the graph; normalize it so release
  *  version bumps don't invalidate the golden. */
 function normalizeVersion(ttl: string): string {
-  return ttl.replace(/dockg:version "[^"]+"/g, 'dockg:version "X"');
+  return ttl.replace(/moose-kg:version "[^"]+"/g, 'moose-kg:version "X"');
 }
 
-describe("dockg build (integration)", () => {
+describe("moose-kg build (integration)", () => {
   it("matches the golden output byte-for-byte (modulo tool version)", () => {
-    const out = join(mkdtempSync(join(tmpdir(), "dockg-build-")), "graph.ttl");
+    const out = join(
+      mkdtempSync(join(tmpdir(), "moose-kg-build-")),
+      "graph.ttl",
+    );
     build(out);
     expect(normalizeVersion(readFileSync(out, "utf8"))).toBe(
       normalizeVersion(readFileSync(golden, "utf8")),
@@ -35,7 +38,7 @@ describe("dockg build (integration)", () => {
   });
 
   it("is byte-identical across two runs (determinism gate)", () => {
-    const dir = mkdtempSync(join(tmpdir(), "dockg-build-"));
+    const dir = mkdtempSync(join(tmpdir(), "moose-kg-build-"));
     const a = join(dir, "a.ttl");
     const b = join(dir, "b.ttl");
     build(a);
@@ -54,14 +57,17 @@ describe("dockg build (integration)", () => {
   });
 
   it("reports docs and triples on stdout", () => {
-    const out = join(mkdtempSync(join(tmpdir(), "dockg-build-")), "graph.ttl");
+    const out = join(
+      mkdtempSync(join(tmpdir(), "moose-kg-build-")),
+      "graph.ttl",
+    );
     const stdout = build(out);
     expect(stdout).toMatch(/4 docs, \d+ triples/);
   });
 
   it("provenance.git: an ambient GIT_DIR cannot redirect the build", () => {
     // Running the suite from the husky pre-push hook exposed this: git exports
-    // GIT_DIR to hook subprocesses, and dockg inherited it, so a build outside
+    // GIT_DIR to hook subprocesses, and moose-kg inherited it, so a build outside
     // a repo silently succeeded against the *hook's* repo and emitted a
     // different graph. Must still be exit 2 — not a repo is not a repo.
     //
@@ -70,7 +76,7 @@ describe("dockg build (integration)", () => {
     // a commit, or the build would fail for want of history and the test would
     // pass even while broken.
     const env = hermeticEnv();
-    const decoy = mkdtempSync(join(tmpdir(), "dockg-decoy-"));
+    const decoy = mkdtempSync(join(tmpdir(), "moose-kg-decoy-"));
     writeFileSync(join(decoy, "seed.md"), "# Seed\n");
     execFileSync("git", ["init", "-q"], { cwd: decoy, env });
     execFileSync(
@@ -93,10 +99,10 @@ describe("dockg build (integration)", () => {
       { cwd: decoy, env },
     );
 
-    const dir = mkdtempSync(join(tmpdir(), "dockg-gitenv-"));
+    const dir = mkdtempSync(join(tmpdir(), "moose-kg-gitenv-"));
     writeFileSync(
-      join(dir, "dockg.config.yaml"),
-      'version: 1\ninputs: ["*.md"]\nprovenance:\n  git: true\n',
+      join(dir, "moose.config.yaml"),
+      'kg:\n  version: 1\n  inputs: ["*.md"]\n  provenance:\n    git: true\n',
     );
     writeFileSync(join(dir, "a.md"), "# A\n");
 
@@ -118,10 +124,10 @@ describe("dockg build (integration)", () => {
   });
 
   it("provenance.git: errors loudly outside a git repo, is byte-stable inside one", () => {
-    const dir = mkdtempSync(join(tmpdir(), "dockg-gittime-"));
+    const dir = mkdtempSync(join(tmpdir(), "moose-kg-gittime-"));
     writeFileSync(
-      join(dir, "dockg.config.yaml"),
-      'version: 1\ninputs: ["*.md"]\nprovenance:\n  git: true\n',
+      join(dir, "moose.config.yaml"),
+      'kg:\n  version: 1\n  inputs: ["*.md"]\n  provenance:\n    git: true\n',
     );
     writeFileSync(join(dir, "a.md"), "# A\n");
 
@@ -143,7 +149,7 @@ describe("dockg build (integration)", () => {
 
     // with a commit: endedAtTime appears and rebuilds are identical
     // hermeticEnv: without it these inherit GIT_DIR when the suite runs from
-    // the pre-push hook, and operate on the dockg repo instead of `dir`.
+    // the pre-push hook, and operate on the moose-kg repo instead of `dir`.
     const env = hermeticEnv();
     execFileSync("git", ["init", "-q"], { cwd: dir, env });
     execFileSync(
@@ -187,11 +193,11 @@ describe("dockg build (integration)", () => {
   });
 
   it("provenance.git 'auto' (the default) degrades outside a git repo", () => {
-    const dir = mkdtempSync(join(tmpdir(), "dockg-gitauto-"));
+    const dir = mkdtempSync(join(tmpdir(), "moose-kg-gitauto-"));
     // No provenance key at all: the default must apply.
     writeFileSync(
-      join(dir, "dockg.config.yaml"),
-      'version: 1\ninputs: ["*.md"]\n',
+      join(dir, "moose.config.yaml"),
+      'kg:\n  version: 1\n  inputs: ["*.md"]\n',
     );
     writeFileSync(join(dir, "a.md"), "# A\n");
 
@@ -233,10 +239,10 @@ describe("dockg build (integration)", () => {
   });
 
   it("provenance.git false stays silent and skips git entirely", () => {
-    const dir = mkdtempSync(join(tmpdir(), "dockg-gitoff-"));
+    const dir = mkdtempSync(join(tmpdir(), "moose-kg-gitoff-"));
     writeFileSync(
-      join(dir, "dockg.config.yaml"),
-      'version: 1\ninputs: ["*.md"]\nprovenance:\n  git: false\n',
+      join(dir, "moose.config.yaml"),
+      'kg:\n  version: 1\n  inputs: ["*.md"]\n  provenance:\n    git: false\n',
     );
     writeFileSync(join(dir, "a.md"), "# A\n");
 
@@ -250,7 +256,7 @@ describe("dockg build (integration)", () => {
   });
 
   it("exits 2 when no inputs match", () => {
-    const empty = mkdtempSync(join(tmpdir(), "dockg-empty-"));
+    const empty = mkdtempSync(join(tmpdir(), "moose-kg-empty-"));
     let status = 0;
     try {
       execFileSync(process.execPath, [cli, "build"], {

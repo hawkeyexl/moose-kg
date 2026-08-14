@@ -12,12 +12,12 @@ decision-makers: [hawkeyexl]
 (ported from docevals)" — and docevals and agentevals carried the same code. Three copies then
 drifted independently, and each ended up holding a fix the others lacked:
 
-- dockg's `claude-cli` provider passed the prompt as an argv element, so any document large enough
+- moose-kg's `claude-cli` provider passed the prompt as an argv element, so any document large enough
   to push the command line past Windows' ~32K limit failed. docevals had already fixed this by
   piping through stdin.
-- dockg's `FillCache.set` threw on a write failure, so a read-only workspace aborted a run whose
+- moose-kg's `FillCache.set` threw on a write failure, so a read-only workspace aborted a run whose
   proposals had already been generated and paid for. The other two warned once and continued.
-- dockg's `openai-compat` had `toStrictSchema`, null-stripping, and the opaque-`HTTP 400` fallback;
+- moose-kg's `openai-compat` had `toStrictSchema`, null-stripping, and the opaque-`HTTP 400` fallback;
   the other two did not.
 - Three price tables, only one of which knew `claude-sonnet-4-6`.
 
@@ -26,7 +26,7 @@ Nothing about SKOS field extraction is specific to any of that. Where should the
 ## Decision Drivers
 
 - A provider fix should land once, not three times, and not silently only where someone noticed.
-- `dockg fill` is structured extraction, not judging — it must not have to drag in eval machinery.
+- `moose-kg fill` is structured extraction, not judging — it must not have to drag in eval machinery.
 - The exec seam is used by `core/git.ts` as well as the providers, so it cannot simply be deleted.
 
 ## Considered Options
@@ -38,7 +38,7 @@ Nothing about SKOS field extraction is specific to any of that. Where should the
 ## Decision Outcome
 
 Chosen option: **depend on `@hawkeyexl/inference`**. `src/llm/{cache,cost,exec,types}.ts` and all of
-`src/llm/providers/` are deleted. What remains in `src/llm/` is what only dockg can decide: the SKOS
+`src/llm/providers/` are deleted. What remains in `src/llm/` is what only moose-kg can decide: the SKOS
 prompt and proposal schema, the cache-key composition, and the config → `ProviderSpec` mapping.
 
 `core/git.ts` takes `realExec` and `ExecFn` from the library too, so the toolchain has one exec
@@ -59,26 +59,26 @@ Two consequences worth naming:
    document.
 
 This also required one upstream change: the library's `ExecOptions.env` was typed
-`Record<string, string>`, but ADR 01005 has dockg clearing inherited `GIT_*` variables by mapping
+`Record<string, string>`, but ADR 01005 has moose-kg clearing inherited `GIT_*` variables by mapping
 them to `undefined`, and empty string is not the same as unset to git. The library's `realExec`
 already supported it — Node omits undefined-valued keys when building the child environment — so
 only the type was wrong. Widened upstream in `@hawkeyexl/inference@0.1.0`.
 
 ### Consequences
 
-- Good, because dockg silently gains the Windows stdin fix and the non-throwing cache, neither of
+- Good, because moose-kg silently gains the Windows stdin fix and the non-throwing cache, neither of
   which anyone here would have thought to look for.
 - Good, because `fill` no longer loses a document to a single malformed response.
 - Good, because two direct dependencies go away.
 - Bad, because fill behavior now moves when the library releases. Mitigated by a semver range and
-  by the library's own suite covering the mechanics dockg used to own.
+  by the library's own suite covering the mechanics moose-kg used to own.
 - Bad, because a retried request under-reports cost: `InferenceRun` carries only the successful
   attempt's usage, so a failed first attempt's input tokens are not billed against the budget. The
   error is bounded by one request per retry and only on the failure path.
 
 ### Confirmation
 
-The determinism gate is the real check for `core/git.ts`: two `dockg build` runs over
+The determinism gate is the real check for `core/git.ts`: two `moose-kg build` runs over
 `test/fixtures/corpus` must be byte-identical and must match `test/fixtures/golden/graph.ttl`. Both
 hold. `test/unit/fill.test.ts` pins the new retry on both a schema-invalid first response and a
 transient provider error, and the pre-existing cycle-rejection test pins that lenient validation
@@ -89,13 +89,13 @@ survived — it fails if the request schema is used for validation.
 ### Depend on `@hawkeyexl/inference`
 
 - Good, because the shared layer has one home, one test suite, and one release.
-- Good, because `ProviderSpec` is a flat library-owned shape, so dockg's `fill.*` config keys stay
-  dockg's business.
+- Good, because `ProviderSpec` is a flat library-owned shape, so moose-kg's `fill.*` config keys stay
+  moose-kg's business.
 - Bad, because it is another first-party dependency to keep current.
 
 ### Keep the fork
 
-- Good, because dockg controls its own timeline.
+- Good, because moose-kg controls its own timeline.
 - Bad, because this is precisely what produced the four divergent fixes above. The Windows argv bug
   sat in this repo unnoticed while the fix existed one directory over.
 

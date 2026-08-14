@@ -8,10 +8,10 @@ import { readFileSync } from "node:fs";
 import type { DatasetCore } from "@rdfjs/types";
 import { DataFactory, Parser, Store } from "n3";
 import SHACLValidator from "rdf-validate-shacl";
-import { DockgError } from "../types.js";
+import { MooseKgError } from "../types.js";
 import { compactIri } from "./load.js";
 import { byCodeUnit } from "./sort.js";
-import { NS } from "./vocab.js";
+import { MOOSE_KG, NS } from "./vocab.js";
 
 const { namedNode } = DataFactory;
 
@@ -25,7 +25,7 @@ export interface CheckFinding {
   focusNode: string;
   /** Predicate IRI involved, when the finding concerns one. */
   path?: string;
-  /** dockg:path of the docs responsible, sorted (empty when untraceable). */
+  /** moose-kg:path of the docs responsible, sorted (empty when untraceable). */
   docs: string[];
 }
 
@@ -43,12 +43,12 @@ export function loadShapes(paths: string[]): Store {
     try {
       text = readFileSync(path, "utf8");
     } catch {
-      throw new DockgError(`Shapes file not found: ${path}`);
+      throw new MooseKgError(`Shapes file not found: ${path}`);
     }
     try {
       store.addQuads(new Parser({ format: "text/turtle" }).parse(text));
     } catch (e) {
-      throw new DockgError(
+      throw new MooseKgError(
         `Failed to parse shapes ${path}: ${e instanceof Error ? e.message : "parse error"}`,
       );
     }
@@ -57,13 +57,13 @@ export function loadShapes(paths: string[]): Store {
 }
 
 /**
- * Trace a focus node back to the doc(s) responsible: its own dockg:path,
+ * Trace a focus node back to the doc(s) responsible: its own moose-kg:path,
  * the path of its fragment-stripped base (sections, provenance fragments),
  * or — for shared nodes like concepts and agents — the paths of docs that
  * point at it, up to two hops back. Sorted and deduplicated.
  */
 export function blameDocs(store: Store, focus: string): string[] {
-  const pathPred = namedNode(`${NS.dockg}path`);
+  const pathPred = namedNode(`${MOOSE_KG}path`);
   const pathOf = (iri: string): string | undefined =>
     store.getQuads(namedNode(iri), pathPred, null, null)[0]?.object.value;
 
@@ -298,7 +298,7 @@ export async function validateGraph(
   try {
     report = await validator.validate(store as unknown as DatasetCore);
   } catch (e) {
-    throw new DockgError(
+    throw new MooseKgError(
       `SHACL validation failed: ${e instanceof Error ? e.message : String(e)}`,
     );
   }

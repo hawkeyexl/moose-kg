@@ -61,7 +61,7 @@ today. **This list is the deliverable** — it is what the docset adds rather th
 
 ### 1. Troubleshooting content — nothing exists
 
-dockg emits numerous well-written operational errors, and they are collected nowhere: a missing
+moose-kg emits numerous well-written operational errors, and they are collected nowhere: a missing
 search index, a stale vector sidecar, an unknown variant or software subject, TOML/JSON
 frontmatter handed to `fill`, git unavailable under `provenance.git: true`, unsupported file
 types under `validate`, a model that will not load.
@@ -92,7 +92,7 @@ pages. **Cheap and high-value.**
 
 ### 4. The `inputs` default mismatch
 
-The code default is `["**/*.md"]`; the `dockg init` template writes `["docs/**/*.md"]`. A reader
+The code default is `["**/*.md"]`; the `moose-kg init` template writes `["docs/**/*.md"]`. A reader
 running without a config file gets different ingestion than one who ran `init`, and nothing says
 so. Belongs on `reference/configuration.mdx` and `build/index.mdx`. **Medium priority** — it also
 interacts with the empty-graph coverage caution, since a too-narrow glob produces a vacuously
@@ -114,13 +114,13 @@ error — a `broader` cycle spanning three pages — is invisible to `validate` 
 
 ### 7. Unbuilt surface that must not be documented as shipping
 
-`dockg retrieve`, `dockg mcp`, and the eval harness are designed but unbuilt. They appear in
+`moose-kg retrieve`, `moose-kg mcp`, and the eval harness are designed but unbuilt. They appear in
 `DESIGN.md` and a reader may encounter them there. The docset must not imply they ship.
 **Constraint, not a gap** — recorded here so it is not accidentally violated.
 
 ## Known limitation, since resolved
 
-**dockg did not parse MDX.** The parsing stack was `remark-parse` + `remark-gfm` +
+**moose-kg did not parse MDX.** The parsing stack was `remark-parse` + `remark-gfm` +
 `remark-frontmatter`, with no `remark-mdx`, so JSX was seen as raw text. Headings and prose links
 derived correctly; `href`s inside components such as `<LinkCard>` and `<CardGrid>` **did not become
 graph edges**.

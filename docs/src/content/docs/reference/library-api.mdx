@@ -1,21 +1,21 @@
 ---
 title: Library API
-description: The Node-side package entry — every command available as a function, plus the IRI minting, derivation, emitter, and config primitives, for building dockg into a pipeline instead of shelling out to the CLI.
+description: The Node-side package entry — every command available as a function, plus the IRI minting, derivation, emitter, and config primitives, for building moose-kg into a pipeline instead of shelling out to the CLI.
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 
 Everything the CLI does is available as a function. Import the package root when you are building
-dockg into a Node pipeline, a custom check, or another tool.
+moose-kg into a Node pipeline, a custom check, or another tool.
 
 ```ts
-import { runBuild, runCheck, loadConfig } from "@hawkeyexl/dockg";
+import { runBuild, runCheck, loadConfig } from "moose-kg";
 ```
 
 <Aside type="note" title="Three entry points, three jobs">
-  `@hawkeyexl/dockg` is Node-side automation (this page).
-  [`@hawkeyexl/dockg/runtime`](/dockg/reference/runtime-api/) is the browser query surface.
-  `@hawkeyexl/dockg/embed` is the local model stack. The split is deliberate: the runtime never
+  `moose-kg` is Node-side automation (this page).
+  [`moose-kg/runtime`](/moose-kg/reference/runtime-api/) is the browser query surface.
+  `moose-kg/embed` is the local model stack. The split is deliberate: the runtime never
   pulls in Node APIs, and a consumer who only queries never resolves the model stack.
 </Aside>
 
@@ -26,25 +26,25 @@ printing. Paths resolve against `opts.cwd`, defaulting to `process.cwd()`.
 
 | Function | CLI equivalent | Returns |
 |---|---|---|
-| `runBuild` | `dockg build` | Document and triple counts, the output path, warnings |
-| `runCheck` | `dockg check` | Findings with severity, focus node, path, and responsible files |
-| `runValidate` | `dockg validate` | Per-file results and a summary |
-| `runFill` | `dockg fill` | Per-document status, fields written, cost |
-| `runQuery` | `dockg query` | Matching quads |
-| `runStats` | `dockg stats` | Counts, orphans, broken links, coverage |
-| `runSearch` | `dockg search` | Ranked results with the trace |
-| `runTraverse` | `dockg traverse` | Reached nodes and the trace |
-| `runEmbed` | `dockg embed` | Vector count, dimensions, cache hits |
-| `runExport` | `dockg export` | Node count and the output path |
+| `runBuild` | `moose-kg build` | Document and triple counts, the output path, warnings |
+| `runCheck` | `moose-kg check` | Findings with severity, focus node, path, and responsible files |
+| `runValidate` | `moose-kg validate` | Per-file results and a summary |
+| `runFill` | `moose-kg fill` | Per-document status, fields written, cost |
+| `runQuery` | `moose-kg query` | Matching quads |
+| `runStats` | `moose-kg stats` | Counts, orphans, broken links, coverage |
+| `runSearch` | `moose-kg search` | Ranked results with the trace |
+| `runTraverse` | `moose-kg traverse` | Reached nodes and the trace |
+| `runEmbed` | `moose-kg embed` | Vector count, dimensions, cache hits |
+| `runExport` | `moose-kg export` | Node count and the output path |
 
 Renderers for the pretty output are exported alongside them — `renderEmbed`, `renderSearch`,
 `renderTraverse`, and their siblings — if you want the CLI's formatting without its process
 handling.
 
 ```ts
-import { runBuild, runCheck } from "@hawkeyexl/dockg";
+import { runBuild, runCheck } from "moose-kg";
 
-const built = await runBuild({ config: "dockg.config.yaml" });
+const built = await runBuild({ config: "moose.config.yaml" });
 const report = await runCheck({ graph: built.outPath });
 
 const violations = report.findings.filter((f) => f.severity === "violation");
@@ -52,16 +52,16 @@ if (violations.length) process.exitCode = 1;
 ```
 
 <Aside type="caution" title="Errors are thrown, not exit codes">
-  The functions throw `DockgError` where the CLI would exit `2`. The `0`/`1`/`2` mapping lives in
+  The functions throw `MooseKgError` where the CLI would exit `2`. The `0`/`1`/`2` mapping lives in
   `src/cli.ts`, not in these functions — so a wrapper decides for itself what a finding means. See
-  [output & exit codes](/dockg/reference/output-and-exit-codes/).
+  [output & exit codes](/moose-kg/reference/output-and-exit-codes/).
 </Aside>
 
 ## Configuration
 
 | Export | Purpose |
 |---|---|
-| `loadConfig` | Discover, parse, and validate `dockg.config.yaml`; returns a total resolved shape |
+| `loadConfig` | Discover, parse, and validate `moose.config.yaml`; returns a total resolved shape |
 | `resolveBaseIri` | Normalize a base IRI the way `build` does |
 | `COVERAGE_FIELDS`, `COVERAGE_FIELD_NAMES` | The seven fields coverage is measured over |
 
@@ -109,8 +109,8 @@ by consumers.
 ## Vocabulary constants
 
 `NS`, `PREFIXES`, `TOPIC_TYPE_IRIS`, `SOFTWARE_LIFECYCLE_IRIS`, `SOFTWARE_SUBJECT_IRIS`,
-`DOCKG_NOT_APPLICABLE_TO_VARIANT`, `DOCKG_NOT_SOFTWARE_SUBJECT` — the same values the emitter uses.
-See [emitted vocabulary](/dockg/reference/vocabulary/).
+`MOOSE_KG_NOT_APPLICABLE_TO_VARIANT`, `MOOSE_KG_NOT_SOFTWARE_SUBJECT` — the same values the emitter uses.
+See [emitted vocabulary](/moose-kg/reference/vocabulary/).
 
 ## Testing against the LLM path
 
@@ -118,11 +118,11 @@ See [emitted vocabulary](/dockg/reference/vocabulary/).
 credential. `makeProvider` and `resolveProviderIdentity` cover the config → provider mapping.
 
 ```ts
-import { runFill, MockProvider } from "@hawkeyexl/dockg";
+import { runFill, MockProvider } from "moose-kg";
 ```
 
 <Aside type="note" title="The runtime exports are re-exported here too">
   `GraphIndex`, `traverse`, `assemble`, and the rest appear in both entry points, so Node-side code
   can query without a second import. The reverse is not true: nothing Node-specific leaks into
-  `dockg/runtime`.
+  `moose-kg/runtime`.
 </Aside>

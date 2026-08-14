@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { emitTurtle } from "../../src/core/emit.js";
-import { NS } from "../../src/core/vocab.js";
 import type { Quad } from "../../src/core/derive.js";
+import { MOOSE_KG, NS } from "../../src/core/vocab.js";
 
 const iri = (value: string) => ({ kind: "iri", value }) as const;
 const lit = (value: string, datatype?: string) =>
@@ -12,8 +12,8 @@ const DOC = "https://example.com/kg/doc/docs/a.md";
 function sample(): Quad[] {
   return [
     { s: DOC, p: `${NS.dcterms}title`, o: lit("Hello") },
-    { s: DOC, p: `${NS.rdf}type`, o: iri(`${NS.dockg}Document`) },
-    { s: DOC, p: `${NS.dockg}level`, o: lit("2", `${NS.xsd}integer`) },
+    { s: DOC, p: `${NS.rdf}type`, o: iri(`${MOOSE_KG}Document`) },
+    { s: DOC, p: `${MOOSE_KG}level`, o: lit("2", `${NS.xsd}integer`) },
     {
       s: DOC,
       p: `${NS.dcterms}subject`,
@@ -36,7 +36,9 @@ describe("emitTurtle", () => {
   it("emits sorted prefixes, subjects, and predicates with rdf:type as `a` first", () => {
     const ttl = emitTurtle(sample());
     expect(ttl).toContain("@prefix dcterms: <http://purl.org/dc/terms/> .");
-    expect(ttl).toContain("@prefix dockg: <https://dockg.dev/ns#> .");
+    expect(ttl).toContain(
+      "@prefix moose-kg: <https://moose-tools.dev/kg/ns#> .",
+    );
     // concept subject sorts before doc subject
     const conceptAt = ttl.indexOf("<https://example.com/kg/concept/a>");
     const docAt = ttl.indexOf(`<${DOC}>`);
@@ -44,7 +46,7 @@ describe("emitTurtle", () => {
     expect(conceptAt).toBeLessThan(docAt);
     // rdf:type first within the doc block, as `a`
     expect(ttl).toMatch(
-      /<https:\/\/example\.com\/kg\/doc\/docs\/a\.md> a dockg:Document ;/,
+      /<https:\/\/example\.com\/kg\/doc\/docs\/a\.md> a moose-kg:Document ;/,
     );
   });
 
@@ -57,8 +59,8 @@ describe("emitTurtle", () => {
 
   it("emits xsd:integer literals bare", () => {
     const ttl = emitTurtle(sample());
-    // dockg:level is the last predicate in the block (https:// sorts after http://)
-    expect(ttl).toContain("dockg:level 2 .");
+    // moose-kg:level is the last predicate in the block (https:// sorts after http://)
+    expect(ttl).toContain("moose-kg:level 2 .");
   });
 
   it("emits typed non-integer literals with a datatype suffix", () => {
@@ -115,8 +117,8 @@ describe("emitTurtle", () => {
 
   it("falls back to full IRIs when the local name is not a safe prefixed name", () => {
     const ttl = emitTurtle([
-      { s: DOC, p: `${NS.dcterms}title`, o: iri(`${NS.dockg}weird/local`) },
+      { s: DOC, p: `${NS.dcterms}title`, o: iri(`${MOOSE_KG}weird/local`) },
     ]);
-    expect(ttl).toContain("<https://dockg.dev/ns#weird/local>");
+    expect(ttl).toContain("<https://moose-tools.dev/kg/ns#weird/local>");
   });
 });

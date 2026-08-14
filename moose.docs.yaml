@@ -1,0 +1,51 @@
+# moose-kg, pointed at moose-kg's own documentation site.
+#
+# Deliberately *not* named moose.config.yaml: that is the filename moose-kg
+# discovers implicitly, and a config sitting at the repo root would be picked up
+# by every bare `moose-kg` invocation — including the integration tests, which run
+# the CLI from here. Always pass it explicitly:
+#
+#   moose-kg validate -c moose.docs.yaml
+#   moose-kg build -c moose.docs.yaml --out .tmp/docs-graph.ttl
+#
+# Settings live under `kg:` because moose.config.yaml is shared across the moose
+# tool family — each tool reads its own top-level section. This file keeps the
+# same shape so it stays copy-pasteable into a real shared config.
+#
+# Paths below are relative to the repo root, because input globs resolve against
+# the working directory rather than this file's location.
+kg:
+  version: 1
+  baseIri: https://hawkeyexl.github.io/moose-kg/kg/
+
+  # Both extensions: Starlight's docsLoader publishes `.md` as readily as `.mdx`,
+  # and Starlight's own schema leaves `description` optional — so a `.md` page
+  # matched by neither would ship with no description and nothing would object.
+  inputs:
+    - "docs/src/content/docs/**/*.{md,mdx}"
+
+  out: .tmp/docs-graph.ttl
+
+  # The published site serves src/content/docs/ under /moose-kg/, so cross-links
+  # written as absolute site routes resolve to real edges.
+  routes:
+    - basePath: /moose-kg
+      root: docs/src/content/docs
+      extensions: [".md", ".mdx"]
+
+  validate:
+    schemas:
+      - docs/doc-frontmatter.schema.json
+
+  provenance:
+    # The docs graph is a gate, not an artifact we ship, and deriving committer
+    # history for every page on every CI run buys nothing here.
+    git: false
+
+  stats:
+    # These pages carry title and description only — that is what the frontmatter
+    # gate enforces — so title/description are the fields worth gating. The rest
+    # would be gating moose-kg's docs against a vocabulary they do not use.
+    coverageThreshold:
+      title: 100
+      description: 100

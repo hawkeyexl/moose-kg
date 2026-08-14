@@ -10,14 +10,14 @@ decision-makers: [hawkeyexl, Claude]
 
 Direct PROV properties (`prov:wasAttributedTo`, `prov:wasAssociatedWith`)
 cannot say *in what role* an agent participated. PROV-O's qualification
-pattern can, but its canonical form uses blank nodes — which dockg's
+pattern can, but its canonical form uses blank nodes — which moose-kg's
 determinism contract forbids.
 
 ## Decision Drivers
 
 - No blank nodes, ever; byte-identical serialization.
 - Qualified detail should be optional — most graphs don't need the extra triples.
-- The custom `dockg:` namespace must stay small.
+- The custom `moose-kg:` namespace must stay small.
 
 ## Considered Options
 
@@ -30,8 +30,8 @@ determinism contract forbids.
 Chosen option 3, behind `provenance.qualified` (default false). Node IRIs are
 derived from what they qualify: `{docIri}#attribution-{agentSlug}` for
 attributions, `{activityIri}-association` for associations. Roles are three
-fixed vocabulary individuals — `dockg:authorRole`, `dockg:generatorRole`,
-`dockg:toolRole` (src/core/vocab.ts ROLE) — the only namespace additions.
+fixed vocabulary individuals — `moose-kg:authorRole`, `moose-kg:generatorRole`,
+`moose-kg:toolRole` (src/core/vocab.ts ROLE) — the only namespace additions.
 Direct properties are always emitted; qualification is additive, per the PROV
 spec's allowance for both forms coexisting.
 

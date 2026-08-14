@@ -13,8 +13,8 @@ import {
 } from "../../src/core/iri.js";
 
 describe("resolveBaseIri", () => {
-  it("defaults to urn:dockg: when unset", () => {
-    expect(resolveBaseIri(undefined)).toBe("urn:dockg:");
+  it("defaults to urn:moose-kg: when unset", () => {
+    expect(resolveBaseIri(undefined)).toBe("urn:moose-kg:");
   });
 
   it("appends a trailing slash to http(s) bases missing one", () => {
@@ -77,8 +77,8 @@ describe("mintDocIri", () => {
   });
 
   it("works with the urn fallback base", () => {
-    expect(mintDocIri("urn:dockg:", "docs/intro.md")).toBe(
-      "urn:dockg:doc/docs/intro.md",
+    expect(mintDocIri("urn:moose-kg:", "docs/intro.md")).toBe(
+      "urn:moose-kg:doc/docs/intro.md",
     );
   });
 });
@@ -127,8 +127,8 @@ describe("provenance IRIs", () => {
       mintAgentIri(base, "software", "gpt-4"),
     );
     // ...and a human named after the tool no longer collides with it
-    expect(mintAgentIri(base, "person", "dockg")).not.toBe(
-      mintAgentIri(base, "software", "dockg"),
+    expect(mintAgentIri(base, "person", "moose-kg")).not.toBe(
+      mintAgentIri(base, "software", "moose-kg"),
     );
   });
 

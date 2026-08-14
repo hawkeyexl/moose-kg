@@ -22,17 +22,17 @@ const PAGE = "docs/src/content/docs/reference/cli.mdx";
 const IMPLICIT = new Set(["-h, --help"]);
 
 if (!existsSync(CLI)) {
-  console.error(`dockg: ${CLI} not found — run \`npm run build\` first`);
+  console.error(`moose-kg: ${CLI} not found — run \`npm run build\` first`);
   process.exit(2);
 }
 if (!existsSync(PAGE)) {
-  console.error(`dockg: ${PAGE} not found`);
+  console.error(`moose-kg: ${PAGE} not found`);
   process.exit(2);
 }
 
 const { program } = await import(pathToFileURL(CLI).href);
 if (!program) {
-  console.error(`dockg: ${CLI} does not export \`program\``);
+  console.error(`moose-kg: ${CLI} does not export \`program\``);
   process.exit(2);
 }
 

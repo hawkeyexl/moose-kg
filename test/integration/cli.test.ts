@@ -20,11 +20,11 @@ export function runCli(args: string[], opts: { cwd?: string } = {}) {
   }
 }
 
-describe("dockg CLI", () => {
+describe("moose-kg CLI", () => {
   it("--help exits 0 and names the tool", () => {
     const { stdout, status } = runCli(["--help"]);
     expect(status).toBe(0);
-    expect(stdout).toContain("dockg");
+    expect(stdout).toContain("moose-kg");
   });
 
   it("--version exits 0", () => {

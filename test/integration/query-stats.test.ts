@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { hermeticEnv } from "../helpers/git-env.js";
+import { underKg } from "../helpers/config.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cli = join(root, "dist", "cli.js");
@@ -26,14 +27,14 @@ function run(args: string[]): { stdout: string; status: number } {
 }
 
 beforeAll(() => {
-  graph = join(mkdtempSync(join(tmpdir(), "dockg-qs-")), "graph.ttl");
+  graph = join(mkdtempSync(join(tmpdir(), "moose-kg-qs-")), "graph.ttl");
   execFileSync(process.execPath, [cli, "build", "--out", graph], {
     encoding: "utf8",
     cwd: corpus,
   });
 });
 
-describe("dockg query", () => {
+describe("moose-kg query", () => {
   it("matches by predicate with a prefixed name", () => {
     const { stdout, status } = run([
       "query",
@@ -64,7 +65,7 @@ describe("dockg query", () => {
 
   it("matches literal objects", () => {
     const { stdout } = run(["query", "-o", "python", "-g", graph]);
-    expect(stdout).toContain("dockg:codeLanguage");
+    expect(stdout).toContain("moose-kg:codeLanguage");
   });
 
   it("reports no matches cleanly", () => {
@@ -128,7 +129,7 @@ describe("dockg query", () => {
   });
 });
 
-describe("dockg stats", () => {
+describe("moose-kg stats", () => {
   it("reports counts, orphans, and broken links", () => {
     const { stdout, status } = run(["stats", "-g", graph]);
     expect(status).toBe(0);
@@ -177,10 +178,10 @@ describe("dockg stats", () => {
   });
 
   it("--check exits 1 for a broken section ref on an otherwise clean corpus", () => {
-    const dir = mkdtempSync(join(tmpdir(), "dockg-secref-"));
+    const dir = mkdtempSync(join(tmpdir(), "moose-kg-secref-"));
     writeFileSync(
-      join(dir, "dockg.config.yaml"),
-      'version: 1\ninputs: ["*.md"]\nprovenance:\n  git: false\n',
+      join(dir, "moose.config.yaml"),
+      'kg:\n  version: 1\n  inputs: ["*.md"]\n  provenance:\n    git: false\n',
     );
     writeFileSync(
       join(dir, "a.md"),
@@ -203,13 +204,13 @@ describe("dockg stats", () => {
   });
 });
 
-describe("dockg stats — metadata coverage", () => {
+describe("moose-kg stats — metadata coverage", () => {
   /** A clean one-doc corpus: no broken links, so --check isolates coverage. */
   function scratch(frontmatter: string, config = ""): string {
-    const dir = mkdtempSync(join(tmpdir(), "dockg-cov-"));
+    const dir = mkdtempSync(join(tmpdir(), "moose-kg-cov-"));
     writeFileSync(
-      join(dir, "dockg.config.yaml"),
-      `version: 1\ninputs: ["*.md"]\nprovenance:\n  git: false\n${config}`,
+      join(dir, "moose.config.yaml"),
+      `kg:\n  version: 1\n  inputs: ["*.md"]\n  provenance:\n    git: false\n${underKg(config)}`,
     );
     writeFileSync(join(dir, "a.md"), `${frontmatter}# A\n\nBody.\n`);
     execFileSync(
@@ -314,10 +315,10 @@ describe("dockg stats — metadata coverage", () => {
     // a doc with no `date`/`updated` still covers created/modified once git
     // provenance supplies them. Needs a real repo and provenance.git: true.
     const env = hermeticEnv();
-    const dir = mkdtempSync(join(tmpdir(), "dockg-cov-git-"));
+    const dir = mkdtempSync(join(tmpdir(), "moose-kg-cov-git-"));
     writeFileSync(
-      join(dir, "dockg.config.yaml"),
-      'version: 1\ninputs: ["*.md"]\nprovenance:\n  git: true\n',
+      join(dir, "moose.config.yaml"),
+      'kg:\n  version: 1\n  inputs: ["*.md"]\n  provenance:\n    git: true\n',
     );
     writeFileSync(join(dir, "a.md"), "# A\n\nNo frontmatter, no dates.\n");
     execFileSync("git", ["init", "-q"], { cwd: dir, env });

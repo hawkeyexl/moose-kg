@@ -1,6 +1,6 @@
 ---
 title: Get started
-description: Install dockg, build a graph from a Markdown repo you already have with no config file, read what came back, and prove the build is deterministic by running it twice.
+description: Install moose-kg, build a graph from a Markdown repo you already have with no config file, read what came back, and prove the build is deterministic by running it twice.
 ---
 
 import { Aside, LinkCard, CardGrid, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
@@ -13,7 +13,7 @@ You do not need to know RDF to finish this page.
 
 ## Before you start
 
-You need Node 24 or newer and a repo with Markdown files in it. That is the whole list — dockg
+You need Node 24 or newer and a repo with Markdown files in it. That is the whole list — moose-kg
 reads what is already on disk, so there is nothing to annotate first and no config file to
 write yet.
 
@@ -22,15 +22,15 @@ write yet.
 <Tabs>
   <TabItem label="npx (no install)">
     ```sh
-    npx @hawkeyexl/dockg --version
+    npx moose-kg --version
     ```
   </TabItem>
   <TabItem label="Global">
     ```sh
-    npm install -g @hawkeyexl/dockg
+    npm install -g moose-kg
     ```
     ```sh
-    dockg --version
+    moose-kg --version
     ```
   </TabItem>
 </Tabs>
@@ -41,11 +41,11 @@ write yet.
 
 1. **Run `build` from the root of your repo.**
 
-   With no config file, dockg ingests `**/*.md`, excludes `node_modules`, and writes
+   With no config file, moose-kg ingests `**/*.md`, excludes `node_modules`, and writes
    `kg/graph.ttl`.
 
    ```sh
-   dockg build
+   moose-kg build
    ```
 
    ```
@@ -54,10 +54,10 @@ write yet.
 
    <Aside type="caution" title="Run it from where your paths are written">
      Input globs resolve against your **current working directory**, not against the config
-     file's location. Running dockg from a subdirectory silently matches nothing:
+     file's location. Running moose-kg from a subdirectory silently matches nothing:
 
      ```
-     dockg: No input files matched: docs/**/*.md (cwd: /repo/docs)
+     moose-kg: No input files matched: docs/**/*.md (cwd: /repo/docs)
      ```
 
      Run it from the repo root.
@@ -70,9 +70,9 @@ write yet.
 
    ```turtle
    <https://example.com/kg/doc/docs/getting-started.md>
-       a dockg:Document ;
+       a moose-kg:Document ;
        dcterms:title "Getting started" ;
-       dockg:path "docs/getting-started.md" ;
+       moose-kg:path "docs/getting-started.md" ;
        dcterms:references <https://example.com/kg/doc/docs/configuration.md> .
    ```
 
@@ -81,13 +81,13 @@ write yet.
 
 3. **Notice what is missing.**
 
-   Your sentences are not in there, and they never will be. dockg indexes documentation; it
-   does not store it. Every node carries a `dockg:path` so you can route with the graph and
+   Your sentences are not in there, and they never will be. moose-kg indexes documentation; it
+   does not store it. Every node carries a `moose-kg:path` so you can route with the graph and
    then open the file.
 
    <LinkCard
      title="Why prose never enters the graph"
-     href="/dockg/concepts/index-not-corpus/"
+     href="/moose-kg/concepts/index-not-corpus/"
      description="The design decision behind everything else on this site — worth ten minutes now."
    />
 
@@ -95,11 +95,11 @@ write yet.
 
 ## Prove it is deterministic
 
-dockg promises byte-identical rebuilds over unchanged inputs. That is a claim you can check in
+moose-kg promises byte-identical rebuilds over unchanged inputs. That is a claim you can check in
 one command rather than take on faith.
 
 ```sh
-dockg build --out a.ttl && dockg build --out b.ttl && diff a.ttl b.ttl
+moose-kg build --out a.ttl && moose-kg build --out b.ttl && diff a.ttl b.ttl
 ```
 
 No output means no difference. There is no timestamp in the file, no random ordering, and no
@@ -115,7 +115,7 @@ blank nodes — which is what makes `graph.ttl` safe to commit and reviewable in
 `build` tells you the graph exists. `stats` tells you what it says about your documentation.
 
 ```sh
-dockg stats
+moose-kg stats
 ```
 
 ```
@@ -149,7 +149,7 @@ Three things worth reacting to:
 
 - **Broken internal links** are links whose target does not exist on disk. If your corpus links
   by published site route rather than by file path, expect a lot of these and see
-  [route mappings](/dockg/build/routes/) — they are a configuration gap, not a corpus defect.
+  [route mappings](/moose-kg/build/routes/) — they are a configuration gap, not a corpus defect.
 - **Broken section refs** are `kg.sections` keys that match no heading, usually because someone
   renamed the heading.
 - **Coverage** is the fraction of documents carrying each field.
@@ -157,7 +157,7 @@ Three things worth reacting to:
 <Aside type="tip" title="A low coverage number is the normal starting point">
   Nobody adopts a metadata tool before they have too much documentation. If your first coverage
   reading is in the single digits, that is a baseline, not a grade — and
-  [backfilling](/dockg/build/backfill/) is a designed path rather than an admission of defeat.
+  [backfilling](/moose-kg/build/backfill/) is a designed path rather than an admission of defeat.
 </Aside>
 
 ## What you have now
@@ -172,22 +172,22 @@ None of it is enforced yet. Nothing fails when the numbers get worse.
 <CardGrid>
   <LinkCard
     title="Build your graph"
-    href="/dockg/build/"
+    href="/moose-kg/build/"
     description="What each of the seven derive sources reads, and how to control what gets ingested."
   />
   <LinkCard
     title="Govern it in CI"
-    href="/dockg/govern/"
+    href="/moose-kg/govern/"
     description="Turn these numbers into a gate, so a metadata regression fails a pull request."
   />
   <LinkCard
     title="Understand the model"
-    href="/dockg/concepts/"
+    href="/moose-kg/concepts/"
     description="What the graph is for, why it is reproducible, and what a missing value means."
   />
   <LinkCard
     title="CLI reference"
-    href="/dockg/reference/cli/"
+    href="/moose-kg/reference/cli/"
     description="Every command, argument, and flag."
   />
 </CardGrid>

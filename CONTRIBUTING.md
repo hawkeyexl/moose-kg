@@ -1,4 +1,4 @@
-# Contributing to dockg
+# Contributing to moose-kg
 
 ## Setup
 
@@ -58,10 +58,10 @@ named persona and journey.
 |---|---|---|
 | Strategy invariants | `npm run docs:check-strategy` | Every `aud-`/`persona-`/`cuj-` reference resolves; personas and CUJs cover each other; the IA plans exactly the pages the journeys name |
 | CLI drift | `npm run docs:check-cli` | `reference/cli.mdx` documents exactly the commands, arguments, and options commander knows about |
-| Internal links | `npm run docs:check-links` | Every `/dockg/…` link resolves to a built page |
+| Internal links | `npm run docs:check-links` | Every `/moose-kg/…` link resolves to a built page |
 
 The docs workflow additionally builds a graph from the documentation site itself and holds it to
-`dockg check` and `dockg stats --check` — the same gates the docs recommend to readers.
+`moose-kg check` and `moose-kg stats --check` — the same gates the docs recommend to readers.
 
 **When you change the CLI surface** — add, rename, or remove a command, argument, flag, or
 default — update [`docs/src/content/docs/reference/cli.mdx`](docs/src/content/docs/reference/cli.mdx)

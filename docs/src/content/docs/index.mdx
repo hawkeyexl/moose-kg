@@ -1,15 +1,15 @@
 ---
-title: dockg
+title: moose-kg
 description: Derive a deterministic RDF knowledge graph from the documentation you already have — frontmatter, headings, links, and tags — and keep it in git beside the docs it describes.
 template: splash
 hero:
   tagline: Deterministic knowledge graphs derived from documentation you already wrote. No authoring step, no second system of record.
   actions:
     - text: Get started
-      link: /dockg/get-started/
+      link: /moose-kg/get-started/
       icon: right-arrow
     - text: Fix a failing check
-      link: /dockg/fix/
+      link: /moose-kg/fix/
       icon: error
       variant: minimal
 ---
@@ -18,10 +18,10 @@ import { Aside, Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
 ## The 30-second proof
 
-Point dockg at a Markdown repo. No config file, no annotation pass, no migration.
+Point moose-kg at a Markdown repo. No config file, no annotation pass, no migration.
 
 ```sh
-npx @hawkeyexl/dockg build
+npx moose-kg build
 ```
 
 ```
@@ -34,7 +34,7 @@ diffs cleanly in review and lives in git next to the docs it describes.
 Then ask it about your corpus:
 
 ```sh
-npx @hawkeyexl/dockg stats
+npx moose-kg stats
 ```
 
 ```
@@ -51,32 +51,32 @@ Coverage:
 <CardGrid>
   <LinkCard
     title="Build a graph from my repo"
-    href="/dockg/get-started/"
+    href="/moose-kg/get-started/"
     description="Install, run one command over docs you already have, and read what came back."
   />
   <LinkCard
     title="Understand what the graph is"
-    href="/dockg/concepts/"
+    href="/moose-kg/concepts/"
     description="Why your prose is not in it, why rebuilds are byte-identical, and what absence means."
   />
   <LinkCard
     title="Gate metadata quality in CI"
-    href="/dockg/govern/"
+    href="/moose-kg/govern/"
     description="Make a metadata regression fail a pull request instead of a review comment."
   />
   <LinkCard
     title="Model a real vocabulary"
-    href="/dockg/model/"
+    href="/moose-kg/model/"
     description="SKOS concepts, iiRDS topic types, and product-variant scope that survives a query."
   />
   <LinkCard
     title="Serve scoped, cited retrieval"
-    href="/dockg/retrieve/"
+    href="/moose-kg/retrieve/"
     description="A browser-native, retrieval-only runtime that stops before it calls a model."
   />
   <LinkCard
     title="Fix a check that just failed"
-    href="/dockg/fix/"
+    href="/moose-kg/fix/"
     description="Decode the error, find your failure in the catalog, apply the fix, merge."
   />
 </CardGrid>
@@ -84,12 +84,12 @@ Coverage:
 ## What it does, and what it does not
 
 <CardGrid>
-  <Card title="dockg reads" icon="approve-check">
+  <Card title="moose-kg reads" icon="approve-check">
     Frontmatter fields, heading structure, internal and external links, tags, images, and
     code-fence languages — plus git history, if you let it. It turns those into typed nodes
     and edges with stable IRIs.
   </Card>
-  <Card title="dockg does not read" icon="close">
+  <Card title="moose-kg does not read" icon="close">
     Your prose. Sentences never enter the graph. Every node instead points at the exact span
     on disk that owns them, so you route with the graph and then read the file.
   </Card>
@@ -99,5 +99,5 @@ Coverage:
   This is the one idea worth ten minutes up front. The graph exists to route, filter, audit,
   and attribute — not to store text for retrieval. If you open `graph.ttl` looking for your
   sentences and do not find them, that is the design working.
-  [Read why](/dockg/concepts/index-not-corpus/).
+  [Read why](/moose-kg/concepts/index-not-corpus/).
 </Aside>

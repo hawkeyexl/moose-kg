@@ -1,10 +1,10 @@
-/** Shared types for dockg. */
+/** Shared types for moose-kg. */
 
 /** Operational error: expected failure reported to the user, exit code 2. */
-export class DockgError extends Error {
+export class MooseKgError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = "DockgError";
+    this.name = "MooseKgError";
   }
 }
 
@@ -49,7 +49,7 @@ export interface DocImage {
   external: boolean;
 }
 
-/** Everything dockg derives from one source file. */
+/** Everything moose-kg derives from one source file. */
 export interface DocModel {
   /** Repo-relative path with forward slashes, e.g. `docs/guide.md`. */
   path: string;

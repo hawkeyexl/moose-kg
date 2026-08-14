@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://dockg.dev/schemas/frontmatter-0.2.json",
-  "title": "dockg knowledge-graph frontmatter (0.2)",
-  "description": "SKOS concept fields plus PROV-O provenance under the top-level `kg` key, consumed by dockg build and fill. Files without a `kg` key pass.",
+  "$id": "https://moose-tools.dev/kg/schemas/frontmatter-0.2.json",
+  "title": "moose-kg knowledge-graph frontmatter (0.2)",
+  "description": "SKOS concept fields plus PROV-O provenance under the top-level `kg` key, consumed by moose-kg build and fill. Files without a `kg` key pass.",
   "type": "object",
   "properties": {
     "kg": {
@@ -71,7 +71,7 @@
                 "enum": ["prefLabel", "altLabels", "broader", "narrower", "related", "subjects"]
               },
               "uniqueItems": true,
-              "description": "Which kg fields were machine-proposed (written by dockg fill)."
+              "description": "Which kg fields were machine-proposed (written by moose-kg fill)."
             }
           },
           "description": "Attribution for machine-proposed kg fields; humans delete entries they have reviewed."

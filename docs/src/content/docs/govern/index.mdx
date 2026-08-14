@@ -1,20 +1,20 @@
 ---
 title: Govern it in CI
-description: Which of dockg's three gates catches what — per-file frontmatter validation, whole-graph SHACL checks, and coverage thresholds — and how each obligation maps onto a command someone can run.
+description: Which of moose-kg's three gates catches what — per-file frontmatter validation, whole-graph SHACL checks, and coverage thresholds — and how each obligation maps onto a command someone can run.
 ---
 
 import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-Metadata quality decays unless something enforces it. dockg has three gates, they catch different
+Metadata quality decays unless something enforces it. moose-kg has three gates, they catch different
 things, and picking the wrong one wastes a week.
 
 ## The three gates
 
 | Gate | Scope | Catches | Exits 1 when |
 |---|---|---|---|
-| `dockg validate` | One file at a time | Frontmatter that violates the JSON Schema — wrong type, bad enum value, `broader` without `prefLabel` | Any file fails |
-| `dockg check` | The whole assembled graph | Cross-document problems: `broader` cycles, `related`/`broader` conflicts, applicability contradictions, untyped relation targets | Any finding is a violation |
-| `dockg stats --check` | Aggregate numbers | Broken internal links, broken section refs, coverage below threshold | Any threshold is breached |
+| `moose-kg validate` | One file at a time | Frontmatter that violates the JSON Schema — wrong type, bad enum value, `broader` without `prefLabel` | Any file fails |
+| `moose-kg check` | The whole assembled graph | Cross-document problems: `broader` cycles, `related`/`broader` conflicts, applicability contradictions, untyped relation targets | Any finding is a violation |
+| `moose-kg stats --check` | Aggregate numbers | Broken internal links, broken section refs, coverage below threshold | Any threshold is breached |
 
 They are complementary, and most teams end up running all three.
 
@@ -30,13 +30,13 @@ If you are specifying a requirement for someone else to implement, this is the t
 
 | Obligation | Mechanism | Command |
 |---|---|---|
-| Every document carries a title and description | Coverage thresholds per field | `dockg stats --check` |
-| Metadata conforms to our schema | JSON Schema validation | `dockg validate` |
-| The vocabulary has no cycles or conflicts | SHACL shapes | `dockg check` |
-| No topic contradicts itself about applicability | SHACL disjointness | `dockg check` |
-| Documentation does not link into nothing | Broken-link detection | `dockg stats --check` |
-| Authorship and derivation are recorded | PROV-O derivation | `dockg build`, then query |
-| Machine-generated fields are identifiable | `kg.provenance` entries | `dockg build`, then query |
+| Every document carries a title and description | Coverage thresholds per field | `moose-kg stats --check` |
+| Metadata conforms to our schema | JSON Schema validation | `moose-kg validate` |
+| The vocabulary has no cycles or conflicts | SHACL shapes | `moose-kg check` |
+| No topic contradicts itself about applicability | SHACL disjointness | `moose-kg check` |
+| Documentation does not link into nothing | Broken-link detection | `moose-kg stats --check` |
+| Authorship and derivation are recorded | PROV-O derivation | `moose-kg build`, then query |
+| Machine-generated fields are identifiable | `kg.provenance` entries | `moose-kg build`, then query |
 | The same evidence regenerates identically | Determinism contract | Any of the above |
 
 ## Read the exit codes before you wire anything
@@ -51,7 +51,7 @@ and still exit `0`, and each one will bite a gate that assumes otherwise:
 
 <LinkCard
   title="Output & exit codes"
-  href="/dockg/reference/output-and-exit-codes/"
+  href="/moose-kg/reference/output-and-exit-codes/"
   description="The full contract per command, and the cases that surprise people. Read this before writing a workflow."
 />
 
@@ -60,22 +60,22 @@ and still exit `0`, and each one will bite a gate that assumes otherwise:
 <CardGrid>
   <LinkCard
     title="Add the gate to CI"
-    href="/dockg/govern/ci/"
+    href="/moose-kg/govern/ci/"
     description="A complete GitHub Actions workflow, and a step for a workflow you already have."
   />
   <LinkCard
     title="Prove coverage"
-    href="/dockg/govern/coverage/"
+    href="/moose-kg/govern/coverage/"
     description="Per-field thresholds, and why the first one should sit below where you want to end up."
   />
   <LinkCard
     title="Prove provenance"
-    href="/dockg/govern/provenance/"
+    href="/moose-kg/govern/provenance/"
     description="Who wrote this, when, from what, and which model touched it."
   />
   <LinkCard
     title="Fix a failing check"
-    href="/dockg/fix/"
+    href="/moose-kg/fix/"
     description="Where your contributors land when the gate you just built fails them."
   />
 </CardGrid>

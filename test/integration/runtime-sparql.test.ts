@@ -11,7 +11,7 @@ import { Store } from "n3";
 import { describe, expect, it } from "vitest";
 import { GraphIndex } from "../../src/runtime/graph.js";
 import { matchQuads, rdfjsQuads } from "../../src/runtime/rdfjs.js";
-import { NS, RDF_TYPE } from "../../src/core/vocab.js";
+import { MOOSE_KG, NS, RDF_TYPE } from "../../src/core/vocab.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const goldenJsonLd = join(root, "test", "fixtures", "golden", "graph.jsonld");
@@ -34,7 +34,7 @@ describe("custom SPARQL over the runtime index", { timeout: 60_000 }, () => {
   it("answers a SELECT via an RDF/JS store built from rdfjsQuads", async () => {
     const engine = new QueryEngine();
     const stream = await engine.queryBindings(
-      `SELECT ?title WHERE { ?doc <${RDF_TYPE}> <${NS.dockg}Document> ;
+      `SELECT ?title WHERE { ?doc <${RDF_TYPE}> <${MOOSE_KG}Document> ;
                                   <${NS.dcterms}title> ?title . }`,
       { sources: [sparqlSource(corpusIndex())] },
     );
@@ -53,7 +53,7 @@ describe("custom SPARQL over the runtime index", { timeout: 60_000 }, () => {
     const engine = new QueryEngine();
     const stream = await engine.queryBindings(
       `SELECT ?target WHERE {
-         ?doc <${NS.dockg}path> "docs/windows-notes.md" ;
+         ?doc <${MOOSE_KG}path> "docs/windows-notes.md" ;
               <${NS.dcterms}references> ?target . }`,
       { sources: [sparqlSource(corpusIndex())] },
     );
@@ -84,7 +84,7 @@ describe("matchQuads", () => {
     expect(titles[0]!.object.value).toBe("Windows Notes");
     expect(titles[0]!.subject.termType).toBe("NamedNode");
 
-    const docs = matchQuads(graph, null, RDF_TYPE, `${NS.dockg}Document`);
+    const docs = matchQuads(graph, null, RDF_TYPE, `${MOOSE_KG}Document`);
     expect(docs).toHaveLength(4);
   });
 });

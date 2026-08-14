@@ -34,7 +34,7 @@ function run(
 }
 
 beforeAll(() => {
-  const dir = mkdtempSync(join(tmpdir(), "dockg-check-"));
+  const dir = mkdtempSync(join(tmpdir(), "moose-kg-check-"));
   corpusGraph = join(dir, "corpus.ttl");
   violationsGraph = join(dir, "violations.ttl");
   execFileSync(process.execPath, [cli, "build", "--out", corpusGraph], {
@@ -47,7 +47,7 @@ beforeAll(() => {
   });
 });
 
-describe("dockg check", () => {
+describe("moose-kg check", () => {
   it("passes the regression corpus (warnings allowed, no violations)", () => {
     const { stdout, status } = run(["check", "-g", corpusGraph], corpus);
     expect(status).toBe(0);
@@ -115,6 +115,6 @@ describe("dockg check", () => {
       corpus,
     );
     expect(status).toBe(2);
-    expect(stderr).toContain("run `dockg build` first");
+    expect(stderr).toContain("run `moose-kg build` first");
   });
 });

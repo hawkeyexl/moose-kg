@@ -4,7 +4,7 @@
  * git exports GIT_DIR, GIT_INDEX_FILE, GIT_WORK_TREE and friends to every
  * subprocess it runs, including hooks. Running the suite from the husky
  * pre-push hook therefore leaked those variables into fixtures that shell out
- * to `git`, so `git init`/`git add` in a temp directory operated on the dockg
+ * to `git`, so `git init`/`git add` in a temp directory operated on the moose-kg
  * repository instead ("fatal: this operation must be run in a work tree").
  *
  * Not collected as a suite: vitest's `include` is `test/**\/*.test.ts`.

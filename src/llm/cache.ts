@@ -1,6 +1,6 @@
 /**
  * Fill proposal cache. Storage is the inference library's `JsonCache`; what
- * stays here is what only dockg can decide — what invalidates an entry:
+ * stays here is what only moose-kg can decide — what invalidates an entry:
  * provider, model, prompt version, the requested fields, and the full file
  * content.
  */
@@ -33,6 +33,6 @@ export function cacheKey(
  */
 export class FillCache extends JsonCache<Record<string, unknown>> {
   constructor(dir: string, enabled: boolean = true) {
-    super(dir, enabled, "dockg");
+    super(dir, enabled, "moose-kg");
   }
 }

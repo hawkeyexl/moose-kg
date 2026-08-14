@@ -1,5 +1,5 @@
 /**
- * `dockg check` — graph-level validation: run the published SHACL shapes
+ * `moose-kg check` — graph-level validation: run the published SHACL shapes
  * (plus the TS-side SKOS integrity checks) over the built graph and report
  * findings with the doc paths responsible. Violations exit 1; warnings and
  * info findings are reported but pass.

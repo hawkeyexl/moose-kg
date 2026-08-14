@@ -13,8 +13,8 @@ ambient environment straight through. git exports `GIT_DIR`, `GIT_INDEX_FILE`,
 `GIT_WORK_TREE` and related variables to every subprocess it spawns — most
 notably to hooks, and to anything a hook runs.
 
-So when dockg ran anywhere beneath a git invocation, `git log` read *that*
-repository rather than the directory dockg was pointed at. Two failures follow:
+So when moose-kg ran anywhere beneath a git invocation, `git log` read *that*
+repository rather than the directory moose-kg was pointed at. Two failures follow:
 
 - A build with `provenance.git: true` produced a **different graph** depending
   on who invoked it. Measured on a one-document fixture: 25 triples run
@@ -38,7 +38,7 @@ ran the suite underneath git.
 
 ## Considered Options
 
-1. Leave it; document that dockg must not run from a git hook.
+1. Leave it; document that moose-kg must not run from a git hook.
 2. Unset a hand-picked list (`GIT_DIR`, `GIT_WORK_TREE`, `GIT_INDEX_FILE`).
 3. Drop the whole `GIT_*` namespace for the git subprocess (chosen).
 4. Pass `--git-dir`/`-C` explicitly instead of relying on `cwd`.
@@ -65,7 +65,7 @@ strip.
 
 - Good: git provenance now depends only on `cwd` and the commit, as documented.
 - Good: `npm test` passes identically whether or not it runs under a hook.
-- Neutral: a caller that genuinely wanted to redirect dockg via `GIT_DIR` can
+- Neutral: a caller that genuinely wanted to redirect moose-kg via `GIT_DIR` can
   no longer do so; `cwd` is the single supported control, which is what the
   documentation always claimed.
 - Risk: the exec seam's `undefined`-means-unset rule is easy to misread as

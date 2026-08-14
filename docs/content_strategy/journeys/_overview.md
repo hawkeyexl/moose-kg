@@ -19,12 +19,12 @@ anchors:
   - cuj-fix-failing-check
 ---
 
-The thirteen end-to-end outcomes dockg's documentation must let someone reach, and which persona
+The thirteen end-to-end outcomes moose-kg's documentation must let someone reach, and which persona
 reaches each.
 
 ## What a CUJ is here
 
-A complete outcome a persona can reach using dockg and its documentation — not a feature, not a
+A complete outcome a persona can reach using moose-kg and its documentation — not a feature, not a
 page, and not a command. A journey is done when the persona has the result they came for, which
 is why several journeys end in a verification step rather than a final command.
 
@@ -60,7 +60,7 @@ disproportionate weight and should be finished first.
 
 `cuj-first-graph` is the **structural anchor**: every other journey assumes a graph exists, so if
 this one fails nothing downstream is reachable. `cuj-fix-failing-check` is the **traffic anchor**:
-it is the destination of every error message dockg emits, and every gate the other personas
+it is the destination of every error message moose-kg emits, and every gate the other personas
 install generates visits to it.
 
 They fail in opposite ways. The first fails by demanding too much before returning value — an

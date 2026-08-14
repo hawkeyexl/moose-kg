@@ -1,5 +1,5 @@
 /**
- * Graph guardrail for `dockg fill`: before a proposal is written to
+ * Graph guardrail for `moose-kg fill`: before a proposal is written to
  * frontmatter, simulate it in the derived graph and drop any field that
  * would violate the SHACL shapes contract — broader/narrower cycles,
  * related⨯broaderTransitive conflicts, prefLabel collisions. Accepted
@@ -11,16 +11,16 @@ import { resolve } from "node:path";
 import { DataFactory, Store } from "n3";
 import type { DocModel } from "../types.js";
 import { analyzeDoc } from "./analyze.js";
-import type { DeriveSource, DockgConfig } from "./config.js";
+import type { DeriveSource, MooseKgConfig } from "./config.js";
 import { deriveGraph, type Quad } from "./derive.js";
 import { applyKgFields } from "./frontmatter-edit.js";
 import { validateGraph, type CheckFinding } from "./shacl.js";
 import { byCodeUnit } from "./sort.js";
-import { NS } from "./vocab.js";
 import {
-  DOCKG_NOT_APPLICABLE_TO_VARIANT,
-  DOCKG_NOT_SOFTWARE_SUBJECT,
+  MOOSE_KG_NOT_APPLICABLE_TO_VARIANT,
+  MOOSE_KG_NOT_SOFTWARE_SUBJECT,
 } from "./iirds.js";
+import { NS } from "./vocab.js";
 
 const { namedNode, literal, quad } = DataFactory;
 
@@ -80,7 +80,7 @@ export class FillGuard {
 
   private constructor(
     private readonly allPaths: Set<string>,
-    private readonly routes: DockgConfig["routes"],
+    private readonly routes: MooseKgConfig["routes"],
     private readonly baseIri: string,
     private readonly sources: DeriveSource[],
     private readonly shapesPaths: string[],
@@ -91,7 +91,7 @@ export class FillGuard {
   static create(
     files: string[],
     cwd: string,
-    config: DockgConfig,
+    config: MooseKgConfig,
     shapesPaths: string[],
     force: boolean,
   ): FillGuard {
@@ -163,12 +163,12 @@ export class FillGuard {
     // Negative-scope disjointness (ADR 01014/01015): the finding sits on the
     // negative predicate's shape. Drop the proposed side of the conflict,
     // preferring the negative when both were proposed.
-    if (finding.path === DOCKG_NOT_APPLICABLE_TO_VARIANT) {
+    if (finding.path === MOOSE_KG_NOT_APPLICABLE_TO_VARIANT) {
       if (proposed.has("notApplicableTo")) return ["notApplicableTo"];
       if (proposed.has("appliesTo")) return ["appliesTo"];
       return [];
     }
-    if (finding.path === DOCKG_NOT_SOFTWARE_SUBJECT) {
+    if (finding.path === MOOSE_KG_NOT_SOFTWARE_SUBJECT) {
       if (proposed.has("notSoftwareSubject")) return ["notSoftwareSubject"];
       if (proposed.has("softwareSubject")) return ["softwareSubject"];
       return [];

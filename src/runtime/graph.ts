@@ -79,7 +79,7 @@ export class GraphIndex {
     return index;
   }
 
-  /** Build from dockg's internal quad shape (the Node/CLI path). */
+  /** Build from moose-kg's internal quad shape (the Node/CLI path). */
   static fromQuads(quads: Quad[], context: Record<string, string> = {}) {
     const index = new GraphIndex({ ...context });
     for (const q of quads) {

@@ -13,7 +13,7 @@ import { join, relative } from "node:path";
 
 const SRC = "docs/src/content/docs";
 const DIST = "docs/dist";
-const BASE = "/dockg/";
+const BASE = "/moose-kg/";
 
 function filesUnder(dir) {
   return readdirSync(dir).flatMap((entry) => {
@@ -31,7 +31,9 @@ function routeIsBuilt(href) {
 }
 
 if (!existsSync(DIST)) {
-  console.error(`dockg: ${DIST} not found — run \`npm run docs:build\` first`);
+  console.error(
+    `moose-kg: ${DIST} not found — run \`npm run docs:build\` first`,
+  );
   process.exit(2);
 }
 
@@ -41,8 +43,8 @@ let checked = 0;
 
 for (const file of pages) {
   const raw = readFileSync(file, "utf8");
-  // Matches both Markdown `](/dockg/…)` and JSX `href="/dockg/…"`.
-  for (const [, href] of raw.matchAll(/["(](\/dockg\/[^"()\s#]*)/g)) {
+  // Matches both Markdown `](/moose-kg/…)` and JSX `href="/moose-kg/…"`.
+  for (const [, href] of raw.matchAll(/["(](\/moose-kg\/[^"()\s#]*)/g)) {
     checked += 1;
     if (routeIsBuilt(href)) continue;
     const source = relative(SRC, file).replace(/\\/g, "/");
@@ -59,7 +61,7 @@ console.log(`${checked} internal links checked across ${pages.length} files`);
 // would make every link stop matching rather than start failing.
 if (checked === 0) {
   console.error(
-    `dockg: no links matching ${BASE} found — is the site base still "${BASE.replace(/\/$/, "")}"?`,
+    `moose-kg: no links matching ${BASE} found — is the site base still "${BASE.replace(/\/$/, "")}"?`,
   );
   process.exit(2);
 }

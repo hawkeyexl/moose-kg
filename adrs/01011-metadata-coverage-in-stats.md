@@ -4,7 +4,7 @@ date: 2026-07-22
 decision-makers: [hawkeyexl, Claude]
 ---
 
-# Report metadata coverage in `dockg stats`, gated by per-field thresholds
+# Report metadata coverage in `moose-kg stats`, gated by per-field thresholds
 
 ## Context and Problem Statement
 
@@ -14,7 +14,7 @@ graph-side consumers. Nothing measures that. A corpus where three quarters of
 the docs carry no description and half carry no subject produces a thin index,
 and the first symptom appears downstream, in whatever consumes the graph.
 
-dockg should turn that silence into a number, in the tool users already run for
+moose-kg should turn that silence into a number, in the tool users already run for
 graph health. Two questions follow: what exactly is measured and how is it
 reported, and is it merely reported or also enforceable?
 
@@ -26,7 +26,7 @@ reported, and is it merely reported or also enforceable?
   arbitrary gate defaults manufacture false failures.
 - Determinism: identical graph → identical report, stable field order, no
   float-formatting drift.
-- The measurement must reflect the graph, not the frontmatter. A date dockg
+- The measurement must reflect the graph, not the frontmatter. A date moose-kg
   derived from git history is in the index and should count as covered.
 - Enforcement must fit the existing exit-code contract and `--check` semantics
   rather than inventing new ones.
@@ -47,7 +47,7 @@ reported, and is it merely reported or also enforceable?
 ## Decision Outcome
 
 **Measure a fixed list of per-document predicates.** Coverage counts, for each
-field, how many `dockg:Document` nodes carry the mapped predicate:
+field, how many `moose-kg:Document` nodes carry the mapped predicate:
 
 | field | predicate |
 |---|---|
@@ -117,7 +117,7 @@ config-only.
   field.
 - Bad: two config shapes for one key (number or map) is more schema surface
   than a plain number, and the resolved type differs from the authored one.
-- Neutral: fields dockg cannot derive for a given document legitimately depress
+- Neutral: fields moose-kg cannot derive for a given document legitimately depress
   coverage. That is the measurement working, not a defect.
 
 ### Confirmation

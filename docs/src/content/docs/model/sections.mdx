@@ -9,7 +9,7 @@ A document that covers three product variants cannot be truthfully tagged with a
 Section metadata is how you stop lying about two thirds of a page.
 
 The principle behind it: [node granularity must match content
-granularity](/dockg/concepts/granularity/).
+granularity](/moose-kg/concepts/granularity/).
 
 ## The map
 
@@ -75,7 +75,7 @@ about, and a concept hierarchy hanging off a heading is not a meaningful claim.
 Section keys are slugs of heading text, and heading text is prose that writers edit without
 thinking about metadata. Rename a heading and its key matches nothing.
 
-dockg reports it rather than ignoring it:
+moose-kg reports it rather than ignoring it:
 
 ```
 Broken section refs (1):
@@ -86,17 +86,17 @@ That single behavior is what makes section metadata safe to rely on. Without it,
 would be a system that degrades quietly every time somebody improves a heading — and the
 degradation would be invisible until a scoped query returned the wrong set.
 
-It is also gated: `dockg stats --check` exits `1` on a broken section ref, so a renamed heading
+It is also gated: `moose-kg stats --check` exits `1` on a broken section ref, so a renamed heading
 fails its own pull request.
 
 ## Verify a section resolves
 
 ```sh
-dockg query -s "https://docs.example.com/kg/doc/docs/maintenance.md#reset-the-interlock"
+moose-kg query -s "https://docs.example.com/kg/doc/docs/maintenance.md#reset-the-interlock"
 ```
 
 ```sh
-dockg traverse "https://docs.example.com/kg/doc/docs/maintenance.md" --variant SP-X100 --depth 2
+moose-kg traverse "https://docs.example.com/kg/doc/docs/maintenance.md" --variant SP-X100 --depth 2
 ```
 
 The second is the one that matters: a variant-scoped traversal over a section-annotated document
@@ -116,12 +116,12 @@ already lying.
 <CardGrid>
   <LinkCard
     title="Granularity"
-    href="/dockg/concepts/granularity/"
+    href="/moose-kg/concepts/granularity/"
     description="The principle, and what it costs when a node indexes more than it describes."
   />
   <LinkCard
     title="Scope by product variant"
-    href="/dockg/model/variants/"
+    href="/moose-kg/model/variants/"
     description="The applicability vocabulary these sections are carrying."
   />
 </CardGrid>

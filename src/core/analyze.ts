@@ -1,6 +1,6 @@
 /**
  * Markdown analysis: one source file → a `DocModel`. Frontmatter data comes
- * from docmeta's extractor (single source of truth with `dockg validate`);
+ * from docmeta's extractor (single source of truth with `moose-kg validate`);
  * body structure (headings, links, images, code fences) comes from a
  * remark/mdast walk with positions in document order.
  */
@@ -13,7 +13,7 @@ import { toString as mdastToString } from "mdast-util-to-string";
 import GithubSlugger from "github-slugger";
 import { extractFrontmatter } from "docmeta";
 import type { Root, Content, Definition } from "mdast";
-import { DockgError } from "../types.js";
+import { MooseKgError } from "../types.js";
 import type { DocImage, DocLink, DocModel, Section } from "../types.js";
 import {
   DEFAULT_INDEX_FILES,
@@ -321,11 +321,11 @@ export function analyzeDoc(
     // Parsing MDX makes parse *failures* possible where Markdown had none:
     // remark-parse accepts anything, the MDX extension does not. Left raw, the
     // micromark throw escapes cli.ts's `fail()` — which only converts
-    // DockgError — so the CLI dumps a stack trace, exits 1 (the code the
+    // MooseKgError — so the CLI dumps a stack trace, exits 1 (the code the
     // contract reserves for findings), and never names the file. Convert it.
     if (!isMdx) throw error;
     const reason = error instanceof Error ? error.message : String(error);
-    throw new DockgError(`Could not parse MDX in ${path}: ${reason}`);
+    throw new MooseKgError(`Could not parse MDX in ${path}: ${reason}`);
   }
 
   const sections: Section[] = [];
@@ -406,7 +406,7 @@ export function analyzeDoc(
       }
       // A JSX element's `href` is a link and its `src` is an image, on any
       // element (ADR 01022). Those are HTML's own names for the relationships,
-      // so this stays structural — dockg never learns what `<LinkCard>` means.
+      // so this stays structural — moose-kg never learns what `<LinkCard>` means.
       case "mdxJsxFlowElement":
       case "mdxJsxTextElement": {
         const href = jsxAttributeValue(node, "href");

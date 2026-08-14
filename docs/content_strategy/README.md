@@ -1,6 +1,6 @@
 # Content strategy
 
-This directory holds dockg's durable answer to *who the documentation is for, what they are
+This directory holds moose-kg's durable answer to *who the documentation is for, what they are
 trying to accomplish, and how the docset is therefore shaped.* It is an internal working
 artifact for contributors and agents — it is deliberately outside `docs/src/content/docs/`, so
 Starlight never publishes it.
@@ -34,7 +34,7 @@ Two invariants hold, and are checked before any change to this directory lands:
 
 ## Evidence basis, and its limits
 
-dockg has no customers and no call transcripts. **These personas are derived from repo
+moose-kg has no customers and no call transcripts. **These personas are derived from repo
 artifacts, not from user research** — `README.md`, `DESIGN.md`'s iiRDS×knowledge-graph thesis,
 the ADR set, the CLI/config/frontmatter surface, and the sibling project docmeta's
 already-validated persona set.
@@ -66,7 +66,7 @@ The strategy describes intent. Behavior claims in the docset must come from the 
 
 - **Source files are the contract for behavior.** `src/cli.ts` for the command surface,
   `src/core/config-schema.json` for config, `schemas/frontmatter-0.8.json` for the `kg:` block,
-  `shapes/dockg-0.5.ttl` for what `dockg check` catches.
+  `shapes/moose-kg-0.5.ttl` for what `moose-kg check` catches.
 - **The test suite is the contract for exact emitted strings.** Do not hand-write sample
   output — `test/fixtures/golden/` and the integration tests hold the real thing.
 - **To capture sample output, build and run the binary** against a committed fixture rather

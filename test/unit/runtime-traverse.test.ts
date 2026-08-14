@@ -8,11 +8,11 @@ import {
   traverse,
 } from "../../src/runtime/traverse.js";
 import { createTrace, reachedNodes } from "../../src/runtime/trace.js";
-import { NS, RDF_TYPE } from "../../src/core/vocab.js";
 import {
-  DOCKG_NOT_APPLICABLE_TO_VARIANT,
+  MOOSE_KG_NOT_APPLICABLE_TO_VARIANT,
   IIRDS_RELATES_TO_PRODUCT_VARIANT,
 } from "../../src/core/iirds.js";
+import { MOOSE_KG, NS, RDF_TYPE } from "../../src/core/vocab.js";
 
 const BASE = "https://ex.com/kg/";
 const A = `${BASE}doc/a.md`;
@@ -28,21 +28,21 @@ const REFERENCES = `${NS.dcterms}references`;
  */
 function fixture(): GraphIndex {
   return GraphIndex.fromQuads([
-    { s: A, p: RDF_TYPE, o: { kind: "iri", value: `${NS.dockg}Document` } },
+    { s: A, p: RDF_TYPE, o: { kind: "iri", value: `${MOOSE_KG}Document` } },
     { s: A, p: REFERENCES, o: { kind: "iri", value: B } },
     {
       s: A,
       p: IIRDS_RELATES_TO_PRODUCT_VARIANT,
       o: { kind: "iri", value: X100 },
     },
-    { s: B, p: RDF_TYPE, o: { kind: "iri", value: `${NS.dockg}Document` } },
+    { s: B, p: RDF_TYPE, o: { kind: "iri", value: `${MOOSE_KG}Document` } },
     { s: B, p: REFERENCES, o: { kind: "iri", value: C } },
     {
       s: B,
-      p: DOCKG_NOT_APPLICABLE_TO_VARIANT,
+      p: MOOSE_KG_NOT_APPLICABLE_TO_VARIANT,
       o: { kind: "iri", value: X100 },
     },
-    { s: C, p: RDF_TYPE, o: { kind: "iri", value: `${NS.dockg}Document` } },
+    { s: C, p: RDF_TYPE, o: { kind: "iri", value: `${MOOSE_KG}Document` } },
     {
       s: X100,
       p: RDF_TYPE,
@@ -84,15 +84,15 @@ describe("traverse", () => {
     const g = fixture();
     const r = traverse(g, { seeds: [A], depth: 2 });
     // Without this guard every document would be two hops from every other
-    // via the shared dockg:Document class node — edge contamination.
-    expect(r.nodes.map((n) => n.iri)).not.toContain(`${NS.dockg}Document`);
+    // via the shared moose-kg:Document class node — edge contamination.
+    expect(r.nodes.map((n) => n.iri)).not.toContain(`${MOOSE_KG}Document`);
     expect(r.trace.hops.some((h) => h.predicate === RDF_TYPE)).toBe(false);
   });
 
   it("follows rdf:type when explicitly asked to", () => {
     const g = fixture();
     const r = traverse(g, { seeds: [A], depth: 1, includeTypeEdges: true });
-    expect(r.nodes.map((n) => n.iri)).toContain(`${NS.dockg}Document`);
+    expect(r.nodes.map((n) => n.iri)).toContain(`${MOOSE_KG}Document`);
   });
 
   it("restricts to the requested predicates", () => {
@@ -138,7 +138,7 @@ describe("scope filtering", () => {
     });
     expect(r.nodes.map((n) => n.iri)).toEqual([A]);
     expect(r.trace.exclusions).toEqual([
-      { node: B, rule: DOCKG_NOT_APPLICABLE_TO_VARIANT, value: X100 },
+      { node: B, rule: MOOSE_KG_NOT_APPLICABLE_TO_VARIANT, value: X100 },
     ]);
   });
 

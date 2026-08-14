@@ -6,7 +6,7 @@ import {
 } from "../../src/core/search-index.js";
 import { GraphIndex } from "../../src/runtime/graph.js";
 import type { Quad } from "../../src/core/derive.js";
-import { NS, RDF_TYPE } from "../../src/core/vocab.js";
+import { MOOSE_KG, NS, RDF_TYPE } from "../../src/core/vocab.js";
 
 const BASE = "https://ex.com/kg/";
 const DOC = `${BASE}doc/docs/a.md`;
@@ -24,7 +24,7 @@ Preamble prose.
 
 ## Install
 
-Run the installer. The default cache directory is .dockg/cache.
+Run the installer. The default cache directory is .moose-kg/cache.
 
 ## Other
 
@@ -42,21 +42,21 @@ No headings besides the title. Mentions marmalade.
 
 function fixture(): GraphIndex {
   return GraphIndex.fromQuads([
-    { s: DOC, p: RDF_TYPE, o: iri(`${NS.dockg}Document`) },
-    { s: DOC, p: `${NS.dockg}path`, o: lit("docs/a.md") },
+    { s: DOC, p: RDF_TYPE, o: iri(`${MOOSE_KG}Document`) },
+    { s: DOC, p: `${MOOSE_KG}path`, o: lit("docs/a.md") },
     { s: DOC, p: `${NS.dcterms}title`, o: lit("A Document") },
     { s: DOC, p: `${NS.dcterms}description`, o: lit("About installing.") },
 
-    { s: SEC_INSTALL, p: RDF_TYPE, o: iri(`${NS.dockg}Section`) },
+    { s: SEC_INSTALL, p: RDF_TYPE, o: iri(`${MOOSE_KG}Section`) },
     { s: SEC_INSTALL, p: `${NS.dcterms}title`, o: lit("Install") },
     {
       s: SEC_INSTALL,
-      p: `${NS.dockg}level`,
+      p: `${MOOSE_KG}level`,
       o: lit("2", `${NS.xsd}integer`),
     },
 
-    { s: LOOSE, p: RDF_TYPE, o: iri(`${NS.dockg}Document`) },
-    { s: LOOSE, p: `${NS.dockg}path`, o: lit("docs/loose.md") },
+    { s: LOOSE, p: RDF_TYPE, o: iri(`${MOOSE_KG}Document`) },
+    { s: LOOSE, p: `${MOOSE_KG}path`, o: lit("docs/loose.md") },
     { s: LOOSE, p: `${NS.dcterms}title`, o: lit("Loose") },
 
     { s: CONCEPT, p: RDF_TYPE, o: iri(`${NS.skos}Concept`) },
@@ -86,15 +86,15 @@ function byId(entries: SearchEntry[], id: string): SearchEntry | undefined {
 describe("buildSearchIndex", () => {
   it("emits an entry per indexable node type with its compacted type", () => {
     const { entries } = build();
-    expect(byId(entries, DOC)?.type).toBe("dockg:Document");
-    expect(byId(entries, SEC_INSTALL)?.type).toBe("dockg:Section");
+    expect(byId(entries, DOC)?.type).toBe("moose-kg:Document");
+    expect(byId(entries, SEC_INSTALL)?.type).toBe("moose-kg:Section");
     expect(byId(entries, CONCEPT)?.type).toBe("skos:Concept");
   });
 
   it("gives a section its own body slice", () => {
     const section = byId(build().entries, SEC_INSTALL);
     expect(section?.text).toContain("Run the installer");
-    expect(section?.text).toContain(".dockg/cache");
+    expect(section?.text).toContain(".moose-kg/cache");
     // The slice stops at the next same-level heading.
     expect(section?.text).not.toContain("Other things");
   });

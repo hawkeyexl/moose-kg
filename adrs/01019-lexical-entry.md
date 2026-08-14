@@ -14,8 +14,8 @@ the stage before that: **a text question → ranked starting nodes**. Without it
 someone who already knows where to stand.
 
 The obstacle is structural. **The graph carries no prose**, by design: ADR 01008
-makes it an index and governance layer, never a corpus. `dockg:Document` has
-`dcterms:title` and `dcterms:description`; `dockg:Section` has *only* a title;
+makes it an index and governance layer, never a corpus. `moose-kg:Document` has
+`dcterms:title` and `dcterms:description`; `moose-kg:Section` has *only* a title;
 `skos:Concept` has pref/alt labels. A lexical index over that text alone answers
 "how do I configure the SP-X100?" (a title match) but cannot answer "what is the
 default cache directory?" — the words only exist in the body. That is precisely
@@ -50,7 +50,7 @@ metadata and accept that body words are unfindable.
 
 ### Body text: a build-time artifact (option a)
 
-`dockg export --format search` emits **`kg/search.json`**, a sibling of
+`moose-kg export --format search` emits **`kg/search.json`**, a sibling of
 `graph.ttl`/`graph.jsonld` — the Pagefind/VitePress pattern. It is produced in
 Node from markdown already on disk, so it stays hermetic; it is a separate
 artifact, so the graph remains prose-free and ADR 01008 holds.
@@ -60,14 +60,14 @@ page load; (c) breaks the graph-as-index contract outright; (d) is the status
 quo whose inadequacy motivates this phase.
 
 Like the iiRDS projection (ADR 01017), the exporter walks the built graph and
-reads each `dockg:path` from disk — the same precedent, so `export` reading
+reads each `moose-kg:path` from disk — the same precedent, so `export` reading
 source files is not a new capability.
 
-**Shape** — plain JSON dockg owns, *not* MiniSearch's serialized index:
+**Shape** — plain JSON moose-kg owns, *not* MiniSearch's serialized index:
 
 ```json
 { "version": 1,
-  "entries": [ { "id": "<iri>", "type": "dockg:Section",
+  "entries": [ { "id": "<iri>", "type": "moose-kg:Section",
                  "title": "Options", "labels": "config settings",
                  "text": "## Options\n\n…" } ] }
 ```
@@ -78,7 +78,7 @@ engine change without changing the artifact. Building the index at load costs
 milliseconds at docs scale. Entries are sorted by `id`, empty fields omitted, no
 wall clock — byte-identical across runs.
 
-**Indexed node types:** `dockg:Document`, `dockg:Section`, `skos:Concept`.
+**Indexed node types:** `moose-kg:Document`, `moose-kg:Section`, `skos:Concept`.
 Concepts are worth seeding from (concept → the documents about it);
 `iirds:ProductVariant` is not, because a variant is a *scope filter*, not
 something to read.
@@ -120,7 +120,7 @@ Chosen by the maintainer over a hand-rolled BM25, for a battle-tested tokenizer
 and fuzzy/prefix matching (typo tolerance a ~100-line BM25 would not have).
 
 The cost is stated plainly: **the runtime loses its zero-dependency property.**
-`minisearch` becomes dockg's first production runtime dependency, bundled into
+`minisearch` becomes moose-kg's first production runtime dependency, bundled into
 `dist/runtime.js` (tsup `noExternal`) to preserve the single-file browser
 drop-in — left external, the bundle would carry a bare `import MiniSearch from
 "minisearch"` that no browser can resolve without an import map or a bundler.
@@ -166,7 +166,7 @@ Unit tests for the artifact (per-type entries, the granularity rule in both
 directions, label dedupe across case variants, byte-identical rebuilds); runtime
 tests including **a body-only term that is invisible to the graph** — the case
 that justifies the artifact's existence; `rrfMerge` fusion tests; an integration
-test against a `search.json` golden plus a `dockg search` CLI run; and the
+test against a `search.json` golden plus a `moose-kg search` CLI run; and the
 updated bundle-purity gate with the new size recorded.
 
 ## Pros and Cons of the Options

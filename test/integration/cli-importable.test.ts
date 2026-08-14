@@ -29,8 +29,8 @@ describe("dist/cli.js as an importable module", () => {
     expect(r.status).toBe(0);
     expect(r.stdout).toContain("IMPORT_RETURNED");
     // Commander's help output is the tell-tale of an unwanted parse.
-    expect(r.stdout).not.toMatch(/Usage: dockg/);
-    expect(r.stderr).not.toMatch(/Usage: dockg/);
+    expect(r.stdout).not.toMatch(/Usage: moose-kg/);
+    expect(r.stderr).not.toMatch(/Usage: moose-kg/);
   });
 
   // Deliberately not an exhaustive command list: scripts/check-cli-reference.mjs
@@ -58,6 +58,6 @@ describe("dist/cli.js as an importable module", () => {
       cwd: root,
     });
     expect(r.status).toBe(0);
-    expect(r.stdout).toMatch(/Usage: dockg/);
+    expect(r.stdout).toMatch(/Usage: moose-kg/);
   });
 });

@@ -27,7 +27,7 @@
 import { byCodeUnit } from "./sort.js";
 
 export const VECTOR_INDEX_FILENAME = "vectors.bin";
-/** "DKGV" — dockg vectors. */
+/** "DKGV" — moose-kg vectors. */
 const MAGIC = 0x44_4b_47_56;
 const FORMAT_VERSION = 1;
 const HEADER_OFFSET = 12;
@@ -126,18 +126,20 @@ export function encodeVectorIndex(
 /** Decode a sidecar, rejecting anything malformed rather than mis-reading it. */
 export function decodeVectorIndex(bytes: Uint8Array): VectorIndexDoc {
   if (bytes.length < HEADER_OFFSET) {
-    throw new VectorIndexError("Not a dockg vector index: file is too short.");
+    throw new VectorIndexError(
+      "Not a moose-kg vector index: file is too short.",
+    );
   }
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   if (view.getUint32(0, true) !== MAGIC) {
     throw new VectorIndexError(
-      "Not a dockg vector index: bad magic — is this the right file?",
+      "Not a moose-kg vector index: bad magic — is this the right file?",
     );
   }
   const version = view.getUint32(4, true);
   if (version !== FORMAT_VERSION) {
     throw new VectorIndexError(
-      `Unsupported vector index version ${version} (this build reads ${FORMAT_VERSION}) — re-run \`dockg embed\`.`,
+      `Unsupported vector index version ${version} (this build reads ${FORMAT_VERSION}) — re-run \`moose-kg embed\`.`,
     );
   }
 

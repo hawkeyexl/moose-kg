@@ -9,38 +9,38 @@ trigger: >-
   about to move, rename, or delete a page and needing to know what depends on it —
   or needing to confirm what the graph actually asserts, rather than what it was
   meant to assert
-entry_point: /dockg/build/query/
+entry_point: /moose-kg/build/query/
 success_criteria: >-
   The reader can list every assertion about a node, find everything that points at
   a page before changing it, and read a scope filter's exclusions rather than only
   its results.
 steps:
   - stage: trigger
-    doc: /dockg/build/
+    doc: /moose-kg/build/
     exists: true
     note: "stats gives aggregate numbers; the next question is always about one specific node."
   - stage: orient
-    doc: /dockg/build/query/
+    doc: /moose-kg/build/query/
     exists: true
     note: "Two commands, two shapes of question: query matches patterns, traverse walks edges."
   - stage: act
-    doc: /dockg/build/query/
+    doc: /moose-kg/build/query/
     exists: true
     note: "query with any term omitted as a wildcard; CURIEs rather than full IRIs."
   - stage: act
-    doc: /dockg/build/query/
+    doc: /moose-kg/build/query/
     exists: true
     note: "traverse --reverse and --impact: what points here, and what a change reaches."
   - stage: verify
-    doc: /dockg/build/query/
+    doc: /moose-kg/build/query/
     exists: true
     note: "Read the exclusions line, not just the node list — the filter's value is what it removed."
   - stage: extend
-    doc: /dockg/reference/cli/
+    doc: /moose-kg/reference/cli/
     exists: true
     note: "Every flag on both commands, including the depth default that changes under --impact."
   - stage: extend
-    doc: /dockg/reference/vocabulary/
+    doc: /moose-kg/reference/vocabulary/
     exists: true
     note: "Which predicate to ask for, once the reader knows what they are looking for."
 ---
@@ -81,7 +81,7 @@ it was written — slug convergence in particular is silent, and a query is the 
 
 - **Show real output.** Both commands print a compact, stable format, and a reader matching their
   terminal against the page is the fastest way to confirm they ran it right.
-- **`rdf:type` is not traversed by default.** Every document shares `dockg:Document`, so following
+- **`rdf:type` is not traversed by default.** Every document shares `moose-kg:Document`, so following
   type edges makes everything reachable from everything in two hops. Mention it where a reader might
   wonder why a traversal looks narrower than expected.
 - **Both commands are read-only and always exit 0** on a successful run, including when nothing

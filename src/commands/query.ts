@@ -1,5 +1,5 @@
 /**
- * `dockg query` — triple-pattern matching over the built graph. Any of
+ * `moose-kg query` — triple-pattern matching over the built graph. Any of
  * s/p/o may be omitted (wildcard). Prefixed names (`dcterms:references`)
  * and full IRIs are accepted; `--o` also matches literal values verbatim.
  */

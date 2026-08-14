@@ -39,11 +39,11 @@ emit: `#prov.generation`, `#prov.kg-fill.{modelSlug}`,
 one activity merging). Schema 0.4 (`schemas/frontmatter-0.4.json`, now the
 bundled validate default) makes `kg.provenance` an array of
 `{generatedBy, fields}` entries; the 0.2/0.3 single-object form remains
-accepted and is normalized on read. `dockg fill` unions fields only within
+accepted and is normalized on read. `moose-kg fill` unions fields only within
 the current model's entry, preserves other models' entries, and under
 `--force` moves a re-filled field's attribution to the model that rewrote it.
 derive emits one `#prov.kg-fill.{model}` activity per entry, so
-`prov:generated`/`dockg:filledField` triples associate with the model that
+`prov:generated`/`moose-kg:filledField` triples associate with the model that
 actually proposed them.
 
 ### Consequences

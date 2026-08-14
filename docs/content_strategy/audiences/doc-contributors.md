@@ -7,9 +7,9 @@ docs_owner: nobody; they own one page, not the infrastructure
 status: secondary, highest-traffic
 firmographics:
   - contributes documentation occasionally, often alongside a code change
-  - did not choose dockg and may not know what it is
+  - did not choose moose-kg and may not know what it is
   - arrives via a failing CI check with a link in it
-  - has no dockg config knowledge and no local dockg installation
+  - has no moose-kg config knowledge and no local moose-kg installation
   - wants to be unblocked, not educated
 relationship_stages:
   - blocked: a check is red and the PR cannot merge
@@ -19,7 +19,7 @@ personas:
 evidence_basis:
   - the exit-code contract in src/cli.ts — exit 1 means findings, which is what turns a CI job red and sends this reader to the docs
   - the operational-error (exit 2) messages across src/commands/*.ts, which are well written in code but collected nowhere
-  - dockg check's per-finding mapping back to the responsible doc file(s), which presumes a human will go fix that file
+  - moose-kg check's per-finding mapping back to the responsible doc file(s), which presumes a human will go fix that file
   - the frontmatter validation errors surfaced through docmeta, which name a field and a constraint but not a remedy
   - docmeta's Theo persona and its fix/ track, whose information-architecture.md records it as the highest-traffic destination in the set
 ---
@@ -34,13 +34,13 @@ alongside a code change, a support specialist correcting a procedure, or a write
 work on the docs platform.
 
 They bring Markdown authoring and knowledge of the content they wrote. They bring **no** config
-knowledge, no graph model, and frequently no local dockg installation — the first time they
-encounter dockg is the error message.
+knowledge, no graph model, and frequently no local moose-kg installation — the first time they
+encounter moose-kg is the error message.
 
 ## What they want
 
 To merge. That is the whole goal, and the docset should not pretend otherwise. This reader is
-not evaluating dockg, is not going to read the concept pages, and will bounce off any page that
+not evaluating moose-kg, is not going to read the concept pages, and will bounce off any page that
 opens by explaining what a knowledge graph is.
 
 What actually helps them is narrow:
@@ -66,5 +66,5 @@ pages should be resisted. A single link out, at the bottom, is enough.
 ## Where the docset serves them
 
 The `fix/` track exclusively, which is also the primary destination of every error message
-dockg emits. See [`persona-doc-contributor`](../personas/doc-contributor.md) and
+moose-kg emits. See [`persona-doc-contributor`](../personas/doc-contributor.md) and
 [`cuj-fix-failing-check`](../journeys/fix-failing-check.md).

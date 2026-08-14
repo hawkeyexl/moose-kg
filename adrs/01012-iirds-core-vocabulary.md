@@ -8,8 +8,8 @@ decision-makers: [hawkeyexl, Claude]
 
 ## Context and Problem Statement
 
-DESIGN.md commits dockg to speaking the technical-communication industry's RDF
-dialect where a term fits, rather than minting `dockg:` terms. iiRDS (the
+DESIGN.md commits moose-kg to speaking the technical-communication industry's RDF
+dialect where a term fits, rather than minting `moose-kg:` terms. iiRDS (the
 intelligent information Request and Delivery Standard, tekom) is that dialect.
 This phase adds the highest-value mappings — **topic typing** and **product /
 variant applicability** — plus the **iiRDS Software domain**, the first change
@@ -31,12 +31,12 @@ corrected two prior assumptions:
   DESIGN.md wrongly assumed none did. Its 9 values are **not uniform**: 6 are
   product-lifecycle phases, 3 are information subjects, reached by two
   different predicates.
-- **No official SHACL shapes** are published (RDFS only), so dockg authors its
+- **No official SHACL shapes** are published (RDFS only), so moose-kg authors its
   own, as it already does.
 
 ## Decision Drivers
 
-- Prefer external standard vocabularies over the minimal `dockg:` namespace.
+- Prefer external standard vocabularies over the minimal `moose-kg:` namespace.
 - Stay license-clean: reference IRIs, never vendor or re-serialize the
   vocabulary.
 - Determinism and the closed-shapes contract are unchanged obligations.
@@ -49,7 +49,7 @@ For topic-type emission:
 1. **Reference the iiRDS instance IRIs directly** (`<doc> iirds:has-topic-type
    iirds:GenericTask`).
 2. Also type each doc `a iirds:Topic` / `a iirds:InformationUnit`.
-3. Mirror the types as local `skos:Concept` nodes (uniform with dockg's
+3. Mirror the types as local `skos:Concept` nodes (uniform with moose-kg's
    existing concept emission).
 
 For the Software domain:
@@ -62,10 +62,10 @@ For the Software domain:
 **Topic types: option 1 — reference the published instance IRIs directly.** A
 closed enum of the 6 Core topic types (`task`, `concept`, `reference`,
 `learning`, `troubleshooting`, `form`) maps `kg.topicType` →
-`iirds:has-topic-type` → the matching `iirds:Generic*` IRI. dockg does not
+`iirds:has-topic-type` → the matching `iirds:Generic*` IRI. moose-kg does not
 re-type or redefine those IRIs (option 3 would diverge from iiRDS's own
 modeling and risks a CC BY-ND derivative; option 2 layers extra classes onto
-nodes already typed `dockg:Document`/`prov:Entity` and drags in the
+nodes already typed `moose-kg:Document`/`prov:Entity` and drags in the
 Package/Fragment hierarchy for no present benefit).
 
 **Product applicability: mint local `iirds:ProductVariant` nodes.**
@@ -103,16 +103,16 @@ stable map targets.
 
 ### Consequences
 
-- Good: dockg graphs carry industry-standard topic types, product
+- Good: moose-kg graphs carry industry-standard topic types, product
   applicability, and software classification that downstream iiRDS-aware tools
-  understand, with zero growth of the `dockg:` namespace.
+  understand, with zero growth of the `moose-kg:` namespace.
 - Good: license-clean — only IRIs are referenced; the vocabulary is never
   bundled or altered.
 - Bad: every emitted graph gains two `@prefix` lines (`iirds:`, `iirdsSft:`)
   even when no iiRDS term is used, because the emitter emits a fixed header.
   Consistent with the existing design; the golden regenerates once.
 - Bad: the closed Document shape must learn four new predicates
-  (`shapes/dockg-0.2.ttl`); until it does, `dockg check` fails on them — the
+  (`shapes/moose-kg-0.2.ttl`); until it does, `moose-kg check` fails on them — the
   intended gate, not a regression.
 - Neutral: `kg.appliesTo` mints nodes; `softwareLifecyclePhase`/`Subject` and
   `topicType` reference published IRIs. Two mechanisms, because variants are
@@ -124,13 +124,13 @@ Every IRI is byte-verified against the raw `iirds-core.rdf` /
 `iirds-software.rdf`. `test/unit/schema-sync.test.ts` pins each schema enum to
 its `src/core/iirds.ts` map so they cannot drift. `test/unit/derive.test.ts`
 asserts the emitted predicate/object for each field and that an absent `kg`
-key emits no iiRDS triples. `dockg validate` rejects out-of-enum values.
-`dockg build` can only ever emit the published IRIs, so the `sh:in` gate is
+key emits no iiRDS triples. `moose-kg validate` rejects out-of-enum values.
+`moose-kg build` can only ever emit the published IRIs, so the `sh:in` gate is
 exercised at the shapes layer instead: `test/unit/shacl.test.ts` validates a
 hand-built graph with an out-of-set topic-type IRI and asserts a violation
 (and a conforming iiRDS graph with no findings), while
 `test/integration/check.test.ts` confirms the clean corpus still exits 0
-against `dockg-0.2.ttl`. The determinism gates (double-build,
+against `moose-kg-0.2.ttl`. The determinism gates (double-build,
 version-normalized golden, n3 round-trip) cover the new triples.
 
 ## Pros and Cons of the Options
@@ -138,7 +138,7 @@ version-normalized golden, n3 round-trip) cover the new triples.
 ### Reference instance IRIs directly
 
 - Good: faithful to iiRDS modeling; license-clean; minimal surface.
-- Bad: dockg asserts a link to an IRI whose definition lives upstream —
+- Bad: moose-kg asserts a link to an IRI whose definition lives upstream —
   consumers must dereference the vocabulary to resolve its meaning (true of any
   external-term reference).
 
@@ -150,7 +150,7 @@ version-normalized golden, n3 round-trip) cover the new triples.
 
 ### Mirror as local `skos:Concept`
 
-- Good: uniform with dockg's existing concept emission.
+- Good: uniform with moose-kg's existing concept emission.
 - Bad: diverges from iiRDS's own typing and edges toward re-publishing a
   modified form of a CC BY-ND vocabulary.
 

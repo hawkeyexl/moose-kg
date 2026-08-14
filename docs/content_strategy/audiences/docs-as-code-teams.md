@@ -21,7 +21,7 @@ evidence_basis:
   - README.md quickstart, which assumes a Markdown repo and a working git checkout
   - the derive source set (frontmatter, sections, links, tags, images, code, provenance) — every one reads what a docs-as-code repo already has on disk
   - ADR 01009 (hermetic features ship on), which is written for someone who wants value without configuration
-  - ADR 01011 (metadata coverage in dockg stats), which presumes an existing corpus with partial metadata
+  - ADR 01011 (metadata coverage in moose-kg stats), which presumes an existing corpus with partial metadata
   - docmeta's validated lead persona (Maya, documentation engineer) — the sibling product's on-ramp segment
 ---
 
@@ -44,8 +44,8 @@ Something that turns the frontmatter they already have into an answer to questio
 ask and currently answer by hand: *what links to this page? what did we break when we moved it?
 which pages have no owner? how much of the corpus is actually annotated?*
 
-The decisive quality is that dockg reads what is already on disk. There is no authoring step,
-no separate metadata database, and no migration — `dockg build` over an existing repo produces
+The decisive quality is that moose-kg reads what is already on disk. There is no authoring step,
+no separate metadata database, and no migration — `moose-kg build` over an existing repo produces
 a graph on the first run. That is the entire pitch to this audience, and it is why they are the
 lead: they are the segment that can get value before understanding the model.
 
@@ -53,14 +53,14 @@ lead: they are the segment that can get value before understanding the model.
 
 Three reasons, in order of weight:
 
-1. **They are the only audience that can adopt dockg alone.** Every other segment needs someone
+1. **They are the only audience that can adopt moose-kg alone.** Every other segment needs someone
    in this role to wire it up. The information architect needs the build running before their
    `kg:` block means anything; the AI platform team needs a graph to consume; the compliance
    owner needs a gate someone else maintains.
 2. **The product's defaults are built for them.** ADR 01009's rule — hermetic features on by
    default, network and spend always explicit — is a bet that the first run should just work
    without a config file. That is this persona's first run.
-3. **Their failure mode is the one that kills adoption.** If they conclude dockg requires
+3. **Their failure mode is the one that kills adoption.** If they conclude moose-kg requires
    learning RDF before it returns anything, they leave. Every page in the on-ramp is
    constrained by that.
 

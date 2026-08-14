@@ -4,11 +4,11 @@ date: 2026-07-24
 decision-makers: [hawkeyexl, Claude]
 ---
 
-# `dockg fill` proposes all fields, gated by model confidence
+# `moose-kg fill` proposes all fields, gated by model confidence
 
 ## Context and Problem Statement
 
-`dockg fill` lifts `kg:` frontmatter with an LLM and writes it back, guarded by
+`moose-kg fill` lifts `kg:` frontmatter with an LLM and writes it back, guarded by
 the SHACL "certified by structure" gate ([ADR 01006](adrs/01006-shacl-graph-validation.md)).
 Today it proposes only four SKOS fields; `broader`/`narrower` are held back by a
 static allowlist because they hallucinate; and there is no confidence signal
@@ -35,7 +35,7 @@ confidence live?
 - The SHACL guardrail stays the structural gate; confidence is an orthogonal,
   additional gate.
 - No network in tests (MockProvider); determinism of `build` is untouched.
-- An agent orchestrating dockg must be able to read fill's exit code correctly —
+- An agent orchestrating moose-kg must be able to read fill's exit code correctly —
   routine low-confidence drops are **not** failures.
 
 ## Considered Options
@@ -65,8 +65,8 @@ unambiguous — so those fields self-filter without a hard rule.
 
 **Confidence is persisted in `kg.provenance`** (the per-model attribution entry
 fill already writes) and reflected in the emitted graph: the `#kg-fill` activity
-reifies each filled field into an entry node carrying `dockg:filledField` +
-`dockg:confidence` (blank-node-free, deterministic). Frontmatter is the durable,
+reifies each filled field into an entry node carrying `moose-kg:filledField` +
+`moose-kg:confidence` (blank-node-free, deterministic). Frontmatter is the durable,
 human-reviewable audit surface; the graph carries it for downstream consumers.
 
 **A field dropped for low confidence is exit 0** — normal, expected operation.
@@ -89,7 +89,7 @@ follow-up.
 - Good: the exit code stays a truthful signal — 0 for normal runs (including
   heavy dropping), 1 only for real errors.
 - Bad: the response contract, the schema (`frontmatter-0.8.json`), the emitter,
-  and the shapes (`dockg-0.5.ttl`) all change in one phase; the `dockg:`
+  and the shapes (`moose-kg-0.5.ttl`) all change in one phase; the `moose-kg:`
   namespace grows by two properties (`filledFieldEntry`, `confidence`, 8 → 10).
 - Bad: a model's self-scored confidence is not calibrated ground truth — 0.7 is a
   starting default, tunable per corpus via `fill.minConfidence`.
@@ -102,8 +102,8 @@ recorded in the written `kg.provenance`; an iiRDS field filled at high
 confidence; a disjoint `appliesTo`/`notApplicableTo` proposal rejected by the
 extended guard; dropped-for-confidence keeps exit 0. `test/unit/derive.test.ts`:
 a provenance entry with confidence emits the reified entry nodes +
-`dockg:confidence` decimals. `test/unit/shacl.test.ts`: the entry conforms to
-`dockg-0.5.ttl`. `test/unit/schema-sync.test.ts`: `FIELD_SCHEMAS` and the
+`moose-kg:confidence` decimals. `test/unit/shacl.test.ts`: the entry conforms to
+`moose-kg-0.5.ttl`. `test/unit/schema-sync.test.ts`: `FIELD_SCHEMAS` and the
 provenance `fields` enum both equal the full fillable set. Determinism gates
 (double-build, version-normalized golden, n3 round-trip) cover the new triples.
 

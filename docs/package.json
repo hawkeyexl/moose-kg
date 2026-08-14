@@ -1,9 +1,9 @@
 {
-  "name": "dockg-docs",
+  "name": "moose-kg-docs",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "The dockg documentation site. A separate npm project so the published package never carries a docs toolchain.",
+  "description": "The moose-kg documentation site. A separate npm project so the published package never carries a docs toolchain.",
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",

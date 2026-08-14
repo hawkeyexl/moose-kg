@@ -1,6 +1,6 @@
 ---
 title: Open-world semantics
-description: A missing value in dockg means unknown, not excluded — so a query that treats absence as exclusion returns a set that is wrong in the dangerous direction, and dockg gives you explicit negative predicates to say the stronger thing.
+description: A missing value in moose-kg means unknown, not excluded — so a query that treats absence as exclusion returns a set that is wrong in the dangerous direction, and moose-kg gives you explicit negative predicates to say the stronger thing.
 ---
 
 import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
@@ -32,7 +32,7 @@ Both queries are silently wrong, in opposite directions, with no error to notice
 
 ## Saying the stronger thing
 
-When "this does not apply" is actually true, assert it. dockg mints negative predicates for
+When "this does not apply" is actually true, assert it. moose-kg mints negative predicates for
 exactly this:
 
 ```md title="docs/interlock-reset.md"
@@ -45,7 +45,7 @@ kg:
 ---
 ```
 
-That emits `dockg:notApplicableToVariant`, a real edge you can query. The same pattern exists for
+That emits `moose-kg:notApplicableToVariant`, a real edge you can query. The same pattern exists for
 subjects, as `notSoftwareSubject`.
 
 Now the three states are distinguishable:
@@ -53,7 +53,7 @@ Now the three states are distinguishable:
 | Frontmatter | Meaning | Queryable as |
 |---|---|---|
 | `appliesTo: [SP-X100]` | Applies, asserted | `iirds:relates-to-product-variant` |
-| `notApplicableTo: [SP-C40]` | Does not apply, asserted | `dockg:notApplicableToVariant` |
+| `notApplicableTo: [SP-C40]` | Does not apply, asserted | `moose-kg:notApplicableToVariant` |
 | neither | **Unknown** | absence of both |
 
 **Query the negative edge, not the silence.** An interlock check that must exclude a variant has
@@ -62,7 +62,7 @@ to look for the explicit exclusion; anything else is inferring from a gap.
 ## Contradictions are caught
 
 Asserting both directions for the same variant is a defect a human reviewer misses and an auditor
-finds. `dockg check` catches it every build, via SHACL disjointness between `appliesTo` and
+finds. `moose-kg check` catches it every build, via SHACL disjointness between `appliesTo` and
 `notApplicableTo`, and it is a violation rather than a warning — so it exits 1 and fails your
 gate.
 
@@ -72,14 +72,14 @@ The same hazard shows up at query time. Filtering a traversal by a variant that 
 the graph could reasonably return an empty set — and an empty set is indistinguishable from
 "nothing matched", which is exactly the wrong answer for a filter meant to *exclude* something.
 
-So dockg refuses instead:
+So moose-kg refuses instead:
 
 ```sh
-dockg traverse "https://example.com/kg/doc/docs/setup.md" --variant SP-X999
+moose-kg traverse "https://example.com/kg/doc/docs/setup.md" --variant SP-X999
 ```
 
 ```
-dockg: Unknown product variant: SP-X999
+moose-kg: Unknown product variant: SP-X999
 ```
 
 Exit 2. A typo in a scope filter is an operational error, not a result.
@@ -94,19 +94,19 @@ what you actually know:
 - **Do not** backfill `notApplicableTo` across a corpus for tidiness. You will be asserting things
   nobody checked, and the graph cannot tell a reviewed assertion from a bulk one.
 - **Do** measure the gap instead. Low `appliesTo` coverage is a number, and
-  [a number can be gated](/dockg/govern/coverage/).
+  [a number can be gated](/moose-kg/govern/coverage/).
 
 ## Where to go next
 
 <CardGrid>
   <LinkCard
     title="Scope by product variant"
-    href="/dockg/model/variants/"
+    href="/moose-kg/model/variants/"
     description="The iiRDS typing keys, their published IRIs, and negative scope in practice."
   />
   <LinkCard
     title="An index, not a corpus"
-    href="/dockg/concepts/index-not-corpus/"
+    href="/moose-kg/concepts/index-not-corpus/"
     description="The other half: a fact that lives only in prose is invisible to every query."
   />
 </CardGrid>

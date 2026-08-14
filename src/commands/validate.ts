@@ -1,5 +1,5 @@
 /**
- * `dockg validate` — KG-readiness check. Thin wrapper over docmeta's
+ * `moose-kg validate` — KG-readiness check. Thin wrapper over docmeta's
  * programmatic API, validating discovered docs against the schemas in
  * config `validate.schemas` (default: the frontmatter schema bundled with
  * this package at schemas/frontmatter-0.5.json).
@@ -12,7 +12,7 @@ import {
   type ReportFormat,
   type ValidateRun,
 } from "docmeta";
-import { DockgError } from "../types.js";
+import { MooseKgError } from "../types.js";
 import { loadConfig } from "../core/config.js";
 import { discoverFiles } from "../core/discover.js";
 import { bundledSchemaPath } from "../core/pkg.js";
@@ -36,13 +36,13 @@ export async function runValidate(
   const inputs =
     opts.globs && opts.globs.length > 0 ? opts.globs : config.inputs;
 
-  // Discover with the SAME mechanism as `dockg build`, then hand docmeta the
+  // Discover with the SAME mechanism as `moose-kg build`, then hand docmeta the
   // explicit file list — validate must cover exactly the corpus build ingests
   // (docmeta's own glob expansion filters extensions and merges excludes from
   // any docmeta.config.yaml, which would silently shrink the corpus).
   const files = discoverFiles(inputs, config.exclude, cwd);
   if (files.length === 0) {
-    throw new DockgError(
+    throw new MooseKgError(
       `No input files matched: ${inputs.join(", ")} (cwd: ${cwd})`,
     );
   }
@@ -51,8 +51,8 @@ export async function runValidate(
     (f) => !supported.has(extname(f).toLowerCase()),
   );
   if (unsupported.length > 0) {
-    throw new DockgError(
-      `dockg build would ingest file types docmeta cannot validate: ${unsupported
+    throw new MooseKgError(
+      `moose-kg build would ingest file types docmeta cannot validate: ${unsupported
         .slice(0, 5)
         .join(
           ", ",
@@ -60,7 +60,7 @@ export async function runValidate(
     );
   }
 
-  // dockg self-hosts its frontmatter schema (schemas/frontmatter-0.5.json in
+  // moose-kg self-hosts its frontmatter schema (schemas/frontmatter-0.5.json in
   // the package); with no explicit validate.schemas, hand docmeta that file.
   const schemas =
     config.validate.schemas.length > 0
@@ -76,7 +76,7 @@ export async function runValidate(
     });
   } catch (e) {
     // Surface docmeta operational errors as our own (exit 2).
-    throw new DockgError(e instanceof Error ? e.message : String(e));
+    throw new MooseKgError(e instanceof Error ? e.message : String(e));
   }
 
   return {

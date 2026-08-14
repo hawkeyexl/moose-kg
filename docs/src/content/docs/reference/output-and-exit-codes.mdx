@@ -1,11 +1,11 @@
 ---
 title: Output & exit codes
-description: The 0/1/2 exit contract that carries every CI integration, including the counter-intuitive cases where dockg reports a problem and still exits 0, plus the two different meanings of the -f flag.
+description: The 0/1/2 exit contract that carries every CI integration, including the counter-intuitive cases where moose-kg reports a problem and still exits 0, plus the two different meanings of the -f flag.
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 
-Exit codes are how dockg integrates with anything. Get them wrong and you build a gate that does
+Exit codes are how moose-kg integrates with anything. Get them wrong and you build a gate that does
 not gate, or one that fails on healthy runs.
 
 ## The contract
@@ -23,7 +23,7 @@ contributor should fix a document, `2` means whoever owns the pipeline should lo
 
 | Command | Exits `1` when | Exits `2` when |
 |---|---|---|
-| `init` | never | the config file already exists |
+| `init` | never | a `kg:` section already exists |
 | `build` | never | no input matched; `provenance.git: true` and git unusable |
 | `check` | any finding is a `sh:Violation` | the graph is missing or unparseable |
 | `validate` | any file failed or errored | inputs include a type docmeta cannot validate |
@@ -74,8 +74,8 @@ Every command except `init`, `build`, and `export` takes `-f/--format` with `pre
 `json`. `pretty` is for humans and goes to stdout; `json` is stable and machine-readable.
 
 ```sh
-dockg check --format json
-dockg stats --format json
+moose-kg check --format json
+moose-kg stats --format json
 ```
 
 <Aside type="caution" title="`-f` on `export` means something else entirely">
@@ -89,10 +89,10 @@ dockg stats --format json
 - **stderr** carries warnings and errors, including operational-error messages and the projection
   warnings `export` emits. **Warnings on stderr never affect the exit code**, so a pipeline that
   discards stderr will silently lose the fact that something degraded.
-- Errors print as `dockg: <message>` in red.
+- Errors print as `moose-kg: <message>` in red.
 
 Piping `--format json` to a file and reading stderr separately is the reliable pattern:
 
 ```sh
-dockg stats --format json > stats.json 2> stats.err
+moose-kg stats --format json > stats.json 2> stats.err
 ```

@@ -1,186 +1,326 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "dockg:config:0.1",
-  "title": "dockg configuration",
+  "$id": "moose:config:kg:0.1",
+  "title": "moose.config.yaml",
+  "description": "The shared moose-tools config file. Every tool in the family reads its own top-level section; moose-kg reads `kg`. Sibling sections are deliberately permitted at the root and ignored here.",
   "type": "object",
-  "additionalProperties": false,
-  "required": ["version"],
+  "additionalProperties": true,
   "properties": {
-    "version": { "const": 1 },
-    "baseIri": { "type": "string", "minLength": 1 },
-    "inputs": {
-      "type": "array",
-      "items": { "type": "string", "minLength": 1 }
-    },
-    "exclude": {
-      "type": "array",
-      "items": { "type": "string", "minLength": 1 }
-    },
-    "out": { "type": "string", "minLength": 1 },
-    "routes": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["root"],
-        "properties": {
-          "basePath": { "type": "string" },
-          "root": { "type": "string" },
-          "extensions": {
-            "type": "array",
-            "items": { "type": "string", "pattern": "^\\." }
-          },
-          "indexFiles": {
-            "type": "array",
-            "items": { "type": "string", "minLength": 1 }
-          }
-        }
-      }
-    },
-    "build": {
+    "kg": {
+      "$ref": "#/$defs/kg"
+    }
+  },
+  "$defs": {
+    "kg": {
+      "title": "moose-kg configuration",
       "type": "object",
       "additionalProperties": false,
+      "required": ["version"],
       "properties": {
-        "derive": {
+        "version": {
+          "const": 1
+        },
+        "baseIri": {
+          "type": "string",
+          "minLength": 1
+        },
+        "inputs": {
           "type": "array",
-          "uniqueItems": true,
           "items": {
-            "enum": [
-              "frontmatter",
-              "sections",
-              "links",
-              "tags",
-              "images",
-              "code",
-              "provenance"
-            ]
+            "type": "string",
+            "minLength": 1
           }
-        }
-      }
-    },
-    "validate": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "schemas": {
+        },
+        "exclude": {
           "type": "array",
-          "items": { "type": "string", "minLength": 1 }
-        }
-      }
-    },
-    "check": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "shapes": {
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "out": {
+          "type": "string",
+          "minLength": 1
+        },
+        "routes": {
           "type": "array",
-          "items": { "type": "string", "minLength": 1 }
-        }
-      }
-    },
-    "provenance": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "git": { "anyOf": [{ "type": "boolean" }, { "const": "auto" }] },
-        "qualified": { "type": "boolean" }
-      }
-    },
-    "stats": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "coverageThreshold": {
-          "anyOf": [
-            { "type": "number", "minimum": 0, "maximum": 100 },
-            {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "title": { "type": "number", "minimum": 0, "maximum": 100 },
-                "description": {
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["root"],
+            "properties": {
+              "basePath": {
+                "type": "string"
+              },
+              "root": {
+                "type": "string"
+              },
+              "extensions": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^\\."
+                }
+              },
+              "indexFiles": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        },
+        "build": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "derive": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "frontmatter",
+                  "sections",
+                  "links",
+                  "tags",
+                  "images",
+                  "code",
+                  "provenance"
+                ]
+              }
+            }
+          }
+        },
+        "validate": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "schemas": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "check": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "shapes": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "git": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "const": "auto"
+                }
+              ]
+            },
+            "qualified": {
+              "type": "boolean"
+            }
+          }
+        },
+        "stats": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "coverageThreshold": {
+              "anyOf": [
+                {
                   "type": "number",
                   "minimum": 0,
                   "maximum": 100
                 },
-                "creator": { "type": "number", "minimum": 0, "maximum": 100 },
-                "created": { "type": "number", "minimum": 0, "maximum": 100 },
-                "modified": { "type": "number", "minimum": 0, "maximum": 100 },
-                "subject": { "type": "number", "minimum": 0, "maximum": 100 },
-                "prefLabel": { "type": "number", "minimum": 0, "maximum": 100 }
-              }
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "title": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "description": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "creator": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "created": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "modified": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "subject": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "prefLabel": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100
+                    }
+                  }
+                }
+              ]
             }
-          ]
-        }
-      }
-    },
-    "fill": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "provider": { "enum": ["anthropic", "openai", "claude-cli", "mock"] },
-        "model": { "type": "string", "minLength": 1 },
-        "apiKeyEnv": { "type": "string", "minLength": 1 },
-        "baseUrl": { "type": "string", "minLength": 1 },
-        "command": { "type": "string", "minLength": 1 },
-        "temperature": { "type": "number", "minimum": 0, "maximum": 2 },
-        "maxCostUsd": { "type": ["number", "null"], "minimum": 0 },
-        "cacheDir": { "type": "string", "minLength": 1 },
-        "minConfidence": { "type": "number", "minimum": 0, "maximum": 1 },
-        "writeProvenance": { "type": "boolean" },
-        "validateGraph": { "type": "boolean" },
-        "fields": {
-          "type": "array",
-          "uniqueItems": true,
-          "items": {
-            "enum": [
-              "prefLabel",
-              "altLabels",
-              "broader",
-              "narrower",
-              "related",
-              "subjects",
-              "topicType",
-              "appliesTo",
-              "softwareLifecyclePhase",
-              "softwareSubject",
-              "notApplicableTo",
-              "notSoftwareSubject"
-            ]
           }
         },
-        "pricing": {
+        "fill": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["inputPerMTok", "outputPerMTok"],
           "properties": {
-            "inputPerMTok": { "type": "number", "minimum": 0 },
-            "outputPerMTok": { "type": "number", "minimum": 0 }
+            "provider": {
+              "enum": ["anthropic", "openai", "claude-cli", "mock"]
+            },
+            "model": {
+              "type": "string",
+              "minLength": 1
+            },
+            "apiKeyEnv": {
+              "type": "string",
+              "minLength": 1
+            },
+            "baseUrl": {
+              "type": "string",
+              "minLength": 1
+            },
+            "command": {
+              "type": "string",
+              "minLength": 1
+            },
+            "temperature": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 2
+            },
+            "maxCostUsd": {
+              "type": ["number", "null"],
+              "minimum": 0
+            },
+            "cacheDir": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minConfidence": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "writeProvenance": {
+              "type": "boolean"
+            },
+            "validateGraph": {
+              "type": "boolean"
+            },
+            "fields": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "prefLabel",
+                  "altLabels",
+                  "broader",
+                  "narrower",
+                  "related",
+                  "subjects",
+                  "topicType",
+                  "appliesTo",
+                  "softwareLifecyclePhase",
+                  "softwareSubject",
+                  "notApplicableTo",
+                  "notSoftwareSubject"
+                ]
+              }
+            },
+            "pricing": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["inputPerMTok", "outputPerMTok"],
+              "properties": {
+                "inputPerMTok": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "outputPerMTok": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              }
+            }
           }
-        }
-      }
-    },
-    "embed": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "model": { "type": "string", "minLength": 1 },
-        "dtype": { "type": "string", "minLength": 1 },
-        "out": { "type": "string", "minLength": 1 },
-        "cacheDir": { "type": "string", "minLength": 1 }
-      }
-    },
-    "export": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "iirds": {
+        },
+        "embed": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "title": { "type": "string", "minLength": 1 },
-            "creator": { "type": "string", "minLength": 1 },
-            "version": { "enum": ["1.2", "1.3"] }
+            "model": {
+              "type": "string",
+              "minLength": 1
+            },
+            "dtype": {
+              "type": "string",
+              "minLength": 1
+            },
+            "out": {
+              "type": "string",
+              "minLength": 1
+            },
+            "cacheDir": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "export": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "iirds": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "creator": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "version": {
+                  "enum": ["1.2", "1.3"]
+                }
+              }
+            }
           }
         }
       }

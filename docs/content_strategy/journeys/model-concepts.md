@@ -7,33 +7,33 @@ personas:
 trigger: >-
   a governed vocabulary exists in a spreadsheet, the docs drift from it, and nothing
   catches two writers spelling the same concept two ways
-entry_point: /dockg/model/concepts-skos/
+entry_point: /moose-kg/model/concepts-skos/
 success_criteria: >-
   The vocabulary is expressed in frontmatter, the emitted concepts match the intended
   hierarchy, and check fails on a cycle, a broader/related conflict, or a second spelling.
 steps:
   - stage: orient
-    doc: /dockg/model/
+    doc: /moose-kg/model/
     exists: true
-    note: "What dockg models and what it does not — a mapping, not a SKOS tutorial."
+    note: "What moose-kg models and what it does not — a mapping, not a SKOS tutorial."
   - stage: act
-    doc: /dockg/model/concepts-skos/
+    doc: /moose-kg/model/concepts-skos/
     exists: true
     note: "prefLabel establishes the concept; altLabels/broader/narrower/related depend on it."
   - stage: verify
-    doc: /dockg/model/concepts-skos/
+    doc: /moose-kg/model/concepts-skos/
     exists: true
     note: "Inspect the emitted concept nodes with query; confirm IRIs converged as intended."
   - stage: verify
-    doc: /dockg/govern/
+    doc: /moose-kg/govern/
     exists: true
     note: "Run check: cycles, S27 broader/related conflicts, and the two-spellings warning."
   - stage: extend
-    doc: /dockg/reference/shapes/
+    doc: /moose-kg/reference/shapes/
     exists: true
     note: "Every rule the shapes enforce, its severity, and what error it is protecting against."
   - stage: extend
-    doc: /dockg/reference/vocabulary/
+    doc: /moose-kg/reference/vocabulary/
     exists: true
     note: "Which standard term each kg: key emits, with the published IRI."
 ---
@@ -47,7 +47,7 @@ documentation agrees with it — and today nothing checks, so it does not.
 
 The reader is an expert in the semantics and a novice at the mechanics, which inverts the usual
 page design. **This journey must not teach SKOS.** It must show the mapping: which frontmatter
-key becomes which triple, what dockg does when two labels slugify to the same concept, and which
+key becomes which triple, what moose-kg does when two labels slugify to the same concept, and which
 rules are enforced at which severity. A page that explains what `skos:broader` means wastes their
 time; one that gets it subtly wrong loses their trust permanently.
 
@@ -61,7 +61,7 @@ time; one that gets it subtly wrong loses their trust permanently.
    relationship to hang from.
 3. **How concept IRIs converge.** Concepts are minted from slugified labels, so two spellings of
    the same term become the *same node* — which is usually what they want and occasionally a
-   surprise. dockg reports the double-spelling case as a **warning, not a violation**, because
+   surprise. moose-kg reports the double-spelling case as a **warning, not a violation**, because
    convergence is a designed feature rather than a defect. That severity choice is worth
    explaining rather than just documenting.
 4. **The enforcement catalog.** Cycles in `broader`/`narrower`, SKOS S27 conflicts between

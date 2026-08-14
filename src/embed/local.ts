@@ -2,7 +2,7 @@
  * The local embedder (ADR 01020) — `@huggingface/transformers` configured so
  * Node and the browser compute the **same function**.
  *
- * This is the whole reason dockg ships an embedder rather than telling hosts to
+ * This is the whole reason moose-kg ships an embedder rather than telling hosts to
  * call transformers.js themselves. Its docs are explicit that Node uses
  * `onnxruntime-node` (native, CPUID-dispatched) while the browser uses
  * `onnxruntime-web` (WASM), and the two measurably disagree
@@ -25,8 +25,8 @@
  *
  * `@huggingface/transformers` is an **optional peer dependency**, imported
  * dynamically: it hard-depends on both ONNX runtimes plus native `sharp`, and
- * most dockg users never enable embeddings. Behind this subpath, a consumer who
- * never imports `dockg/embed` never resolves it.
+ * most moose-kg users never enable embeddings. Behind this subpath, a consumer who
+ * never imports `moose-kg/embed` never resolves it.
  */
 import {
   profileFor,
@@ -97,7 +97,7 @@ async function loadTransformers(injected?: any): Promise<any> {
  * **Constructing it is the expensive step**: `pipeline()` fetches the model's
  * config and weights (tens of megabytes on a cold cache) and builds the ONNX
  * session before returning, so callers that may not need to embed anything —
- * `dockg embed` on an all-cache-hit run — should construct it lazily.
+ * `moose-kg embed` on an all-cache-hit run — should construct it lazily.
  */
 export async function createLocalEmbedder(
   options: LocalEmbedderOptions = {},

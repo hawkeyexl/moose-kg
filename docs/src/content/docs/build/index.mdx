@@ -1,17 +1,17 @@
 ---
 title: Build your graph
-description: What each of dockg's seven derive sources reads from your repo, how to control which files get ingested, and how to read the corpus back with stats.
+description: What each of moose-kg's seven derive sources reads from your repo, how to control which files get ingested, and how to read the corpus back with stats.
 ---
 
 import { Aside, CardGrid, LinkCard, Steps } from '@astrojs/starlight/components';
 
-`dockg build` reads what is already on disk and writes a graph. Nothing here requires you to
+`moose-kg build` reads what is already on disk and writes a graph. Nothing here requires you to
 change a document first. This page covers what it reads, how to control what it reads, and how to
 interpret what comes back.
 
 ## Before you start
 
-You should have run `dockg build` once — see [Get started](/dockg/get-started/) — and have a
+You should have run `moose-kg build` once — see [Get started](/moose-kg/get-started/) — and have a
 `graph.ttl` to look at.
 
 ## The seven derive sources
@@ -21,18 +21,19 @@ Every source is on by default. They are hermetic: no network, no credentials, no
 | Source | Reads | Emits |
 |---|---|---|
 | `frontmatter` | Frontmatter fields and the `kg` block | Titles, descriptions, creators, dates, subjects, concepts, iiRDS typing |
-| `sections` | Every heading | A `dockg:Section` node per heading, with level and sibling order |
-| `links` | Markdown links between documents | `dcterms:references` edges, and `dockg:brokenLink` for unresolvable targets |
+| `sections` | Every heading | A `moose-kg:Section` node per heading, with level and sibling order |
+| `links` | Markdown links between documents | `dcterms:references` edges, and `moose-kg:brokenLink` for unresolvable targets |
 | `tags` | `tags` and `keywords` | `dcterms:subject` pointing at `skos:Concept` nodes |
 | `images` | Image references | `schema:image` |
-| `code` | Fenced code blocks | `dockg:codeLanguage` per language used |
+| `code` | Fenced code blocks | `moose-kg:codeLanguage` per language used |
 | `provenance` | Frontmatter dates and authors, plus git history | PROV-O entities, activities, agents, and qualified attribution |
 
 Turn any of them off in config:
 
-```yaml title="dockg.config.yaml"
-build:
-  derive: [frontmatter, sections, links, tags]
+```yaml title="moose.config.yaml"
+kg:
+  build:
+    derive: [frontmatter, sections, links, tags]
 ```
 
 `build.derive` is config-only. A graph built with different derive rules is a different graph, so
@@ -47,11 +48,11 @@ it should not depend on how someone typed the command.
 
 <Steps>
 
-1. **Set your inputs.** With no config file dockg ingests `**/*.md` — which includes
+1. **Set your inputs.** With no config file moose-kg ingests `**/*.md` — which includes
    `README.md`, `CHANGELOG.md`, and any Markdown in `test/`. That is rarely what you want past
    the first run.
 
-   ```yaml title="dockg.config.yaml"
+   ```yaml title="moose.config.yaml"
    version: 1
    inputs:
      - "docs/**/*.md"
@@ -61,24 +62,24 @@ it should not depend on how someone typed the command.
    ```
 
    <Aside type="caution" title="Globs resolve against the working directory">
-     Not against the config file. Run dockg from the repo root, or it matches nothing:
+     Not against the config file. Run moose-kg from the repo root, or it matches nothing:
 
      ```
-     dockg: No input files matched: docs/**/*.md (cwd: /repo/docs)
+     moose-kg: No input files matched: docs/**/*.md (cwd: /repo/docs)
      ```
    </Aside>
 
 2. **Set a real `baseIri`.** IRIs are the graph's stable identity, and changing the base later
    rewrites every subject in the file.
 
-   ```yaml title="dockg.config.yaml"
+   ```yaml title="moose.config.yaml"
    baseIri: https://docs.example.com/kg/
    ```
 
 3. **Rebuild and confirm the document count changed as you expected.**
 
    ```sh
-   dockg build
+   moose-kg build
    ```
 
    ```
@@ -90,7 +91,7 @@ it should not depend on how someone typed the command.
 ## Read the corpus back
 
 ```sh
-dockg stats
+moose-kg stats
 ```
 
 ```
@@ -122,7 +123,7 @@ Coverage:
 **Most connected** are your hub documents — the ones whose removal or rename hurts most.
 
 **Orphan docs** have no inbound or outbound `dcterms:references`. A genuine orphan is usually
-either unreachable content or a page everybody links to from a nav config that dockg cannot see.
+either unreachable content or a page everybody links to from a nav config that moose-kg cannot see.
 
 **Broken internal links** point at files that do not exist. If your corpus links by published site
 route rather than file path, expect many of these and see below — they are a configuration gap,
@@ -151,7 +152,7 @@ starting point, not a failing grade.
   the build with an operational error naming the file:
 
   ```
-  dockg: Could not parse MDX in docs/broken.mdx: Expected a closing tag for `<LinkCard>` (7:1-7:20)
+  moose-kg: Could not parse MDX in docs/broken.mdx: Expected a closing tag for `<LinkCard>` (7:1-7:20)
   ```
 
   Exit `2`. This bites hardest on a corpus part-way through a `.md` → `.mdx` rename, where files
@@ -168,27 +169,27 @@ they are. Nothing is enforced yet.
 <CardGrid>
   <LinkCard
     title="Query and traverse the graph"
-    href="/dockg/build/query/"
+    href="/moose-kg/build/query/"
     description="Ask about one specific node — and check what depends on a page before you move it."
   />
   <LinkCard
     title="Map your site's routes"
-    href="/dockg/build/routes/"
+    href="/moose-kg/build/routes/"
     description="If the broken-link list is full of links that work fine on your published site."
   />
   <LinkCard
     title="Backfill metadata"
-    href="/dockg/build/backfill/"
+    href="/moose-kg/build/backfill/"
     description="If coverage is low and hand-annotating the backlog is not going to happen."
   />
   <LinkCard
     title="Govern it in CI"
-    href="/dockg/govern/"
+    href="/moose-kg/govern/"
     description="Turn these numbers into a gate that fails a pull request."
   />
   <LinkCard
     title="Configuration reference"
-    href="/dockg/reference/configuration/"
+    href="/moose-kg/reference/configuration/"
     description="Every key, type, and default."
   />
 </CardGrid>

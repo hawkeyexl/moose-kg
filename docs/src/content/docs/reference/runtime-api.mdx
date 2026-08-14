@@ -1,16 +1,16 @@
 ---
 title: Runtime API
-description: The exports, types, and return shapes of dockg/runtime — the browser-native, retrieval-only query surface that returns context, citations, and a trace and then stops.
+description: The exports, types, and return shapes of moose-kg/runtime — the browser-native, retrieval-only query surface that returns context, citations, and a trace and then stops.
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 
-`@hawkeyexl/dockg/runtime` is a single browser-native module: no `node:` imports, embeddings behind
+`moose-kg/runtime` is a single browser-native module: no `node:` imports, embeddings behind
 a separate entry point, and no call to any model. For the guide, see
-[query from the browser](/dockg/retrieve/runtime/).
+[query from the browser](/moose-kg/retrieve/runtime/).
 
 ```ts
-import { GraphIndex, findEntry, traverse, assemble } from "@hawkeyexl/dockg/runtime";
+import { GraphIndex, findEntry, traverse, assemble } from "moose-kg/runtime";
 ```
 
 ## Graph
@@ -71,8 +71,8 @@ interface TraverseOptions {
 | `scopeExclusion` | Why a node was excluded, if it was |
 
 <Aside type="caution" title="`includeTypeEdges` almost always stays false">
-  Every document shares `dockg:Document`, so following `rdf:type` makes every document reachable
-  from every other in two hops (`a → dockg:Document → b`). That is exactly the edge contamination
+  Every document shares `moose-kg:Document`, so following `rdf:type` makes every document reachable
+  from every other in two hops (`a → moose-kg:Document → b`). That is exactly the edge contamination
   graph-governed retrieval exists to prevent.
 </Aside>
 
@@ -132,7 +132,7 @@ returning plausible results while dropping nothing is indistinguishable from an 
 | Export | Thrown when |
 |---|---|
 | `VectorMismatchError` | The sidecar's model, dtype, dimensions, or corpus digest disagree with the index |
-| `VectorIndexError` | The sidecar is unreadable or not a dockg vector index |
+| `VectorIndexError` | The sidecar is unreadable or not a moose-kg vector index |
 
 Both are refusals rather than degradations: a stale sidecar produces plausible garbage, which is
 worse than an error.
@@ -140,15 +140,15 @@ worse than an error.
 ## Embeddings are a separate entry point
 
 ```ts
-import { createLocalEmbedder, MODEL_PROFILES } from "@hawkeyexl/dockg/embed";
+import { createLocalEmbedder, MODEL_PROFILES } from "moose-kg/embed";
 ```
 
 Kept apart so a consumer who only queries never resolves the model stack and bundlers can leave it
 alone. `@huggingface/transformers` is an optional peer dependency;
 `EmbedderUnavailableError` is thrown when it is absent. See
-[embedding models](/dockg/reference/embed-models/).
+[embedding models](/moose-kg/reference/embed-models/).
 
 ## For Node-side automation
 
 Building graphs, validating, exporting, and the rest of the CLI's work is the main package entry,
-not this one. See the [library API](/dockg/reference/library-api/).
+not this one. See the [library API](/moose-kg/reference/library-api/).

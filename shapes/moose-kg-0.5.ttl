@@ -1,26 +1,26 @@
-# dockg graph shapes 0.5 — the published SHACL contract for graphs emitted by
-# `dockg build`. Consumed by `dockg check` (and the `dockg fill` guardrail).
+# moose-kg graph shapes 0.5 — the published SHACL contract for graphs emitted by
+# `moose-kg build`. Consumed by `moose-kg check` (and the `moose-kg fill` guardrail).
 #
 # 0.5 reifies fill provenance (ADR 01015): the kg-fill activity now links to one
-# entry node per filled field via dockg:filledFieldEntry, and each entry carries
-# dockg:filledField + an optional dockg:confidence decimal (replacing the bare
-# dockg:filledField literal on the activity). 0.4 added negative scope (ADR
+# entry node per filled field via moose-kg:filledFieldEntry, and each entry carries
+# moose-kg:filledField + an optional moose-kg:confidence decimal (replacing the bare
+# moose-kg:filledField literal on the activity). 0.4 added negative scope (ADR
 # 01014); 0.3 added section-level iiRDS typing (ADR 01013); 0.2 added iiRDS
 # Core/Software typing on Documents (ADR 01012).
 #
 # This file is immutable once published: evolve by adding a new version file
-# (dockg-0.6.ttl), never by editing this one. Every shape has a named IRI — the
+# (moose-kg-0.6.ttl), never by editing this one. Every shape has a named IRI — the
 # only anonymous nodes are the sh:ignoredProperties and sh:in lists the SHACL
 # vocabulary requires — so the file diffs cleanly.
 #
 # Severity contract: sh:Violation → exit 1; sh:Warning / sh:Info → reported,
 # exit 0. Cycle detection (skos:broader loops) and broaderTransitive/related
-# disjointness cannot be expressed in core SHACL and are enforced by dockg's
+# disjointness cannot be expressed in core SHACL and are enforced by moose-kg's
 # check core alongside these shapes.
 
 @prefix dcterms: <http://purl.org/dc/terms/> .
-@prefix dockg: <https://dockg.dev/ns#> .
-@prefix dsh: <https://dockg.dev/shapes/0.5#> .
+@prefix moose-kg: <https://moose-tools.dev/kg/ns#> .
+@prefix dsh: <https://moose-tools.dev/kg/shapes/0.5#> .
 @prefix foaf: <http://xmlns.com/foaf/0.1/> .
 @prefix iirds: <http://iirds.tekom.de/iirds#> .
 @prefix iirdsSft: <http://iirds.tekom.de/iirds/domain/software#> .
@@ -37,7 +37,7 @@
 
 dsh:DocumentShape
   a sh:NodeShape ;
-  sh:targetClass dockg:Document ;
+  sh:targetClass moose-kg:Document ;
   sh:closed true ;
   sh:ignoredProperties ( rdf:type ) ;
   sh:property
@@ -71,7 +71,7 @@ dsh:DocumentShape
 
 dsh:Document-path
   a sh:PropertyShape ;
-  sh:path dockg:path ;
+  sh:path moose-kg:path ;
   sh:datatype xsd:string ;
   sh:minCount 1 ;
   sh:maxCount 1 .
@@ -128,7 +128,7 @@ dsh:Document-hasPart
   a sh:PropertyShape ;
   sh:path dcterms:hasPart ;
   sh:nodeKind sh:IRI ;
-  sh:class dockg:Section .
+  sh:class moose-kg:Section .
 
 dsh:Document-references
   a sh:PropertyShape ;
@@ -137,13 +137,13 @@ dsh:Document-references
 
 dsh:Document-brokenLink
   a sh:PropertyShape ;
-  sh:path dockg:brokenLink ;
+  sh:path moose-kg:brokenLink ;
   sh:datatype xsd:string .
 
 # A kg.sections key that named no heading (surfaced by stats, gated by --check).
 dsh:Document-brokenSectionRef
   a sh:PropertyShape ;
-  sh:path dockg:brokenSectionRef ;
+  sh:path moose-kg:brokenSectionRef ;
   sh:datatype xsd:string .
 
 dsh:Document-image
@@ -153,7 +153,7 @@ dsh:Document-image
 
 dsh:Document-codeLanguage
   a sh:PropertyShape ;
-  sh:path dockg:codeLanguage ;
+  sh:path moose-kg:codeLanguage ;
   sh:datatype xsd:string .
 
 # iiRDS Core topic type: exactly the six published Generic* instances.
@@ -207,14 +207,14 @@ dsh:Document-softwareSubject
 # or subject asserted as both applicable and not-applicable on one node fails.
 dsh:Document-notApplicableToVariant
   a sh:PropertyShape ;
-  sh:path dockg:notApplicableToVariant ;
+  sh:path moose-kg:notApplicableToVariant ;
   sh:nodeKind sh:IRI ;
   sh:class iirds:ProductVariant ;
   sh:disjoint iirds:relates-to-product-variant .
 
 dsh:Document-notSoftwareSubject
   a sh:PropertyShape ;
-  sh:path dockg:notSoftwareSubject ;
+  sh:path moose-kg:notSoftwareSubject ;
   sh:nodeKind sh:IRI ;
   sh:disjoint iirds:has-subject ;
   sh:in (
@@ -256,7 +256,7 @@ dsh:Document-wasGeneratedBy
   sh:class prov:Activity .
 
 # --- Product variants --------------------------------------------------------
-# Minted from kg.appliesTo. dockg references iiRDS ProductVariant as a class
+# Minted from kg.appliesTo. moose-kg references iiRDS ProductVariant as a class
 # but only labels the node — the iiRDS vocabulary itself is never re-emitted.
 
 dsh:ProductVariantShape
@@ -276,7 +276,7 @@ dsh:ProductVariant-title
 
 dsh:SectionShape
   a sh:NodeShape ;
-  sh:targetClass dockg:Section ;
+  sh:targetClass moose-kg:Section ;
   sh:closed true ;
   sh:ignoredProperties ( rdf:type ) ;
   sh:property
@@ -300,14 +300,14 @@ dsh:Section-title
 
 dsh:Section-level
   a sh:PropertyShape ;
-  sh:path dockg:level ;
+  sh:path moose-kg:level ;
   sh:datatype xsd:integer ;
   sh:minCount 1 ;
   sh:maxCount 1 .
 
 dsh:Section-order
   a sh:PropertyShape ;
-  sh:path dockg:order ;
+  sh:path moose-kg:order ;
   sh:datatype xsd:integer ;
   sh:minCount 1 ;
   sh:maxCount 1 .
@@ -316,7 +316,7 @@ dsh:Section-hasPart
   a sh:PropertyShape ;
   sh:path dcterms:hasPart ;
   sh:nodeKind sh:IRI ;
-  sh:class dockg:Section .
+  sh:class moose-kg:Section .
 
 # Section-level iiRDS typing (ADR 01013) — the same constraints the Document
 # shape carries for these predicates.
@@ -376,14 +376,14 @@ dsh:Section-softwareSubject
 # Section-level negative scope (ADR 01014), disjoint from the positive relation.
 dsh:Section-notApplicableToVariant
   a sh:PropertyShape ;
-  sh:path dockg:notApplicableToVariant ;
+  sh:path moose-kg:notApplicableToVariant ;
   sh:nodeKind sh:IRI ;
   sh:class iirds:ProductVariant ;
   sh:disjoint iirds:relates-to-product-variant .
 
 dsh:Section-notSoftwareSubject
   a sh:PropertyShape ;
-  sh:path dockg:notSoftwareSubject ;
+  sh:path moose-kg:notSoftwareSubject ;
   sh:nodeKind sh:IRI ;
   sh:disjoint iirds:has-subject ;
   sh:in (
@@ -414,7 +414,7 @@ dsh:Concept-prefLabel
   sh:minCount 1 .
 
 # Warning, not Violation: concept IRIs deliberately converge on slugified
-# labels (dockg's design), so "Configuration" and "configuration" merge into
+# labels (moose-kg's design), so "Configuration" and "configuration" merge into
 # one concept carrying both spellings. SKOS wants exactly one prefLabel —
 # surface the collision so authors can settle on a spelling, but don't fail
 # the build over the convergence feature working as designed.
@@ -500,7 +500,7 @@ dsh:Agent-name
 
 dsh:SoftwareAgent-version
   a sh:PropertyShape ;
-  sh:path dockg:version ;
+  sh:path moose-kg:version ;
   sh:datatype xsd:string ;
   sh:maxCount 1 .
 
@@ -531,7 +531,7 @@ dsh:Activity-qualifiedAssociation
 # The fill activity links to one entry node per filled field (ADR 01015).
 dsh:Activity-filledFieldEntry
   a sh:PropertyShape ;
-  sh:path dockg:filledFieldEntry ;
+  sh:path moose-kg:filledFieldEntry ;
   sh:nodeKind sh:IRI .
 
 # Each filled-field entry carries the field name and (when fill recorded one)
@@ -539,7 +539,7 @@ dsh:Activity-filledFieldEntry
 # separately typed, keeping the node vocabulary at two classes.
 dsh:FilledFieldEntryShape
   a sh:NodeShape ;
-  sh:targetObjectsOf dockg:filledFieldEntry ;
+  sh:targetObjectsOf moose-kg:filledFieldEntry ;
   sh:closed true ;
   sh:ignoredProperties ( rdf:type ) ;
   sh:property
@@ -548,14 +548,14 @@ dsh:FilledFieldEntryShape
 
 dsh:FilledFieldEntry-name
   a sh:PropertyShape ;
-  sh:path dockg:filledField ;
+  sh:path moose-kg:filledField ;
   sh:datatype xsd:string ;
   sh:minCount 1 ;
   sh:maxCount 1 .
 
 dsh:FilledFieldEntry-confidence
   a sh:PropertyShape ;
-  sh:path dockg:confidence ;
+  sh:path moose-kg:confidence ;
   sh:datatype xsd:decimal ;
   sh:maxCount 1 .
 

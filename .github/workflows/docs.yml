@@ -12,7 +12,7 @@ on:
       - "scripts/check-cli-reference.mjs"
       - "scripts/check-content-strategy.mjs"
       - "scripts/check-docs-links.mjs"
-      - "dockg.docs.yaml"
+      - "moose.docs.yaml"
       - ".github/workflows/docs.yml"
   workflow_dispatch:
 
@@ -47,19 +47,19 @@ jobs:
       - name: CLI reference drift
         run: npm run docs:check-cli
 
-      # Dogfooding: dockg's own validate (which wraps docmeta) enforces that every
+      # Dogfooding: moose-kg's own validate (which wraps docmeta) enforces that every
       # published page carries a title and a description. The site does not ship
       # without them — they are the LinkCard subtitle and the meta description.
       - name: Page frontmatter
-        run: node dist/cli.js validate -c dockg.docs.yaml
+        run: node dist/cli.js validate -c moose.docs.yaml
 
       # The bigger dogfood: build a graph from the documentation site itself, then
       # hold it to the same SHACL and coverage gates the docs tell readers to use.
       - name: Graph gate
         run: |
-          node dist/cli.js build -c dockg.docs.yaml
-          node dist/cli.js check -c dockg.docs.yaml
-          node dist/cli.js stats -c dockg.docs.yaml --check
+          node dist/cli.js build -c moose.docs.yaml
+          node dist/cli.js check -c moose.docs.yaml
+          node dist/cli.js stats -c moose.docs.yaml --check
 
   build:
     needs: validate
@@ -72,7 +72,7 @@ jobs:
           cache: npm
           cache-dependency-path: docs/package-lock.json
 
-      # The docs site is its own npm project, so the published dockg package never
+      # The docs site is its own npm project, so the published moose-kg package never
       # carries a docs toolchain.
       - run: npm install
         working-directory: docs

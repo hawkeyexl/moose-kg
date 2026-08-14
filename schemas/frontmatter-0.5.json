@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://dockg.dev/schemas/frontmatter-0.5.json",
-  "title": "dockg knowledge-graph frontmatter (0.5)",
-  "description": "SKOS concept fields plus PROV-O provenance plus iiRDS Core/Software typing under the top-level `kg` key, consumed by dockg build and fill. 0.5 adds kg.topicType, kg.appliesTo, kg.softwareLifecyclePhase, and kg.softwareSubject (iiRDS Core + Software domain). Earlier 0.x forms remain accepted. Files without a `kg` key pass.",
+  "$id": "https://moose-tools.dev/kg/schemas/frontmatter-0.5.json",
+  "title": "moose-kg knowledge-graph frontmatter (0.5)",
+  "description": "SKOS concept fields plus PROV-O provenance plus iiRDS Core/Software typing under the top-level `kg` key, consumed by moose-kg build and fill. 0.5 adds kg.topicType, kg.appliesTo, kg.softwareLifecyclePhase, and kg.softwareSubject (iiRDS Core + Software domain). Earlier 0.x forms remain accepted. Files without a `kg` key pass.",
   "type": "object",
   "properties": {
     "kg": {
@@ -106,7 +106,7 @@
             {
               "type": "array",
               "items": { "$ref": "#/$defs/provenanceEntry" },
-              "description": "One attribution entry per model (written by dockg fill)."
+              "description": "One attribution entry per model (written by moose-kg fill)."
             },
             { "$ref": "#/$defs/provenanceEntry" }
           ],
@@ -138,7 +138,7 @@
             "enum": ["prefLabel", "altLabels", "broader", "narrower", "related", "subjects"]
           },
           "uniqueItems": true,
-          "description": "Which kg fields this model proposed (written by dockg fill)."
+          "description": "Which kg fields this model proposed (written by moose-kg fill)."
         }
       }
     }

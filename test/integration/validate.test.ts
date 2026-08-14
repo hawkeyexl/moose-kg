@@ -21,7 +21,7 @@ function run(args: string[], cwd: string): { stdout: string; status: number } {
   }
 }
 
-describe("dockg validate", () => {
+describe("moose-kg validate", () => {
   it("passes the corpus (valid kg keys and docs without kg)", () => {
     const { stdout, status } = run(
       ["validate"],
@@ -32,10 +32,10 @@ describe("dockg validate", () => {
   });
 
   it("accepts kg.revisionOf via the bundled 0.3 schema, rejects malformed shapes", () => {
-    const dir = mkdtempSync(join(tmpdir(), "dockg-revof-"));
+    const dir = mkdtempSync(join(tmpdir(), "moose-kg-revof-"));
     writeFileSync(
-      join(dir, "dockg.config.yaml"),
-      'version: 1\ninputs: ["*.md"]\n',
+      join(dir, "moose.config.yaml"),
+      'kg:\n  version: 1\n  inputs: ["*.md"]\n',
     );
     writeFileSync(
       join(dir, "good.md"),
@@ -63,10 +63,10 @@ describe("dockg validate", () => {
   });
 
   it("accepts negative-scope fields and rejects an out-of-enum notSoftwareSubject (0.7)", () => {
-    const dir = mkdtempSync(join(tmpdir(), "dockg-negscope-"));
+    const dir = mkdtempSync(join(tmpdir(), "moose-kg-negscope-"));
     writeFileSync(
-      join(dir, "dockg.config.yaml"),
-      'version: 1\ninputs: ["*.md"]\n',
+      join(dir, "moose.config.yaml"),
+      'kg:\n  version: 1\n  inputs: ["*.md"]\n',
     );
     writeFileSync(
       join(dir, "good.md"),

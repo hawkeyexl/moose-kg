@@ -12,8 +12,8 @@ decision-makers: [hawkeyexl, Claude]
 kind, so identity was "slug of the display name" alone. Two different kinds of
 actor whose names slug alike merged into one node: frontmatter
 `author: GPT 4` plus `generatedBy: gpt-4` produced a node typed both
-`prov:Person` and `prov:SoftwareAgent`, and a git author named `dockg` merged
-with the build tool agent, receiving `dockg:version`. The graph stated things
+`prov:Person` and `prov:SoftwareAgent`, and a git author named `moose-kg` merged
+with the build tool agent, receiving `moose-kg:version`. The graph stated things
 that are simply false, quietly.
 
 ## Decision Drivers
@@ -21,7 +21,7 @@ that are simply false, quietly.
 - Provenance must not assert false identity.
 - Deterministic, readable, diff-friendly IRIs; no blank nodes.
 - IRIs become a consumer contract at first release — cheap to change now.
-- PROV-O already models the distinction; dockg should not invent one.
+- PROV-O already models the distinction; moose-kg should not invent one.
 
 ## Considered Options
 
@@ -43,14 +43,14 @@ agent subclass — has a home the day something mints one; nothing does yet.
 Option 4 was considered seriously and rejected on reflection: it reads well
 today ("agents" colloquially means software), but `prov:Person` is a subclass
 of `prov:Agent`, so filing people outside `agent/` fights the vocabulary
-dockg emits, and a third flat sibling for organizations would leave the
+moose-kg emits, and a third flat sibling for organizations would leave the
 actor kinds ungrouped. Renaming the concept to "actor" was also considered
 and rejected — `prov:Agent` is W3C's term and not ours to rename.
 
 ### Consequences
 
 - Good: false cross-kind identity is impossible; the tool agent is
-  unambiguously `agent/software/dockg`; organizations have a reserved home.
+  unambiguously `agent/software/moose-kg`; organizations have a reserved home.
 - Bad: emitted agent IRIs changed shape (golden regenerated; a breaking
   change for graph consumers, which is why it lands pre-release), and
   `mintAgentIri`'s exported signature gained a parameter.
@@ -62,7 +62,7 @@ and rejected — `prov:Agent` is W3C's term and not ours to rename.
 ### Confirmation
 
 `test/unit/iri.test.ts` asserts per-kind minting and that a person and a
-software agent sharing a slug (including "dockg") stay distinct; the corpus
+software agent sharing a slug (including "moose-kg") stay distinct; the corpus
 golden was regenerated with a reviewed five-line diff containing only the
 kind segments.
 

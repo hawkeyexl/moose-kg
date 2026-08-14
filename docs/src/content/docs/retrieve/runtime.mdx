@@ -1,11 +1,11 @@
 ---
 title: Query from the browser
-description: Load a dockg graph and index in the browser, apply a deterministic scope filter, and read the context, citations, and trace the runtime returns before it hands control back to your pipeline.
+description: Load a moose-kg graph and index in the browser, apply a deterministic scope filter, and read the context, citations, and trace the runtime returns before it hands control back to your pipeline.
 ---
 
 import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-`dockg/runtime` is a browser-native, retrieval-only module. It has no `node:` imports, ships as a
+`moose-kg/runtime` is a browser-native, retrieval-only module. It has no `node:` imports, ships as a
 single small bundle, and keeps embeddings behind a separate entry point so the query path never
 pulls in the model stack.
 
@@ -22,13 +22,13 @@ import {
   traverse,
   assemble,
   createFetchResolver,
-} from "@hawkeyexl/dockg/runtime";
+} from "moose-kg/runtime";
 ```
 
 Embeddings live behind their own specifier, so importing the runtime does not drag them in:
 
 ```ts
-import { createLocalEmbedder } from "@hawkeyexl/dockg/embed";
+import { createLocalEmbedder } from "moose-kg/embed";
 ```
 
 ## The shape of a query
@@ -92,7 +92,7 @@ traverse(graph, { seeds, depth: 2, subject: "architecture" });
 
 A variant may be an IRI, a `dcterms:title`, or a slug. Both polarities are honored: a node is
 excluded when it is explicitly marked non-applicable, and — following
-[open-world semantics](/dockg/concepts/open-world/) — an untyped node is *not* silently treated as
+[open-world semantics](/moose-kg/concepts/open-world/) — an untyped node is *not* silently treated as
 excluded.
 
 <Aside type="caution" title="Check the exclusions, not just the results">
@@ -104,7 +104,7 @@ excluded.
 ## `rdf:type` edges are not followed
 
 By default, traversal does not walk `rdf:type` into class nodes, and the reason is the whole point
-of the tool: every document shares `dockg:Document`, so traversing type edges makes every document
+of the tool: every document shares `moose-kg:Document`, so traversing type edges makes every document
 reachable from every other in two hops. That is exactly the edge contamination graph-governed
 retrieval exists to prevent.
 
@@ -129,19 +129,19 @@ as a reviewer-facing artifact rather than debug output.
 
 It does not call a model, build a prompt, chunk documents, or have an opinion about your LLM. It
 also cannot filter by metadata your corpus does not carry — see the
-[dependency stated on the track overview](/dockg/retrieve/).
+[dependency stated on the track overview](/moose-kg/retrieve/).
 
 ## Where to go next
 
 <CardGrid>
   <LinkCard
     title="Build the search artifacts"
-    href="/dockg/retrieve/search/"
+    href="/moose-kg/retrieve/search/"
     description="The graph, index, and sidecar this page loads, and their staleness rules."
   />
   <LinkCard
     title="Export for another system"
-    href="/dockg/retrieve/export/"
-    description="When the destination is not dockg's runtime."
+    href="/moose-kg/retrieve/export/"
+    description="When the destination is not moose-kg's runtime."
   />
 </CardGrid>

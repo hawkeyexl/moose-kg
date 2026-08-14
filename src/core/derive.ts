@@ -21,10 +21,9 @@ import {
   mintSectionIri,
   normalizeDocPath,
 } from "./iri.js";
-import { NS, RDF_TYPE, ROLE } from "./vocab.js";
 import {
-  DOCKG_NOT_APPLICABLE_TO_VARIANT,
-  DOCKG_NOT_SOFTWARE_SUBJECT,
+  MOOSE_KG_NOT_APPLICABLE_TO_VARIANT,
+  MOOSE_KG_NOT_SOFTWARE_SUBJECT,
   IIRDS_HAS_SUBJECT,
   IIRDS_HAS_TOPIC_TYPE,
   IIRDS_PRODUCT_VARIANT,
@@ -34,6 +33,7 @@ import {
   SOFTWARE_SUBJECT_IRIS,
   TOPIC_TYPE_IRIS,
 } from "./iirds.js";
+import { MOOSE_KG, NS, RDF_TYPE, ROLE } from "./vocab.js";
 
 /**
  * Resolve a provenance target (`kg.derivedFrom` / `kg.revisionOf` entry) to a
@@ -64,7 +64,7 @@ export interface Quad {
 export interface DeriveOptions {
   baseIri: string;
   derive: DeriveSource[];
-  /** dockg's own version, stamped on the build agent (provenance source). */
+  /** moose-kg's own version, stamped on the build agent (provenance source). */
   toolVersion?: string;
   /** Per-file git history; set only under `provenance.git`. */
   gitHistory?: GitHistory;
@@ -209,7 +209,11 @@ export function deriveGraph(docs: DocModel[], options: DeriveOptions): Quad[] {
       );
     }
     for (const label of asStringArray(k["notApplicableTo"])) {
-      add(subjectIri, DOCKG_NOT_APPLICABLE_TO_VARIANT, iri(variantNode(label)));
+      add(
+        subjectIri,
+        MOOSE_KG_NOT_APPLICABLE_TO_VARIANT,
+        iri(variantNode(label)),
+      );
     }
 
     for (const value of asStringArray(k["softwareLifecyclePhase"])) {
@@ -222,7 +226,7 @@ export function deriveGraph(docs: DocModel[], options: DeriveOptions): Quad[] {
     }
     for (const value of asStringArray(k["notSoftwareSubject"])) {
       const subject = SOFTWARE_SUBJECT_IRIS[value];
-      if (subject) add(subjectIri, DOCKG_NOT_SOFTWARE_SUBJECT, iri(subject));
+      if (subject) add(subjectIri, MOOSE_KG_NOT_SOFTWARE_SUBJECT, iri(subject));
     }
   };
 
@@ -303,7 +307,7 @@ export function deriveGraph(docs: DocModel[], options: DeriveOptions): Quad[] {
     if (target) {
       add(docIri, predicate, iri(mintDocIri(baseIri, target)));
     } else {
-      add(docIri, `${NS.dockg}brokenLink`, lit(raw));
+      add(docIri, `${MOOSE_KG}brokenLink`, lit(raw));
     }
   };
 
@@ -314,9 +318,9 @@ export function deriveGraph(docs: DocModel[], options: DeriveOptions): Quad[] {
     let createdEmitted = false;
     let modifiedEmitted = false;
 
-    add(docIri, RDF_TYPE, iri(`${NS.dockg}Document`));
+    add(docIri, RDF_TYPE, iri(`${MOOSE_KG}Document`));
     if (prov) add(docIri, RDF_TYPE, iri(`${NS.prov}Entity`));
-    add(docIri, `${NS.dockg}path`, lit(normalizeDocPath(doc.path)));
+    add(docIri, `${MOOSE_KG}path`, lit(normalizeDocPath(doc.path)));
 
     if (sources.has("frontmatter")) {
       const title = asString(fmValue(fm, ["title"])) ?? doc.firstH1;
@@ -352,7 +356,7 @@ export function deriveGraph(docs: DocModel[], options: DeriveOptions): Quad[] {
       const language = asString(fmValue(fm, ["lang", "language"]));
       if (language) add(docIri, `${NS.dcterms}language`, lit(language));
 
-      // kg sub-key: SKOS fields dockg owns (frontmatter key `kg`, RDF ns `dockg:`).
+      // kg sub-key: SKOS fields moose-kg owns (frontmatter key `kg`, RDF ns `moose-kg:`).
       if (kg) {
         const k = kg;
         const prefLabel = asString(k["prefLabel"]);
@@ -396,16 +400,16 @@ export function deriveGraph(docs: DocModel[], options: DeriveOptions): Quad[] {
         const parentIri = section.parentSlug
           ? mintSectionIri(docIri, section.parentSlug)
           : docIri;
-        add(secIri, RDF_TYPE, iri(`${NS.dockg}Section`));
+        add(secIri, RDF_TYPE, iri(`${MOOSE_KG}Section`));
         add(secIri, `${NS.dcterms}title`, lit(section.title));
         add(
           secIri,
-          `${NS.dockg}level`,
+          `${MOOSE_KG}level`,
           typedLit(String(section.level), `${NS.xsd}integer`),
         );
         add(
           secIri,
-          `${NS.dockg}order`,
+          `${MOOSE_KG}order`,
           typedLit(String(section.order), `${NS.xsd}integer`),
         );
         add(parentIri, `${NS.dcterms}hasPart`, iri(secIri));
@@ -421,7 +425,7 @@ export function deriveGraph(docs: DocModel[], options: DeriveOptions): Quad[] {
       // stats, gated by stats --check) — never a silent drop.
       for (const slug of Object.keys(sectionMeta)) {
         if (!sectionSlugs.has(slug)) {
-          add(docIri, `${NS.dockg}brokenSectionRef`, lit(slug));
+          add(docIri, `${MOOSE_KG}brokenSectionRef`, lit(slug));
         }
       }
     }
@@ -447,7 +451,7 @@ export function deriveGraph(docs: DocModel[], options: DeriveOptions): Quad[] {
             ),
           );
         } else if (link.kind === "broken") {
-          add(docIri, `${NS.dockg}brokenLink`, lit(link.raw));
+          add(docIri, `${MOOSE_KG}brokenLink`, lit(link.raw));
         }
       }
     }
@@ -466,7 +470,7 @@ export function deriveGraph(docs: DocModel[], options: DeriveOptions): Quad[] {
 
     if (sources.has("code")) {
       for (const language of doc.codeLanguages) {
-        add(docIri, `${NS.dockg}codeLanguage`, lit(language));
+        add(docIri, `${MOOSE_KG}codeLanguage`, lit(language));
       }
     }
 
@@ -518,7 +522,7 @@ export function deriveGraph(docs: DocModel[], options: DeriveOptions): Quad[] {
         qualifyAssociation(activity, model, ROLE.generator);
       }
 
-      // kg.provenance (written by `dockg fill`): one activity PER MODEL so
+      // kg.provenance (written by `moose-kg fill`): one activity PER MODEL so
       // multiple fills by different models keep truthful attribution. Only
       // the doc's own topic concept is prov:generated — shared subject/tag
       // concepts are never attributed, or one doc's LLM would taint every
@@ -538,13 +542,13 @@ export function deriveGraph(docs: DocModel[], options: DeriveOptions): Quad[] {
         const confidence = asRecord(entry["confidence"]);
         for (const field of filledFields) {
           const fieldNode = `${activity}.field.${field}`;
-          add(activity, `${NS.dockg}filledFieldEntry`, iri(fieldNode));
-          add(fieldNode, `${NS.dockg}filledField`, lit(field));
+          add(activity, `${MOOSE_KG}filledFieldEntry`, iri(fieldNode));
+          add(fieldNode, `${MOOSE_KG}filledField`, lit(field));
           const c = confidence[field];
           if (typeof c === "number") {
             add(
               fieldNode,
-              `${NS.dockg}confidence`,
+              `${MOOSE_KG}confidence`,
               typedLit(String(Math.round(c * 100) / 100), `${NS.xsd}decimal`),
             );
           }
@@ -564,14 +568,14 @@ export function deriveGraph(docs: DocModel[], options: DeriveOptions): Quad[] {
   if (prov) {
     const graphIri = mintGraphIri(baseIri);
     const activity = mintBuildActivityIri(baseIri);
-    const tool = agentNode("dockg", "SoftwareAgent");
+    const tool = agentNode("moose-kg", "SoftwareAgent");
     add(graphIri, RDF_TYPE, iri(`${NS.prov}Entity`));
     add(graphIri, `${NS.prov}wasGeneratedBy`, iri(activity));
     add(activity, RDF_TYPE, iri(`${NS.prov}Activity`));
     add(activity, `${NS.prov}wasAssociatedWith`, iri(tool));
     qualifyAssociation(activity, tool, ROLE.tool);
     if (options.toolVersion) {
-      add(tool, `${NS.dockg}version`, lit(options.toolVersion));
+      add(tool, `${MOOSE_KG}version`, lit(options.toolVersion));
     }
     for (const doc of docs) {
       add(activity, `${NS.prov}used`, iri(mintDocIri(baseIri, doc.path)));
@@ -589,7 +593,7 @@ export function deriveGraph(docs: DocModel[], options: DeriveOptions): Quad[] {
   if (mintedConcepts) {
     const scheme = mintSchemeIri(baseIri);
     add(scheme, RDF_TYPE, iri(`${NS.skos}ConceptScheme`));
-    add(scheme, `${NS.dcterms}title`, lit("dockg concepts"));
+    add(scheme, `${NS.dcterms}title`, lit("moose-kg concepts"));
   }
 
   return dedupe(quads);

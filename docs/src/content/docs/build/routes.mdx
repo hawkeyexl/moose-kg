@@ -1,12 +1,12 @@
 ---
 title: Map your site's routes
-description: If your docs link by published URL rather than file path, dockg cannot resolve those links until you tell it how routes map back to source files — and the broken links that remain afterwards are the ones worth fixing.
+description: If your docs link by published URL rather than file path, moose-kg cannot resolve those links until you tell it how routes map back to source files — and the broken links that remain afterwards are the ones worth fixing.
 ---
 
 import { Aside, CardGrid, LinkCard, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
 
-You ran `dockg stats` and got a long list of broken internal links that are not broken — they
-work fine on your published site. Your corpus links by route, and dockg resolved those links
+You ran `moose-kg stats` and got a long list of broken internal links that are not broken — they
+work fine on your published site. Your corpus links by route, and moose-kg resolved those links
 against the filesystem.
 
 By the end of this page those links will be real graph edges, and the broken-link list will
@@ -14,7 +14,7 @@ contain only links that are actually broken.
 
 ## Before you start
 
-You need a `graph.ttl` and a broken-link list from [`dockg stats`](/dockg/build/). Keep the
+You need a `graph.ttl` and a broken-link list from [`moose-kg stats`](/moose-kg/build/). Keep the
 current count — you will compare against it.
 
 ## Why this is not automatic
@@ -23,7 +23,7 @@ A page writes `[find](/docs/actions/find)`. Your site generator publishes that c
 it knows `/docs/actions/find` is served from `src/content/docs/actions/find.mdx`. That mapping
 lives in the generator's config, in a convention, or in both.
 
-dockg does not read your generator's config — it would need one adapter per generator, and they
+moose-kg does not read your generator's config — it would need one adapter per generator, and they
 change. It takes the mapping from you instead, once.
 
 ## Configure the mapping
@@ -33,7 +33,7 @@ serves it.
 
 <Tabs>
   <TabItem label="Astro / Starlight">
-    ```yaml title="dockg.config.yaml"
+    ```yaml title="moose.config.yaml"
     routes:
       - basePath: /docs
         root: src/content/docs
@@ -41,7 +41,7 @@ serves it.
     ```
   </TabItem>
   <TabItem label="Docusaurus">
-    ```yaml title="dockg.config.yaml"
+    ```yaml title="moose.config.yaml"
     routes:
       - basePath: /docs
         root: docs
@@ -49,7 +49,7 @@ serves it.
     ```
   </TabItem>
   <TabItem label="MkDocs">
-    ```yaml title="dockg.config.yaml"
+    ```yaml title="moose.config.yaml"
     routes:
       - basePath: /
         root: docs
@@ -73,12 +73,13 @@ So `/docs/actions/find` becomes `src/content/docs/actions/find.mdx`, and `/docs/
 A docs section and a blog usually publish under different prefixes from different directories.
 List them all; each is matched independently.
 
-```yaml title="dockg.config.yaml"
-routes:
-  - basePath: /docs
-    root: src/content/docs
-  - basePath: /blog
-    root: src/content/blog
+```yaml title="moose.config.yaml"
+kg:
+  routes:
+    - basePath: /docs
+      root: src/content/docs
+    - basePath: /blog
+      root: src/content/blog
 ```
 
 <Aside type="note" title="Route mappings are config-only">
@@ -93,7 +94,7 @@ routes:
 1. **Rebuild and re-run stats.**
 
    ```sh
-   dockg build && dockg stats
+   moose-kg build && moose-kg stats
    ```
 
    The broken-link count should drop sharply. If it does not move at all, your `root` probably
@@ -102,7 +103,7 @@ routes:
 2. **Inspect one edge rather than trusting the number.**
 
    ```sh
-   dockg query -p dcterms:references
+   moose-kg query -p dcterms:references
    ```
 
    Confirm a link you know is route-style now points at the source file you expect.
@@ -116,7 +117,7 @@ ignore. After mapping, everything left in it is a link that genuinely resolves t
 usually a page that was moved or deleted without its inbound links being updated.
 
 That list is now small enough to act on, and stable enough to
-[gate on in CI](/dockg/govern/ci/).
+[gate on in CI](/moose-kg/govern/ci/).
 
 <Aside type="note" title="Route mapping applies to component links too">
   A route written as `<LinkCard href="/docs/actions/find" />` in an `.mdx` file resolves through the
@@ -134,12 +135,12 @@ your documentation actually cross-references itself, and a broken-link count tha
 <CardGrid>
   <LinkCard
     title="Govern it in CI"
-    href="/dockg/govern/ci/"
+    href="/moose-kg/govern/ci/"
     description="Make the broken-link count a gate, so the next moved page fails its pull request."
   />
   <LinkCard
     title="Configuration reference"
-    href="/dockg/reference/configuration/"
+    href="/moose-kg/reference/configuration/"
     description="The full routes[] key reference, including normalization rules."
   />
 </CardGrid>

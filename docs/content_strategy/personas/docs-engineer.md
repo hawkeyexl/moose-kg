@@ -41,7 +41,7 @@ evidence_basis:
   - README.md's quickstart shape — install, run, read output — which assumes exactly this reader
   - ADR 01009's opinionated defaults, written so a first run needs no configuration
   - the derive source set, all seven of which read artifacts a docs-as-code repo already has
-  - dockg init's starter config template, which presumes someone who will edit YAML
+  - moose-kg init's starter config template, which presumes someone who will edit YAML
   - docmeta's Maya persona, the validated sibling-product equivalent
 ---
 
@@ -56,7 +56,7 @@ contributors; the pipeline comes from Priya.
 
 They have tried to improve metadata before. Usually it went: agree on a set of frontmatter
 fields, document them, watch compliance decay over two quarters because nothing enforced it.
-They are receptive to dockg specifically because it reads what is already on disk — but they
+They are receptive to moose-kg specifically because it reads what is already on disk — but they
 are also *skeptical for the same reason*, having been promised zero-effort metadata before.
 
 ## What they bring, and what they do not
@@ -66,14 +66,14 @@ are also *skeptical for the same reason*, having been promised zero-effort metad
 **Do not bring:** RDF, SPARQL, SHACL, or any prior exposure to Turtle syntax. They may know the
 phrase "knowledge graph" from marketing and have no working model behind it.
 
-This gap is the docset's central design constraint. Priya can read `dockg build` output and act
-on `dockg stats` without knowing what a triple is, and the on-ramp must let them. Turtle can be
+This gap is the docset's central design constraint. Priya can read `moose-kg build` output and act
+on `moose-kg stats` without knowing what a triple is, and the on-ramp must let them. Turtle can be
 shown — it is the product — but not required reading to proceed.
 
 ## What success looks like for them
 
 A gate in CI that fails a PR when metadata regresses, a graph file that diffs cleanly in review,
-and a `stats` number that goes up over time. They will consider dockg adopted when someone
+and a `stats` number that goes up over time. They will consider moose-kg adopted when someone
 *else* on the team hits the gate and fixes their own page without asking Priya anything.
 
 ## What loses them

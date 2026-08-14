@@ -1,17 +1,17 @@
 ---
 title: Frontmatter reference
-description: Every frontmatter key dockg reads — the schema-validated kg block with its controlled vocabularies and dependencies, plus the page-level fields that are accepted but never validated.
+description: Every frontmatter key moose-kg reads — the schema-validated kg block with its controlled vocabularies and dependencies, plus the page-level fields that are accepted but never validated.
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 
-dockg reads two kinds of frontmatter. **Page-level keys** are ordinary fields your site generator
-probably already uses, read opportunistically and never validated. The **`kg` block** is dockg's
+moose-kg reads two kinds of frontmatter. **Page-level keys** are ordinary fields your site generator
+probably already uses, read opportunistically and never validated. The **`kg` block** is moose-kg's
 own, and it is validated against a published JSON Schema.
 
-<Aside type="note" title="`kg:` is the frontmatter key; `dockg:` is the RDF prefix">
-  You write `kg:` in Markdown. The graph uses the namespace prefix `dockg:`
-  (`https://dockg.dev/ns#`). They are not the same thing and are easy to conflate.
+<Aside type="note" title="`kg:` is the frontmatter key; `moose-kg:` is the RDF prefix">
+  You write `kg:` in Markdown. The graph uses the namespace prefix `moose-kg:`
+  (`https://moose-tools.dev/kg/ns#`). They are not the same thing and are easy to conflate.
 </Aside>
 
 ## Page-level keys
@@ -63,17 +63,17 @@ inside `kg` are an error.
 <Aside type="caution" title="Four of these require `prefLabel`">
   `altLabels`, `broader`, `narrower`, and `related` all describe a concept, so the schema requires
   `prefLabel` to exist as the thing being described. Using one without it is a validation error —
-  and `dockg fill` applies the same rule, silently dropping relationship proposals when no
+  and `moose-kg fill` applies the same rule, silently dropping relationship proposals when no
   `prefLabel` exists or is being proposed alongside them.
 </Aside>
 
 Concept IRIs are minted from the slugified label, so two spellings of the same term converge on
-one node. That is usually what you want; `dockg check` reports it as a **warning** so you can
+one node. That is usually what you want; `moose-kg check` reports it as a **warning** so you can
 settle on a spelling.
 
 ### iiRDS typing and applicability
 
-Closed vocabularies bound to published iiRDS IRIs. dockg references those IRIs; it never vendors
+Closed vocabularies bound to published iiRDS IRIs. moose-kg references those IRIs; it never vendors
 or re-serializes the vocabulary.
 
 | Key | Cardinality | Permitted values |
@@ -87,11 +87,11 @@ or re-serializes the vocabulary.
 
 | Key | Cardinality | Emits |
 |---|---|---|
-| `notApplicableTo` | list | `dockg:notApplicableToVariant` |
-| `notSoftwareSubject` | list | `dockg:notSoftwareSubject` — same three values as `softwareSubject` |
+| `notApplicableTo` | list | `moose-kg:notApplicableToVariant` |
+| `notSoftwareSubject` | list | `moose-kg:notSoftwareSubject` — same three values as `softwareSubject` |
 
 Both are disjoint from their positive counterparts: asserting the same value on both sides is a
-SHACL **violation** and exits 1. See [open-world semantics](/dockg/concepts/open-world/) for why
+SHACL **violation** and exits 1. See [open-world semantics](/moose-kg/concepts/open-world/) for why
 these exist at all.
 
 ```md title="docs/interlock-reset.md"
@@ -131,20 +131,20 @@ Two rules worth stating plainly:
 - **`prefLabel` and the SKOS hierarchy are not permitted** per section — they describe a concept,
   which is a document-level notion.
 
-A key matching no heading emits `dockg:brokenSectionRef` and is reported by `dockg stats`.
+A key matching no heading emits `moose-kg:brokenSectionRef` and is reported by `moose-kg stats`.
 
 ### PROV-O
 
 | Key | Type | Emits |
 |---|---|---|
 | `revisionOf` | string[] | `prov:wasRevisionOf` |
-| `derivedFrom` | string[] | `prov:wasDerivedFrom`; unresolved targets become `dockg:brokenLink` |
+| `derivedFrom` | string[] | `prov:wasDerivedFrom`; unresolved targets become `moose-kg:brokenLink` |
 | `generatedBy` | string | `prov:wasGeneratedBy`, associating the model as a `prov:SoftwareAgent` |
-| `provenance` | object[] | Written by `dockg fill` — see below |
+| `provenance` | object[] | Written by `moose-kg fill` — see below |
 
 ### `provenance` entries
 
-`dockg fill` writes one entry per model, and **humans delete entries as they review them**. The
+`moose-kg fill` writes one entry per model, and **humans delete entries as they review them**. The
 block is the outstanding-review queue rather than a permanent record.
 
 | Field | Required | Notes |
@@ -170,7 +170,7 @@ kg:
 
 ## The twelve fillable fields
 
-`fill.fields` restricts what `dockg fill` may ever propose. The full set: `prefLabel`,
+`fill.fields` restricts what `moose-kg fill` may ever propose. The full set: `prefLabel`,
 `altLabels`, `broader`, `narrower`, `related`, `subjects`, `topicType`, `appliesTo`,
 `softwareLifecyclePhase`, `softwareSubject`, `notApplicableTo`, `notSoftwareSubject`.
 
@@ -181,6 +181,6 @@ the default. Point `validate.schemas` at an older version to pin, and expect evo
 as a new file rather than an edit to an existing one.
 
 <Aside type="caution" title="Only YAML frontmatter can be written">
-  `dockg fill` edits YAML frontmatter and preserves the body byte-for-byte. A TOML or JSON
+  `moose-kg fill` edits YAML frontmatter and preserves the body byte-for-byte. A TOML or JSON
   frontmatter fence is an operational error (exit 2) rather than a skipped file.
 </Aside>

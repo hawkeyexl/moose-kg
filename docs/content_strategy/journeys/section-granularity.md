@@ -7,33 +7,33 @@ personas:
 trigger: >-
   a long page covers several variants or topic types, so any document-level tag on it is
   false for part of the page
-entry_point: /dockg/model/sections/
+entry_point: /moose-kg/model/sections/
 success_criteria: >-
   Section nodes carry their own metadata, a scoped query returns sections rather than whole
   documents, and a kg.sections key that matches no heading is reported rather than ignored.
 steps:
   - stage: orient
-    doc: /dockg/concepts/granularity/
+    doc: /moose-kg/concepts/granularity/
     exists: true
     note: "Node granularity must match content granularity, and what it costs when it does not."
   - stage: act
-    doc: /dockg/model/sections/
+    doc: /moose-kg/model/sections/
     exists: true
     note: "The slug-keyed kg.sections map; how a heading becomes a GitHub-style slug."
   - stage: act
-    doc: /dockg/model/sections/
+    doc: /moose-kg/model/sections/
     exists: true
     note: "Explicit-only: sections inherit nothing from the document. State it early and plainly."
   - stage: verify
-    doc: /dockg/model/sections/
+    doc: /moose-kg/model/sections/
     exists: true
     note: "Query a section IRI; show the fragment resolving to an exact span on disk."
   - stage: verify
-    doc: /dockg/fix/
+    doc: /moose-kg/fix/
     exists: true
     note: "brokenSectionRef: a sections key matching no heading, usually a renamed heading."
   - stage: extend
-    doc: /dockg/reference/frontmatter/
+    doc: /moose-kg/reference/frontmatter/
     exists: true
     note: "Which keys are permitted per section, and which are meaningless there."
 ---
@@ -67,7 +67,7 @@ rules that are easy to get wrong.
 Someone renames a heading. The slug changes. The `kg.sections` key now matches nothing, and the
 metadata that was protecting that section silently stops applying.
 
-dockg reports this as `dockg:brokenSectionRef` rather than ignoring it — which is the entire
+moose-kg reports this as `moose-kg:brokenSectionRef` rather than ignoring it — which is the entire
 reason section metadata is safe to rely on. That link between "keys are derived from editable
 prose" and "so the tool tells you when they stop matching" should be made explicitly on the page,
 because it is the answer to the objection this reader will raise.

@@ -1,19 +1,19 @@
+import { NS } from "./vocab.js";
 /**
  * Metadata coverage fields (ADR 01011). Coverage answers the ADR 01008
- * question — what can a graph-side consumer see — by counting `dockg:Document`
+ * question — what can a graph-side consumer see — by counting `moose-kg:Document`
  * nodes that carry each predicate. The list is fixed and deliberate: a
  * predicate absent from every document still shows as 0%, which a dynamic
  * census could not surface. It is shared between the config parser (which
- * expands a uniform threshold across every field) and `dockg stats` (which
+ * expands a uniform threshold across every field) and `moose-kg stats` (which
  * reports and gates), and pinned by test/unit/schema-sync.ts against the
  * config schema so it cannot silently drift.
  */
-import { NS } from "./vocab.js";
 
 export interface CoverageField {
   /** Config/report key. */
   field: string;
-  /** Full predicate IRI counted against `dockg:Document` subjects. */
+  /** Full predicate IRI counted against `moose-kg:Document` subjects. */
   iri: string;
 }
 

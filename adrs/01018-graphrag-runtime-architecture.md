@@ -42,8 +42,8 @@ runtime returns the bundle an inference engine would consume and stops there.
 **Query engine:** (a) plain-JS adjacency walker over the JSON-LD artifact;
 (b) n3 `Store` in the browser; (c) Comunica-lite SPARQL; (d) Oxigraph WASM.
 
-**Packaging:** (a) `dockg/runtime` subpath export from this repo;
-(b) a separate `dockg-runtime` package now.
+**Packaging:** (a) `moose-kg/runtime` subpath export from this repo;
+(b) a separate `moose-kg-runtime` package now.
 
 **Scope:** (a) retrieval-only, terminating at the context bundle;
 (b) retrieval + generation behind a `generate()` callback.
@@ -71,7 +71,7 @@ indexed `getQuads` is a wash. The walker wins on three other axes:
   construction. Given constraint 3, this is decisive — the trace requirement
   makes the walker the natural engine rather than a compromise.
 - **Domain semantics**: variant scoping and the ADR 01014 negative-scope
-  predicates are dockg rules no general engine knows; they would be
+  predicates are moose-kg rules no general engine knows; they would be
   reimplemented on top of any engine anyway.
 
 Arbitrary SPARQL is **supported, not foreclosed**: `rdfjsQuads(graph)` hands out
@@ -87,7 +87,7 @@ and stores accept quad arrays. Materializing is trivial at docs scale (the
 reference corpus is 139 quads). Stated honestly: SPARQL results carry engine
 bindings, not the walker's trace.
 
-**Packaging: `dockg/runtime` subpath (option a).** One repo, one CI, one
+**Packaging: `moose-kg/runtime` subpath (option a).** One repo, one CI, one
 determinism gate, and it version-locks runtime semantics to graph semantics —
 the negative-scope predicates and IRI shapes must not drift apart. A
 **bundle-purity gate** asserts the built `dist/runtime.js` contains no `node:`
@@ -98,7 +98,7 @@ and keeps later extraction to a standalone package mechanical.
 `{ context, citations, trace, refusal? }` — exactly what an inference engine
 consumes — and never performs or wires inference. This keeps the runtime 100%
 deterministic (no nondeterministic stage exists at all), keeps API keys and
-inference cost entirely out of dockg's blast radius, makes the eventual MCP
+inference cost entirely out of moose-kg's blast radius, makes the eventual MCP
 surface what agents actually want (retrieval results, not someone else's
 answers), and lets the Phase 10 eval harness run with no LLM whatsoever.
 
@@ -106,7 +106,7 @@ answers), and lets the Phase 10 eval harness run with no LLM whatsoever.
 
 Discovered while implementing: following `rdf:type` makes every document
 reachable from every other in two hops through the shared class node
-(`a → dockg:Document → b`). That is precisely the edge contamination
+(`a → moose-kg:Document → b`). That is precisely the edge contamination
 graph-governed retrieval exists to avoid, so the walker skips `rdf:type` unless
 `includeTypeEdges` is set. Class membership stays queryable through
 `instancesOf`/`types` — it is just not a *path* between documents.
@@ -151,7 +151,7 @@ prove the seam.
 
 ### Engine (a) plain-JS walker — chosen
 
-- Good: 0 KB; native trace; dockg scope semantics first-class.
+- Good: 0 KB; native trace; moose-kg scope semantics first-class.
 - Bad: we own the traversal code; no SPARQL without the adapter.
 
 ### Engine (b) n3 Store
@@ -174,7 +174,7 @@ prove the seam.
 ### Packaging (b) separate package now
 
 - Good: cleanest story if the runtime grows its own UI ecosystem.
-- Bad: re-creates the cross-repo coordination pain dockg just escaped when the
+- Bad: re-creates the cross-repo coordination pain moose-kg just escaped when the
   `file:../docmeta` dependency was removed. Revisit at 1.0.
 
 ### Scope (b) retrieval + generation callback

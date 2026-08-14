@@ -1,5 +1,5 @@
 /**
- * `dockg search` — text query → ranked seed nodes (ADR 01019).
+ * `moose-kg search` — text query → ranked seed nodes (ADR 01019).
  *
  * A thin Node wrapper over the browser-native lexical entry stage: it loads the
  * `search.json` artifact and runs the same `findEntry` a browser would. This is
@@ -18,7 +18,7 @@ import {
   type SearchIndexDoc,
 } from "../core/search-index.js";
 import { VectorIndexError } from "../core/vector-index.js";
-import { DockgError } from "../types.js";
+import { MooseKgError } from "../types.js";
 import { findEntry } from "../runtime/entry.js";
 import { createLexicalIndex } from "../runtime/lexical.js";
 import {
@@ -94,19 +94,19 @@ function loadSearchIndex(indexPath: string): {
   try {
     parsed = JSON.parse(raw);
   } catch (e) {
-    throw new DockgError(
-      `Failed to parse ${indexPath}: ${e instanceof Error ? e.message : "parse error"} — re-run \`dockg export --format search\`.`,
+    throw new MooseKgError(
+      `Failed to parse ${indexPath}: ${e instanceof Error ? e.message : "parse error"} — re-run \`moose-kg export --format search\`.`,
     );
   }
   const entries = (parsed as SearchIndexDoc | null)?.entries;
   if (!Array.isArray(entries)) {
-    throw new DockgError(
-      `Not a dockg search index: ${indexPath} — expected an \`entries\` array; re-run \`dockg export --format search\`.`,
+    throw new MooseKgError(
+      `Not a moose-kg search index: ${indexPath} — expected an \`entries\` array; re-run \`moose-kg export --format search\`.`,
     );
   }
   return {
     doc: parsed as SearchIndexDoc,
-    // Same recipe `dockg embed` uses, so the two digests are comparable.
+    // Same recipe `moose-kg embed` uses, so the two digests are comparable.
     source: `sha256:${createHash("sha256").update(raw, "utf8").digest("hex")}`,
   };
 }
@@ -120,8 +120,8 @@ export async function runSearch(opts: SearchOptions): Promise<SearchReport> {
     : join(dirname(graphPath), SEARCH_INDEX_FILENAME);
 
   if (!existsSync(indexPath)) {
-    throw new DockgError(
-      `Search index not found: ${indexPath} — run \`dockg export --format search\` first.`,
+    throw new MooseKgError(
+      `Search index not found: ${indexPath} — run \`moose-kg export --format search\` first.`,
     );
   }
 
@@ -144,8 +144,8 @@ export async function runSearch(opts: SearchOptions): Promise<SearchReport> {
       // operational error (exit 2), exactly as for the search index above —
       // not a raw VectorIndexError stack trace out of an async action.
       if (e instanceof VectorIndexError) {
-        throw new DockgError(
-          `${e.message} (${vectorsPath}) — re-run \`dockg embed\`, or use \`--mode lexical\`.`,
+        throw new MooseKgError(
+          `${e.message} (${vectorsPath}) — re-run \`moose-kg embed\`, or use \`--mode lexical\`.`,
         );
       }
       throw e;
@@ -154,10 +154,10 @@ export async function runSearch(opts: SearchOptions): Promise<SearchReport> {
     // IRIs that may no longer exist and miss everything added since
     // (ADR 01020, "Mismatch is refused, not ranked").
     const stale = vectors.check({ source });
-    if (stale) throw new DockgError(stale.detail);
+    if (stale) throw new MooseKgError(stale.detail);
   } else if (wantsVector) {
-    throw new DockgError(
-      `Vector index not found: ${vectorsPath} — run \`dockg embed\` first, or use \`--mode lexical\`.`,
+    throw new MooseKgError(
+      `Vector index not found: ${vectorsPath} — run \`moose-kg embed\` first, or use \`--mode lexical\`.`,
     );
   }
 
@@ -177,7 +177,7 @@ export async function runSearch(opts: SearchOptions): Promise<SearchReport> {
     // means a dimension disagreement the header did not predict — a real
     // operational error (exit 2), not a stack trace out of an async action.
     if (e instanceof VectorMismatchError) {
-      throw new DockgError(`${e.message} Re-run \`dockg embed\`.`);
+      throw new MooseKgError(`${e.message} Re-run \`moose-kg embed\`.`);
     }
     throw e;
   });
@@ -253,19 +253,19 @@ async function resolveEmbedder(
       // changing its id would otherwise only surface deep inside search().
       ...(embedder.dims > 0 ? { dims: embedder.dims } : {}),
     });
-    if (mismatch) throw new DockgError(mismatch.detail);
+    if (mismatch) throw new MooseKgError(mismatch.detail);
     return embedder;
   } catch (e) {
-    if (e instanceof DockgError) throw e;
+    if (e instanceof MooseKgError) throw e;
     if (e instanceof EmbedderUnavailableError) {
       // Only fatal when the vector leg was asked for; otherwise degrade to
       // lexical rather than failing a search that can still be answered.
-      if (required) throw new DockgError(e.message);
+      if (required) throw new MooseKgError(e.message);
       return undefined;
     }
     // A model that will not load (bad id, 404, corrupt weights) is fatal either
     // way — but as an operational error with a message, not a stack trace.
-    throw new DockgError(
+    throw new MooseKgError(
       `Failed to load embedding model ${model}: ${e instanceof Error ? e.message : String(e)}`,
     );
   }

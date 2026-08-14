@@ -10,13 +10,13 @@ decision-makers: [hawkeyexl, Claude]
 
 PROV-O v1 derived provenance only from frontmatter. Most corpora carry richer,
 already-authoritative provenance in git: creation/modification dates, authors,
-and renames. How should dockg incorporate git history without breaking its
+and renames. How should moose-kg incorporate git history without breaking its
 determinism contract or its performance profile?
 
 ## Decision Drivers
 
 - Byte-identical output per corpus commit; the wall clock must never enter the graph.
-- One `dockg build` must not spawn a subprocess per file.
+- One `moose-kg build` must not spawn a subprocess per file.
 - Frontmatter is the author's explicit statement — it must win over inference.
 - Author emails are personal data.
 

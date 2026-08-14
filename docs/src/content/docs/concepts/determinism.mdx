@@ -1,11 +1,11 @@
 ---
 title: Determinism
-description: Two builds over unchanged inputs produce byte-identical output — which is what makes a dockg graph reviewable in a pull request and admissible as audit evidence rather than an anecdote.
+description: Two builds over unchanged inputs produce byte-identical output — which is what makes a moose-kg graph reviewable in a pull request and admissible as audit evidence rather than an anecdote.
 ---
 
 import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-Run `dockg build` twice over the same inputs and you get the same bytes. Not equivalent graphs —
+Run `moose-kg build` twice over the same inputs and you get the same bytes. Not equivalent graphs —
 the same file.
 
 That property is load-bearing rather than tidy, and it constrains the implementation everywhere.
@@ -13,7 +13,7 @@ That property is load-bearing rather than tidy, and it constrains the implementa
 ## Check it yourself
 
 ```sh
-dockg build --out a.ttl && dockg build --out b.ttl && diff a.ttl b.ttl
+moose-kg build --out a.ttl && moose-kg build --out b.ttl && diff a.ttl b.ttl
 ```
 
 Silence is the result.
@@ -31,7 +31,7 @@ GitHub-style heading slug. The same file produces the same IRI on Windows and Li
 next year.
 
 **No blank nodes, ever.** Blank-node identifiers are assigned per-parse, so a graph containing
-them cannot be byte-stable — and its diffs are unreadable. Every node dockg emits, including
+them cannot be byte-stable — and its diffs are unreadable. Every node moose-kg emits, including
 provenance and attribution nodes, gets a deterministic IRI derived from what it describes.
 
 **No wall clock.** Dates come from frontmatter first, then git committer times. Nothing calls
@@ -59,7 +59,7 @@ regenerated in front of the person asking, from inputs they can see.
 <Aside type="tip" title="The audit case is the one people underestimate">
   A documentation tool caring about reproducibility reads as engineering fastidiousness right up
   until you are the one being audited. If you are building toward
-  [provenance evidence](/dockg/govern/provenance/), this page is the foundation of it.
+  [provenance evidence](/moose-kg/govern/provenance/), this page is the foundation of it.
 </Aside>
 
 ## Where determinism is deliberately relaxed
@@ -73,20 +73,20 @@ The consequence worth knowing: two builds of the same corpus, one with git avail
 without, are *not* byte-identical. Determinism holds for a fixed set of inputs, and git history
 is an input.
 
-**Version stamping.** The emitted graph carries `dockg:version` on its build activity, so
-upgrading dockg changes one line. Test suites that compare against a golden file normalize it.
+**Version stamping.** The emitted graph carries `moose-kg:version` on its build activity, so
+upgrading moose-kg changes one line. Test suites that compare against a golden file normalize it.
 
 ## Where to go next
 
 <CardGrid>
   <LinkCard
     title="Prove provenance"
-    href="/dockg/govern/provenance/"
+    href="/moose-kg/govern/provenance/"
     description="What determinism is for: authorship and derivation evidence that regenerates identically."
   />
   <LinkCard
     title="Build your graph"
-    href="/dockg/build/"
+    href="/moose-kg/build/"
     description="What gets derived, and how to control what goes in."
   />
 </CardGrid>

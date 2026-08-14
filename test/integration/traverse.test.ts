@@ -37,7 +37,7 @@ function run(args: string[], cwd: string): { stdout: string; status: number } {
 }
 
 function buildGraph(): string {
-  const dir = mkdtempSync(join(tmpdir(), "dockg-traverse-"));
+  const dir = mkdtempSync(join(tmpdir(), "moose-kg-traverse-"));
   const graph = join(dir, "graph.ttl");
   execFileSync(process.execPath, [cli, "build", "--out", graph], {
     encoding: "utf8",
@@ -46,7 +46,7 @@ function buildGraph(): string {
   return graph;
 }
 
-describe("dockg traverse (integration)", () => {
+describe("moose-kg traverse (integration)", () => {
   it("matches the traverse golden, trace included", () => {
     const graph = buildGraph();
     const { stdout, status } = run(
@@ -91,7 +91,7 @@ describe("dockg traverse (integration)", () => {
     // configuration.md declares notApplicableTo: [SP-X300], so it is dropped
     // and the reason is reported, not silently omitted.
     expect(stdout).toContain("excluded by scope:");
-    expect(stdout).toContain("dockg:notApplicableToVariant");
+    expect(stdout).toContain("moose-kg:notApplicableToVariant");
     expect(stdout).toContain("1 node, 1 hop, 1 excluded");
   });
 

@@ -1,10 +1,10 @@
 {
-  "name": "@hawkeyexl/dockg",
+  "name": "moose-kg",
   "version": "0.1.0",
   "description": "Deterministic knowledge graphs derived from documentation frontmatter and formatting, saved as Turtle.",
   "type": "module",
   "bin": {
-    "dockg": "dist/cli.js"
+    "moose-kg": "dist/cli.js"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -30,11 +30,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hawkeyexl/dockg.git"
+    "url": "git+https://github.com/hawkeyexl/moose-kg.git"
   },
-  "homepage": "https://github.com/hawkeyexl/dockg#readme",
+  "homepage": "https://github.com/hawkeyexl/moose-kg#readme",
   "bugs": {
-    "url": "https://github.com/hawkeyexl/dockg/issues"
+    "url": "https://github.com/hawkeyexl/moose-kg/issues"
   },
   "publishConfig": {
     "access": "public"

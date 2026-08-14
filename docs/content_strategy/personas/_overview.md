@@ -46,7 +46,7 @@ Personas use they/them throughout.
 
 This is the single most binding constraint in the set, and it follows from the lead audience
 rather than from taste. If the on-ramp requires understanding triples, IRIs, or SHACL before
-`dockg build` returns something useful, the lead persona leaves — and every other persona
+`moose-kg build` returns something useful, the lead persona leaves — and every other persona
 depends on someone in that role having stayed.
 
 Practically: `get-started/` and `build/index` must be completable with no RDF vocabulary at
@@ -58,6 +58,6 @@ reachable rather than mandatory.
 
 `persona-doc-contributor` enters through an error message, always. Their track has to work as a
 **landing page for a link in CI output**, with no preceding context — no "as we saw in the
-previous section", no assumed config knowledge, and no assumption they have dockg installed.
+previous section", no assumed config knowledge, and no assumption they have moose-kg installed.
 
 Every other persona can be assumed to have arrived at the top.

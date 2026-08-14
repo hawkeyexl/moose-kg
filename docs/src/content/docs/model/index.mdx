@@ -1,6 +1,6 @@
 ---
 title: Model your metadata
-description: How dockg maps frontmatter onto SKOS concepts, iiRDS topic types, and product-variant applicability — a mapping onto vocabulary you already have rather than an introduction to it.
+description: How moose-kg maps frontmatter onto SKOS concepts, iiRDS topic types, and product-variant applicability — a mapping onto vocabulary you already have rather than an introduction to it.
 ---
 
 import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
@@ -8,20 +8,20 @@ import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
 If you already maintain a controlled vocabulary, this track is about expressing it in the files
 and getting it enforced. It assumes you know SKOS and does not explain it.
 
-## What dockg models
+## What moose-kg models
 
-| Your concern | dockg's surface | Emitted as |
+| Your concern | moose-kg's surface | Emitted as |
 |---|---|---|
 | What a document is about | `prefLabel`, `altLabels`, `broader`, `narrower`, `related` | SKOS concepts and relationships |
 | What kind of topic it is | `topicType` | `iirds:has-topic-type`, pointing at a published iiRDS individual |
-| Which products it covers | `appliesTo`, `notApplicableTo` | `iirds:relates-to-product-variant`, `dockg:notApplicableToVariant` |
+| Which products it covers | `appliesTo`, `notApplicableTo` | `iirds:relates-to-product-variant`, `moose-kg:notApplicableToVariant` |
 | Where in the lifecycle it sits | `softwareLifecyclePhase` | `iirds:relates-to-product-lifecycle-phase` |
-| Which aspect it addresses | `softwareSubject`, `notSoftwareSubject` | `iirds:has-subject`, `dockg:notSoftwareSubject` |
+| Which aspect it addresses | `softwareSubject`, `notSoftwareSubject` | `iirds:has-subject`, `moose-kg:notSoftwareSubject` |
 | Which part of a document a claim covers | `kg.sections` | Per-section nodes carrying their own metadata |
 
-<Aside type="note" title="dockg references iiRDS; it does not vendor it">
+<Aside type="note" title="moose-kg references iiRDS; it does not vendor it">
   Topic types, lifecycle phases, and subjects are bound to IRIs published by the iiRDS consortium.
-  dockg never copies, re-serializes, or modifies the vocabulary — the IRIs in the source are
+  moose-kg never copies, re-serializes, or modifies the vocabulary — the IRIs in the source are
   verified against the published models. iiRDS is CC BY-ND, and referencing rather than
   redistributing is what keeps that obligation off your users.
 </Aside>
@@ -29,14 +29,14 @@ and getting it enforced. It assumes you know SKOS and does not explain it.
 ## What it deliberately does not model
 
 - **A concept scheme you did not declare.** Concepts are minted from the labels your documents
-  use, converging on slugified labels. dockg will not invent a hierarchy for you.
+  use, converging on slugified labels. moose-kg will not invent a hierarchy for you.
 - **Inference.** No transitive closure is materialized. `broader` chains are checked for cycles
   but not expanded — what you assert is what the graph contains.
-- **Anything about your prose.** See [an index, not a corpus](/dockg/concepts/index-not-corpus/).
+- **Anything about your prose.** See [an index, not a corpus](/moose-kg/concepts/index-not-corpus/).
 
 ## Read this first if you are scoping by product
 
-[Open-world semantics](/dockg/concepts/open-world/) explains what dockg assumes when a value is
+[Open-world semantics](/moose-kg/concepts/open-world/) explains what moose-kg assumes when a value is
 absent. Getting that wrong produces scoped queries that are silently wrong in the dangerous
 direction, and it is not recoverable by better tagging afterwards.
 
@@ -45,22 +45,22 @@ direction, and it is not recoverable by better tagging afterwards.
 <CardGrid>
   <LinkCard
     title="Concepts and SKOS"
-    href="/dockg/model/concepts-skos/"
+    href="/moose-kg/model/concepts-skos/"
     description="prefLabel and its dependents, how concept IRIs converge, and what check enforces."
   />
   <LinkCard
     title="Scope by product variant"
-    href="/dockg/model/variants/"
+    href="/moose-kg/model/variants/"
     description="iiRDS typing, applicability, and saying explicitly what a topic does not cover."
   />
   <LinkCard
     title="Section-level metadata"
-    href="/dockg/model/sections/"
+    href="/moose-kg/model/sections/"
     description="Metadata on the heading that owns the text, and why nothing is inherited."
   />
   <LinkCard
     title="Frontmatter reference"
-    href="/dockg/reference/frontmatter/"
+    href="/moose-kg/reference/frontmatter/"
     description="Every key, its type, and its permitted values."
   />
 </CardGrid>

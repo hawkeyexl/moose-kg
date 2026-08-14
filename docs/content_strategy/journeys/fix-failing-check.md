@@ -5,9 +5,9 @@ title: Decode a failing check and fix my page
 personas:
   - persona-doc-contributor
 trigger: >-
-  a pull request is red because of a dockg finding, and the reader has never seen this
+  a pull request is red because of a moose-kg finding, and the reader has never seen this
   tool before
-entry_point: /dockg/fix/
+entry_point: /moose-kg/fix/
 success_criteria: >-
   The reader identifies which of their frontmatter caused the failure, applies a fix,
   and merges — without reading anything about knowledge graphs.
@@ -15,27 +15,27 @@ anchor: true
 highest_traffic: true
 steps:
   - stage: trigger
-    doc: /dockg/fix/
+    doc: /moose-kg/fix/
     exists: true
     note: "Must work cold, as the landing page for a link in CI output. No prior context."
   - stage: orient
-    doc: /dockg/fix/
+    doc: /moose-kg/fix/
     exists: true
     note: "Error-line anatomy, part by part: which is the file, the field, the rule."
   - stage: orient
-    doc: /dockg/fix/
+    doc: /moose-kg/fix/
     exists: true
     note: "Whose fault is it: exit 1 is your page, exit 2 is the pipeline. Hand it back."
   - stage: act
-    doc: /dockg/fix/
+    doc: /moose-kg/fix/
     exists: true
     note: "Common-failures catalog, each fix shown as a frontmatter diff."
   - stage: act
-    doc: /dockg/fix/
+    doc: /moose-kg/fix/
     exists: true
     note: "One reproduce-locally command, or an honest statement that pushing is faster."
   - stage: extend
-    doc: /dockg/fix/faq/
+    doc: /moose-kg/fix/faq/
     exists: true
     note: "Question-shaped headings for the cases that are not schema failures."
 ---
@@ -45,13 +45,13 @@ Sam's pull request is red and they want to merge.
 ## The journey
 
 This will be the most-read track in the docset, by the people who care about it least. It is the
-destination of every error message dockg emits and every gate the other personas install.
+destination of every error message moose-kg emits and every gate the other personas install.
 
 Two properties define it, and both are unusual:
 
 **It must work cold.** This page is the landing page for a link in machine output. No "as we saw
 above", no assumed installation, no assumed config knowledge, and no assumption that the reader
-knows what dockg is. Every other track can assume arrival from the top; this one cannot.
+knows what moose-kg is. Every other track can assume arrival from the top; this one cannot.
 
 **Success is a short visit.** The reader leaving quickly is the goal, not a failure of
 engagement. The temptation to route them into the concepts track should be resisted — one link
@@ -73,7 +73,7 @@ out, at the bottom, is enough.
 
 ## The failures this catalog has to cover
 
-Drawn from what dockg actually emits, not from what seems likely:
+Drawn from what moose-kg actually emits, not from what seems likely:
 
 - A required frontmatter field missing, or the wrong type.
 - A `kg` relationship field used without `prefLabel`, which the schema requires as its subject.

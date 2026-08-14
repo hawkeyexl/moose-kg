@@ -12,25 +12,25 @@ Phase 6 shipped JSON-LD export. The export arc's other target is the format
 tekom's ecosystem actually ingests: an **iiRDS package** — a ZIP (`.iirds`)
 carrying `META-INF/metadata.rdf` (RDF/XML) plus the source content files exposed
 as `iirds:Rendition`s. This is what lets a Content Delivery Portal consume
-dockg's graph, and it is the payoff of the Phase 2 iiRDS mapping: the
-classification dockg already derives (topic-type, subject, product-variant,
+moose-kg's graph, and it is the payoff of the Phase 2 iiRDS mapping: the
+classification moose-kg already derives (topic-type, subject, product-variant,
 lifecycle-phase) lands in the package metadata rather than staying trapped in a
-Turtle file. `dockg export --format iirds` has existed as a stub since Phase 6;
+Turtle file. `moose-kg export --format iirds` has existed as a stub since Phase 6;
 this makes it real.
 
 The hard question is scope and conformance: which iiRDS variant to target, what
-plays the content role, and how to keep the package inside dockg's determinism
+plays the content role, and how to keep the package inside moose-kg's determinism
 contract (byte-identical rebuilds).
 
 ## Decision Drivers
 
-- **Achievability without a content pipeline.** dockg has markdown sources and a
+- **Achievability without a content pipeline.** moose-kg has markdown sources and a
   graph; it has no PDF/A or XHTML5 renderer.
 - **Conformance.** The package must validate against the iiRDS rules (anchored to
   the plusmeta iiRDS Validation Tool, the de-facto gate).
 - **Determinism is the product contract.** Two exports over an unchanged graph
   must be byte-identical — no wall clock, no blank nodes, no random UUIDs.
-- **No heavy dependencies.** dockg hand-rolls its serializers so formatting is
+- **No heavy dependencies.** moose-kg hand-rolls its serializers so formatting is
   controlled; it has no ZIP or XML library and should not grow one.
 - **The "support everything optional" mandate** — enrichment (title, creator,
   product) should be possible, but absence must still yield a valid package.
@@ -54,7 +54,7 @@ Research against the spec and the validator's own `min_requirements.rdf` pass
 fixture established that unrestricted iiRDS has a **thin** mandatory metadata set:
 one `iirds:Package` with exactly one `iirds:iiRDSVersion`; information units as
 subclasses with IRIs (no blank nodes) linked via `iirds:is-part-of-package`
-(dockg types each document `iirds:Topic`, the subclass that carries the Phase-2
+(moose-kg types each document `iirds:Topic`, the subclass that carries the Phase-2
 `has-topic-type`/`has-subject` classification); and each content file as an
 `iirds:Rendition` with
 `iirds:source` + `iirds:format`. Creator `Party` and `ProductVariant`/`Identity`
@@ -82,7 +82,7 @@ UUID), sorted RDF/XML, zeroed ZIP metadata, fixed entry order.
   (`jsonld` + `iirds`).
 - Neutral: three more serializers to maintain (ZIP, RDF/XML, projection); covered
   by unit + golden + double-build regression gates.
-- Bad: `iirds:A`/`iirds:H` remain out of reach until dockg grows a content
+- Bad: `iirds:A`/`iirds:H` remain out of reach until moose-kg grows a content
   pipeline. Explicitly deferred.
 
 ### Confirmation
@@ -91,10 +91,10 @@ UUID), sorted RDF/XML, zeroed ZIP metadata, fixed entry order.
   double-write identity); `emitRdfXml` (sorted, escaped, well-formed);
   `projectPackage` (Package/Document/Rendition/classification, creator config,
   missing-file error, n3 round-trip of the projected quads).
-- Integration: `dockg export --format iirds` over the corpus — `mimetype` first,
+- Integration: `moose-kg export --format iirds` over the corpus — `mimetype` first,
   `META-INF/metadata.rdf` matches a text golden, content files present,
   double-export byte-identical.
-- The Turtle and JSON-LD goldens are untouched; the built graph, `dockg check`,
+- The Turtle and JSON-LD goldens are untouched; the built graph, `moose-kg check`,
   and the frontmatter schema are unaffected (the package is a projection).
 
 ## Pros and Cons of the Options
@@ -108,7 +108,7 @@ UUID), sorted RDF/XML, zeroed ZIP metadata, fixed entry order.
 ### Option 2 — iiRDS/A
 
 - Good: archival-grade, self-contained.
-- Bad: requires a markdown→PDF/A or iiRDS-XHTML5 converter dockg doesn't have.
+- Bad: requires a markdown→PDF/A or iiRDS-XHTML5 converter moose-kg doesn't have.
 
 ### Option 3 — iiRDS/H
 

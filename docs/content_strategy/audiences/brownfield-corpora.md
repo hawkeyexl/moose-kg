@@ -22,7 +22,7 @@ personas:
   - persona-docs-engineer
   - persona-information-architect
 evidence_basis:
-  - dockg fill's entire existence — a backfill tool is only necessary for a corpus that was not annotated as it was written
+  - moose-kg fill's entire existence — a backfill tool is only necessary for a corpus that was not annotated as it was written
   - ADR 01015 (fill proposes all fields, gated by model confidence) and the kg.provenance review-queue design, which presume a human reviewing machine output at volume
   - ADR 01011's per-field coverage thresholds, whose value is as a ratchet — a number you raise over time
   - DESIGN.md's information-evaporation argument ("the 5 mm silence"), which describes what an unannotated corpus costs
@@ -45,13 +45,13 @@ backlog.
 
 ## What changes under this lens
 
-**The starting number is bad, and that has to be said out loud.** The first `dockg stats` run
+**The starting number is bad, and that has to be said out loud.** The first `moose-kg stats` run
 over a brownfield corpus reports coverage in the single or low double digits. If the docs have
 implied that a healthy corpus is near 100%, that first run reads as failure and the reader
 stops. Pages written under this lens should lead with the expectation that the first number is
 low and that this is the normal starting condition.
 
-**Backfill is a review workflow, not a generation step.** `dockg fill` proposes; a human
+**Backfill is a review workflow, not a generation step.** `moose-kg fill` proposes; a human
 accepts. The design reflects this everywhere — proposals below the confidence threshold are
 dropped silently and the run still exits 0, proposals that would corrupt the graph are rejected
 by the SHACL guardrail, and every written field is recorded in `kg.provenance` with its

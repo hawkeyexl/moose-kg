@@ -13,17 +13,17 @@ import starlight from "@astrojs/starlight";
  */
 export default defineConfig({
   site: "https://hawkeyexl.github.io",
-  base: "/dockg",
+  base: "/moose-kg",
   integrations: [
     starlight({
-      title: "dockg",
+      title: "moose-kg",
       description:
         "Deterministic knowledge graphs derived from documentation frontmatter and formatting.",
       social: [
         {
           icon: "github",
           label: "GitHub",
-          href: "https://github.com/hawkeyexl/dockg",
+          href: "https://github.com/hawkeyexl/moose-kg",
         },
       ],
       sidebar: [

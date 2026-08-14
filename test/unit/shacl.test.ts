@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { DataFactory, Store } from "n3";
 import { validateGraph } from "../../src/core/shacl.js";
 import { bundledShapesPath } from "../../src/core/pkg.js";
-import { NS, RDF_TYPE } from "../../src/core/vocab.js";
+import { MOOSE_KG, NS, RDF_TYPE } from "../../src/core/vocab.js";
 
 const { namedNode, literal, quad } = DataFactory;
 
@@ -39,15 +39,15 @@ function conformingTriples(): Array<
   const d = doc("docs/a.md");
   const c = concept("setup");
   return [
-    [d, RDF_TYPE, `${NS.dockg}Document`],
-    [d, `${NS.dockg}path`, { lit: "docs/a.md" }],
+    [d, RDF_TYPE, `${MOOSE_KG}Document`],
+    [d, `${MOOSE_KG}path`, { lit: "docs/a.md" }],
     [d, `${NS.dcterms}title`, { lit: "A" }],
     [d, `${NS.dcterms}subject`, c],
     [c, RDF_TYPE, `${NS.skos}Concept`],
     [c, `${NS.skos}prefLabel`, { lit: "setup" }],
     [c, `${NS.skos}inScheme`, SCHEME],
     [SCHEME, RDF_TYPE, `${NS.skos}ConceptScheme`],
-    [SCHEME, `${NS.dcterms}title`, { lit: "dockg concepts" }],
+    [SCHEME, `${NS.dcterms}title`, { lit: "moose-kg concepts" }],
   ];
 }
 
@@ -137,11 +137,11 @@ describe("validateGraph", () => {
     const d = doc("docs/a.md");
     const store = build([
       ...conformingTriples(),
-      [d, `${NS.dockg}surprise`, { lit: "?" }],
+      [d, `${MOOSE_KG}surprise`, { lit: "?" }],
     ]);
     const findings = await validateGraph(store, SHAPES);
     const hit = findings.find(
-      (f) => f.focusNode === d && f.path === `${NS.dockg}surprise`,
+      (f) => f.focusNode === d && f.path === `${MOOSE_KG}surprise`,
     );
     expect(hit).toBeDefined();
     expect(hit!.severity).toBe("violation");
@@ -183,10 +183,10 @@ describe("validateGraph", () => {
     const v = `${BASE}product/sp-x200`;
     const store = build([
       ...conformingTriples(),
-      [s, RDF_TYPE, `${NS.dockg}Section`],
+      [s, RDF_TYPE, `${MOOSE_KG}Section`],
       [s, `${NS.dcterms}title`, { lit: "Install" }],
-      [s, `${NS.dockg}level`, { lit: "2", dt: `${NS.xsd}integer` }],
-      [s, `${NS.dockg}order`, { lit: "1", dt: `${NS.xsd}integer` }],
+      [s, `${MOOSE_KG}level`, { lit: "2", dt: `${NS.xsd}integer` }],
+      [s, `${MOOSE_KG}order`, { lit: "1", dt: `${NS.xsd}integer` }],
       [s, `${NS.iirds}has-topic-type`, `${NS.iirds}GenericReference`],
       [s, `${NS.iirds}relates-to-product-variant`, v],
       [v, RDF_TYPE, `${NS.iirds}ProductVariant`],
@@ -200,10 +200,10 @@ describe("validateGraph", () => {
     const s = `${doc("docs/a.md")}#install`;
     const store = build([
       ...conformingTriples(),
-      [s, RDF_TYPE, `${NS.dockg}Section`],
+      [s, RDF_TYPE, `${MOOSE_KG}Section`],
       [s, `${NS.dcterms}title`, { lit: "Install" }],
-      [s, `${NS.dockg}level`, { lit: "2", dt: `${NS.xsd}integer` }],
-      [s, `${NS.dockg}order`, { lit: "1", dt: `${NS.xsd}integer` }],
+      [s, `${MOOSE_KG}level`, { lit: "2", dt: `${NS.xsd}integer` }],
+      [s, `${MOOSE_KG}order`, { lit: "1", dt: `${NS.xsd}integer` }],
       [s, `${NS.iirds}has-topic-type`, `${NS.iirds}GenericNonsense`],
     ]);
     const findings = await validateGraph(store, SHAPES);
@@ -214,11 +214,11 @@ describe("validateGraph", () => {
     expect(hit!.severity).toBe("violation");
   });
 
-  it("accepts dockg:brokenSectionRef on a document", async () => {
+  it("accepts moose-kg:brokenSectionRef on a document", async () => {
     const d = doc("docs/a.md");
     const store = build([
       ...conformingTriples(),
-      [d, `${NS.dockg}brokenSectionRef`, { lit: "missing-heading" }],
+      [d, `${MOOSE_KG}brokenSectionRef`, { lit: "missing-heading" }],
     ]);
     expect(await validateGraph(store, SHAPES)).toEqual([]);
   });
@@ -228,10 +228,10 @@ describe("validateGraph", () => {
     const v = `${BASE}product/sp-x300`;
     const store = build([
       ...conformingTriples(),
-      [d, `${NS.dockg}notApplicableToVariant`, v],
+      [d, `${MOOSE_KG}notApplicableToVariant`, v],
       [v, RDF_TYPE, `${NS.iirds}ProductVariant`],
       [v, `${NS.dcterms}title`, { lit: "SP-X300" }],
-      [d, `${NS.dockg}notSoftwareSubject`, `${NS.iirdsSft}Architecture`],
+      [d, `${MOOSE_KG}notSoftwareSubject`, `${NS.iirdsSft}Architecture`],
       // A different subject on the positive side — no conflict.
       [d, `${NS.iirds}has-subject`, `${NS.iirdsSft}Interface`],
     ]);
@@ -244,14 +244,14 @@ describe("validateGraph", () => {
     const store = build([
       ...conformingTriples(),
       [d, `${NS.iirds}relates-to-product-variant`, v],
-      [d, `${NS.dockg}notApplicableToVariant`, v],
+      [d, `${MOOSE_KG}notApplicableToVariant`, v],
       [v, RDF_TYPE, `${NS.iirds}ProductVariant`],
       [v, `${NS.dcterms}title`, { lit: "SP-X1" }],
     ]);
     const findings = await validateGraph(store, SHAPES);
     const hit = findings.find(
       (f) =>
-        f.focusNode === d && f.path === `${NS.dockg}notApplicableToVariant`,
+        f.focusNode === d && f.path === `${MOOSE_KG}notApplicableToVariant`,
     );
     expect(hit).toBeDefined();
     expect(hit!.severity).toBe("violation");
@@ -263,11 +263,11 @@ describe("validateGraph", () => {
     const store = build([
       ...conformingTriples(),
       [d, `${NS.iirds}has-subject`, `${NS.iirdsSft}Interface`],
-      [d, `${NS.dockg}notSoftwareSubject`, `${NS.iirdsSft}Interface`],
+      [d, `${MOOSE_KG}notSoftwareSubject`, `${NS.iirdsSft}Interface`],
     ]);
     const findings = await validateGraph(store, SHAPES);
     const hit = findings.find(
-      (f) => f.focusNode === d && f.path === `${NS.dockg}notSoftwareSubject`,
+      (f) => f.focusNode === d && f.path === `${MOOSE_KG}notSoftwareSubject`,
     );
     expect(hit).toBeDefined();
     expect(hit!.severity).toBe("violation");
@@ -280,9 +280,9 @@ describe("validateGraph", () => {
       ...conformingTriples(),
       [activity, RDF_TYPE, `${NS.prov}Activity`],
       [activity, `${NS.prov}wasAssociatedWith`, `${BASE}agent/software/m1`],
-      [activity, `${NS.dockg}filledFieldEntry`, entry],
-      [entry, `${NS.dockg}filledField`, { lit: "prefLabel" }],
-      [entry, `${NS.dockg}confidence`, { lit: "0.9", dt: `${NS.xsd}decimal` }],
+      [activity, `${MOOSE_KG}filledFieldEntry`, entry],
+      [entry, `${MOOSE_KG}filledField`, { lit: "prefLabel" }],
+      [entry, `${MOOSE_KG}confidence`, { lit: "0.9", dt: `${NS.xsd}decimal` }],
       [`${BASE}agent/software/m1`, RDF_TYPE, `${NS.prov}SoftwareAgent`],
       [`${BASE}agent/software/m1`, `${NS.foaf}name`, { lit: "m1" }],
     ]);
@@ -365,10 +365,10 @@ describe("validateGraph", () => {
       [c, RDF_TYPE, `${NS.skos}Concept`],
       [c, `${NS.skos}prefLabel`, { lit: "shared" }],
       // missing inScheme → violation
-      [d2, RDF_TYPE, `${NS.dockg}Document`],
-      [d2, `${NS.dockg}path`, { lit: "docs/z.md" }],
-      [d3, RDF_TYPE, `${NS.dockg}Document`],
-      [d3, `${NS.dockg}path`, { lit: "docs/b.md" }],
+      [d2, RDF_TYPE, `${MOOSE_KG}Document`],
+      [d2, `${MOOSE_KG}path`, { lit: "docs/z.md" }],
+      [d3, RDF_TYPE, `${MOOSE_KG}Document`],
+      [d3, `${MOOSE_KG}path`, { lit: "docs/b.md" }],
       [d2, `${NS.dcterms}subject`, c],
       [d3, `${NS.dcterms}subject`, c],
     ]);

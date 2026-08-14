@@ -1,12 +1,12 @@
+import { MOOSE_KG, NS } from "./vocab.js";
 /**
  * iiRDS Core + Software-domain term IRIs and the frontmatter-value → IRI maps
  * (ADR 01012). Every IRI here is byte-verified against the published
- * `iirds-core.rdf` / `iirds-software.rdf` in iirds-consortium/models. dockg
+ * `iirds-core.rdf` / `iirds-software.rdf` in iirds-consortium/models. moose-kg
  * references these IRIs; it never redefines or re-types them (iiRDS is
  * CC BY-ND). This is the single source of truth shared by the schema
  * (via the schema-sync drift guard), derive, and shapes.
  */
-import { NS } from "./vocab.js";
 
 /** Predicates (Core). */
 export const IIRDS_HAS_TOPIC_TYPE = `${NS.iirds}has-topic-type`;
@@ -46,12 +46,12 @@ export const VCARD_ORGANIZATION = `${VCARD_NS}Organization`;
 export const VCARD_ORGANIZATION_NAME = `${VCARD_NS}organization-name`;
 
 /**
- * Negative-scope predicates (ADR 01014). Minted into `dockg:` — no standard
+ * Negative-scope predicates (ADR 01014). Minted into `moose-kg:` — no standard
  * term exists, and OWL negative property assertions require blank nodes. Each
  * mirrors, and is SHACL-disjoint from, its positive counterpart above.
  */
-export const DOCKG_NOT_APPLICABLE_TO_VARIANT = `${NS.dockg}notApplicableToVariant`;
-export const DOCKG_NOT_SOFTWARE_SUBJECT = `${NS.dockg}notSoftwareSubject`;
+export const MOOSE_KG_NOT_APPLICABLE_TO_VARIANT = `${MOOSE_KG}notApplicableToVariant`;
+export const MOOSE_KG_NOT_SOFTWARE_SUBJECT = `${MOOSE_KG}notSoftwareSubject`;
 
 /** `kg.topicType` value → `iirds:has-topic-type` object IRI. */
 export const TOPIC_TYPE_IRIS: Readonly<Record<string, string>> = {

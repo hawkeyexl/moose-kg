@@ -12,7 +12,7 @@ prerequisites:
   - Markdown
   - a pull request that is currently red
   - the error message, which may be their entire context
-  - no dockg installation and no config knowledge is assumed
+  - no moose-kg installation and no config knowledge is assumed
 goals:
   - merge
 pains:
@@ -29,7 +29,7 @@ journeys:
   - cuj-fix-failing-check
 evidence_basis:
   - the exit-1 findings contract in src/cli.ts, which is what turns a CI job red and produces this visit
-  - dockg check's mapping of every finding back to the responsible doc file, which presumes a human will go edit that file
+  - moose-kg check's mapping of every finding back to the responsible doc file, which presumes a human will go edit that file
   - the frontmatter validation errors surfaced through docmeta, which name a field and a constraint but never a remedy
   - the exit-2 operational-error messages across src/commands/*.ts, which this reader must be able to recognize as not-their-fault
   - docmeta's Theo persona and the highest-traffic status its IA records for the equivalent page
@@ -44,14 +44,14 @@ Sam edited one page — possibly one line. They may be a software engineer who t
 alongside a code change, a support specialist correcting a procedure, or a writer who does not
 work on the docs platform. They pushed, CI failed, and there is a link in the output.
 
-That link is their entire relationship with dockg. They have not read the landing page, do not
+That link is their entire relationship with moose-kg. They have not read the landing page, do not
 know what a knowledge graph is, and will not find out today.
 
 ## What they bring, and what they do not
 
 **Bring:** Markdown, and knowledge of the content they wrote.
 
-**Do not bring:** config knowledge, the graph model, a local dockg installation, or any context
+**Do not bring:** config knowledge, the graph model, a local moose-kg installation, or any context
 from a previous page. The first time they encounter this tool is the error message.
 
 ## Their goal is one word

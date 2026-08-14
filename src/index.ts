@@ -1,9 +1,9 @@
-/** dockg public API. */
+/** moose-kg public API. */
 export * from "./types.js";
 export {
   loadConfig,
   parseConfig,
-  type DockgConfig,
+  type MooseKgConfig,
   type DeriveSource,
   type FillField,
   type GitMode,
@@ -16,8 +16,8 @@ export {
 } from "./core/coverage.js";
 export { discoverFiles } from "./core/discover.js";
 export {
-  DOCKG_NOT_APPLICABLE_TO_VARIANT,
-  DOCKG_NOT_SOFTWARE_SUBJECT,
+  MOOSE_KG_NOT_APPLICABLE_TO_VARIANT,
+  MOOSE_KG_NOT_SOFTWARE_SUBJECT,
   SOFTWARE_LIFECYCLE_IRIS,
   SOFTWARE_SUBJECT_IRIS,
   TOPIC_TYPE_IRIS,
@@ -66,7 +66,7 @@ export {
   storeToQuads,
 } from "./core/load.js";
 /**
- * The browser-native GraphRAG runtime is also published as the `dockg/runtime`
+ * The browser-native GraphRAG runtime is also published as the `moose-kg/runtime`
  * subpath, which is the import to use in a browser: it has no `node:` imports
  * and no dependencies (ADR 01018).
  */
@@ -79,7 +79,7 @@ export {
   type KgApplyResult,
   type ProvenanceEntry,
 } from "./core/frontmatter-edit.js";
-export { NS, PREFIXES } from "./core/vocab.js";
+export { MOOSE_KG, NS, PREFIXES } from "./core/vocab.js";
 export {
   runBuild,
   type BuildOptions,
@@ -156,7 +156,7 @@ export {
   type FillDocResult,
 } from "./commands/fill.js";
 // The inference layer is @hawkeyexl/inference; re-exported here so downstream
-// code that only depends on dockg can still construct providers and drive the
+// code that only depends on moose-kg can still construct providers and drive the
 // offline test seam without adding a second dependency.
 export {
   MockProvider,

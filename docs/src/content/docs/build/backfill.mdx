@@ -1,6 +1,6 @@
 ---
 title: Backfill metadata
-description: dockg fill proposes kg fields and a human accepts them — how to run it safely on a large unannotated corpus with a cost cap, review what it wrote through the provenance block, and ratchet a coverage threshold behind it.
+description: moose-kg fill proposes kg fields and a human accepts them — how to run it safely on a large unannotated corpus with a cost cap, review what it wrote through the provenance block, and ratchet a coverage threshold behind it.
 ---
 
 import { Aside, CardGrid, LinkCard, Steps } from '@astrojs/starlight/components';
@@ -9,14 +9,14 @@ Your coverage numbers are low, the corpus is large, and nobody is going to annot
 hand. That is the normal starting condition, not a failure — nobody adopts a metadata tool before
 they have too much documentation.
 
-`dockg fill` proposes `kg` fields with a language model. **It proposes; you accept.** Everything
+`moose-kg fill` proposes `kg` fields with a language model. **It proposes; you accept.** Everything
 about how it behaves follows from that, and reading it as "annotate my corpus automatically" will
 get you a large revert and an audit problem.
 
 ## Before you start
 
-You need a working `dockg build`, a baseline `dockg stats` reading, and credentials for a provider
-— `fill` is the only part of dockg that touches the network or spends money. Nothing else here
+You need a working `moose-kg build`, a baseline `moose-kg stats` reading, and credentials for a provider
+— `fill` is the only part of moose-kg that touches the network or spends money. Nothing else here
 does.
 
 ## Three safety mechanisms you should know about first
@@ -48,7 +48,7 @@ the run — so two documents cannot jointly form a cycle.
 1. **Dry run a subset, with a small cap.**
 
    ```sh
-   dockg fill "docs/api/**/*.md" --dry-run --max-cost 0.50
+   moose-kg fill "docs/api/**/*.md" --dry-run --max-cost 0.50
    ```
 
    Nothing is written. Read what it wanted to do. The guardrail is still applied, so a dry run
@@ -63,7 +63,7 @@ the run — so two documents cannot jointly form a cycle.
 
 3. **Narrow what may be proposed, if the dry run showed drift.**
 
-   ```yaml title="dockg.config.yaml"
+   ```yaml title="moose.config.yaml"
    fill:
      fields: [prefLabel, topicType, subjects]
      minConfidence: 0.8
@@ -77,7 +77,7 @@ the run — so two documents cannot jointly form a cycle.
 4. **Write, on a subset first.**
 
    ```sh
-   dockg fill "docs/api/**/*.md"
+   moose-kg fill "docs/api/**/*.md"
    ```
 
    Only YAML frontmatter is edited; the body is preserved byte-for-byte. A TOML or JSON
@@ -105,11 +105,11 @@ the run — so two documents cannot jointly form a cycle.
 6. **Re-measure and set a threshold behind it.**
 
    ```sh
-   dockg stats
+   moose-kg stats
    ```
 
    Set the coverage threshold just below the new number so the gate holds the line, then raise it
-   as the backlog shrinks. See [prove coverage](/dockg/govern/coverage/).
+   as the backlog shrinks. See [prove coverage](/moose-kg/govern/coverage/).
 
 </Steps>
 
@@ -132,12 +132,12 @@ confident it was, and a review queue that shrinks as humans work through it.
 <CardGrid>
   <LinkCard
     title="Prove coverage"
-    href="/dockg/govern/coverage/"
+    href="/moose-kg/govern/coverage/"
     description="Set the threshold that holds your new line, and ratchet it."
   />
   <LinkCard
     title="Concepts and SKOS"
-    href="/dockg/model/concepts-skos/"
+    href="/moose-kg/model/concepts-skos/"
     description="Machine-proposed concepts still have to fit a governed vocabulary."
   />
 </CardGrid>

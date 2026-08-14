@@ -67,20 +67,20 @@ standardized it.
 
 ## The dependency that has to be stated early
 
-dockg's value to Kwame **scales with metadata someone else has to add.** A corpus with no
+moose-kg's value to Kwame **scales with metadata someone else has to add.** A corpus with no
 `appliesTo` values cannot be filtered by variant, no matter how good the runtime is. This is
 uncomfortable and it belongs on their first page rather than at integration time — otherwise
 they build the integration, get no lift, and conclude the tool does not work.
 
-The honest framing: dockg gives them a deterministic scoping and citation layer *to the extent
+The honest framing: moose-kg gives them a deterministic scoping and citation layer *to the extent
 the corpus is typed*, plus the tooling to find out how typed it actually is
-(`dockg stats` coverage) and to argue for more.
+(`moose-kg stats` coverage) and to argue for more.
 
 ## What wins them
 
 - **Retrieval-only.** The runtime returns context, citations, and a trace, then stops. It drops
   into their stack instead of competing with it.
-- **Browser-native, small.** No `node:` imports in `dockg/runtime`, and a separate entry point
+- **Browser-native, small.** No `node:` imports in `moose-kg/runtime`, and a separate entry point
   for embeddings so the query path stays lean.
 - **Refusal over degradation.** A mismatched model, dtype, dimension, or corpus digest is an
   error, not a quietly worse result. They have been burned by the silent version.

@@ -61,8 +61,8 @@ jobs:
             first — it states the invariants this repo is built on, and the most
             valuable review findings are violations of them.
 
-            dockg's contracts (highest-value review targets)
-            - **Determinism.** `dockg build` twice over unchanged inputs must be
+            moose-kg's contracts (highest-value review targets)
+            - **Determinism.** `moose-kg build` twice over unchanged inputs must be
               byte-identical. Flag anything that introduces wall-clock time
               (`Date.now()`, `new Date()`, file mtimes), blank nodes, unsorted
               iteration reaching the emitter, locale/timezone-dependent
@@ -79,8 +79,8 @@ jobs:
               are already published must not be edited; evolution happens by
               adding a new version file and repointing `bundledSchemaPath`.
             - **Exit codes.** `0` ok, `1` findings, `2` operational
-              (`DockgError`). Flag operational failures downgraded to findings
-              (or vice versa), and raw non-DockgError throws escaping to the CLI.
+              (`MooseKgError`). Flag operational failures downgraded to findings
+              (or vice versa), and raw non-MooseKgError throws escaping to the CLI.
 
             Correctness & completeness
             - Bugs, logic errors, off-by-one, inverted conditions
@@ -109,7 +109,7 @@ jobs:
             Repo conventions (CLAUDE.md)
             - Behavior changes ship with an ADR under `adrs/` (MADR 4.0.0,
               numbered from 01000)
-            - Behavior changes carry their docs: README, `dockg init` template,
+            - Behavior changes carry their docs: README, `moose-kg init` template,
               and `--help` text land in the same commit, or the PR states
               explicitly that there is no user-facing impact
             - Conventional Commits with a **lower-case subject**
