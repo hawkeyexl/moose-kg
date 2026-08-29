@@ -22,9 +22,22 @@ export function toolVersion(moduleUrl: string): string {
   return (JSON.parse(readFileSync(pkg, "utf8")) as { version: string }).version;
 }
 
-/** Absolute path of the bundled frontmatter schema `dockg validate` defaults to. */
+/**
+ * Absolute path of the bundled frontmatter schema `dockg validate` defaults to.
+ *
+ * These are docmeta's bytes, not dockg's: docmeta publishes the common metadata
+ * vocabularies and dockg implements graph behavior against them (ADR 01023).
+ * Vendored rather than resolved from docmeta's registry because
+ * `docmeta:kg:1.0.0-proposal.1` is a review draft — proposal 0023 forbids
+ * registering the id until the community review concludes. The hash pin in
+ * test/unit/kg-vocabulary.test.ts is what notices a new upstream revision.
+ */
 export function bundledSchemaPath(moduleUrl: string): string {
-  return join(packageRoot(moduleUrl), "schemas", "frontmatter-0.8.json");
+  return join(
+    packageRoot(moduleUrl),
+    "schemas",
+    "docmeta-kg-1.0.0-proposal.1.json",
+  );
 }
 
 /** Absolute path of the bundled SHACL shapes `dockg check` defaults to. */

@@ -29,7 +29,7 @@ dockg node shape is closed, so the emitted graph cannot grow an unagreed predica
 
 ## Concept
 
-A `skos:Concept` node, minted from a `kg.prefLabel`, `tags`, or `subjects` value. Concept IRIs come
+A `skos:Concept` node, minted from a `kg.label`, `tags`, or `concepts` value. Concept IRIs come
 from the slugified label, so two spellings converge on one node.
 
 ## Coverage
@@ -89,8 +89,8 @@ fragment.
 
 ## Negative scope
 
-An explicit assertion that something does **not** apply — `kg.notApplicableTo` and
-`kg.notSoftwareSubject`. Necessary because [absence means unknown](/dockg/concepts/open-world/).
+An explicit assertion that something does **not** apply — `kg.not-applicable-to` and
+`kg.not-about-product-aspect`. Necessary because [absence means unknown](/dockg/concepts/open-world/).
 
 ## Open-world semantics
 
@@ -129,7 +129,7 @@ See [validation rules](/dockg/reference/shapes/).
 ## SKOS
 
 Simple Knowledge Organization System — the W3C vocabulary for concepts and their relationships.
-dockg maps `kg.prefLabel` and its dependents onto it.
+dockg maps `kg.label` and its dependents onto it.
 
 ## Slug
 

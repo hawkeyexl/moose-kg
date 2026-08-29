@@ -48,19 +48,19 @@ You attach metadata to those sections with a slug-keyed map:
 kg:
   sections:
     reset-the-interlock:
-      topicType: task
-      appliesTo:
+      type: task
+      applies-to:
         - SP-X100
     clean-the-optics:
-      topicType: task
-      appliesTo:
+      type: task
+      applies-to:
         - SP-C40
 ---
 ```
 
 <Aside type="caution" title="Sections inherit nothing">
-  Section metadata is explicit-only. A section does not pick up the document's `appliesTo` or
-  `topicType`, and that is deliberate — inherited applicability would silently recreate the
+  Section metadata is explicit-only. A section does not pick up the document's `applies-to` or
+  `type`, and that is deliberate — inherited applicability would silently recreate the
   document-level lie one level down, which is the exact problem sections exist to solve.
 </Aside>
 

@@ -30,13 +30,14 @@ import {
   IIRDS_PRODUCT_VARIANT,
   IIRDS_RELATES_TO_LIFECYCLE_PHASE,
   IIRDS_RELATES_TO_PRODUCT_VARIANT,
+  PAGE_TYPE_TO_TOPIC_TYPE,
   SOFTWARE_LIFECYCLE_IRIS,
   SOFTWARE_SUBJECT_IRIS,
   TOPIC_TYPE_IRIS,
 } from "./iirds.js";
 
 /**
- * Resolve a provenance target (`kg.derivedFrom` / `kg.revisionOf` entry) to a
+ * Resolve a provenance target (`kg.derived-from` / `kg.revision-of` entry) to a
  * corpus doc path: doc-relative first, then repo-relative; null when neither
  * names a discovered doc.
  */
@@ -148,19 +149,59 @@ function kgObject(
 }
 
 /**
- * kg.provenance entries. Schema 0.4 uses an array (one entry per model);
- * the 0.2/0.3 single-object form is accepted for backward compatibility.
+ * The harvest rule (ADR 01024): **deeper wins; the page level is the fallback**
+ * — per fact, not per page. A `kg` block that speaks to a fact owns it
+ * outright; where the block is silent, the page-level twin feeds the graph.
+ *
+ * Only the facts the `kg` block has a twin for are resolved here. Page-level
+ * `prerequisites` / `next-steps` / `related-pages` belong to `docmeta:structure`
+ * and are deliberately not harvested — that is a separate vocabulary, not this
+ * one's fallback.
+ *
+ * Returns a kg-shaped object even when the page carries no `kg` block at all,
+ * so a page typed only at the top level still derives its iiRDS typing.
+ */
+function resolveKg(
+  kg: Record<string, unknown> | undefined,
+  fm: Record<string, unknown>,
+): Record<string, unknown> {
+  const k: Record<string, unknown> = { ...(kg ?? {}) };
+
+  const fallback = (key: string, pageKeys: string[]) => {
+    if (k[key] !== undefined && k[key] !== null) return;
+    const pageValue = fmValue(fm, pageKeys);
+    if (pageValue !== undefined) k[key] = pageValue;
+  };
+
+  fallback("concepts", ["concepts"]);
+  fallback("applies-to", ["applies-to"]);
+  fallback("not-applicable-to", ["not-applicable-to"]);
+  fallback("revision-of", ["supersedes"]);
+
+  // `type` is the one fact whose two altitudes speak different vocabularies:
+  // the page's is open (docmeta:core), `kg.type` is the closed iiRDS enum. A
+  // page type with no iiRDS counterpart derives nothing rather than inventing
+  // one.
+  if (k["type"] === undefined || k["type"] === null) {
+    const pageType = asString(fmValue(fm, ["type"]));
+    const derived = pageType ? PAGE_TYPE_TO_TOPIC_TYPE[pageType] : undefined;
+    if (derived) k["type"] = derived;
+  }
+
+  return k;
+}
+
+/**
+ * kg.provenance entries — one per model. Array only: `docmeta:kg` dropped the
+ * deprecated single-object shape (dockg's 0.2/0.3 form), so accepting it here
+ * would let `dockg build` derive from frontmatter `dockg validate` rejects.
  */
 function provenanceEntries(value: unknown): Array<Record<string, unknown>> {
-  if (Array.isArray(value)) {
-    return value.filter(
-      (e): e is Record<string, unknown> =>
-        !!e && typeof e === "object" && !Array.isArray(e),
-    );
-  }
-  if (value && typeof value === "object")
-    return [value as Record<string, unknown>];
-  return [];
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (e): e is Record<string, unknown> =>
+      !!e && typeof e === "object" && !Array.isArray(e),
+  );
 }
 
 export function deriveGraph(docs: DocModel[], options: DeriveOptions): Quad[] {
@@ -190,37 +231,37 @@ export function deriveGraph(docs: DocModel[], options: DeriveOptions): Quad[] {
   };
 
   /**
-   * Emit the iiRDS typing fields (topicType, appliesTo, softwareLifecyclePhase,
-   * softwareSubject) plus the negative-scope fields (notApplicableTo,
-   * notSoftwareSubject) for `subjectIri` from a kg-like object. Shared by the
+   * Emit the iiRDS typing fields (type, applies-to, about-product-lifecycle,
+   * about-product-aspect) plus the negative-scope fields (not-applicable-to,
+   * not-about-product-aspect) for `subjectIri` from a kg-like object. Shared by the
    * document `kg` block and the per-section `kg.sections` block so the mapping
    * cannot drift between them (ADR 01012/01013/01014).
    */
   const emitIirdsTyping = (subjectIri: string, k: Record<string, unknown>) => {
-    const topicType = asString(k["topicType"]);
+    const topicType = asString(k["type"]);
     const topicTypeIri = topicType && TOPIC_TYPE_IRIS[topicType];
     if (topicTypeIri) add(subjectIri, IIRDS_HAS_TOPIC_TYPE, iri(topicTypeIri));
 
-    for (const label of asStringArray(k["appliesTo"])) {
+    for (const label of asStringArray(k["applies-to"])) {
       add(
         subjectIri,
         IIRDS_RELATES_TO_PRODUCT_VARIANT,
         iri(variantNode(label)),
       );
     }
-    for (const label of asStringArray(k["notApplicableTo"])) {
+    for (const label of asStringArray(k["not-applicable-to"])) {
       add(subjectIri, DOCKG_NOT_APPLICABLE_TO_VARIANT, iri(variantNode(label)));
     }
 
-    for (const value of asStringArray(k["softwareLifecyclePhase"])) {
+    for (const value of asStringArray(k["about-product-lifecycle"])) {
       const phase = SOFTWARE_LIFECYCLE_IRIS[value];
       if (phase) add(subjectIri, IIRDS_RELATES_TO_LIFECYCLE_PHASE, iri(phase));
     }
-    for (const value of asStringArray(k["softwareSubject"])) {
+    for (const value of asStringArray(k["about-product-aspect"])) {
       const subject = SOFTWARE_SUBJECT_IRIS[value];
       if (subject) add(subjectIri, IIRDS_HAS_SUBJECT, iri(subject));
     }
-    for (const value of asStringArray(k["notSoftwareSubject"])) {
+    for (const value of asStringArray(k["not-about-product-aspect"])) {
       const subject = SOFTWARE_SUBJECT_IRIS[value];
       if (subject) add(subjectIri, DOCKG_NOT_SOFTWARE_SUBJECT, iri(subject));
     }
@@ -284,7 +325,7 @@ export function deriveGraph(docs: DocModel[], options: DeriveOptions): Quad[] {
     qualifyAttribution(docIri, a, name);
   };
 
-  /** Shared mapping for kg.derivedFrom / kg.revisionOf entries. */
+  /** Shared mapping for kg.derived-from / kg.revision-of entries. */
   const provTargetEdge = (
     doc: DocModel,
     docIri: string,
@@ -311,6 +352,9 @@ export function deriveGraph(docs: DocModel[], options: DeriveOptions): Quad[] {
     const docIri = mintDocIri(baseIri, doc.path);
     const fm = doc.frontmatter;
     const kg = kgObject(fm);
+    // `kg` is the block as written (block-only facts: sections, provenance,
+    // the SKOS hierarchy); `kgHarvested` folds in the page-level fallbacks.
+    const kgHarvested = resolveKg(kg, fm);
     let createdEmitted = false;
     let modifiedEmitted = false;
 
@@ -352,33 +396,44 @@ export function deriveGraph(docs: DocModel[], options: DeriveOptions): Quad[] {
       const language = asString(fmValue(fm, ["lang", "language"]));
       if (language) add(docIri, `${NS.dcterms}language`, lit(language));
 
-      // kg sub-key: SKOS fields dockg owns (frontmatter key `kg`, RDF ns `dockg:`).
+      // kg sub-key: the SKOS hierarchy has no page-level twin, so it reads the
+      // block as written (frontmatter key `kg`, RDF ns `dockg:`).
       if (kg) {
-        const k = kg;
-        const prefLabel = asString(k["prefLabel"]);
-        if (prefLabel) {
-          const topic = concept(prefLabel);
+        const label = asString(kg["label"]);
+        if (label) {
+          const topic = concept(label);
           add(docIri, `${NS.foaf}primaryTopic`, iri(topic));
-          for (const alt of asStringArray(k["altLabels"])) {
+          for (const alt of asStringArray(kg["alt-labels"])) {
             add(topic, `${NS.skos}altLabel`, lit(alt));
           }
-          for (const rel of ["broader", "narrower", "related"] as const) {
-            for (const label of asStringArray(k[rel])) {
-              add(topic, `${NS.skos}${rel}`, iri(concept(label)));
+          // Frontmatter key → SKOS predicate. `related-concepts` is spelled for
+          // what it points at (in step with the page-level `related-pages`);
+          // the predicate it emits is still plain skos:related.
+          for (const [key, predicate] of [
+            ["broader", "broader"],
+            ["narrower", "narrower"],
+            ["related-concepts", "related"],
+          ] as const) {
+            for (const value of asStringArray(kg[key])) {
+              add(topic, `${NS.skos}${predicate}`, iri(concept(value)));
             }
           }
         }
-
-        // iiRDS Core + Software typing on the document (ADR 01012).
-        emitIirdsTyping(docIri, k);
       }
+
+      // iiRDS Core + Software typing (ADR 01012), over the harvested block so a
+      // page typed only at the top level still types its document (ADR 01024).
+      emitIirdsTyping(docIri, kgHarvested);
     }
 
     if (sources.has("tags")) {
-      const kgSubjects = kg ? asStringArray(kg["subjects"]) : [];
+      // Two distinct facts, both landing on dcterms:subject: dockg's own
+      // tag harvest (`tags`/`keywords`), and the concepts fact — where
+      // `kg.concepts` beats the page-level `concepts` outright rather than
+      // adding to it (ADR 01024).
       const labels = [
         ...asStringArray(fmValue(fm, ["tags", "keywords"])),
-        ...kgSubjects,
+        ...asStringArray(kgHarvested["concepts"]),
       ];
       for (const label of labels) {
         add(docIri, `${NS.dcterms}subject`, iri(concept(label)));
@@ -412,7 +467,7 @@ export function deriveGraph(docs: DocModel[], options: DeriveOptions): Quad[] {
 
         const meta = asRecord(sectionMeta[section.slug]);
         emitIirdsTyping(secIri, meta);
-        for (const label of asStringArray(meta["subjects"])) {
+        for (const label of asStringArray(meta["concepts"])) {
           add(secIri, `${NS.dcterms}subject`, iri(concept(label)));
         }
       }
@@ -471,12 +526,14 @@ export function deriveGraph(docs: DocModel[], options: DeriveOptions): Quad[] {
     }
 
     if (prov) {
-      // kg.derivedFrom / kg.revisionOf: doc-relative path, repo-relative
-      // path, or URL — one shared resolution.
-      for (const raw of kg ? asStringArray(kg["derivedFrom"]) : []) {
+      // kg.derived-from / kg.revision-of: doc-relative path, repo-relative
+      // path, or URL — one shared resolution. `derived-from` is block-only
+      // (document lineage is curated by hand); `revision-of` harvests the
+      // page-level `supersedes` when the block is silent (ADR 01024).
+      for (const raw of kg ? asStringArray(kg["derived-from"]) : []) {
         provTargetEdge(doc, docIri, raw, `${NS.prov}wasDerivedFrom`);
       }
-      for (const raw of kg ? asStringArray(kg["revisionOf"]) : []) {
+      for (const raw of asStringArray(kgHarvested["revision-of"])) {
         provTargetEdge(doc, docIri, raw, `${NS.prov}wasRevisionOf`);
       }
 
@@ -502,13 +559,12 @@ export function deriveGraph(docs: DocModel[], options: DeriveOptions): Quad[] {
         }
       }
 
-      // Whole-page generation: kg.generatedBy, falling back to the page-level
-      // `generatedBy` convention shared with docevals. Fragment uses a "."
-      // separator, which github-slugger can never produce — heading slugs
+      // Whole-page generation: the page-level `generated-by`
+      // (docmeta:ai-context). The `kg` block no longer carries a twin — page
+      // provenance is the page's fact, not the graph block's. Fragment uses a
+      // "." separator, which github-slugger can never produce — heading slugs
       // cannot collide with provenance fragments.
-      const generatedBy =
-        (kg && asString(kg["generatedBy"])) ??
-        asString(fmValue(fm, ["generatedBy"]));
+      const generatedBy = asString(fmValue(fm, ["generated-by"]));
       if (generatedBy) {
         const activity = `${docIri}#prov.generation`;
         const model = agentNode(generatedBy, "SoftwareAgent");
@@ -524,7 +580,7 @@ export function deriveGraph(docs: DocModel[], options: DeriveOptions): Quad[] {
       // concepts are never attributed, or one doc's LLM would taint every
       // doc using the same tag.
       for (const entry of provenanceEntries(kg?.["provenance"])) {
-        const model = asString(entry["generatedBy"]);
+        const model = asString(entry["generated-by"]);
         if (!model) continue;
         const activity = `${docIri}#prov.kg-fill.${conceptSlug(model)}`;
         const modelAgent = agentNode(model, "SoftwareAgent");
@@ -549,12 +605,12 @@ export function deriveGraph(docs: DocModel[], options: DeriveOptions): Quad[] {
             );
           }
         }
-        const prefLabel = kg ? asString(kg["prefLabel"]) : undefined;
-        if (prefLabel && filledFields.includes("prefLabel")) {
+        const label = kg ? asString(kg["label"]) : undefined;
+        if (label && filledFields.includes("label")) {
           add(
             activity,
             `${NS.prov}generated`,
-            iri(mintConceptIri(baseIri, prefLabel)),
+            iri(mintConceptIri(baseIri, label)),
           );
         }
       }

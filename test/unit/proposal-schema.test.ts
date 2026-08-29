@@ -7,8 +7,8 @@ import { describe, expect, it } from "vitest";
 import { proposalSchema } from "../../src/llm/prompt.js";
 import type { FillField } from "../../src/core/config.js";
 
-const A: FillField[] = ["prefLabel", "related", "subjects"];
-const B: FillField[] = ["subjects", "prefLabel", "related"];
+const A: FillField[] = ["label", "related-concepts", "concepts"];
+const B: FillField[] = ["concepts", "label", "related-concepts"];
 
 describe("proposalSchema", () => {
   it("returns the identical object for the same field set", () => {
@@ -41,20 +41,20 @@ describe("proposalSchema", () => {
   });
 
   it("still narrows to exactly the requested fields", () => {
-    const props = proposalSchema(["prefLabel"])["properties"] as Record<
+    const props = proposalSchema(["label"])["properties"] as Record<
       string,
       unknown
     >;
     expect(Object.keys(props).sort()).toEqual([
       "confidence",
-      "prefLabel",
+      "label",
       "reasoning",
     ]);
   });
 
   it("keeps distinct field sets distinct", () => {
-    expect(proposalSchema(["prefLabel"])).not.toBe(
-      proposalSchema(["prefLabel", "related"]),
+    expect(proposalSchema(["label"])).not.toBe(
+      proposalSchema(["label", "related-concepts"]),
     );
   });
 });

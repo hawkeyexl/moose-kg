@@ -31,7 +31,7 @@ export type Direction = "out" | "in" | "both";
 export interface ScopeFilter {
   /** Product variant: an IRI, a `dcterms:title` (e.g. "SP-X100"), or a slug. */
   variant?: string;
-  /** Software subject: an IRI or a `kg.softwareSubject` value (e.g. "architecture"). */
+  /** Software subject: an IRI or a `kg.about-product-aspect` value (e.g. "architecture"). */
   subject?: string;
 }
 

@@ -125,7 +125,7 @@ none is flagged in [`ia-gap-analysis.md`](ia-gap-analysis.md).
 | Page | CUJ | ★ | Notes |
 |---|---|:--:|---|
 | `index.mdx` | — *(hub)* | | What dockg models and what it does not. A mapping, not a SKOS tutorial. |
-| `concepts-skos.mdx` | `cuj-model-concepts` | | `prefLabel` and its four dependents; how concept IRIs converge; why two spellings is a warning, not a violation. |
+| `concepts-skos.mdx` | `cuj-model-concepts` | | `label` and its four dependents; how concept IRIs converge; why two spellings is a warning, not a violation. |
 | `variants.mdx` | `cuj-scope-by-variant` | | The four iiRDS typing keys with their published IRIs shown; negative scope; the disjointness check. |
 | `sections.mdx` | `cuj-section-granularity` | | The slug-keyed map; **nothing is inherited**; `brokenSectionRef` as the reason it is safe to rely on. |
 

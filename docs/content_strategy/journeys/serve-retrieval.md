@@ -57,7 +57,7 @@ competing with it.
 
 ## The dependency that goes on the first page
 
-**dockg's value here scales with metadata someone else has to add.** A corpus with no `appliesTo`
+**dockg's value here scales with metadata someone else has to add.** A corpus with no `applies-to`
 values cannot be filtered by variant no matter how good the runtime is.
 
 This is uncomfortable and it belongs in the opening section of the track, not at integration

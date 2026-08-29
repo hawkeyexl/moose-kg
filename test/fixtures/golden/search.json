@@ -32,6 +32,12 @@
       "labels": "setup"
     },
     {
+      "id": "https://example.com/kg/concept/upgrade",
+      "type": "skos:Concept",
+      "title": "upgrade",
+      "labels": "upgrade"
+    },
+    {
       "id": "https://example.com/kg/doc/docs/configuration.md",
       "type": "dockg:Document",
       "title": "Configuration Reference"
@@ -77,6 +83,18 @@
       "type": "dockg:Section",
       "title": "Install",
       "text": "## Install\n\nSecond install section with a duplicate heading."
+    },
+    {
+      "id": "https://example.com/kg/doc/docs/harvest.md",
+      "type": "dockg:Document",
+      "title": "Upgrading",
+      "description": "Move an existing install to the current release."
+    },
+    {
+      "id": "https://example.com/kg/doc/docs/harvest.md#upgrading",
+      "type": "dockg:Section",
+      "title": "Upgrading",
+      "text": "# Upgrading\n\nPage-level metadata only — no `kg` block. The harvest rule (ADR 01024) feeds\nthis document's graph from the page's own fields: `type` derives the iiRDS\ntopic type, `applies-to` mints the product variant (here in single-string\nshorthand), `concepts` becomes the subject, and `supersedes` becomes the\nrevision edge to [the getting started guide](getting-started.md)."
     },
     {
       "id": "https://example.com/kg/doc/docs/no-frontmatter.md",

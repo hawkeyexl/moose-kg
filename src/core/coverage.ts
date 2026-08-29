@@ -29,7 +29,7 @@ export const COVERAGE_FIELDS: readonly CoverageField[] = [
   { field: "created", iri: `${NS.dcterms}created` },
   { field: "modified", iri: `${NS.dcterms}modified` },
   { field: "subject", iri: `${NS.dcterms}subject` },
-  { field: "prefLabel", iri: `${NS.foaf}primaryTopic` },
+  { field: "label", iri: `${NS.foaf}primaryTopic` },
 ];
 
 /** The measured field names, in report order. */

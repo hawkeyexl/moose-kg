@@ -21,8 +21,8 @@ counted:
 | `creator` | Frontmatter `author` or `authors` |
 | `created` | Frontmatter `date` or `created`, or a git-derived creation time |
 | `modified` | Frontmatter `updated`, `lastmod`, or `modified`, or a git committer time |
-| `subject` | At least one `tags`, `keywords`, or `kg.subjects` value |
-| `prefLabel` | `kg.prefLabel` |
+| `subject` | At least one `tags`, `keywords`, or `kg.concepts` value |
+| `label` | `kg.label` |
 
 Note that `created` and `modified` depend on `provenance.git`. Turning git derivation off drops
 both numbers for any document without explicit frontmatter dates — the corpus did not change, the
@@ -36,26 +36,26 @@ dockg stats
 
 ```
 Coverage:
-  title        4/4  100.0%
-  description  1/4  25.0%
-  creator      1/4  25.0%
-  created      1/4  25.0%
-  modified     1/4  25.0%
-  subject      2/4  50.0%
-  prefLabel    1/4  25.0%
+  title        5/5  100.0%
+  description  2/5  40.0%
+  creator      1/5  20.0%
+  created      1/5  20.0%
+  modified     1/5  20.0%
+  subject      3/5  60.0%
+  label        1/5  20.0%
 ```
 
 ## Set thresholds per field
 
 A single number across all seven fields is almost never what a real obligation looks like —
-`title` at 100% and `prefLabel` at 40% is a coherent policy that one number cannot express.
+`title` at 100% and `label` at 40% is a coherent policy that one number cannot express.
 
 ```yaml title="dockg.config.yaml"
 stats:
   coverageThreshold:
     title: 100
     description: 70
-    prefLabel: 40
+    label: 40
 ```
 
 Unlisted fields are not gated. The per-field map is **config-only**; the
@@ -98,7 +98,7 @@ still fail a threshold of 70 if it is actually 69.96%.
 ## Contradictions are a different gate
 
 Coverage answers *is anything asserted?* It does not answer *is what is asserted consistent?* A
-topic claiming both `appliesTo: SP-X100` and `notApplicableTo: SP-X100` is fully covered and
+topic claiming both `applies-to: SP-X100` and `not-applicable-to: SP-X100` is fully covered and
 self-contradictory.
 
 That is caught by `dockg check`, via SHACL disjointness, and it is a violation rather than a

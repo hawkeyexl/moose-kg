@@ -2,9 +2,9 @@
 title: Alpha
 tags: [shared term]
 kg:
-  prefLabel: Alpha
+  label: Alpha
   broader: [Beta]
-  related: [Gamma]
+  related-concepts: [Gamma]
 ---
 
 # Alpha

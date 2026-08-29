@@ -101,7 +101,7 @@ perfect score.
 ### 5. Page-level frontmatter aliases are undocumented as a set
 
 The README shows `title`, `description`, `author`/`authors`, `date`, `updated`, `lang`. The code
-also accepts `created`, `lastmod`, `modified`, `keywords`, and a page-level `generatedBy`. None
+also accepts `created`, `lastmod`, `modified`, `keywords`, and a page-level `generated-by`. None
 of these are schema-validated — the frontmatter schema constrains only the `kg` block — so a
 reader has no way to discover them except by reading `src/core/derive.ts`. **Medium priority.**
 

@@ -33,6 +33,19 @@
     <iirds:source>content/docs/getting-started.md</iirds:source>
     <rdf:type rdf:resource="http://iirds.tekom.de/iirds#Rendition"/>
   </rdf:Description>
+  <rdf:Description rdf:about="https://example.com/kg/doc/docs/harvest.md">
+    <iirds:has-rendition rdf:resource="https://example.com/kg/doc/docs/harvest.md/rendition"/>
+    <iirds:has-topic-type rdf:resource="http://iirds.tekom.de/iirds#GenericTask"/>
+    <iirds:is-part-of-package rdf:resource="https://example.com/kg/package"/>
+    <iirds:relates-to-product-variant rdf:resource="https://example.com/kg/product/sp-x100"/>
+    <iirds:title>Upgrading</iirds:title>
+    <rdf:type rdf:resource="http://iirds.tekom.de/iirds#Topic"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://example.com/kg/doc/docs/harvest.md/rendition">
+    <iirds:format>text/markdown</iirds:format>
+    <iirds:source>content/docs/harvest.md</iirds:source>
+    <rdf:type rdf:resource="http://iirds.tekom.de/iirds#Rendition"/>
+  </rdf:Description>
   <rdf:Description rdf:about="https://example.com/kg/doc/docs/no-frontmatter.md">
     <iirds:has-rendition rdf:resource="https://example.com/kg/doc/docs/no-frontmatter.md/rendition"/>
     <iirds:is-part-of-package rdf:resource="https://example.com/kg/package"/>

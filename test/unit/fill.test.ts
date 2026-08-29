@@ -18,22 +18,22 @@ function setup(files: Record<string, string>, config = ""): string {
 }
 
 const PROPOSAL = {
-  prefLabel: "Query Syntax",
-  altLabels: ["query language"],
-  related: ["Search Operators"],
-  subjects: ["search"],
+  label: "Query Syntax",
+  "alt-labels": ["query language"],
+  "related-concepts": ["Search Operators"],
+  concepts: ["search"],
   // Above the 0.7 default gate so these fields are written (ADR 01015).
   confidence: {
-    prefLabel: 0.95,
-    altLabels: 0.9,
-    related: 0.85,
-    subjects: 0.9,
+    label: 0.95,
+    "alt-labels": 0.9,
+    "related-concepts": 0.85,
+    concepts: 0.9,
   },
 };
 
 /** Restrict fill to the four SKOS fields the pre-confidence tests assumed. */
 const SKOS_FIELDS =
-  "fill:\n  fields: [prefLabel, altLabels, related, subjects]\n";
+  "fill:\n  fields: [label, alt-labels, related-concepts, concepts]\n";
 
 /** A mock response for `json`, with high confidence auto-added for every
  *  value field so it clears the confidence gate (ADR 01015). */
@@ -53,8 +53,8 @@ describe("runFill", () => {
     expect(report.exitCode).toBe(0);
     expect(report.results[0]).toMatchObject({ status: "filled" });
     const written = readFileSync(join(dir, "a.md"), "utf8");
-    expect(written).toContain("prefLabel: Query Syntax");
-    expect(written).toContain("related: [ Search Operators ]");
+    expect(written).toContain("label: Query Syntax");
+    expect(written).toContain("related-concepts: [ Search Operators ]");
     expect(written.endsWith("# Q\n")).toBe(true);
   });
 
@@ -75,7 +75,7 @@ describe("runFill", () => {
     const dir = setup(
       {
         "a.md":
-          "---\nkg:\n  prefLabel: X\n  altLabels: [y]\n  related: [z]\n  subjects: [s]\n---\n",
+          "---\nkg:\n  label: X\n  alt-labels: [y]\n  related-concepts: [z]\n  concepts: [s]\n---\n",
       },
       SKOS_FIELDS,
     );
@@ -126,7 +126,7 @@ describe("runFill", () => {
   it("reports schema-invalid proposals as errors with exit 1", async () => {
     const dir = setup({ "a.md": "---\ntitle: T\n---\n" });
     // Both attempts fail: the mock cycles its single scripted response.
-    const provider = new MockProvider([{ json: { prefLabel: 42 } }]);
+    const provider = new MockProvider([{ json: { label: 42 } }]);
     const report = await runFill({
       cwd: dir,
       providerInstance: provider,
@@ -142,7 +142,7 @@ describe("runFill", () => {
     // layer retries once before recording an error.
     const dir = setup({ "a.md": "---\ntitle: T\n---\n" });
     const provider = new MockProvider([
-      { json: { prefLabel: 42 } },
+      { json: { label: 42 } },
       { json: PROPOSAL },
     ]);
     const report = await runFill({
@@ -153,7 +153,7 @@ describe("runFill", () => {
     expect(report.results[0]).toMatchObject({ status: "filled" });
     expect(report.exitCode).toBe(0);
     expect(readFileSync(join(dir, "a.md"), "utf8")).toContain(
-      "prefLabel: Query Syntax",
+      "label: Query Syntax",
     );
   });
 
@@ -179,9 +179,9 @@ describe("runFill", () => {
     expect(report.results[0]).toMatchObject({ status: "filled" });
     const written = readFileSync(join(dir, "a.md"), "utf8");
     expect(written).toContain("provenance:");
-    expect(written).toContain("generatedBy: test-model");
+    expect(written).toContain("generated-by: test-model");
     expect(written).toMatch(
-      /fields: \[ altLabels, prefLabel, related, subjects \]/,
+      /fields: \[ alt-labels, concepts, label, related-concepts \]/,
     );
     expect(written.endsWith("# T\n")).toBe(true); // body still byte-preserved
     // provenance is metadata, not a reported filled field
@@ -191,45 +191,45 @@ describe("runFill", () => {
   it("keeps per-model provenance entries so a second model never claims the first's fields", async () => {
     const dir = setup(
       { "a.md": "---\ntitle: T\n---\n" },
-      "fill:\n  fields: [prefLabel]\n",
+      "fill:\n  fields: [label]\n",
     );
     await runFill({
       cwd: dir,
-      providerInstance: new MockProvider([conf({ prefLabel: "X" })], "m1"),
+      providerInstance: new MockProvider([conf({ label: "X" })], "m1"),
     });
-    // second run with a broader field set fills subjects too — different model
+    // second run with a broader field set fills concepts too — different model
     const { writeFileSync: write } = await import("node:fs");
     write(
       join(dir, "dockg.config.yaml"),
-      'version: 1\ninputs: ["*.md"]\nfill:\n  fields: [prefLabel, subjects]\n',
+      'version: 1\ninputs: ["*.md"]\nfill:\n  fields: [label, concepts]\n',
     );
     await runFill({
       cwd: dir,
-      providerInstance: new MockProvider([conf({ subjects: ["s"] })], "m2"),
+      providerInstance: new MockProvider([conf({ concepts: ["s"] })], "m2"),
     });
     const written = readFileSync(join(dir, "a.md"), "utf8");
     // one entry per model, each attributing only its own fields
-    expect(written).toMatch(/generatedBy: m1[\s\S]*?fields: \[ prefLabel \]/);
-    expect(written).toMatch(/generatedBy: m2[\s\S]*?fields: \[ subjects \]/);
+    expect(written).toMatch(/generated-by: m1[\s\S]*?fields: \[ label \]/);
+    expect(written).toMatch(/generated-by: m2[\s\S]*?fields: \[ concepts \]/);
   });
 
   it("moves a field's attribution when --force re-fills it with another model", async () => {
     const dir = setup(
       { "a.md": "---\ntitle: T\n---\n" },
-      "fill:\n  fields: [prefLabel]\n",
+      "fill:\n  fields: [label]\n",
     );
     await runFill({
       cwd: dir,
-      providerInstance: new MockProvider([conf({ prefLabel: "X" })], "m1"),
+      providerInstance: new MockProvider([conf({ label: "X" })], "m1"),
     });
     await runFill({
       cwd: dir,
       force: true,
-      providerInstance: new MockProvider([conf({ prefLabel: "Y" })], "m2"),
+      providerInstance: new MockProvider([conf({ label: "Y" })], "m2"),
     });
     const written = readFileSync(join(dir, "a.md"), "utf8");
-    expect(written).toContain("prefLabel: Y");
-    expect(written).toMatch(/generatedBy: m2[\s\S]*?fields: \[ prefLabel \]/);
+    expect(written).toContain("label: Y");
+    expect(written).toMatch(/generated-by: m2[\s\S]*?fields: \[ label \]/);
     expect(written).not.toContain("m1"); // m1's emptied entry is dropped
   });
 
@@ -247,7 +247,7 @@ describe("runFill", () => {
     const dir = setup(
       {
         "a.md":
-          "---\nkg:\n  prefLabel: X\n  altLabels: [y]\n  related: [z]\n  subjects: [s]\n  provenance:\n    generatedBy: old\n    fields: [prefLabel]\n---\n",
+          "---\nkg:\n  label: X\n  alt-labels: [y]\n  related-concepts: [z]\n  concepts: [s]\n  provenance:\n    - generated-by: old\n      fields: [label]\n---\n",
       },
       SKOS_FIELDS,
     );
@@ -255,6 +255,27 @@ describe("runFill", () => {
     const report = await runFill({ cwd: dir, providerInstance: provider });
     expect(report.results[0]).toMatchObject({ status: "complete" });
     expect(provider.requests).toHaveLength(0);
+  });
+
+  it("refuses a doc whose provenance is the dropped single-object form", async () => {
+    // `provenance` is overwritten wholesale, and docmeta:kg made it array-only
+    // (ADR 01023) — so filling over the legacy shape would silently delete
+    // another model's outstanding review record. Refuse, don't overwrite.
+    const legacy =
+      "---\ntitle: T\nkg:\n  provenance:\n    generated-by: old-model\n    fields: [label]\n---\n";
+    const dir = setup({ "a.md": legacy, "b.md": "---\ntitle: OK\n---\n" });
+    const provider = new MockProvider([{ json: PROPOSAL }, { json: PROPOSAL }]);
+    const report = await runFill({ cwd: dir, providerInstance: provider });
+
+    const a = report.results.find((r) => r.path === "a.md");
+    expect(a).toMatchObject({ status: "error" });
+    expect(a?.error).toMatch(/single-object/);
+    // Untouched: the old attribution is still there to migrate by hand.
+    expect(readFileSync(join(dir, "a.md"), "utf8")).toBe(legacy);
+    // One bad doc does not abort the run.
+    expect(report.results.find((r) => r.path === "b.md")?.status).toBe(
+      "filled",
+    );
   });
 
   it("reports TOML-frontmatter docs as per-doc errors without corrupting them", async () => {
@@ -291,8 +312,8 @@ describe("runFill", () => {
 
   it("needs no provider credentials when every doc is complete", async () => {
     const dir = setup(
-      { "a.md": "---\nkg:\n  prefLabel: X\n---\n" },
-      "fill:\n  provider: anthropic\n  fields: [prefLabel]\n",
+      { "a.md": "---\nkg:\n  label: X\n---\n" },
+      "fill:\n  provider: anthropic\n  fields: [label]\n",
     );
     delete process.env["ANTHROPIC_API_KEY"];
     // no providerInstance: the factory would throw if constructed eagerly
@@ -308,7 +329,7 @@ describe("runFill", () => {
     const cacheDir = join(dir, ".dockg", "cache");
     const { readdirSync, writeFileSync: write } = await import("node:fs");
     const entry = readdirSync(cacheDir)[0]!;
-    write(join(cacheDir, entry), JSON.stringify({ prefLabel: 42 }));
+    write(join(cacheDir, entry), JSON.stringify({ label: 42 }));
     const second = new MockProvider([{ json: PROPOSAL }]);
     const report = await runFill({
       cwd: dir,
@@ -322,22 +343,22 @@ describe("runFill", () => {
     });
   });
 
-  it("never writes relation fields without a prefLabel", async () => {
+  it("never writes relation fields without a label", async () => {
     const dir = setup({ "a.md": "---\ntitle: T\n---\n" });
     const provider = new MockProvider([
-      conf({ altLabels: ["x"], related: ["y"], subjects: ["s"] }),
+      conf({ "alt-labels": ["x"], "related-concepts": ["y"], concepts: ["s"] }),
     ]);
     const report = await runFill({ cwd: dir, providerInstance: provider });
-    // altLabels/related require prefLabel (0.1 dependentRequired) — dropped
-    expect(report.results[0]?.fields).toEqual(["subjects"]);
+    // alt-labels/related require label (0.1 dependentRequired) — dropped
+    expect(report.results[0]?.fields).toEqual(["concepts"]);
     const written = readFileSync(join(dir, "a.md"), "utf8");
-    expect(written).not.toContain("altLabels");
-    expect(written).toContain("subjects: [ s ]");
+    expect(written).not.toContain("alt-labels");
+    expect(written).toContain("concepts: [ s ]");
   });
 
   it("rejects proposals with duplicate array entries (uniqueItems)", async () => {
     const dir = setup({ "a.md": "---\ntitle: T\n---\n" });
-    const provider = new MockProvider([{ json: { subjects: ["s", "s"] } }]);
+    const provider = new MockProvider([{ json: { concepts: ["s", "s"] } }]);
     const report = await runFill({
       cwd: dir,
       providerInstance: provider,
@@ -348,20 +369,20 @@ describe("runFill", () => {
 
   it("respects config fill.fields (asks only for missing, allowed fields)", async () => {
     const dir = setup(
-      { "a.md": "---\nkg:\n  prefLabel: Kept\n---\n" },
-      "fill:\n  fields: [prefLabel, subjects]\n",
+      { "a.md": "---\nkg:\n  label: Kept\n---\n" },
+      "fill:\n  fields: [label, concepts]\n",
     );
-    const provider = new MockProvider([conf({ subjects: ["search"] })]);
+    const provider = new MockProvider([conf({ concepts: ["search"] })]);
     const report = await runFill({ cwd: dir, providerInstance: provider });
     expect(report.results[0]).toMatchObject({
       status: "filled",
-      fields: ["subjects"],
+      fields: ["concepts"],
     });
     const written = readFileSync(join(dir, "a.md"), "utf8");
-    expect(written).toContain("prefLabel: Kept");
+    expect(written).toContain("label: Kept");
     // provider was only asked for the missing field
-    expect(provider.requests[0]!.user).toContain("subjects");
-    expect(provider.requests[0]!.user).not.toContain("prefLabel,");
+    expect(provider.requests[0]!.user).toContain("concepts");
+    expect(provider.requests[0]!.user).not.toContain("label,");
   });
 });
 
@@ -371,10 +392,10 @@ describe("runFill confidence gate (ADR 01015)", () => {
     const provider = new MockProvider([
       {
         json: {
-          prefLabel: "Config",
-          subjects: ["search"],
-          confidence: { prefLabel: 0.95, subjects: 0.3 },
-          reasoning: { subjects: "only tangentially about search" },
+          label: "Config",
+          concepts: ["search"],
+          confidence: { label: 0.95, concepts: 0.3 },
+          reasoning: { concepts: "only tangentially about search" },
         },
       },
     ]);
@@ -383,44 +404,44 @@ describe("runFill confidence gate (ADR 01015)", () => {
     expect(report.exitCode).toBe(0);
     const r = report.results[0]!;
     expect(r.status).toBe("filled");
-    expect(r.fields).toEqual(["prefLabel"]);
+    expect(r.fields).toEqual(["label"]);
     expect(r.lowConfidence).toEqual([
       {
-        field: "subjects",
+        field: "concepts",
         confidence: 0.3,
         reasoning: "only tangentially about search",
       },
     ]);
     const written = readFileSync(join(dir, "a.md"), "utf8");
-    expect(written).toContain("prefLabel: Config");
-    expect(written).not.toContain("subjects");
+    expect(written).toContain("label: Config");
+    expect(written).not.toContain("concepts");
   });
 
   it("records per-field confidence in kg.provenance", async () => {
     const dir = setup({ "a.md": "---\ntitle: T\n---\n" }, SKOS_FIELDS);
     const provider = new MockProvider(
-      [{ json: { prefLabel: "Config", confidence: { prefLabel: 0.91 } } }],
+      [{ json: { label: "Config", confidence: { label: 0.91 } } }],
       "m1",
     );
     await runFill({ cwd: dir, providerInstance: provider });
     const written = readFileSync(join(dir, "a.md"), "utf8");
-    expect(written).toMatch(/generatedBy: m1/);
-    expect(written).toMatch(/confidence:[\s\S]*?prefLabel: 0\.91/);
+    expect(written).toMatch(/generated-by: m1/);
+    expect(written).toMatch(/confidence:[\s\S]*?label: 0\.91/);
   });
 
   it("a field with no confidence score is never written", async () => {
     const dir = setup({ "a.md": "---\ntitle: T\n---\n" }, SKOS_FIELDS);
-    // prefLabel proposed but unscored — the model must score to write.
-    const provider = new MockProvider([{ json: { prefLabel: "Config" } }]);
+    // label proposed but unscored — the model must score to write.
+    const provider = new MockProvider([{ json: { label: "Config" } }]);
     const report = await runFill({ cwd: dir, providerInstance: provider });
     expect(report.results[0]?.status).toBe("nothing-proposed");
-    expect(report.results[0]?.lowConfidence?.[0]?.field).toBe("prefLabel");
+    expect(report.results[0]?.lowConfidence?.[0]?.field).toBe("label");
   });
 
   it("--min-confidence overrides the config threshold", async () => {
     const dir = setup({ "a.md": "---\ntitle: T\n---\n" }, SKOS_FIELDS);
     const provider = new MockProvider([
-      { json: { prefLabel: "Config", confidence: { prefLabel: 0.8 } } },
+      { json: { label: "Config", confidence: { label: 0.8 } } },
     ]);
     // Raise the bar above 0.8: the field is now dropped.
     const report = await runFill({
@@ -429,37 +450,35 @@ describe("runFill confidence gate (ADR 01015)", () => {
       minConfidence: 0.9,
     });
     expect(report.results[0]?.status).toBe("nothing-proposed");
-    expect(readFileSync(join(dir, "a.md"), "utf8")).not.toContain("prefLabel");
+    expect(readFileSync(join(dir, "a.md"), "utf8")).not.toContain("label");
   });
 
-  it("fills an iiRDS field (topicType) at high confidence", async () => {
+  it("fills an iiRDS field (type) at high confidence", async () => {
     const dir = setup(
       { "a.md": "---\ntitle: Install Guide\n---\n\n# Install\n" },
-      "fill:\n  fields: [topicType]\n",
+      "fill:\n  fields: [type]\n",
     );
     const provider = new MockProvider([
-      { json: { topicType: "task", confidence: { topicType: 0.9 } } },
+      { json: { type: "task", confidence: { type: 0.9 } } },
     ]);
     const report = await runFill({ cwd: dir, providerInstance: provider });
     expect(report.results[0]?.status).toBe("filled");
-    expect(readFileSync(join(dir, "a.md"), "utf8")).toContain(
-      "topicType: task",
-    );
+    expect(readFileSync(join(dir, "a.md"), "utf8")).toContain("type: task");
   });
 
   it("the guardrail rejects a variant proposed as both applicable and not-applicable", async () => {
     const dir = setup(
-      { "a.md": "---\ntitle: T\nkg:\n  appliesTo: [SP-X1]\n---\n\n# T\n" },
-      "fill:\n  fields: [notApplicableTo]\n  minConfidence: 0\n",
+      { "a.md": "---\ntitle: T\nkg:\n  applies-to: [SP-X1]\n---\n\n# T\n" },
+      "fill:\n  fields: [not-applicable-to]\n  minConfidence: 0\n",
     );
     // The model (over)proposes excluding the same variant the doc applies to.
     const provider = new MockProvider([
-      { json: { notApplicableTo: ["SP-X1"] } },
+      { json: { "not-applicable-to": ["SP-X1"] } },
     ]);
     const report = await runFill({ cwd: dir, providerInstance: provider });
-    expect(report.results[0]?.rejected).toContain("notApplicableTo");
+    expect(report.results[0]?.rejected).toContain("not-applicable-to");
     expect(readFileSync(join(dir, "a.md"), "utf8")).not.toContain(
-      "notApplicableTo",
+      "not-applicable-to",
     );
   });
 });
@@ -468,29 +487,29 @@ describe("runFill graph guardrail (fill.validateGraph)", () => {
   // Confidence gate disabled here (minConfidence 0) so these tests exercise the
   // structural SHACL guardrail in isolation; the bare proposals carry no scores.
   const HIERARCHY_CONFIG =
-    "fill:\n  fields: [prefLabel, broader, related]\n  minConfidence: 0\n";
+    "fill:\n  fields: [label, broader, related-concepts]\n  minConfidence: 0\n";
 
   it("rejects a broader proposal that would create a cycle", async () => {
     const dir = setup(
       {
         // Human-set hierarchy: Alpha is below Beta.
         "a.md":
-          "---\ntitle: A\nkg:\n  prefLabel: Alpha\n  broader: [Beta]\n---\n\n# A\n",
+          "---\ntitle: A\nkg:\n  label: Alpha\n  broader: [Beta]\n---\n\n# A\n",
         "b.md": "---\ntitle: B\n---\n\n# B\n",
       },
       HIERARCHY_CONFIG,
     );
     // Model proposes the inverse for b.md — a two-node cycle.
     const provider = new MockProvider([
-      { json: { prefLabel: "Beta", broader: ["Alpha"] } },
+      { json: { label: "Beta", broader: ["Alpha"] } },
     ]);
     const report = await runFill({ cwd: dir, providerInstance: provider });
     expect(report.exitCode).toBe(0);
     const result = report.results.find((r) => r.path === "b.md");
-    expect(result).toMatchObject({ status: "filled", fields: ["prefLabel"] });
+    expect(result).toMatchObject({ status: "filled", fields: ["label"] });
     expect(result!.rejected).toContain("broader");
     const written = readFileSync(join(dir, "b.md"), "utf8");
-    expect(written).toContain("prefLabel: Beta");
+    expect(written).toContain("label: Beta");
     expect(written).not.toContain("broader");
   });
 
@@ -503,18 +522,18 @@ describe("runFill graph guardrail (fill.validateGraph)", () => {
       HIERARCHY_CONFIG,
     );
     const provider = new MockProvider([
-      { json: { prefLabel: "C", broader: ["D"] } },
-      { json: { prefLabel: "D", broader: ["C"] } },
+      { json: { label: "C", broader: ["D"] } },
+      { json: { label: "D", broader: ["C"] } },
     ]);
     const report = await runFill({ cwd: dir, providerInstance: provider });
     const first = report.results.find((r) => r.path === "c.md");
     const second = report.results.find((r) => r.path === "d.md");
-    expect(first).toMatchObject({ fields: ["prefLabel", "broader"] });
+    expect(first).toMatchObject({ fields: ["label", "broader"] });
     expect(second!.rejected).toContain("broader");
     expect(readFileSync(join(dir, "d.md"), "utf8")).not.toContain("broader");
   });
 
-  it("rejects a prefLabel that collides with an existing concept spelling", async () => {
+  it("rejects a label that collides with an existing concept spelling", async () => {
     const dir = setup(
       {
         "a.md": "---\ntitle: A\ntags: [Setup]\n---\n\n# A\n",
@@ -523,16 +542,16 @@ describe("runFill graph guardrail (fill.validateGraph)", () => {
       HIERARCHY_CONFIG,
     );
     // Same slug, different spelling — would put two prefLabels on one concept.
-    const provider = new MockProvider([{ json: { prefLabel: "setup" } }]);
+    const provider = new MockProvider([{ json: { label: "setup" } }]);
     const original = readFileSync(join(dir, "b.md"), "utf8");
     const report = await runFill({ cwd: dir, providerInstance: provider });
     const result = report.results.find((r) => r.path === "b.md");
-    expect(result!.rejected).toContain("prefLabel");
+    expect(result!.rejected).toContain("label");
     expect(result).toMatchObject({ status: "nothing-proposed" });
     expect(readFileSync(join(dir, "b.md"), "utf8")).toBe(original);
   });
 
-  it("accepts a prefLabel that reuses the existing spelling exactly", async () => {
+  it("accepts a label that reuses the existing spelling exactly", async () => {
     const dir = setup(
       {
         "a.md": "---\ntitle: A\ntags: [Setup]\n---\n\n# A\n",
@@ -540,11 +559,11 @@ describe("runFill graph guardrail (fill.validateGraph)", () => {
       },
       HIERARCHY_CONFIG,
     );
-    const provider = new MockProvider([{ json: { prefLabel: "Setup" } }]);
+    const provider = new MockProvider([{ json: { label: "Setup" } }]);
     const report = await runFill({ cwd: dir, providerInstance: provider });
     expect(report.results.find((r) => r.path === "b.md")).toMatchObject({
       status: "filled",
-      fields: ["prefLabel"],
+      fields: ["label"],
     });
   });
 
@@ -552,13 +571,13 @@ describe("runFill graph guardrail (fill.validateGraph)", () => {
     const dir = setup(
       {
         "a.md":
-          "---\ntitle: A\nkg:\n  prefLabel: Alpha\n  broader: [Beta]\n---\n\n# A\n",
+          "---\ntitle: A\nkg:\n  label: Alpha\n  broader: [Beta]\n---\n\n# A\n",
         "b.md": "---\ntitle: B\n---\n\n# B\n",
       },
       HIERARCHY_CONFIG,
     );
     const provider = new MockProvider([
-      { json: { prefLabel: "Beta", broader: ["Alpha"] } },
+      { json: { label: "Beta", broader: ["Alpha"] } },
     ]);
     // Only b.md is in scope — the cycle partner a.md is not — but the
     // guard must still see a.md's hierarchy.
@@ -576,18 +595,18 @@ describe("runFill graph guardrail (fill.validateGraph)", () => {
     const dir = setup(
       {
         "a.md":
-          "---\ntitle: A\nkg:\n  prefLabel: Alpha\n  broader: [Beta]\n---\n\n# A\n",
+          "---\ntitle: A\nkg:\n  label: Alpha\n  broader: [Beta]\n---\n\n# A\n",
         "b.md": "---\ntitle: B\n---\n\n# B\n",
       },
-      "fill:\n  fields: [prefLabel, broader, related]\n  validateGraph: false\n  minConfidence: 0\n",
+      "fill:\n  fields: [label, broader, related-concepts]\n  validateGraph: false\n  minConfidence: 0\n",
     );
     const provider = new MockProvider([
-      { json: { prefLabel: "Beta", broader: ["Alpha"] } },
+      { json: { label: "Beta", broader: ["Alpha"] } },
     ]);
     const report = await runFill({ cwd: dir, providerInstance: provider });
     expect(report.results.find((r) => r.path === "b.md")).toMatchObject({
       status: "filled",
-      fields: ["prefLabel", "broader"],
+      fields: ["label", "broader"],
     });
     expect(readFileSync(join(dir, "b.md"), "utf8")).toContain("broader");
   });
@@ -596,13 +615,13 @@ describe("runFill graph guardrail (fill.validateGraph)", () => {
     const dir = setup(
       {
         "a.md":
-          "---\ntitle: A\nkg:\n  prefLabel: Alpha\n  broader: [Beta]\n---\n\n# A\n",
+          "---\ntitle: A\nkg:\n  label: Alpha\n  broader: [Beta]\n---\n\n# A\n",
         "b.md": "---\ntitle: B\n---\n\n# B\n",
       },
       HIERARCHY_CONFIG,
     );
     const provider = new MockProvider([
-      { json: { prefLabel: "Beta", broader: ["Alpha"] } },
+      { json: { label: "Beta", broader: ["Alpha"] } },
     ]);
     const report = await runFill({
       cwd: dir,

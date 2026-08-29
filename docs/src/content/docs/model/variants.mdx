@@ -10,7 +10,7 @@ A safety caution scoped to the wrong variant is not a metadata problem.
 
 ## Read this first
 
-[Open-world semantics](/dockg/concepts/open-world/). Absence of `appliesTo` means **unknown**, not
+[Open-world semantics](/dockg/concepts/open-world/). Absence of `applies-to` means **unknown**, not
 "does not apply", and a scoping scheme built without taking that seriously fails silently in the
 dangerous direction. It is not recoverable by better tagging afterwards.
 
@@ -21,17 +21,17 @@ never vendors, re-serializes, or modifies the vocabulary.
 
 | Key | Value | Emitted IRI |
 |---|---|---|
-| `topicType: task` | one of six | `iirds:GenericTask` |
-| `topicType: concept` | | `iirds:GenericConcept` |
-| `topicType: reference` | | `iirds:GenericReference` |
-| `topicType: learning` | | `iirds:GenericLearning` |
-| `topicType: troubleshooting` | | `iirds:GenericTroubleshooting` |
-| `topicType: form` | | `iirds:GenericForm` |
-| `softwareLifecyclePhase` | list of six | `iirdsSft:Administration`, `Customization`, `Update`, `Deployment`, `Integration`, `Deinstallation` |
-| `softwareSubject` | list of three | `iirdsSft:Architecture`, `Interface`, `SystemRequirement` |
-| `appliesTo` | free labels | Mints an `iirds:ProductVariant` per value, labelled with `dcterms:title` |
+| `type: task` | one of six | `iirds:GenericTask` |
+| `type: concept` | | `iirds:GenericConcept` |
+| `type: reference` | | `iirds:GenericReference` |
+| `type: learning` | | `iirds:GenericLearning` |
+| `type: troubleshooting` | | `iirds:GenericTroubleshooting` |
+| `type: form` | | `iirds:GenericForm` |
+| `about-product-lifecycle` | list of six | `iirdsSft:Administration`, `Customization`, `Update`, `Deployment`, `Integration`, `Deinstallation` |
+| `about-product-aspect` | list of three | `iirdsSft:Architecture`, `Interface`, `SystemRequirement` |
+| `applies-to` | free labels | Mints an `iirds:ProductVariant` per value, labelled with `dcterms:title` |
 
-`topicType` is single-valued and emits `iirds:has-topic-type`. Lifecycle phases emit
+`type` is single-valued and emits `iirds:has-topic-type`. Lifecycle phases emit
 `iirds:relates-to-product-lifecycle-phase`, subjects emit `iirds:has-subject`, and variants emit
 `iirds:relates-to-product-variant`.
 
@@ -46,16 +46,16 @@ never vendors, re-serializes, or modifies the vocabulary.
 ```md title="docs/interlock-reset.md"
 ---
 kg:
-  prefLabel: Interlock reset
-  topicType: task
-  appliesTo:
+  label: Interlock reset
+  type: task
+  applies-to:
     - SP-X100
-  notApplicableTo:
+  not-applicable-to:
     - SP-C40
 ---
 ```
 
-`notApplicableTo` emits `dockg:notApplicableToVariant`; `notSoftwareSubject` does the same for
+`not-applicable-to` emits `dockg:notApplicableToVariant`; `not-about-product-aspect` does the same for
 subjects. These are the only predicates dockg mints in its own namespace for scoping, and they
 exist because the standard has no way to state the negative.
 
@@ -98,18 +98,18 @@ reviewed assertion from a bulk one, and you will be asserting things nobody chec
 
 ## Contradictions fail the build
 
-Asserting the same variant on both `appliesTo` and `notApplicableTo` is caught by SHACL
+Asserting the same variant on both `applies-to` and `not-applicable-to` is caught by SHACL
 disjointness, as a **violation** — exit `1`.
 
 ```
-violation: … dockg:notApplicableToVariant — appliesTo and notApplicableTo share a value
+violation: … dockg:notApplicableToVariant — applies-to and not-applicable-to share a value
 ```
 
 This is the defect a human reviewer does not catch and an auditor does.
 
 ## Document-level scope is a lie on long pages
 
-If a page covers three variants, no document-level `appliesTo` is true for all of it. Push the
+If a page covers three variants, no document-level `applies-to` is true for all of it. Push the
 metadata down to the heading that owns the text — see
 [section-level metadata](/dockg/model/sections/).
 

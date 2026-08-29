@@ -21,14 +21,14 @@ title: Maintenance
 kg:
   sections:
     reset-the-interlock:
-      topicType: task
-      appliesTo:
+      type: task
+      applies-to:
         - SP-X100
     clean-the-optics:
-      topicType: task
-      appliesTo:
+      type: task
+      applies-to:
         - SP-C40
-      notApplicableTo:
+      not-applicable-to:
         - SP-X100
 ---
 
@@ -52,17 +52,17 @@ to nodes that already exist.
 
 | Permitted | Not permitted |
 |---|---|
-| `topicType` | `prefLabel` |
-| `appliesTo`, `notApplicableTo` | `altLabels` |
-| `softwareLifecyclePhase` | `broader`, `narrower`, `related` |
-| `softwareSubject`, `notSoftwareSubject` | |
-| `subjects` | |
+| `type` | `label` |
+| `applies-to`, `not-applicable-to` | `alt-labels` |
+| `about-product-lifecycle` | `broader`, `narrower`, `related-concepts` |
+| `about-product-aspect`, `not-about-product-aspect` | |
+| `concepts` | |
 
-The SKOS keys are absent deliberately: `prefLabel` establishes what a *document* is primarily
+The SKOS keys are absent deliberately: `label` establishes what a *document* is primarily
 about, and a concept hierarchy hanging off a heading is not a meaningful claim.
 
 <Aside type="caution" title="Sections inherit nothing">
-  A section does not pick up the document's `topicType` or `appliesTo`. This surprises people and
+  A section does not pick up the document's `type` or `applies-to`. This surprises people and
   it is the right default — inherited applicability would silently recreate the document-level lie
   one level down, which is the exact problem sections exist to solve.
 

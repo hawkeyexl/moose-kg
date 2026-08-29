@@ -27,7 +27,7 @@ dropped — no score, no write.
 
 **A graph guardrail.** Proposals are simulated against the SHACL shapes before being written, so a
 proposal that would create a `broader` cycle, conflict with an existing `related` edge, introduce
-a second spelling of an existing concept, or contradict an `appliesTo` is rejected. The guardrail
+a second spelling of an existing concept, or contradict an `applies-to` is rejected. The guardrail
 sees your whole corpus, not just the files in this run, and accepted proposals accumulate within
 the run — so two documents cannot jointly form a cycle.
 
@@ -56,7 +56,7 @@ the run — so two documents cannot jointly form a cycle.
 
 2. **Judge the proposals against your vocabulary, not against plausibility.**
 
-   This is the step people skip. A model proposing `prefLabel: Rate limiting` when your governed
+   This is the step people skip. A model proposing `label: Rate limiting` when your governed
    term is `Request throttling` is confidently, plausibly wrong — and once written it converges on
    a concept IRI that will need cleaning up. If you maintain a controlled vocabulary, this is the
    point at which someone who owns it should look.
@@ -65,13 +65,13 @@ the run — so two documents cannot jointly form a cycle.
 
    ```yaml title="dockg.config.yaml"
    fill:
-     fields: [prefLabel, topicType, subjects]
+     fields: [label, type, subjects]
      minConfidence: 0.8
      maxCostUsd: 2
    ```
 
    Restricting `fill.fields` is usually better than raising confidence alone. Applicability fields
-   in particular — `appliesTo`, `notApplicableTo`, `notSoftwareSubject` — require explicit textual
+   in particular — `applies-to`, `not-applicable-to`, `not-about-product-aspect` — require explicit textual
    evidence and are the ones you least want guessed.
 
 4. **Write, on a subset first.**
@@ -89,13 +89,13 @@ the run — so two documents cannot jointly form a cycle.
 
    ```yaml title="docs/api-keys.md"
    kg:
-     prefLabel: API keys
+     label: API keys
      provenance:
-       - generatedBy: claude-opus-4-6
-         fields: [prefLabel, topicType]
+       - generated-by: claude-opus-4-6
+         fields: [label, type]
          confidence:
-           prefLabel: 0.92
-           topicType: 0.81
+           label: 0.92
+           type: 0.81
    ```
 
    **Delete the entry when you have reviewed it.** The block is the outstanding-review queue, and

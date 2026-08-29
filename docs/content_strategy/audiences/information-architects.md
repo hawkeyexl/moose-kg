@@ -22,7 +22,7 @@ evidence_basis:
   - ADR 01012 (adopt iiRDS Core and the Software domain) — a standard chosen for interoperability with an existing practice, not invented
   - ADR 01013 (section-level iiRDS metadata via a slug-keyed kg.sections map) and DESIGN.md's granularity golden rule
   - ADR 01014 (explicit negative scope) — a distinction only someone modeling applicability cares about
-  - the SKOS surface in schemas/frontmatter-0.8.json (prefLabel, altLabels, broader, narrower, related) and the SKOS S27 / cycle checks in shapes/dockg-0.5.ttl
+  - the SKOS surface in schemas/frontmatter-0.8.json (label, alt-labels, broader, narrower, related) and the SKOS S27 / cycle checks in shapes/dockg-0.5.ttl
 ---
 
 Information architects who already have a metadata standard, and need it enforced by something
@@ -43,8 +43,8 @@ or DITA. What they typically do **not** bring is Node tooling or CI internals; s
 Their standard, expressed in the files, enforced automatically, and readable by something other
 than a human. Specifically:
 
-- **Typing that maps to a real standard**, not a bespoke enum. dockg's `topicType`,
-  `softwareLifecyclePhase`, and `softwareSubject` are closed vocabularies bound to published
+- **Typing that maps to a real standard**, not a bespoke enum. dockg's `type`,
+  `about-product-lifecycle`, and `about-product-aspect` are closed vocabularies bound to published
   iiRDS IRIs — this audience recognizes them on sight, and that recognition is the credibility
   moment.
 - **Applicability modeling with teeth.** Which topics apply to which product variant is the

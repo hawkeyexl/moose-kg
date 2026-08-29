@@ -55,10 +55,10 @@ rules that are easy to get wrong.
 1. **The map is keyed by heading slug.** Keys are GitHub-style slugs of the heading text, which
    means the key is derived from prose the writer may edit without thinking about metadata.
 2. **Nothing is inherited.** Section metadata is explicit-only: a section does not pick up the
-   document's `appliesTo` or `topicType`. This surprises people, and it is the right default —
+   document's `applies-to` or `type`. This surprises people, and it is the right default —
    inherited applicability would silently re-create the document-level lie at section level. Say
    it early, in bold, before the examples.
-3. **Not every key is meaningful per section.** `prefLabel` and the SKOS hierarchy are document
+3. **Not every key is meaningful per section.** `label` and the SKOS hierarchy are document
    concerns; a section carries typing, applicability, subjects, and their negative forms. The
    reference page should mark the boundary rather than leaving it to be inferred from an example.
 

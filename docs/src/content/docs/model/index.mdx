@@ -12,11 +12,11 @@ and getting it enforced. It assumes you know SKOS and does not explain it.
 
 | Your concern | dockg's surface | Emitted as |
 |---|---|---|
-| What a document is about | `prefLabel`, `altLabels`, `broader`, `narrower`, `related` | SKOS concepts and relationships |
-| What kind of topic it is | `topicType` | `iirds:has-topic-type`, pointing at a published iiRDS individual |
-| Which products it covers | `appliesTo`, `notApplicableTo` | `iirds:relates-to-product-variant`, `dockg:notApplicableToVariant` |
-| Where in the lifecycle it sits | `softwareLifecyclePhase` | `iirds:relates-to-product-lifecycle-phase` |
-| Which aspect it addresses | `softwareSubject`, `notSoftwareSubject` | `iirds:has-subject`, `dockg:notSoftwareSubject` |
+| What a document is about | `label`, `alt-labels`, `broader`, `narrower`, `related-concepts` | SKOS concepts and relationships |
+| What kind of topic it is | `type` | `iirds:has-topic-type`, pointing at a published iiRDS individual |
+| Which products it covers | `applies-to`, `not-applicable-to` | `iirds:relates-to-product-variant`, `dockg:notApplicableToVariant` |
+| Where in the lifecycle it sits | `about-product-lifecycle` | `iirds:relates-to-product-lifecycle-phase` |
+| Which aspect it addresses | `about-product-aspect`, `not-about-product-aspect` | `iirds:has-subject`, `dockg:notSoftwareSubject` |
 | Which part of a document a claim covers | `kg.sections` | Per-section nodes carrying their own metadata |
 
 <Aside type="note" title="dockg references iiRDS; it does not vendor it">
@@ -46,7 +46,7 @@ direction, and it is not recoverable by better tagging afterwards.
   <LinkCard
     title="Concepts and SKOS"
     href="/dockg/model/concepts-skos/"
-    description="prefLabel and its dependents, how concept IRIs converge, and what check enforces."
+    description="label and its dependents, how concept IRIs converge, and what check enforces."
   />
   <LinkCard
     title="Scope by product variant"

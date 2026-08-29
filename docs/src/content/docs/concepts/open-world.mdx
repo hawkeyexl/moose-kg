@@ -5,7 +5,7 @@ description: A missing value in dockg means unknown, not excluded — so a query
 
 import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-A document with no `appliesTo` value has not told you it applies to nothing. It has told you
+A document with no `applies-to` value has not told you it applies to nothing. It has told you
 nothing at all.
 
 That distinction sounds academic until it produces a wrong answer that looks right.
@@ -20,7 +20,7 @@ Now the topic that carries a critical interlock warning, and that nobody ever ta
 from that set — because it was never asserted to apply to anything.
 
 Invert the query and it gets worse. *Give me every topic that does not apply to SP-X100*, written
-as "topics with no matching `appliesTo`", returns every untagged topic in the corpus — including
+as "topics with no matching `applies-to`", returns every untagged topic in the corpus — including
 the ones that do apply and were simply never annotated.
 
 Both queries are silently wrong, in opposite directions, with no error to notice.
@@ -38,22 +38,22 @@ exactly this:
 ```md title="docs/interlock-reset.md"
 ---
 kg:
-  appliesTo:
+  applies-to:
     - SP-X100
-  notApplicableTo:
+  not-applicable-to:
     - SP-C40
 ---
 ```
 
 That emits `dockg:notApplicableToVariant`, a real edge you can query. The same pattern exists for
-subjects, as `notSoftwareSubject`.
+subjects, as `not-about-product-aspect`.
 
 Now the three states are distinguishable:
 
 | Frontmatter | Meaning | Queryable as |
 |---|---|---|
-| `appliesTo: [SP-X100]` | Applies, asserted | `iirds:relates-to-product-variant` |
-| `notApplicableTo: [SP-C40]` | Does not apply, asserted | `dockg:notApplicableToVariant` |
+| `applies-to: [SP-X100]` | Applies, asserted | `iirds:relates-to-product-variant` |
+| `not-applicable-to: [SP-C40]` | Does not apply, asserted | `dockg:notApplicableToVariant` |
 | neither | **Unknown** | absence of both |
 
 **Query the negative edge, not the silence.** An interlock check that must exclude a variant has
@@ -62,8 +62,8 @@ to look for the explicit exclusion; anything else is inferring from a gap.
 ## Contradictions are caught
 
 Asserting both directions for the same variant is a defect a human reviewer misses and an auditor
-finds. `dockg check` catches it every build, via SHACL disjointness between `appliesTo` and
-`notApplicableTo`, and it is a violation rather than a warning — so it exits 1 and fails your
+finds. `dockg check` catches it every build, via SHACL disjointness between `applies-to` and
+`not-applicable-to`, and it is a violation rather than a warning — so it exits 1 and fails your
 gate.
 
 ## Unresolvable filters fail loudly
@@ -91,9 +91,9 @@ what you actually know:
 
 - **Do** assert non-applicability where it is a real, reviewed fact — safety, regulatory, and
   interlock content especially.
-- **Do not** backfill `notApplicableTo` across a corpus for tidiness. You will be asserting things
+- **Do not** backfill `not-applicable-to` across a corpus for tidiness. You will be asserting things
   nobody checked, and the graph cannot tell a reviewed assertion from a bulk one.
-- **Do** measure the gap instead. Low `appliesTo` coverage is a number, and
+- **Do** measure the gap instead. Low `applies-to` coverage is a number, and
   [a number can be gated](/dockg/govern/coverage/).
 
 ## Where to go next

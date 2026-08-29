@@ -88,7 +88,7 @@ describe("dockg traverse (integration)", () => {
       ],
       corpus,
     );
-    // configuration.md declares notApplicableTo: [SP-X300], so it is dropped
+    // configuration.md declares not-applicable-to: [SP-X300], so it is dropped
     // and the reason is reported, not silently omitted.
     expect(stdout).toContain("excluded by scope:");
     expect(stdout).toContain("dockg:notApplicableToVariant");

@@ -66,7 +66,7 @@ become real edges.
 
 | Key | Type | Default | Notes |
 |---|---|---|---|
-| `validate.schemas` | string[] | `[]` → bundled `schemas/frontmatter-0.8.json` | File paths, URLs, or docmeta built-in ids. |
+| `validate.schemas` | string[] | `[]` → bundled `schemas/docmeta-kg-1.0.0-proposal.1.json` | File paths, URLs, or docmeta built-in ids. |
 | `check.shapes` | string[] | `[]` → bundled `shapes/dockg-0.5.ttl` | Overridable with `--shapes`. |
 
 Both bundled files ship in the npm package, so any JSON Schema or SHACL tool can be pointed at
@@ -93,10 +93,10 @@ stats:
   coverageThreshold:
     title: 100
     description: 80
-    prefLabel: 40
+    label: 40
 ```
 
-Map keys: `title`, `description`, `creator`, `created`, `modified`, `subject`, `prefLabel`. The
+Map keys: `title`, `description`, `creator`, `created`, `modified`, `subject`, `label`. The
 per-field map is **config-only**; `--coverage-threshold` can only set one number for all fields.
 
 ## `fill`

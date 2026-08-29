@@ -2,18 +2,18 @@
 title: Configuration Reference
 tags: [configuration]
 kg:
-  prefLabel: Configuration
-  altLabels: [config, settings]
+  label: Configuration
+  alt-labels: [config, settings]
   broader: [Administration]
-  related: [Installation]
-  subjects: [reference]
-  topicType: reference
-  appliesTo: [SP-X100, SP-X200]
-  softwareSubject: [interface]
-  notApplicableTo: [SP-X300]
+  related-concepts: [Installation]
+  concepts: [reference]
+  type: reference
+  applies-to: [SP-X100, SP-X200]
+  about-product-aspect: [interface]
+  not-applicable-to: [SP-X300]
   sections:
     options:
-      notSoftwareSubject: [architecture]
+      not-about-product-aspect: [architecture]
 ---
 
 # Configuration

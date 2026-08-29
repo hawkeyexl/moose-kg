@@ -1,7 +1,7 @@
 ---
 title: Bad KG
 kg:
-  altLabels: [orphaned]
+  alt-labels: [orphaned]
   bogus: true
 ---
 

@@ -132,7 +132,7 @@ describe("dockg stats", () => {
   it("reports counts, orphans, and broken links", () => {
     const { stdout, status } = run(["stats", "-g", graph]);
     expect(status).toBe(0);
-    expect(stdout).toMatch(/Documents: {2}4/);
+    expect(stdout).toMatch(/Documents: {2}5/);
     expect(stdout).toContain("docs/no-frontmatter.md -> missing.md");
   });
 
@@ -147,9 +147,9 @@ describe("dockg stats", () => {
       brokenSectionRefs: Array<{ doc: string; slug: string }>;
       mostConnected: Array<{ doc: string; degree: number }>;
     };
-    expect(report.docs).toBe(4);
-    expect(report.sections).toBe(8);
-    expect(report.concepts).toBe(5);
+    expect(report.docs).toBe(5);
+    expect(report.sections).toBe(9);
+    expect(report.concepts).toBe(6);
     // no-frontmatter.md only references an external URL and missing.md;
     // external counts as an outgoing reference, so it is not an orphan.
     expect(report.orphans).toEqual([]);
@@ -184,7 +184,7 @@ describe("dockg stats", () => {
     );
     writeFileSync(
       join(dir, "a.md"),
-      "---\nkg:\n  sections:\n    nope:\n      topicType: task\n---\n\n# A\n\n## Real\n",
+      "---\nkg:\n  sections:\n    nope:\n      type: task\n---\n\n# A\n\n## Real\n",
     );
     execFileSync(
       process.execPath,
@@ -246,29 +246,30 @@ describe("dockg stats — metadata coverage", () => {
         pct: number;
       }>;
     };
-    // 4 docs: only getting-started.md carries description/creator/dates;
-    // configuration.md alone has a kg.prefLabel. Order is the report order.
+    // 5 docs: only getting-started.md carries creator/dates; it and
+    // harvest.md carry a description; configuration.md alone has a kg.label.
+    // Order is the report order.
     expect(report.coverage).toEqual([
-      { field: "title", predicate: "dcterms:title", docs: 4, pct: 100 },
+      { field: "title", predicate: "dcterms:title", docs: 5, pct: 100 },
       {
         field: "description",
         predicate: "dcterms:description",
-        docs: 1,
-        pct: 25,
+        docs: 2,
+        pct: 40,
       },
-      { field: "creator", predicate: "dcterms:creator", docs: 1, pct: 25 },
-      { field: "created", predicate: "dcterms:created", docs: 1, pct: 25 },
-      { field: "modified", predicate: "dcterms:modified", docs: 1, pct: 25 },
-      { field: "subject", predicate: "dcterms:subject", docs: 2, pct: 50 },
-      { field: "prefLabel", predicate: "foaf:primaryTopic", docs: 1, pct: 25 },
+      { field: "creator", predicate: "dcterms:creator", docs: 1, pct: 20 },
+      { field: "created", predicate: "dcterms:created", docs: 1, pct: 20 },
+      { field: "modified", predicate: "dcterms:modified", docs: 1, pct: 20 },
+      { field: "subject", predicate: "dcterms:subject", docs: 3, pct: 60 },
+      { field: "label", predicate: "foaf:primaryTopic", docs: 1, pct: 20 },
     ]);
   });
 
   it("renders a coverage block in pretty output", () => {
     const { stdout } = run(["stats", "-g", graph]);
     expect(stdout).toContain("Coverage");
-    expect(stdout).toMatch(/title\s+4\/4\s+100\.0%/);
-    expect(stdout).toMatch(/prefLabel\s+1\/4\s+25\.0%/);
+    expect(stdout).toMatch(/title\s+5\/5\s+100\.0%/);
+    expect(stdout).toMatch(/label\s+1\/5\s+20\.0%/);
   });
 
   it("--check gates on a uniform coverage threshold", () => {

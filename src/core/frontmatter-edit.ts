@@ -165,17 +165,42 @@ export function applyKgFields(
   return { content: split.open + newBlock + split.suffix, applied, skipped };
 }
 
+/**
+ * One `kg.provenance` entry, spelled as it is serialized — these property names
+ * go straight to YAML, so they are the vocabulary's kebab keys, not camelCase
+ * twins that would have to be translated on the way out.
+ */
 export interface ProvenanceEntry {
-  generatedBy: string;
+  "generated-by": string;
   fields: string[];
-  /** Per-field model confidence 0..1 for the fields it wrote (schema 0.8). */
+  /** Per-field model confidence 0..1 for the fields it wrote (ADR 01015). */
   confidence?: Record<string, number>;
 }
 
 /**
+ * True when `kg.provenance` is the deprecated single-object shape that
+ * `docmeta:kg` dropped (dockg 0.2/0.3 wrote it).
+ *
+ * `existingProvenance` cannot read that shape — `dockg validate` rejects it, so
+ * merging from it would let fill write frontmatter the tool's own validator
+ * refuses (ADR 01023). But `provenance` is overwritten wholesale on every fill,
+ * so reading nothing would *silently* delete another model's outstanding review
+ * record. Callers use this to refuse the file instead.
+ */
+export function hasLegacyProvenance(content: string): boolean {
+  const split = splitYamlFrontmatter(content, "");
+  if (split === null) return false;
+  const doc = parseDocument(split.block);
+  if (doc.errors.length > 0) return false;
+  const plain = (doc.toJS() as { kg?: { provenance?: unknown } } | null)?.kg
+    ?.provenance;
+  return !!plain && typeof plain === "object" && !Array.isArray(plain);
+}
+
+/**
  * The doc's existing kg.provenance entries (for merging across runs).
- * Schema 0.4 stores an array (one entry per model); the earlier
- * single-object form is normalized into a one-entry array.
+ * `docmeta:kg` stores an array, one entry per model; the deprecated
+ * single-object form is not read — see `hasLegacyProvenance` (ADR 01023).
  */
 export function existingProvenance(content: string): ProvenanceEntry[] {
   const split = splitYamlFrontmatter(content, "");
@@ -184,12 +209,12 @@ export function existingProvenance(content: string): ProvenanceEntry[] {
   if (doc.errors.length > 0) return [];
   const plain = (doc.toJS() as { kg?: { provenance?: unknown } } | null)?.kg
     ?.provenance;
-  const raw = Array.isArray(plain) ? plain : plain ? [plain] : [];
+  const raw = Array.isArray(plain) ? plain : [];
   const entries: ProvenanceEntry[] = [];
   for (const item of raw) {
     if (!item || typeof item !== "object" || Array.isArray(item)) continue;
     const record = item as Record<string, unknown>;
-    if (typeof record["generatedBy"] !== "string") continue;
+    if (typeof record["generated-by"] !== "string") continue;
     const conf = record["confidence"];
     const confidence: Record<string, number> = {};
     if (conf && typeof conf === "object" && !Array.isArray(conf)) {
@@ -198,7 +223,7 @@ export function existingProvenance(content: string): ProvenanceEntry[] {
       }
     }
     entries.push({
-      generatedBy: record["generatedBy"],
+      "generated-by": record["generated-by"],
       fields: Array.isArray(record["fields"])
         ? record["fields"].filter((f): f is string => typeof f === "string")
         : [],

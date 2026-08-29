@@ -37,7 +37,7 @@ evidence_basis:
   - the PROV-O qualified attribution and association design in ADRs 01002, 01003, and 01004
   - the kg.provenance frontmatter block with per-field confidence (ADR 01015), which functions as a human review queue over machine output
   - ADR 01011's per-field coverage thresholds and the stats --check exit-1 gate
-  - the sh:disjoint contradiction checks between appliesTo and notApplicableTo in shapes/dockg-0.5.ttl
+  - the sh:disjoint contradiction checks between applies-to and not-applicable-to in shapes/dockg-0.5.ttl
   - the determinism contract, which is what makes a generated report submittable rather than anecdotal
 ---
 

@@ -87,13 +87,13 @@ deliberately.
 
 For a missing `title` or `description`, yes — write a real one.
 
-For anything describing meaning — `topicType`, `appliesTo`, `prefLabel` — no. A guessed value is
+For anything describing meaning — `type`, `applies-to`, `label` — no. A guessed value is
 worse than a missing one, because absence is
 [recorded as unknown](/dockg/concepts/open-world/) while a wrong value is recorded as fact. If you do
 not know the right value, ask whoever owns the vocabulary.
 
 <Aside type="caution" title="Especially applicability">
-  `appliesTo` and `notApplicableTo` drive scoped queries. Guessing one to turn a build green can make
+  `applies-to` and `not-applicable-to` drive scoped queries. Guessing one to turn a build green can make
   a safety-relevant topic invisible to the query that should have found it.
 </Aside>
 

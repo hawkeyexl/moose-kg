@@ -62,13 +62,13 @@ They do not own the documentation and often have limited influence over the team
 staleness and sync.
 
 **Do not bring:** documentation authoring conventions, iiRDS, or any interest in the tekom
-standards landscape. They will use `appliesTo` as a filter key without caring what body
+standards landscape. They will use `applies-to` as a filter key without caring what body
 standardized it.
 
 ## The dependency that has to be stated early
 
 dockg's value to Kwame **scales with metadata someone else has to add.** A corpus with no
-`appliesTo` values cannot be filtered by variant, no matter how good the runtime is. This is
+`applies-to` values cannot be filtered by variant, no matter how good the runtime is. This is
 uncomfortable and it belongs on their first page rather than at integration time — otherwise
 they build the integration, get no lift, and conclude the tool does not work.
 

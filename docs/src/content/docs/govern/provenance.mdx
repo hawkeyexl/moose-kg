@@ -28,9 +28,9 @@ time, no blank nodes, and no unordered output precisely so that this holds — s
 | `dcterms:creator`, `prov:wasAttributedTo` | Frontmatter `author` / `authors` | No |
 | `dcterms:created`, `prov:generatedAtTime` | Frontmatter `date` / `created`, else git | Falls back to git |
 | `dcterms:modified` | Frontmatter `updated` / `lastmod` / `modified`, else git | Falls back to git |
-| `prov:wasRevisionOf` | `kg.revisionOf`, plus git rename detection | For the derived half |
-| `prov:wasDerivedFrom` | `kg.derivedFrom` | No |
-| `prov:wasGeneratedBy` | `kg.generatedBy` or page-level `generatedBy` | No |
+| `prov:wasRevisionOf` | `kg.revision-of`, plus git rename detection | For the derived half |
+| `prov:wasDerivedFrom` | `kg.derived-from` | No |
+| `prov:wasGeneratedBy` | `kg.generated-by` or page-level `generated-by` | No |
 | Qualified attribution and association | Derived from the above | No |
 
 ## The tri-state git setting
@@ -79,11 +79,11 @@ confidence in each:
 ```yaml title="docs/api-keys.md"
 kg:
   provenance:
-    - generatedBy: claude-opus-4-6
-      fields: [prefLabel, topicType]
+    - generated-by: claude-opus-4-6
+      fields: [label, type]
       confidence:
-        prefLabel: 0.92
-        topicType: 0.81
+        label: 0.92
+        type: 0.81
 ```
 
 **Humans delete entries as they review them.** The block is an outstanding-review queue rather than

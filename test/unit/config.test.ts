@@ -36,18 +36,18 @@ describe("parseConfig", () => {
     expect(c.fill.cacheDir).toBe(".dockg/cache");
     // Fill proposes every field now; confidence gates what is written (ADR 01015).
     expect(c.fill.fields).toEqual([
-      "prefLabel",
-      "altLabels",
+      "label",
+      "alt-labels",
       "broader",
       "narrower",
-      "related",
-      "subjects",
-      "topicType",
-      "appliesTo",
-      "softwareLifecyclePhase",
-      "softwareSubject",
-      "notApplicableTo",
-      "notSoftwareSubject",
+      "related-concepts",
+      "concepts",
+      "type",
+      "applies-to",
+      "about-product-lifecycle",
+      "about-product-aspect",
+      "not-applicable-to",
+      "not-about-product-aspect",
     ]);
     expect(c.fill.minConfidence).toBe(0.7);
     // Local embeddings default to granite, configurable (ADR 01020).
@@ -120,6 +120,33 @@ describe("parseConfig", () => {
       "/tmp/dockg.config.yaml",
     );
     expect(c.baseIri).toBe("https://example.com/kg/");
+  });
+
+  // The hard break to docmeta:kg renamed the config vocabulary too (ADR
+  // 01023). Failing loudly on the old spellings is the whole point, so pin it
+  // here rather than trusting the enum to stay narrow.
+  it("rejects a stale camelCase fill.fields value", () => {
+    expect(() =>
+      parseConfig(
+        "version: 1\nfill:\n  fields: [prefLabel]\n",
+        "/tmp/dockg.config.yaml",
+      ),
+    ).toThrow(DockgError);
+    expect(() =>
+      parseConfig(
+        "version: 1\nfill:\n  fields: [softwareSubject]\n",
+        "/tmp/dockg.config.yaml",
+      ),
+    ).toThrow(DockgError);
+  });
+
+  it("rejects a stale camelCase coverageThreshold key", () => {
+    expect(() =>
+      parseConfig(
+        "version: 1\nstats:\n  coverageThreshold:\n    prefLabel: 80\n",
+        "/tmp/dockg.config.yaml",
+      ),
+    ).toThrow(DockgError);
   });
 
   it("rejects unknown top-level keys", () => {
@@ -227,8 +254,8 @@ describe("parseConfig", () => {
       "created",
       "creator",
       "description",
+      "label",
       "modified",
-      "prefLabel",
       "subject",
       "title",
     ]);

@@ -26,6 +26,9 @@
           "@id": "https://example.com/kg/doc/docs/getting-started.md"
         },
         {
+          "@id": "https://example.com/kg/doc/docs/harvest.md"
+        },
+        {
           "@id": "https://example.com/kg/doc/docs/no-frontmatter.md"
         },
         {
@@ -50,6 +53,11 @@
       "@id": "https://example.com/kg/agent/person/jane-doe",
       "@type": "prov:Person",
       "foaf:name": "Jane Doe"
+    },
+    {
+      "@id": "https://example.com/kg/agent/software/claude-sonnet-4-5",
+      "@type": "prov:SoftwareAgent",
+      "foaf:name": "claude-sonnet-4-5"
     },
     {
       "@id": "https://example.com/kg/agent/software/dockg",
@@ -112,6 +120,14 @@
         "@id": "https://example.com/kg/scheme"
       },
       "skos:prefLabel": "setup"
+    },
+    {
+      "@id": "https://example.com/kg/concept/upgrade",
+      "@type": "skos:Concept",
+      "skos:inScheme": {
+        "@id": "https://example.com/kg/scheme"
+      },
+      "skos:prefLabel": "upgrade"
     },
     {
       "@id": "https://example.com/kg/doc/docs/configuration.md",
@@ -335,6 +351,70 @@
       },
       "prov:hadRole": {
         "@id": "https://dockg.dev/ns#authorRole"
+      }
+    },
+    {
+      "@id": "https://example.com/kg/doc/docs/harvest.md",
+      "@type": [
+        "dockg:Document",
+        "prov:Entity"
+      ],
+      "iirds:has-topic-type": {
+        "@id": "http://iirds.tekom.de/iirds#GenericTask"
+      },
+      "iirds:relates-to-product-variant": {
+        "@id": "https://example.com/kg/product/sp-x100"
+      },
+      "dcterms:description": "Move an existing install to the current release.",
+      "dcterms:hasPart": {
+        "@id": "https://example.com/kg/doc/docs/harvest.md#upgrading"
+      },
+      "dcterms:references": {
+        "@id": "https://example.com/kg/doc/docs/getting-started.md"
+      },
+      "dcterms:subject": {
+        "@id": "https://example.com/kg/concept/upgrade"
+      },
+      "dcterms:title": "Upgrading",
+      "prov:wasGeneratedBy": {
+        "@id": "https://example.com/kg/doc/docs/harvest.md#prov.generation"
+      },
+      "prov:wasRevisionOf": {
+        "@id": "https://example.com/kg/doc/docs/getting-started.md"
+      },
+      "dockg:path": "docs/harvest.md"
+    },
+    {
+      "@id": "https://example.com/kg/doc/docs/harvest.md#prov.generation",
+      "@type": "prov:Activity",
+      "prov:qualifiedAssociation": {
+        "@id": "https://example.com/kg/doc/docs/harvest.md#prov.generation.assoc.claude-sonnet-4-5"
+      },
+      "prov:wasAssociatedWith": {
+        "@id": "https://example.com/kg/agent/software/claude-sonnet-4-5"
+      }
+    },
+    {
+      "@id": "https://example.com/kg/doc/docs/harvest.md#prov.generation.assoc.claude-sonnet-4-5",
+      "@type": "prov:Association",
+      "prov:agent": {
+        "@id": "https://example.com/kg/agent/software/claude-sonnet-4-5"
+      },
+      "prov:hadRole": {
+        "@id": "https://dockg.dev/ns#generatorRole"
+      }
+    },
+    {
+      "@id": "https://example.com/kg/doc/docs/harvest.md#upgrading",
+      "@type": "dockg:Section",
+      "dcterms:title": "Upgrading",
+      "dockg:level": {
+        "@value": "1",
+        "@type": "xsd:integer"
+      },
+      "dockg:order": {
+        "@value": "1",
+        "@type": "xsd:integer"
       }
     },
     {

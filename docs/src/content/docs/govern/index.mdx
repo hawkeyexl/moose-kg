@@ -12,7 +12,7 @@ things, and picking the wrong one wastes a week.
 
 | Gate | Scope | Catches | Exits 1 when |
 |---|---|---|---|
-| `dockg validate` | One file at a time | Frontmatter that violates the JSON Schema — wrong type, bad enum value, `broader` without `prefLabel` | Any file fails |
+| `dockg validate` | One file at a time | Frontmatter that violates the JSON Schema — wrong type, bad enum value, `broader` without `label` | Any file fails |
 | `dockg check` | The whole assembled graph | Cross-document problems: `broader` cycles, `related`/`broader` conflicts, applicability contradictions, untyped relation targets | Any finding is a violation |
 | `dockg stats --check` | Aggregate numbers | Broken internal links, broken section refs, coverage below threshold | Any threshold is breached |
 

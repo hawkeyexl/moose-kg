@@ -13,37 +13,37 @@ Six keys. That is all of it — you are probably braced for more.
 
 | Key | Cardinality | Emits |
 |---|---|---|
-| `prefLabel` | one string | `foaf:primaryTopic` → a `skos:Concept` carrying `skos:prefLabel` |
-| `altLabels` | list | `skos:altLabel` |
+| `label` | one string | `foaf:primaryTopic` → a `skos:Concept` carrying `skos:prefLabel` |
+| `alt-labels` | list | `skos:altLabel` |
 | `broader` | list | `skos:broader` |
 | `narrower` | list | `skos:narrower` |
-| `related` | list | `skos:related` |
-| `subjects` | list | `dcterms:subject` — a plain subject tag, not a primary topic |
+| `related-concepts` | string or list | `skos:related` |
+| `concepts` | string or list | `dcterms:subject` — a plain subject tag, not a primary topic |
 
 ```md title="docs/rate-limiting.md"
 ---
 kg:
-  prefLabel: Rate limiting
-  altLabels:
+  label: Rate limiting
+  alt-labels:
     - Request throttling
   broader:
     - Traffic management
-  related:
+  related-concepts:
     - Quotas
 ---
 ```
 
 Every concept lands in a single `skos:ConceptScheme` with `skos:inScheme`.
 
-## `prefLabel` is the subject of everything else
+## `label` is the subject of everything else
 
-`altLabels`, `broader`, `narrower`, and `related` all describe a concept, so the schema requires
-`prefLabel` alongside them via `dependentRequired`. Without it there is nothing for the
+`alt-labels`, `broader`, `narrower`, and `related-concepts` all describe a concept, so the schema requires
+`label` alongside them via `dependentRequired`. Without it there is nothing for the
 relationship to hang from.
 
-`dockg fill` enforces the same rule at proposal time: if no `prefLabel` exists or is being proposed
+`dockg fill` enforces the same rule at proposal time: if no `label` exists or is being proposed
 in the same pass, relationship proposals are dropped — and the check re-runs after every subsequent
-drop, so a `prefLabel` rejected for low confidence takes its dependents with it.
+drop, so a `label` rejected for low confidence takes its dependents with it.
 
 ## Concept IRIs converge on the slug
 

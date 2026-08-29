@@ -92,7 +92,7 @@
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "commander": "^15.0.0",
-    "docmeta": "^1.3.0",
+    "docmeta": "^4.12.0",
     "fast-glob": "^3.3.2",
     "github-slugger": "^2.0.0",
     "mdast-util-to-string": "^4.0.0",

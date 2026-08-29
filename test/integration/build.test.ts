@@ -49,14 +49,14 @@ describe("dockg build (integration)", () => {
     );
     // must equal the triple count `build` reports for the corpus
     // (135 + 4 negative-scope triples: notApplicableToVariant + its
-    // ProductVariant node, and a section notSoftwareSubject — ADR 01014)
-    expect(quads.length).toBe(139);
+    // ProductVariant node, and a section not-about-product-aspect — ADR 01014)
+    expect(quads.length).toBe(167);
   });
 
   it("reports docs and triples on stdout", () => {
     const out = join(mkdtempSync(join(tmpdir(), "dockg-build-")), "graph.ttl");
     const stdout = build(out);
-    expect(stdout).toMatch(/4 docs, \d+ triples/);
+    expect(stdout).toMatch(/5 docs, \d+ triples/);
   });
 
   it("provenance.git: an ambient GIT_DIR cannot redirect the build", () => {

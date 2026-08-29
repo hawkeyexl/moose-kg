@@ -32,7 +32,7 @@ steps:
   - stage: verify
     doc: /dockg/govern/
     exists: true
-    note: "check catches appliesTo/notApplicableTo contradictions the same build."
+    note: "check catches applies-to/not-applicable-to contradictions the same build."
   - stage: extend
     doc: /dockg/build/backfill/
     exists: true
@@ -56,13 +56,13 @@ pages must work as something forwarded to an engineer.
    reader specifying an obligation needs to know exactly what is being counted before they can
    agree to a number. Ambiguity here produces a threshold nobody trusts.
 2. **Uniform threshold versus per-field map.** A single number applies across all seven fields,
-   which is almost never what a real obligation looks like — `title` at 100% and `prefLabel` at
+   which is almost never what a real obligation looks like — `title` at 100% and `label` at
    40% is a coherent policy, and one number cannot express it. The per-field map is config-only,
    so this decision has to be made in the config file rather than a flag.
 3. **The `--check` requirement.** `stats` reports without gating; only `--check` makes it fail.
    This trips people, and it is a deliberate split — reporting and gating are different jobs.
-4. **The contradiction check, in the same build.** A topic claiming both `appliesTo: X` and
-   `notApplicableTo: X` is caught by SHACL disjointness. This is the defect a human reviewer does
+4. **The contradiction check, in the same build.** A topic claiming both `applies-to: X` and
+   `not-applicable-to: X` is caught by SHACL disjointness. This is the defect a human reviewer does
    not catch and an auditor does, and it belongs in the coverage conversation even though it is a
    different command.
 5. **A route out when the gap is too large.** If current coverage is far below the obligation,
