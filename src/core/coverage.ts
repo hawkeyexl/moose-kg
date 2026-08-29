@@ -55,16 +55,28 @@ export const COVERAGE_FIELDS: readonly CoverageField[] = [
  * `label` is absent deliberately: ADR 01013 rejected `prefLabel` at section
  * level as meaningless, so it cannot be missing.
  */
-export const SECTION_COVERAGE_FIELDS: readonly CoverageField[] = [
-  { field: "type", iri: `${NS.iirds}has-topic-type` },
-  { field: "applies-to", iri: `${NS.iirds}relates-to-product-variant` },
-  {
-    field: "about-product-lifecycle",
-    iri: `${NS.iirds}relates-to-product-lifecycle-phase`,
-  },
-  { field: "about-product-aspect", iri: `${NS.iirds}has-subject` },
-  { field: "subject", iri: `${NS.dcterms}subject` },
+/** Section-attachable field NAMES; the IRIs come from COVERAGE_FIELDS, so a
+ * namespace revision cannot move one table and not the other. */
+const SECTION_FIELD_NAMES: readonly string[] = [
+  "type",
+  "applies-to",
+  "about-product-lifecycle",
+  "about-product-aspect",
+  "subject",
 ];
+
+export const SECTION_COVERAGE_FIELDS: readonly CoverageField[] =
+  SECTION_FIELD_NAMES.map((name) => {
+    const field = COVERAGE_FIELDS.find((f) => f.field === name);
+    /* c8 ignore next 3 -- unreachable while the two lists agree, which the
+       drift guard in test/unit/vocabulary-coverage is what keeps true. */
+    if (field === undefined) {
+      throw new Error(
+        `SECTION_FIELD_NAMES names ${name}, which COVERAGE_FIELDS does not define`,
+      );
+    }
+    return field;
+  });
 
 /** The measured field names, in report order. */
 export const COVERAGE_FIELD_NAMES: readonly string[] = COVERAGE_FIELDS.map(

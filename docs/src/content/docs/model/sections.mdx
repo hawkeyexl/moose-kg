@@ -111,6 +111,33 @@ not homogeneous.
 Coverage numbers and the broken-section-ref count tell you where the document-level tagging is
 already lying.
 
+## Backfilling sections
+
+Writing a `sections` block per page by hand does not scale past a small corpus, and
+[`dockg stats`](/dockg/govern/coverage/) will tell you exactly how far behind you are — the section
+coverage table starts at 0% on any corpus that has not adopted this.
+
+`dockg fill --sections` (or `fill.sections: true`) asks the model for per-section metadata alongside
+the document's, in the same call. It is **opt-in**, for two reasons: it costs more output per
+document, and section metadata carries the same review obligation as anything else a model writes.
+
+```sh
+dockg fill --sections --dry-run
+```
+
+Two behaviors worth knowing before you run it:
+
+- **A slug the model invents is dropped, not written.** Writing a block against a heading that does
+  not exist would create exactly the broken section ref this page tells you to fix, so `fill`
+  refuses. The report names the slug it discarded in a trailing
+  `[no such section: …]`, and the JSON report carries it as `unknownSections`.
+
+- **Preservation is per field, per section.** A value you set on one section is never overwritten
+  without `--force`, and that does not stop the section beside it from being filled.
+
+The confidence gate applies exactly as it does to document fields — a section field scored below
+`fill.minConfidence` is reported and not written.
+
 ## Where to go next
 
 <CardGrid>

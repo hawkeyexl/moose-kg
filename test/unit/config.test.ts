@@ -194,6 +194,15 @@ describe("parseConfig", () => {
     ).toThrow(DockgError);
   });
 
+  it("accepts the local llama-cpp provider", () => {
+    const c = parseConfig(
+      "version: 1\nfill:\n  provider: llama-cpp\n  model: granite-4.1-3b-q2\n",
+      "/tmp/dockg.config.yaml",
+    );
+    expect(c.fill.provider).toBe("llama-cpp");
+    expect(c.fill.model).toBe("granite-4.1-3b-q2");
+  });
+
   it("parses route mappings with defaults and normalization", () => {
     const c = parseConfig(
       "version: 1\nroutes:\n  - basePath: /docs/\n    root: docs/pages/\n",

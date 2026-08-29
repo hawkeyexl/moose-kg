@@ -10,6 +10,7 @@ import { resolve } from "node:path";
 
 import { analyzeDoc } from "../core/analyze.js";
 import { loadConfig, type FillField } from "../core/config.js";
+import type { DocModel } from "../types.js";
 import { discoverFiles } from "../core/discover.js";
 import {
   applyKgFields,
@@ -32,6 +33,7 @@ import {
 import { FillCache, cacheKey } from "../llm/cache.js";
 import {
   SYSTEM_PROMPT,
+  SECTION_FILL_FIELDS,
   buildUserPrompt,
   proposalSchema,
 } from "../llm/prompt.js";
@@ -51,6 +53,8 @@ export interface FillOptions {
   model?: string;
   /** Disable the graph guardrail (`--no-validate-graph`). */
   noValidateGraph?: boolean;
+  /** Propose per-section metadata as well as document-level (ADR 01032). */
+  sections?: boolean;
   /** Injection seam for tests: bypasses the provider factory. */
   providerInstance?: InferenceProvider;
 }
@@ -72,6 +76,13 @@ export interface FillDocResult {
   preserved: string[];
   /** Fields dropped by the graph guardrail (fill.validateGraph). */
   rejected?: string[];
+  /**
+   * Section slugs the model proposed that match no heading in the document.
+   * Dropped rather than written: writing one would mint a
+   * dockg:brokenSectionRef, a finding fill must report and never manufacture
+   * (ADR 01032).
+   */
+  unknownSections?: string[];
   /** Fields the model proposed but scored below fill.minConfidence (ADR 01015). */
   lowConfidence?: Array<{
     field: string;
@@ -85,7 +96,8 @@ export interface FillDocResult {
 /**
  * Whether the cost cap could actually be applied to this run.
  *
- * - `off` — no cap was set (`fill.maxCostUsd: null`).
+ * - `off` — the model is priced and no cap was set (`fill.maxCostUsd: null`).
+ * - `free` — the provider cannot spend, so there is nothing to cap.
  * - `enforced` — a cap was set and the model has a price, so `costUsd` is real
  *   and `skipped-budget` can fire.
  * - `unpriceable` — a cap was set and the model has no entry in the price
@@ -97,7 +109,21 @@ export interface FillDocResult {
  * not the same thing, and the default cap is 5 USD while the price table has
  * six models in it — so the silent case was the common one.
  */
-export type BudgetState = "off" | "enforced" | "unpriceable";
+export type BudgetState = "off" | "free" | "enforced" | "unpriceable";
+
+/**
+ * Providers that cannot spend money, whatever the cap says.
+ *
+ * `llama-cpp` runs in-process against local weights, and the config reference
+ * documents it as "no key, no network, no spend" — so warning that a cap cannot
+ * be enforced there answers a question nobody asked, and trains the reader to
+ * ignore the warning that matters: an unpriced *hosted* model.
+ *
+ * `mock` is deliberately NOT here. It is a test double that stands in for a
+ * real provider, priced ones included, so treating it as free would make the
+ * enforcement path itself untestable.
+ */
+const FREE_PROVIDERS = new Set(["llama-cpp"]);
 
 export interface FillReport {
   results: FillDocResult[];
@@ -122,7 +148,13 @@ function numberMap(v: unknown): Record<string, number> {
   const out: Record<string, number> = {};
   if (v && typeof v === "object" && !Array.isArray(v)) {
     for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
-      if (typeof val === "number") out[k] = val;
+      // In range, or not a score at all (ADR 01034). A model that answers 90
+      // where 0..1 was asked for meant "very confident", but reading it as
+      // written would clear every threshold there is — the model's slip
+      // becoming certainty. GBNF cannot express `minimum`/`maximum`, so no
+      // grammar stops this upstream; dropping the score leaves the field
+      // unscored, which the confidence gate already knows how to handle.
+      if (typeof val === "number" && val >= 0 && val <= 1) out[k] = val;
     }
   }
   return out;
@@ -199,7 +231,24 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
   // Compiled against the full configured field set, not any one doc's missing
   // subset: proposals are validated leniently and narrowed afterwards, so a
   // provider that volunteers a field this doc didn't ask for is fine.
-  const validateProposal = validatorFor(proposalSchema(fields));
+  const withSections = opts.sections ?? config.fill.sections;
+  // The section half of the schema is built from the FULL configured field
+  // set, never from a document's missing set (ADR 01032): section presence is
+  // independent of document presence, so a page whose `kg.type` is already set
+  // must still be offered a section-level `type`. Narrowing this the way the
+  // document half is narrowed handed a strictly-constrained provider a section
+  // item with no data properties on it at all.
+  const sectionFields = withSections
+    ? fields.filter((f) => SECTION_FILL_FIELDS.includes(f))
+    : undefined;
+  // Validation uses the LENIENT schema (ADR 01034): the values are checked
+  // exactly as strictly as ever, while the model's self-reported confidence and
+  // reasoning are accepted in whatever shape they arrive. A weak provider that
+  // scores one field with a string must not cost the run every other field it
+  // got right.
+  const validateProposal = validatorFor(
+    proposalSchema(fields, { sections: sectionFields, lenient: true }),
+  );
   const cache = new FillCache(
     resolve(cwd, config.fill.cacheDir),
     !opts.noCache,
@@ -210,19 +259,29 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
 
   // A cap dockg cannot apply must say so. Silently not enforcing a spend limit
   // the caller asked for is the one failure here that costs money.
-  const budget: BudgetState =
-    maxCostUsd === null
-      ? "off"
-      : pricing === undefined
-        ? "unpriceable"
+  // Two orthogonal questions, and conflating them is what produced the bug
+  // this state exists to fix:
+  //   1. Is `costUsd` measurable at all?  → pricing !== undefined
+  //   2. Was a cap asked for, and can it be applied?  → maxCostUsd, pricing
+  // `unpriceable` answers (1) whether or not a cap was set, so an uncapped run
+  // against an unpriced model no longer renders a confident "$0.0000".
+  const budget: BudgetState = FREE_PROVIDERS.has(identity.provider)
+    ? "free"
+    : pricing === undefined
+      ? "unpriceable"
+      : maxCostUsd === null
+        ? "off"
         : "enforced";
+  // The warning is about (2): only fire it when a cap was actually requested.
   const warnings: string[] =
-    budget === "unpriceable"
+    budget === "unpriceable" && maxCostUsd !== null
       ? [
           `Cost cap of ${maxCostUsd} USD cannot be enforced: no price is known for model "${identity.model}", ` +
             `so spend cannot be totalled. Set fill.pricing to enforce it, or fill.maxCostUsd: null if you meant no cap.`,
         ]
       : [];
+  /** Set when section fields were written but could not be recorded. */
+  let sectionsUnrecorded = false;
   // Null unless the cap is both set and applicable, so the gate below needs
   // no non-null assertion and cannot fire on an unpriceable run.
   const enforcedCap = budget === "enforced" ? maxCostUsd : null;
@@ -283,6 +342,14 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
     }
   }
 
+  if (sectionsUnrecorded) {
+    warnings.push(
+      "Section metadata was written but is NOT recorded in kg.provenance: docmeta:kg bounds " +
+        "provenance to document-level field names. Review section values by hand — the review " +
+        "queue will not list them.",
+    );
+  }
+
   const hasErrors = results.some((r) => r.status === "error");
   return { results, costUsd, budget, warnings, exitCode: hasErrors ? 1 : 0 };
 
@@ -299,7 +366,10 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
 
     const present = new Set(existingKgFields(content));
     const missing = opts.force ? fields : fields.filter((f) => !present.has(f));
-    if (missing.length === 0) {
+    // With --sections, a document whose own fields are complete may still have
+    // unfilled sections, so completeness at document level is not completeness
+    // (ADR 01032).
+    if (missing.length === 0 && !withSections) {
       return {
         path,
         status: "complete",
@@ -319,7 +389,13 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
       };
     }
 
-    const key = cacheKey(identity.provider, identity.model, content, missing);
+    const key = cacheKey(
+      identity.provider,
+      identity.model,
+      content,
+      missing,
+      withSections,
+    );
     // Cached proposals are validated too: a stale or hand-edited cache entry
     // must not bypass the schema (treat invalid entries as a miss).
     let proposal = cache.get(key);
@@ -328,10 +404,16 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
     }
     const cached = proposal !== undefined;
 
-    if (proposal === undefined) {
-      const doc = analyzeDoc(content, path, allPaths, {
+    // Lazy: a *cached* proposal can carry sections, so the slugs still need
+    // checking outside the cache-miss branch — but a sections-off run that hits
+    // the cache should not pay for a full markdown parse it never reads.
+    let docModel: DocModel | undefined;
+    const doc = (): DocModel =>
+      (docModel ??= analyzeDoc(content, path, allPaths, {
         routes: config.routes,
-      });
+      }));
+
+    if (proposal === undefined) {
       // completeValidatedJSON validates and retries once before giving up.
       // fill previously aborted the document on a single malformed response;
       // one bad completion is not worth losing the work over.
@@ -343,8 +425,10 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
       const run = await completeValidatedJSON<Record<string, unknown>>({
         provider: getProvider(),
         system: SYSTEM_PROMPT,
-        user: buildUserPrompt(doc, content, missing),
-        schema: proposalSchema(missing),
+        user: buildUserPrompt(doc(), content, missing, {
+          sections: withSections,
+        }),
+        schema: proposalSchema(missing, { sections: sectionFields }),
         validate: validateProposal,
         temperature: config.fill.temperature,
       });
@@ -370,6 +454,41 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
         .map(([k, v]) => [k, Array.isArray(v) ? [...new Set(v)] : v]),
     );
 
+    // Section proposals arrive as a list of {slug, …} and become dotted field
+    // names — `sections.<slug>.type` — so the writer, the confidence gate, the
+    // graph guardrail and the provenance record all treat them as ordinary
+    // fields (ADR 01032).
+    const unknownSlugs: string[] = [];
+    if (withSections) {
+      const realSlugs = new Set(doc().sections.map((s) => s.slug));
+      for (const entry of Array.isArray(proposal["sections"])
+        ? (proposal["sections"] as Array<Record<string, unknown>>)
+        : []) {
+        const slug = typeof entry["slug"] === "string" ? entry["slug"] : "";
+        // A slug matching no heading is dropped, never written. Writing it
+        // would mint a dockg:brokenSectionRef — a finding fill must report
+        // rather than manufacture.
+        if (!realSlugs.has(slug)) {
+          if (slug) unknownSlugs.push(slug);
+          continue;
+        }
+        const entryConfidence = numberMap(entry["confidence"]);
+        const entryReasoning = stringMap(entry["reasoning"]);
+        for (const [field, value] of Object.entries(entry)) {
+          if (!SECTION_FILL_FIELDS.includes(field as FillField)) continue;
+          if (!fields.includes(field as FillField)) continue;
+          const name = `sections.${slug}.${field}`;
+          narrowed[name] = Array.isArray(value) ? [...new Set(value)] : value;
+          // Fold the per-section scores into the flat maps the gate reads, so
+          // one code path scores document and section fields alike.
+          if (entryConfidence[field] !== undefined)
+            confidence[name] = entryConfidence[field];
+          if (entryReasoning[field] !== undefined)
+            reasoning[name] = entryReasoning[field];
+        }
+      }
+    }
+
     // docmeta:kg requires `label` alongside any alt-label/relation field
     // (dependentRequired) — never write output our own validate rejects.
     // Rechecked after the guardrail: rejecting `label` takes the relation
@@ -391,6 +510,9 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
     // here is normal operation, reported but never an error (exit stays 0).
     const lowConfidence: FillDocResult["lowConfidence"] = [];
     for (const field of Object.keys(narrowed)) {
+      // Unscored counts as 0, so minConfidence: 0 stays a working opt-out from
+      // the gate. The related hazard — stamping a confidence the model never
+      // gave into kg.provenance — is fixed where provenance is built, not here.
       const c = confidence[field] ?? 0;
       if (c < minConfidence) {
         lowConfidence.push({
@@ -434,6 +556,7 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
         fields: [],
         preserved: [],
         ...(rejected ? { rejected } : {}),
+        ...(unknownSlugs.length > 0 ? { unknownSections: unknownSlugs } : {}),
         ...lowConf,
         cached,
       };
@@ -467,9 +590,24 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
       const myConfidence: Record<string, number> = {
         ...(mine?.confidence ?? {}),
       };
-      for (const f of realFields) myConfidence[f] = round2(confidence[f] ?? 0);
+      // Document-level names only. `docmeta:kg` bounds provenanceEntry.fields
+      // and confidence.propertyNames to the twelve flat field names, and says
+      // why: "section typing and document lineage are curated by hand, not
+      // machine-proposed". Those bytes are immutable (ADR 01023), so writing a
+      // dotted name here emits frontmatter `dockg validate` rejects — the one
+      // thing this whole guardrail exists to prevent (ADR 01032).
+      const recordable = realFields.filter((f) => !f.includes("."));
+      // Loud, not silent: metadata a model wrote with no entry in the review
+      // queue is exactly the thing kg.provenance exists to prevent.
+      if (recordable.length < realFields.length) sectionsUnrecorded = true;
+      // Only record a score the model actually gave. `?? 0` stamped a
+      // confidence of 0.00 the model never asserted whenever it omitted one.
+      for (const f of recordable) {
+        const c = confidence[f];
+        if (c !== undefined) myConfidence[f] = round2(c);
+      }
       const fieldSet = [
-        ...new Set([...(mine?.fields ?? []), ...realFields]),
+        ...new Set([...(mine?.fields ?? []), ...recordable]),
       ].sort();
       const entry = {
         "generated-by": identity.model,
@@ -498,6 +636,7 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
         fields: [],
         preserved: applied.skipped,
         ...(rejected ? { rejected } : {}),
+        ...(unknownSlugs.length > 0 ? { unknownSections: unknownSlugs } : {}),
         ...lowConf,
         cached,
       };
@@ -513,6 +652,7 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
       fields: reportedFields,
       preserved: applied.skipped,
       ...(rejected ? { rejected } : {}),
+      ...(unknownSlugs.length > 0 ? { unknownSections: unknownSlugs } : {}),
       ...lowConf,
       cached,
     };
@@ -536,15 +676,21 @@ export function renderFill(
             .map((l) => `${l.field} ${l.confidence.toFixed(2)}`)
             .join(", ")}]`
         : "";
+    // Visible rather than silent: the model addressed a heading that is not
+    // there, which usually means the page was edited after it was described.
+    const unknown =
+      r.unknownSections && r.unknownSections.length > 0
+        ? ` [no such section: ${r.unknownSections.join(", ")}]`
+        : "";
     switch (r.status) {
       case "filled":
         lines.push(
-          `filled    ${r.path} (${r.fields.join(", ")})${r.cached ? " [cached]" : ""}${dropped}${lowConf}`,
+          `filled    ${r.path} (${r.fields.join(", ")})${r.cached ? " [cached]" : ""}${dropped}${unknown}${lowConf}`,
         );
         break;
       case "proposed":
         lines.push(
-          `proposed  ${r.path} (${r.fields.join(", ")})${r.cached ? " [cached]" : ""}${dropped}${lowConf} — dry run, not written`,
+          `proposed  ${r.path} (${r.fields.join(", ")})${r.cached ? " [cached]" : ""}${dropped}${unknown}${lowConf} — dry run, not written`,
         );
         break;
       case "complete":
@@ -552,7 +698,7 @@ export function renderFill(
         break;
       case "nothing-proposed":
         lines.push(
-          `no-op     ${r.path} (model proposed nothing new)${dropped}${lowConf}`,
+          `no-op     ${r.path} (model proposed nothing new)${dropped}${unknown}${lowConf}`,
         );
         break;
       case "skipped-budget":
@@ -563,13 +709,18 @@ export function renderFill(
         break;
     }
   }
-  // "$0.0000" reads as "this run was free". Under an unpriceable model it means
-  // "nothing could be totalled", which is a different thing, so say which.
+  // "$0.0000" reads as "this run was free". Three different things can produce
+  // it, and only one of them is true — so say which. Keyed on whether the cost
+  // is *measurable*, not on whether a cap was set: `budget: "off"` over an
+  // unpriced model reached the misleading branch when this only checked
+  // "unpriceable".
   lines.push(
     "",
-    report.budget === "unpriceable"
-      ? "LLM cost: unpriceable — no price known for this model, so the cap was not applied"
-      : `LLM cost: $${report.costUsd.toFixed(4)}`,
+    report.budget === "free"
+      ? "LLM cost: none — this provider does not spend"
+      : report.budget === "unpriceable"
+        ? "LLM cost: unpriceable — no price known for this model, so the cap was not applied"
+        : `LLM cost: $${report.costUsd.toFixed(4)}`,
   );
   return lines.join("\n");
 }
