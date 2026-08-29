@@ -45,8 +45,9 @@ else — a local model, a `claude-cli` run, a model newer than the table — spe
 so the cap **cannot be applied**. dockg says so rather than pretending:
 
 ```
-dockg: Cost cap of 5 USD cannot be enforced: no price is known for model "…", so spend cannot be
-totalled. Set fill.pricing to enforce it, or fill.maxCostUsd: null if you meant no cap.
+dockg: Cost cap of 5 USD cannot be enforced: no price is known for model
+"no-such-model-in-the-price-table", so spend cannot be totalled. Set fill.pricing to enforce it, or
+fill.maxCostUsd: null if you meant no cap.
 ```
 
 and the run reports `LLM cost: unpriceable` instead of `$0.0000`, because costing nothing and being
@@ -169,3 +170,8 @@ confident it was, and a review queue that shrinks as humans work through it.
     description="Machine-proposed concepts still have to fit a governed vocabulary."
   />
 </CardGrid>
+
+{/* test {"testId":"backfill-cost-cap","description":"The cost cap's two messages, captured from a corpus whose model has no price."} */}
+{/* step {"description":"A cap dockg cannot total against says so, and the run still exits 0.","runShell":{"command":"dockg fill -c test/fixtures/dd/unpriced.config.yaml --dry-run --no-cache","exitCodes":[0],"stdio":"cannot be enforced: no price is known for model"}} */}
+{/* step {"description":"The run reports the spend as unpriceable rather than as zero.","runShell":{"command":"dockg fill -c test/fixtures/dd/unpriced.config.yaml --dry-run --no-cache","exitCodes":[0],"stdio":"LLM cost: unpriceable"}} */}
+{/* test end */}
