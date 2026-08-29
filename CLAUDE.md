@@ -32,8 +32,12 @@ Linux-side optional dependencies of `@napi-rs/wasm-runtime` (rolldown's wasm bin
 
 The real variable was **npm's own version**, not the contributor's OS — the same finding docmeta
 recorded after hitting this through the identical dependency path. npm ≤ 11.6.2 drops those
-entries on Linux, macOS and Windows alike; 11.6.3 keeps them on all three. Keep npm at **11.6.3 or
-newer** and regenerate the lock normally.
+entries on Linux, macOS and Windows alike; 11.6.3 keeps them on all three.
+
+That floor is enforced, not advisory: `engines.npm` is `>=11.6.3` and [.npmrc](.npmrc) sets
+`engine-strict=true`, so a too-old npm fails at install with `EBADENGINE` instead of quietly
+writing a lockfile CI will reject. Do not assume the Node floor covers it — Node 24.11.0 satisfies
+`>=24` and bundles npm **11.6.1**. Above the floor, regenerate the lock normally.
 
 Still worth doing after any dependency change: **read the lockfile diff**. A change that adds
 packages you cannot name, or removes any, is worth stopping for.
