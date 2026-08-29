@@ -85,7 +85,7 @@ them directly. Published versions are immutable — evolution adds a new version
 |---|---|---|---|
 | `stats.coverageThreshold` | number (0–100) or map | `{}` | Gates nothing by default. Only enforced under `stats --check`. |
 
-A number applies to all seven fields. A map sets them individually, which is usually what a real
+A number applies to all eleven measured fields. A map sets them individually, which is usually what a real
 obligation looks like:
 
 ```yaml title="dockg.config.yaml"
@@ -96,8 +96,12 @@ stats:
     label: 40
 ```
 
-Map keys: `title`, `description`, `creator`, `created`, `modified`, `subject`, `label`. The
-per-field map is **config-only**; `--coverage-threshold` can only set one number for all fields.
+Map keys: `title`, `description`, `creator`, `created`, `modified`, `subject`, `label`, `type`,
+`applies-to`, `about-product-lifecycle`, `about-product-aspect`. The per-field map is
+**config-only**; `--coverage-threshold` can only set one number for all fields.
+
+Section coverage is reported but never gated, so it has no threshold key. See
+[prove coverage](/dockg/govern/coverage/).
 
 ## `fill`
 

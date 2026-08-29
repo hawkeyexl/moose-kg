@@ -9,7 +9,7 @@ import { DataFactory, type Store } from "n3";
 import { loadConfig } from "../core/config.js";
 import { compactIri, loadGraph } from "../core/load.js";
 import { NS, RDF_TYPE } from "../core/vocab.js";
-import { COVERAGE_FIELDS } from "../core/coverage.js";
+import { COVERAGE_FIELDS, SECTION_COVERAGE_FIELDS } from "../core/coverage.js";
 
 const { namedNode } = DataFactory;
 
@@ -50,9 +50,15 @@ export interface StatsReport {
   /** kg.sections keys that matched no heading (dockg:brokenSectionRef). */
   brokenSectionRefs: Array<{ doc: string; slug: string }>;
   mostConnected: Array<{ doc: string; degree: number }>;
-  /** Per-field metadata coverage, in report order. */
+  /** Per-field metadata coverage over documents, in report order. */
   coverage: CoverageRow[];
-  /** Fields whose coverage is below their configured threshold. */
+  /**
+   * Per-field coverage over `dockg:Section` nodes (ADR 01029). Reported, not
+   * gated: sections are explicit-only, so these start near zero on every corpus
+   * and a default gate would fail every one of them.
+   */
+  sectionCoverage: CoverageRow[];
+  /** Fields whose document coverage is below their configured threshold. */
   coverageFindings: Array<{ field: string; pct: number; threshold: number }>;
   exitCode: 0 | 1;
 }
@@ -140,17 +146,29 @@ export function runStats(opts: StatsOptions = {}): StatsReport {
   // against the graph, so git-derived values count (ADR 01008/01011). A
   // zero-document graph is vacuously 100% — no divide-by-zero, no false gate.
   const total = docIris.length;
-  const coverage: CoverageRow[] = COVERAGE_FIELDS.map(({ field, iri }) => {
-    let docs = 0;
-    for (const d of docIris) {
-      if (store.countQuads(namedNode(d), namedNode(iri), null, null) > 0)
-        docs++;
-    }
-    const ratio = total === 0 ? 100 : (docs / total) * 100;
-    // Report the rounded value; gate on the raw ratio (below) so a corpus at
-    // 79.96% does not clear an 80 threshold on the strength of display rounding.
-    return { field, predicate: compactIri(iri), docs, pct: round1(ratio) };
-  });
+  /** Count subjects carrying each predicate, as a share of `subjects`. */
+  const coverageOver = (
+    subjects: readonly string[],
+    fields: readonly { field: string; iri: string }[],
+  ): CoverageRow[] =>
+    fields.map(({ field, iri }) => {
+      let docs = 0;
+      for (const s of subjects) {
+        if (store.countQuads(namedNode(s), namedNode(iri), null, null) > 0)
+          docs++;
+      }
+      const ratio =
+        subjects.length === 0 ? 100 : (docs / subjects.length) * 100;
+      // Report the rounded value; gate on the raw ratio (below) so a corpus at
+      // 79.96% does not clear an 80 threshold on display rounding alone.
+      return { field, predicate: compactIri(iri), docs, pct: round1(ratio) };
+    });
+
+  const coverage = coverageOver(docIris, COVERAGE_FIELDS);
+  const sectionCoverage = coverageOver(
+    subjectsOfType(store, `${NS.dockg}Section`),
+    SECTION_COVERAGE_FIELDS,
+  );
 
   // A uniform --coverage-threshold overrides the resolved config map. Bind it
   // to a local first so the null-narrowing survives the .map() closure.
@@ -199,6 +217,7 @@ export function runStats(opts: StatsOptions = {}): StatsReport {
     brokenSectionRefs,
     mostConnected,
     coverage,
+    sectionCoverage,
     coverageFindings,
     exitCode: failed ? 1 : 0,
   };
@@ -240,12 +259,24 @@ export function renderStats(
   if (report.brokenSectionRefs.length === 0) lines.push("  (none)");
 
   const belowThreshold = new Set(report.coverageFindings.map((f) => f.field));
-  const width = Math.max(...report.coverage.map((c) => c.field.length));
-  lines.push("", "Coverage:");
+  const width = Math.max(
+    ...report.coverage.map((c) => c.field.length),
+    ...report.sectionCoverage.map((c) => c.field.length),
+  );
+  lines.push("", "Coverage (documents):");
   for (const { field, docs, pct } of report.coverage) {
     const flag = belowThreshold.has(field) ? "  ! below threshold" : "";
     lines.push(
       `  ${field.padEnd(width)}  ${docs}/${report.docs}  ${pct.toFixed(1)}%${flag}`,
+    );
+  }
+
+  // Sections are explicit-only (ADR 01013), so this block is reported and not
+  // gated — a corpus that has not started on section metadata should not fail.
+  lines.push("", "Coverage (sections, not gated):");
+  for (const { field, docs, pct } of report.sectionCoverage) {
+    lines.push(
+      `  ${field.padEnd(width)}  ${docs}/${report.sections}  ${pct.toFixed(1)}%`,
     );
   }
   return lines.join("\n");
