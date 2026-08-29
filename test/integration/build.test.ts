@@ -249,6 +249,67 @@ describe("dockg build (integration)", () => {
     expect(r.stderr).toBe("");
   });
 
+  it("warns on page keys that look like harvest inputs, and still exits 0", () => {
+    // The reproducer from the scope review that produced ADR 01028: a page
+    // whose author declared four facts, none of which reached the graph. It
+    // passed `dockg validate` clean, because every one of those keys is a legal
+    // page-level key — just not one dockg reads.
+    const dir = mkdtempSync(join(tmpdir(), "dockg-harvest-"));
+    writeFileSync(
+      join(dir, "dockg.config.yaml"),
+      'version: 1\nbaseIri: https://example.com/kg/\ninputs: ["*.md"]\nprovenance:\n  git: false\n',
+    );
+    writeFileSync(
+      join(dir, "a.md"),
+      "---\ntitle: T\ntype: how to\napplies_to: [SP-X100]\nconcept: [alpha]\nsupersede: ./other.md\n---\n\n# T\n",
+    );
+
+    const out = join(dir, "g.ttl");
+    const r = spawnSync(process.execPath, [cli, "build", "--out", out], {
+      encoding: "utf8",
+      cwd: dir,
+      env: hermeticEnv(),
+    });
+
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain("Wrote");
+    for (const [key, meant] of [
+      ["applies_to", "applies-to"],
+      ["concept", "concepts"],
+      ["supersede", "supersedes"],
+    ]) {
+      expect(r.stderr).toContain(`page key "${key}"`);
+      expect(r.stderr).toContain(`looks like "${meant}"`);
+    }
+    expect(r.stderr).toContain('page type "how to"');
+
+    // A warning never gates and never changes the graph: the facts are still
+    // absent, which is correct — dockg must not guess what the author meant.
+    const ttl = readFileSync(out, "utf8");
+    expect(ttl).not.toContain("iirds:relates-to-product-variant");
+    expect(ttl).not.toContain("iirds:has-topic-type");
+  });
+
+  it("says nothing about a corpus that spells every harvest key correctly", () => {
+    const dir = mkdtempSync(join(tmpdir(), "dockg-harvest-ok-"));
+    writeFileSync(
+      join(dir, "dockg.config.yaml"),
+      'version: 1\nbaseIri: https://example.com/kg/\ninputs: ["*.md"]\nprovenance:\n  git: false\n',
+    );
+    writeFileSync(
+      join(dir, "a.md"),
+      "---\ntitle: T\ntype: how-to\napplies-to: [SP-X100]\nconcepts: [alpha]\n---\n\n# T\n",
+    );
+
+    const r = spawnSync(
+      process.execPath,
+      [cli, "build", "--out", join(dir, "g.ttl")],
+      { encoding: "utf8", cwd: dir, env: hermeticEnv() },
+    );
+    expect(r.status).toBe(0);
+    expect(r.stderr).toBe("");
+  });
+
   it("exits 2 when no inputs match", () => {
     const empty = mkdtempSync(join(tmpdir(), "dockg-empty-"));
     let status = 0;

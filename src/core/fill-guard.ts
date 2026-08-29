@@ -43,10 +43,19 @@ const GUARDED_FIELDS = [
   "not-about-product-aspect",
 ] as const;
 
-/** Concept + iiRDS edges: the SKOS subgraph plus the applicability predicates,
- * all of which derive under the `frontmatter`/`tags` sources. Sections/links/
- * provenance stay out to keep per-doc simulation cheap and git-free. */
-const GUARD_SOURCES: DeriveSource[] = ["frontmatter", "tags"];
+/** Concept + iiRDS edges: the SKOS subgraph plus the applicability predicates.
+ * `sections` is in because a section carries the same disjoint applicability
+ * predicates a document does (ADR 01032) — without it the simulated store has
+ * no `dockg:Section` node for the shapes to target, and a section-level
+ * contradiction sails through. Links/provenance stay out to keep per-doc
+ * simulation cheap and git-free. */
+const GUARD_SOURCES: DeriveSource[] = ["frontmatter", "tags", "sections"];
+
+/** The bare field name a possibly-dotted proposal key addresses. */
+function leafOf(field: string): string {
+  const dot = field.lastIndexOf(".");
+  return dot === -1 ? field : field.slice(dot + 1);
+}
 
 function toStore(quads: Quad[]): Store {
   const store = new Store();
@@ -150,29 +159,44 @@ export class FillGuard {
     finding: CheckFinding,
     proposed: Set<string>,
   ): string[] {
-    const hierarchy = ["broader", "narrower"].filter((f) => proposed.has(f));
+    // A finding on a section node names it by fragment
+    // (`…/doc/a.md#install-the-sdk`), so blame the proposal key for THAT
+    // section rather than the document-level field of the same name — which
+    // would drop an innocent value and leave the offending one written.
+    const hash = finding.focusNode.indexOf("#");
+    const slug = hash === -1 ? undefined : finding.focusNode.slice(hash + 1);
+    const pick = (leaf: string): string[] => {
+      if (slug !== undefined) {
+        const dotted = `sections.${slug}.${leaf}`;
+        if (proposed.has(dotted)) return [dotted];
+        // A section finding that the proposal did not cause: say nothing, so
+        // the caller's "cannot pin it" fallback decides.
+        return [];
+      }
+      return proposed.has(leaf) ? [leaf] : [];
+    };
+    const hierarchy = ["broader", "narrower"].flatMap(pick);
     if (finding.path === `${NS.skos}prefLabel`) {
-      return proposed.has("label") ? ["label"] : [];
+      return pick("label");
     }
     if (finding.message.includes("cycle")) return hierarchy;
     if (finding.path === `${NS.skos}broader`) return hierarchy;
     if (finding.path === `${NS.skos}narrower`) return hierarchy;
     if (finding.path === `${NS.skos}related`) {
-      return proposed.has("related-concepts") ? ["related-concepts"] : [];
+      return pick("related-concepts");
     }
     // Negative-scope disjointness (ADR 01014/01015): the finding sits on the
     // negative predicate's shape. Drop the proposed side of the conflict,
     // preferring the negative when both were proposed.
     if (finding.path === DOCKG_NOT_APPLICABLE_TO_VARIANT) {
-      if (proposed.has("not-applicable-to")) return ["not-applicable-to"];
-      if (proposed.has("applies-to")) return ["applies-to"];
-      return [];
+      const negative = pick("not-applicable-to");
+      if (negative.length > 0) return negative;
+      return pick("applies-to");
     }
     if (finding.path === DOCKG_NOT_SOFTWARE_SUBJECT) {
-      if (proposed.has("not-about-product-aspect"))
-        return ["not-about-product-aspect"];
-      if (proposed.has("about-product-aspect")) return ["about-product-aspect"];
-      return [];
+      const negative = pick("not-about-product-aspect");
+      if (negative.length > 0) return negative;
+      return pick("about-product-aspect");
     }
     return []; // unattributable — caller rejects everything guarded
   }
@@ -190,8 +214,14 @@ export class FillGuard {
   ): Promise<VetResult> {
     const current = { ...values };
     const rejected: Array<{ field: string; reason: string }> = [];
+    // Match on the LEAF, so `sections.<slug>.applies-to` is guarded exactly as
+    // `applies-to` is. Keying on the bare name alone let every section-level
+    // proposal skip the simulation entirely (ADR 01032).
+    const guardedLeaves = new Set<string>(GUARDED_FIELDS);
     const guarded = (): string[] =>
-      GUARDED_FIELDS.filter((f) => current[f] !== undefined);
+      Object.keys(current).filter(
+        (f) => current[f] !== undefined && guardedLeaves.has(leafOf(f)),
+      );
     if (guarded().length === 0) return { values: current, rejected };
 
     const baseline = await this.baseline();

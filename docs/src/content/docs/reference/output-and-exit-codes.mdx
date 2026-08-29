@@ -63,6 +63,12 @@ operation, not errors. Only a per-document `error` status exits `1`. This is del
 orchestrating agent does not treat a normal run as a failure — but it means you must read the
 report rather than the exit code to know what was written.
 
+**`fill` with an unenforceable cost cap.** A cap needs a known price; against a model dockg has no
+price for, spend cannot be totalled and the cap cannot be applied. That warns on stderr and exits
+`0`, because dockg cannot tell a free model from an expensive one and refusing would break the
+local and mock paths that genuinely cost nothing. The report carries
+`"budget": "unpriceable"` — read that field, not `costUsd`, to know whether a limit was in force.
+
 <Aside type="caution" title="An empty graph passes every coverage gate">
   Coverage over zero documents is vacuously 100%. A misconfigured `inputs` glob therefore produces
   a green gate that checked nothing. Assert the document count too.
