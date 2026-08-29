@@ -14,7 +14,13 @@ import { COVERAGE_FIELD_NAMES } from "./coverage.js";
 // Pure data module (no transformers import), so config stays Node-light.
 import { DEFAULT_MODEL as DEFAULT_EMBED_MODEL } from "../embed/types.js";
 
-export type ProviderName = "anthropic" | "openai" | "claude-cli" | "mock";
+export type ProviderName =
+  | "anthropic"
+  | "openai"
+  | "claude-cli"
+  /** In-process local model via node-llama-cpp: no key, no network, no spend. */
+  | "llama-cpp"
+  | "mock";
 
 export type DeriveSource =
   | "frontmatter"

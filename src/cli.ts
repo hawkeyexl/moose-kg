@@ -146,7 +146,7 @@ program
   )
   .option(
     "--provider <name>",
-    "Provider: anthropic | openai | claude-cli | mock",
+    "Provider: anthropic | openai | claude-cli | llama-cpp | mock",
   )
   .option("--model <model>", "Model override")
   .action(async (globs: string[], opts: Record<string, unknown>) => {

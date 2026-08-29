@@ -107,7 +107,7 @@ Section coverage is reported but never gated, so it has no threshold key. See
 
 | Key | Type | Default | Notes |
 |---|---|---|---|
-| `fill.provider` | enum | `anthropic` | `anthropic`, `openai`, `claude-cli`, `mock`. |
+| `fill.provider` | enum | `anthropic` | `anthropic`, `openai`, `claude-cli`, `llama-cpp`, `mock`. `llama-cpp` runs a local model in-process — no key, no network, no spend — and requires an explicit `fill.model`. |
 | `fill.model` | string | `null` | Provider default. |
 | `fill.apiKeyEnv` | string | `null` | The **name** of the env var, not the key. |
 | `fill.baseUrl` | string | `https://api.openai.com/v1` | Any OpenAI-compatible endpoint. |

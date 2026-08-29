@@ -65,7 +65,7 @@ provenance:
 
 # LLM settings for \`dockg fill\` (SKOS frontmatter proposals).
 fill:
-  provider: anthropic          # anthropic | openai | claude-cli | mock
+  provider: anthropic          # anthropic | openai | claude-cli | llama-cpp | mock
   # model: claude-sonnet-4-5   # provider default when omitted
   # apiKeyEnv: ANTHROPIC_API_KEY
   temperature: 0

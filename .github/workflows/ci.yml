@@ -198,3 +198,54 @@ jobs:
       # different ONNX backends and cannot be made to run the same one.
       - name: Cross-platform ranking agreement
         run: npm run test:real:cross
+
+  # `dockg fill` against a real OpenAI-compatible server (ADR 01031).
+  #
+  # Ollama, not a paid key: it maps response_format json_schema onto its native
+  # format field, which llama-server compiles to a GBNF grammar — so the
+  # structured-output mechanism OpenAICompatProvider depends on is genuinely
+  # applied. Its Anthropic-compatible endpoint accepts tool_choice and never
+  # reads it, so the same test there would be green and prove nothing; that path
+  # stays a named exception in ADR 01026.
+  fill-live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm install -g npm@^11.6.3
+      - run: npm ci
+
+      # ~1.3 GB. A cold pull is 8-12 minutes and a restore is well under one,
+      # so the cache is not optional. Keyed by model so changing it misses
+      # rather than silently testing the old one.
+      - name: Cache the model
+        uses: actions/cache@v4
+        with:
+          path: ~/.ollama/models
+          key: ollama-llama3.2-1b
+
+      - name: Install and start Ollama
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          ollama serve &
+          # Backgrounding the server and pulling immediately races it, so poll
+          # until it answers before going on.
+          for _ in $(seq 1 60); do
+            curl -sf http://localhost:11434/api/version >/dev/null && break
+            sleep 1
+          done
+          curl -sf http://localhost:11434/api/version
+
+      - run: ollama pull llama3.2:1b
+
+      - run: npm run build
+      - run: npm run test:real:fill
+        env:
+          OLLAMA_BASE_URL: http://localhost:11434/v1
+          OLLAMA_MODEL: llama3.2:1b
+          # Ollama ignores the value; the provider needs the variable to exist.
+          OLLAMA_API_KEY: ollama

@@ -113,9 +113,18 @@ gotcha, a decision, a convention — record it **in the repo, in the same change
   that throws on every real Node call, and mocks certified it for a whole release
   ([ADR 01025](adrs/01025-embedder-cross-platform-reality.md)). Where a mock stands in for a
   third-party API, the real one must be exercised **somewhere**: `test/real/` holds those,
-  excluded from `npm test` (`vitest.config.ts`), run by the `embed-real` CI job with
-  `npm run test:real` and `npm run test:real:cross`. Adding a mock for an external library
-  means adding the real-path test in the same change.
+  excluded from `npm test` (`vitest.config.ts`), run by the `embed-real` and `fill-live` CI jobs
+  (`test:real`, `test:real:cross`, `test:real:fill`). Adding a mock for an external library means
+  adding the real-path test in the same change — and where that is impossible, naming the exception
+  in [ADR 01026](adrs/01026-exercise-every-third-party.md) with its reason.
+  `vitest.config.ts` sets `INFERENCE_NO_AUTO_INSTALL`, because the inference library installs
+  `node-llama-cpp` on demand: without it, a test that reached the local provider by accident would
+  download from the network.
+- **A green run against a server that ignores the constraint proves nothing.** Ollama covers the
+  `openai` provider for real — it compiles `response_format: json_schema` to a GBNF grammar — but
+  accepts `tool_choice` and never reads it, which is the entire mechanism the `anthropic` provider
+  depends on. That path stays an exception rather than gaining a test that would be green, hollow,
+  and intermittently red ([ADR 01031](adrs/01031-exercising-the-llm-providers.md)).
 - **LF everywhere.** [.gitattributes](.gitattributes) declares `* text=auto eol=lf`, so the
   object store and every working tree are LF on every platform regardless of a contributor's
   global `core.autocrlf`. Exemptions use `-text` and **must stay below** the `*` rule — the last

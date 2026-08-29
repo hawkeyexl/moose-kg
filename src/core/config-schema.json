@@ -208,7 +208,7 @@
       "additionalProperties": false,
       "properties": {
         "provider": {
-          "enum": ["anthropic", "openai", "claude-cli", "mock"]
+          "enum": ["anthropic", "openai", "claude-cli", "llama-cpp", "mock"]
         },
         "model": {
           "type": "string",
