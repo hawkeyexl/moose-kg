@@ -29,7 +29,52 @@ than reported.
 | `updated` | `lastmod`, `modified` | `dcterms:modified` |
 | `lang` | `language` | `dcterms:language` |
 | `tags` | `keywords` | `dcterms:subject`, minting a `skos:Concept` per value |
-| `generatedBy` | | `prov:wasGeneratedBy` a generation activity |
+| `generated-by` | | `prov:wasGeneratedBy` a generation activity |
+
+### Page-level twins of `kg` fields
+
+Five facts can be stated at either altitude. **The deeper declaration wins, per fact** — a `kg`
+field that is present replaces its page-level twin rather than adding to it — and where the block
+is silent, the page-level field feeds the graph.
+
+| Page-level key | `kg` twin | Emits |
+|---|---|---|
+| `type` | `kg.type` | `iirds:has-topic-type`, through the mapping below |
+| `concepts` | `kg.concepts` | `dcterms:subject` |
+| `applies-to` | `kg.applies-to` | `iirds:relates-to-product-variant` |
+| `not-applicable-to` | `kg.not-applicable-to` | `dockg:notApplicableToVariant` |
+| `supersedes` | `kg.revision-of` | `prov:wasRevisionOf` |
+
+The page's `type` is an open vocabulary; `kg.type` is a closed iiRDS enum. When the block is
+silent, these five page types derive one — and **any other value derives nothing**, rather than
+inventing an iiRDS term:
+
+| Page `type` | Derived `kg.type` |
+|---|---|
+| `how-to` | `task` |
+| `tutorial` | `learning` |
+| `explanation` | `concept` |
+| `reference` | `reference` |
+| `troubleshooting` | `troubleshooting` |
+
+```md title="docs/upgrading.md"
+---
+title: Upgrading
+type: how-to
+applies-to: SP-X100
+concepts: [upgrade]
+supersedes: [getting-started.md]
+---
+```
+
+That page derives `iirds:has-topic-type iirds:GenericTask`, a product variant, a subject concept,
+and a revision edge — with no `kg` block at all.
+
+<Aside type="note" title="`tags` is not a twin">
+  `tags`/`keywords` is dockg's own derive source and a different fact from `concepts`, so it is
+  unioned in rather than replaced. A page with both `tags` and `kg.concepts` emits subjects from
+  each.
+</Aside>
 
 ```md title="docs/getting-started.md"
 ---
@@ -46,25 +91,36 @@ tags:
 
 ## The `kg` block
 
-Validated against `schemas/frontmatter-0.8.json`, which ships in the npm package. Unknown keys
-inside `kg` are an error.
+Validated against `schemas/docmeta-kg-1.0.0-proposal.1.json`, which ships in the npm package.
+Unknown keys inside `kg` are an error.
+
+<Aside type="note" title="The `kg` vocabulary is docmeta's, not dockg's">
+  `kg` is [`docmeta:kg`](https://hawkeyexl.github.io/docmeta/), one of the common metadata
+  vocabularies docmeta publishes. dockg implements graph behavior against it rather than defining
+  its own contract, so a grader, a graph builder, and a retrieval tool all read the same block.
+  dockg ships a byte-verbatim copy because the vocabulary is still in community review.
+</Aside>
+
+**One value is a string; many values are a list.** Every list field below also accepts a bare
+string, so `applies-to: SP-X100` and `applies-to: [SP-X100]` mean the same thing. An *empty* list
+is not a declaration and is rejected — `applies-to: []` used to read as "scoped, to nothing".
 
 ### SKOS: what the document is about
 
 | Key | Type | Emits |
 |---|---|---|
-| `prefLabel` | string | `foaf:primaryTopic` concept with `skos:prefLabel` |
-| `altLabels` | string[] | `skos:altLabel` |
-| `broader` | string[] | `skos:broader` |
-| `narrower` | string[] | `skos:narrower` |
-| `related` | string[] | `skos:related` |
-| `subjects` | string[] | `dcterms:subject` (behaves like `tags`) |
+| `label` | string | `foaf:primaryTopic` concept with `skos:prefLabel` |
+| `alt-labels` | string or list | `skos:altLabel` |
+| `broader` | string or list | `skos:broader` |
+| `narrower` | string or list | `skos:narrower` |
+| `related-concepts` | string or list | `skos:related` |
+| `concepts` | string or list | `dcterms:subject` (behaves like `tags`) |
 
-<Aside type="caution" title="Four of these require `prefLabel`">
-  `altLabels`, `broader`, `narrower`, and `related` all describe a concept, so the schema requires
-  `prefLabel` to exist as the thing being described. Using one without it is a validation error —
+<Aside type="caution" title="Four of these require `label`">
+  `alt-labels`, `broader`, `narrower`, and `related-concepts` all describe a concept, so the schema requires
+  `label` to exist as the thing being described. Using one without it is a validation error —
   and `dockg fill` applies the same rule, silently dropping relationship proposals when no
-  `prefLabel` exists or is being proposed alongside them.
+  `label` exists or is being proposed alongside them.
 </Aside>
 
 Concept IRIs are minted from the slugified label, so two spellings of the same term converge on
@@ -78,17 +134,17 @@ or re-serializes the vocabulary.
 
 | Key | Cardinality | Permitted values |
 |---|---|---|
-| `topicType` | single | `task`, `concept`, `reference`, `learning`, `troubleshooting`, `form` |
-| `softwareLifecyclePhase` | list | `administration`, `customization`, `update`, `deployment`, `integration`, `deinstallation` |
-| `softwareSubject` | list | `architecture`, `interface`, `system-requirement` |
-| `appliesTo` | list | Free labels — each mints an `iirds:ProductVariant` |
+| `type` | single | `task`, `concept`, `reference`, `learning`, `troubleshooting`, `form` |
+| `about-product-lifecycle` | list | `administration`, `customization`, `update`, `deployment`, `integration`, `deinstallation` |
+| `about-product-aspect` | list | `architecture`, `interface`, `system-requirement` |
+| `applies-to` | list | Free labels — each mints an `iirds:ProductVariant` |
 
 ### Negative scope
 
 | Key | Cardinality | Emits |
 |---|---|---|
-| `notApplicableTo` | list | `dockg:notApplicableToVariant` |
-| `notSoftwareSubject` | list | `dockg:notSoftwareSubject` — same three values as `softwareSubject` |
+| `not-applicable-to` | list | `dockg:notApplicableToVariant` |
+| `not-about-product-aspect` | list | `dockg:notSoftwareSubject` — same three values as `about-product-aspect` |
 
 Both are disjoint from their positive counterparts: asserting the same value on both sides is a
 SHACL **violation** and exits 1. See [open-world semantics](/dockg/concepts/open-world/) for why
@@ -97,38 +153,38 @@ these exist at all.
 ```md title="docs/interlock-reset.md"
 ---
 kg:
-  prefLabel: Interlock reset
+  label: Interlock reset
   broader:
     - Safety procedures
-  topicType: task
-  appliesTo:
+  type: task
+  applies-to:
     - SP-X100
-  notApplicableTo:
+  not-applicable-to:
     - SP-C40
 ---
 ```
 
 ### `sections`
 
-A map keyed by GitHub-style heading slug. Each value accepts `topicType`, `appliesTo`,
-`softwareLifecyclePhase`, `softwareSubject`, `notApplicableTo`, `notSoftwareSubject`, and
-`subjects`.
+A map keyed by GitHub-style heading slug. Each value accepts `type`, `applies-to`,
+`about-product-lifecycle`, `about-product-aspect`, `not-applicable-to`, `not-about-product-aspect`, and
+`concepts`.
 
 ```md title="docs/maintenance.md"
 ---
 kg:
   sections:
     reset-the-interlock:
-      topicType: task
-      appliesTo:
+      type: task
+      applies-to:
         - SP-X100
 ---
 ```
 
 Two rules worth stating plainly:
 
-- **Nothing is inherited.** A section does not pick up the document's `topicType` or `appliesTo`.
-- **`prefLabel` and the SKOS hierarchy are not permitted** per section — they describe a concept,
+- **Nothing is inherited.** A section does not pick up the document's `type` or `applies-to`.
+- **`label` and the SKOS hierarchy are not permitted** per section — they describe a concept,
   which is a document-level notion.
 
 A key matching no heading emits `dockg:brokenSectionRef` and is reported by `dockg stats`.
@@ -137,9 +193,9 @@ A key matching no heading emits `dockg:brokenSectionRef` and is reported by `doc
 
 | Key | Type | Emits |
 |---|---|---|
-| `revisionOf` | string[] | `prov:wasRevisionOf` |
-| `derivedFrom` | string[] | `prov:wasDerivedFrom`; unresolved targets become `dockg:brokenLink` |
-| `generatedBy` | string | `prov:wasGeneratedBy`, associating the model as a `prov:SoftwareAgent` |
+| `revision-of` | string or list | `prov:wasRevisionOf` |
+| `derived-from` | string or list | `prov:wasDerivedFrom`; unresolved targets become `dockg:brokenLink` |
+| `generated-by` | string | `prov:wasGeneratedBy`, associating the model as a `prov:SoftwareAgent` |
 | `provenance` | object[] | Written by `dockg fill` — see below |
 
 ### `provenance` entries
@@ -149,36 +205,73 @@ block is the outstanding-review queue rather than a permanent record.
 
 | Field | Required | Notes |
 |---|---|---|
-| `generatedBy` | yes | The model that proposed the fields |
+| `generated-by` | yes | The model that proposed the fields |
 | `fields` | | Which of the twelve fillable fields it proposed |
 | `confidence` | | Per-field score, 0–1, rounded to two decimals |
 
 ```md title="docs/api-keys.md"
 ---
 kg:
-  prefLabel: API keys
+  label: API keys
   provenance:
-    - generatedBy: claude-opus-4-6
+    - generated-by: claude-opus-4-6
       fields:
-        - prefLabel
-        - topicType
+        - label
+        - type
       confidence:
-        prefLabel: 0.92
-        topicType: 0.81
+        label: 0.92
+        type: 0.81
 ---
 ```
 
 ## The twelve fillable fields
 
-`fill.fields` restricts what `dockg fill` may ever propose. The full set: `prefLabel`,
-`altLabels`, `broader`, `narrower`, `related`, `subjects`, `topicType`, `appliesTo`,
-`softwareLifecyclePhase`, `softwareSubject`, `notApplicableTo`, `notSoftwareSubject`.
+`fill.fields` restricts what `dockg fill` may ever propose. The full set: `label`,
+`alt-labels`, `broader`, `narrower`, `related-concepts`, `concepts`, `type`, `applies-to`,
+`about-product-lifecycle`, `about-product-aspect`, `not-applicable-to`, `not-about-product-aspect`.
 
 ## Schema versions
 
-`schemas/frontmatter-0.1.json` through `-0.8.json` are all published and all immutable. `0.8` is
-the default. Point `validate.schemas` at an older version to pin, and expect evolution to arrive
-as a new file rather than an edit to an existing one.
+`schemas/docmeta-kg-1.0.0-proposal.1.json` is the default. Point `validate.schemas` at another
+file to pin, and expect evolution to arrive as a new file rather than an edit to an existing one —
+every published schema here is immutable.
+
+`schemas/frontmatter-0.1.json` through `-0.8.json` are dockg's earlier, self-hosted contract. They
+remain published and pinnable, but they are **not** compatible with the `kg` block above: they use
+camelCase spellings (`prefLabel`, `subjects`, `topicType`, `appliesTo`, `softwareSubject`) that the
+current schema rejects, and `dockg build` no longer derives from them.
+
+### Migrating from 0.8
+
+| 0.8 | Now |
+|---|---|
+| `prefLabel` | `label` |
+| `altLabels` | `alt-labels` |
+| `related` | `related-concepts` |
+| `subjects` | `concepts` |
+| `topicType` | `type` |
+| `appliesTo` | `applies-to` |
+| `softwareLifecyclePhase` | `about-product-lifecycle` |
+| `softwareSubject` | `about-product-aspect` |
+| `notApplicableTo` | `not-applicable-to` |
+| `notSoftwareSubject` | `not-about-product-aspect` |
+| `revisionOf` / `derivedFrom` | `revision-of` / `derived-from` |
+| `kg.generatedBy` | page-level `generated-by` |
+| `provenance:` as a single object | a list, with `generatedBy` → `generated-by` |
+
+`broader` and `narrower` are unchanged.
+
+<Aside type="caution" title="Your `dockg.config.yaml` needs the same rename">
+  Two config keys name these fields and break with them:
+  `fill.fields` (its values are the twelve fillable field names) and the
+  `stats.coverageThreshold` map. A stale spelling in either is a config error
+  (exit 2), not a warning — `fields: [prefLabel]` reports
+  `must be equal to one of the allowed values`.
+</Aside>
+
+`dockg fill` refuses a document whose `kg.provenance` is still the single-object form rather than
+overwriting it, because that write would drop the recorded model's attribution. Convert it to a
+one-entry list first.
 
 <Aside type="caution" title="Only YAML frontmatter can be written">
   `dockg fill` edits YAML frontmatter and preserves the body byte-for-byte. A TOML or JSON

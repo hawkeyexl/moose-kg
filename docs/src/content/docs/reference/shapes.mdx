@@ -43,7 +43,7 @@ Every node shape sets `sh:closed true`, targeting `dockg:Document`, `dockg:Secti
 | A concept carries `skos:prefLabel` | violation | Unlabelled nodes |
 | A concept carries `skos:inScheme` | violation | Concepts outside any scheme |
 | Relation targets are typed concepts | violation | Dangling hierarchy |
-| One concept, one `prefLabel` spelling | **warning** | Silent authoring drift after slug convergence |
+| One concept, one `skos:prefLabel` spelling | **warning** | Silent authoring drift after slug convergence |
 
 The last one is a warning because convergence is a designed feature: two spellings of a term become
 one node on purpose. The warning tells you two documents disagree about spelling, not that the graph

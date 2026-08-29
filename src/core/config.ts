@@ -33,34 +33,34 @@ export type GitMode = boolean | "auto";
 
 export type FillField =
   // SKOS concept fields
-  | "prefLabel"
-  | "altLabels"
+  | "label"
+  | "alt-labels"
   | "broader"
   | "narrower"
-  | "related"
-  | "subjects"
+  | "related-concepts"
+  | "concepts"
   // iiRDS typing + negative scope (ADR 01015)
-  | "topicType"
-  | "appliesTo"
-  | "softwareLifecyclePhase"
-  | "softwareSubject"
-  | "notApplicableTo"
-  | "notSoftwareSubject";
+  | "type"
+  | "applies-to"
+  | "about-product-lifecycle"
+  | "about-product-aspect"
+  | "not-applicable-to"
+  | "not-about-product-aspect";
 
 /** Every fillable field, in a stable order — the default `fill.fields`. */
 export const ALL_FILL_FIELDS: FillField[] = [
-  "prefLabel",
-  "altLabels",
+  "label",
+  "alt-labels",
   "broader",
   "narrower",
-  "related",
-  "subjects",
-  "topicType",
-  "appliesTo",
-  "softwareLifecyclePhase",
-  "softwareSubject",
-  "notApplicableTo",
-  "notSoftwareSubject",
+  "related-concepts",
+  "concepts",
+  "type",
+  "applies-to",
+  "about-product-lifecycle",
+  "about-product-aspect",
+  "not-applicable-to",
+  "not-about-product-aspect",
 ];
 
 export interface Pricing {

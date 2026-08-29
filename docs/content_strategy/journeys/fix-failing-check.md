@@ -76,11 +76,11 @@ out, at the bottom, is enough.
 Drawn from what dockg actually emits, not from what seems likely:
 
 - A required frontmatter field missing, or the wrong type.
-- A `kg` relationship field used without `prefLabel`, which the schema requires as its subject.
-- A value outside a closed vocabulary — `topicType`, `softwareLifecyclePhase`, `softwareSubject`.
+- A `kg` relationship field used without `label`, which the schema requires as its subject.
+- A value outside a closed vocabulary — `type`, `about-product-lifecycle`, `about-product-aspect`.
 - A `kg.sections` key matching no heading, usually because someone renamed the heading.
 - A `broader`/`narrower` cycle, or a `related` conflict, introduced by one page in a chain.
-- An `appliesTo` and `notApplicableTo` contradiction on the same node.
+- An `applies-to` and `not-applicable-to` contradiction on the same node.
 - A broken internal link or an unresolvable derivation target.
 - Exit-2 cases they should hand back: TOML or JSON frontmatter, a missing graph, git unavailable
   under a required provenance setting.

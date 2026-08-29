@@ -28,28 +28,36 @@ describe("dockg validate", () => {
       join(root, "test", "fixtures", "corpus"),
     );
     expect(status).toBe(0);
-    expect(stdout).toContain("4 files checked");
+    expect(stdout).toContain("5 files checked");
   });
 
-  it("accepts kg.revisionOf via the bundled 0.3 schema, rejects malformed shapes", () => {
+  it("takes kg.revision-of as a list or a bare string, and rejects an empty list", () => {
     const dir = mkdtempSync(join(tmpdir(), "dockg-revof-"));
     writeFileSync(
       join(dir, "dockg.config.yaml"),
       'version: 1\ninputs: ["*.md"]\n',
     );
     writeFileSync(
-      join(dir, "good.md"),
-      "---\nkg:\n  revisionOf: [old/guide.md]\n---\n\n# G\n",
+      join(dir, "list.md"),
+      "---\nkg:\n  revision-of: [old/guide.md]\n---\n\n# G\n",
+    );
+    // The single-string shorthand docmeta:kg widened over dockg 0.8: one value
+    // is a string, many values are a list. This used to be a rejection.
+    writeFileSync(
+      join(dir, "shorthand.md"),
+      "---\nkg:\n  revision-of: old/guide.md\n---\n\n# G\n",
     );
     expect(run(["validate"], dir).status).toBe(0);
 
+    // …but an empty list is not a declaration. `minItems: 1` closes the hole
+    // where `revision-of: []` read as "revised something" and named nothing.
     writeFileSync(
       join(dir, "bad.md"),
-      "---\nkg:\n  revisionOf: old/guide.md\n---\n\n# B\n",
+      "---\nkg:\n  revision-of: []\n---\n\n# B\n",
     );
     const bad = run(["validate"], dir);
     expect(bad.status).toBe(1);
-    expect(bad.stdout).toMatch(/revisionOf/);
+    expect(bad.stdout).toMatch(/revision-of/);
   });
 
   it("fails on malformed kg frontmatter with exit 1 and named errors", () => {
@@ -58,11 +66,11 @@ describe("dockg validate", () => {
       join(root, "test", "fixtures", "invalid"),
     );
     expect(status).toBe(1);
-    expect(stdout).toMatch(/prefLabel/);
+    expect(stdout).toMatch(/label/);
     expect(stdout).toMatch(/bogus/);
   });
 
-  it("accepts negative-scope fields and rejects an out-of-enum notSoftwareSubject (0.7)", () => {
+  it("accepts negative-scope fields and rejects an out-of-enum not-about-product-aspect", () => {
     const dir = mkdtempSync(join(tmpdir(), "dockg-negscope-"));
     writeFileSync(
       join(dir, "dockg.config.yaml"),
@@ -70,16 +78,16 @@ describe("dockg validate", () => {
     );
     writeFileSync(
       join(dir, "good.md"),
-      "---\nkg:\n  notApplicableTo: [SP-X300]\n  notSoftwareSubject: [architecture]\n---\n\n# G\n",
+      "---\nkg:\n  not-applicable-to: [SP-X300]\n  not-about-product-aspect: [architecture]\n---\n\n# G\n",
     );
     expect(run(["validate"], dir).status).toBe(0);
 
     writeFileSync(
       join(dir, "bad.md"),
-      "---\nkg:\n  notSoftwareSubject: [nonsense]\n---\n\n# B\n",
+      "---\nkg:\n  not-about-product-aspect: [nonsense]\n---\n\n# B\n",
     );
     const bad = run(["validate"], dir);
     expect(bad.status).toBe(1);
-    expect(bad.stdout).toMatch(/notSoftwareSubject/);
+    expect(bad.stdout).toMatch(/not-about-product-aspect/);
   });
 });

@@ -20,11 +20,11 @@ steps:
   - stage: act
     doc: /dockg/model/variants/
     exists: true
-    note: "topicType, appliesTo, softwareLifecyclePhase, softwareSubject — values and emitted IRIs."
+    note: "type, applies-to, about-product-lifecycle, about-product-aspect — values and emitted IRIs."
   - stage: act
     doc: /dockg/model/variants/
     exists: true
-    note: "notApplicableTo and notSoftwareSubject: when the stronger claim is required."
+    note: "not-applicable-to and not-about-product-aspect: when the stronger claim is required."
   - stage: verify
     doc: /dockg/model/variants/
     exists: true
@@ -32,7 +32,7 @@ steps:
   - stage: verify
     doc: /dockg/govern/
     exists: true
-    note: "check catches an appliesTo/notApplicableTo contradiction via sh:disjoint."
+    note: "check catches an applies-to/not-applicable-to contradiction via sh:disjoint."
   - stage: extend
     doc: /dockg/reference/vocabulary/
     exists: true
@@ -51,20 +51,20 @@ Two things make it hard, and both are semantic rather than mechanical.
 
 ## The open-world problem, which comes first
 
-**Absence of `appliesTo` means unknown, not "does not apply."** A query that treats untagged
+**Absence of `applies-to` means unknown, not "does not apply."** A query that treats untagged
 topics as excluded will silently return a set that is wrong in the dangerous direction, and it
 will look right — the results are plausible, the count is reasonable, and nothing errors.
 
 This is why the journey's first step is a concepts page rather than a modeling page. A reader who
-starts writing `appliesTo` values without this framing will build a scoping scheme that fails
+starts writing `applies-to` values without this framing will build a scoping scheme that fails
 exactly when it matters. The mitigation is dockg's negative predicates: when the stronger claim
-is true, say it explicitly with `notApplicableTo`, and query the negative edge rather than
+is true, say it explicitly with `not-applicable-to`, and query the negative edge rather than
 inferring from silence.
 
 ## The recognition problem, which comes second
 
-Ines will judge the tool by whether its vocabularies are real. dockg's `topicType`,
-`softwareLifecyclePhase`, and `softwareSubject` are closed sets bound to **published iiRDS
+Ines will judge the tool by whether its vocabularies are real. dockg's `type`,
+`about-product-lifecycle`, and `about-product-aspect` are closed sets bound to **published iiRDS
 IRIs** — referenced, never vendored or re-serialized. Showing the emitted IRI beside the
 frontmatter value is the credibility moment for this reader, and it is cheap to do.
 
@@ -76,7 +76,7 @@ frontmatter value is the credibility moment for this reader, and it is cheap to 
    tidiness, and not as a default.
 4. A scoped traversal that proves the set, including a demonstration of what was excluded and
    why. Verifying only what came back misses the failure this journey exists to prevent.
-5. The contradiction check: a node carrying both `appliesTo: X` and `notApplicableTo: X` is a
+5. The contradiction check: a node carrying both `applies-to: X` and `not-applicable-to: X` is a
    violation via SHACL disjointness. This is the defect a human reviewer does not catch and an
    auditor does.
 

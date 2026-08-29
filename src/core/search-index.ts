@@ -88,7 +88,7 @@ function joinLabels(values: string[]): string | undefined {
  *
  * Only a document with *no* sections gets body text, and its body is the whole
  * file — frontmatter included, unless it is stripped here. That block is
- * machinery, not prose: left in, a query for `prefLabel` or `altLabels` matches
+ * machinery, not prose: left in, a query for `label` or `alt-labels` matches
  * every sectionless document, and the artifact carries YAML nobody can read.
  * Section slices start at their heading, so they never see it.
  */

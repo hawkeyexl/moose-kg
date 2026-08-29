@@ -15,6 +15,7 @@ import {
   applyKgFields,
   existingKgFields,
   existingProvenance,
+  hasLegacyProvenance,
   frontmatterKind,
   type ProvenanceEntry,
 } from "../core/frontmatter-edit.js";
@@ -87,12 +88,12 @@ export interface FillReport {
   exitCode: 0 | 1;
 }
 
-/** SKOS relation fields that require a prefLabel to attach to. */
+/** SKOS relation fields that require a `label` to attach to. */
 const RELATION_FIELDS = [
-  "altLabels",
+  "alt-labels",
   "broader",
   "narrower",
-  "related",
+  "related-concepts",
 ] as const;
 
 /** A record's `{field → number}` sub-map, ignoring non-number entries. */
@@ -135,7 +136,7 @@ function dropFieldsFromEntry(
       )
     : undefined;
   return {
-    generatedBy: e.generatedBy,
+    "generated-by": e["generated-by"],
     fields: keptFields,
     ...(confidence ? { confidence } : {}),
   };
@@ -329,20 +330,19 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
         .map(([k, v]) => [k, Array.isArray(v) ? [...new Set(v)] : v]),
     );
 
-    // The 0.1 schema requires prefLabel alongside any label/relation field
+    // docmeta:kg requires `label` alongside any alt-label/relation field
     // (dependentRequired) — never write output our own validate rejects.
-    // Rechecked after the guardrail: rejecting prefLabel takes the relation
+    // Rechecked after the guardrail: rejecting `label` takes the relation
     // fields down with it.
-    const gatePrefLabel = (): void => {
-      const hasPrefLabel =
-        present.has("prefLabel") ||
-        (typeof narrowed["prefLabel"] === "string" &&
-          narrowed["prefLabel"].length > 0);
-      if (!hasPrefLabel) {
+    const gateLabel = (): void => {
+      const hasLabel =
+        present.has("label") ||
+        (typeof narrowed["label"] === "string" && narrowed["label"].length > 0);
+      if (!hasLabel) {
         for (const field of RELATION_FIELDS) delete narrowed[field];
       }
     };
-    gatePrefLabel();
+    gateLabel();
 
     // Confidence gate (ADR 01015): drop any field the model scored below
     // minConfidence (or did not score at all — no score means no write). This
@@ -361,7 +361,7 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
         delete narrowed[field];
       }
     }
-    if (lowConfidence.length > 0) gatePrefLabel();
+    if (lowConfidence.length > 0) gateLabel();
     const lowConf = lowConfidence.length > 0 ? { lowConfidence } : {};
 
     // Graph guardrail: drop any field whose triples would violate the
@@ -375,7 +375,7 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
       if (vetted.rejected.length > 0) {
         rejected = vetted.rejected.map((r) => r.field);
         for (const field of rejected) delete narrowed[field];
-        gatePrefLabel();
+        gateLabel();
       }
     }
 
@@ -405,10 +405,21 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
     // field this run just overwrote (--force), so attribution never lies.
     const values: Record<string, unknown> = { ...narrowed };
     if (config.fill.writeProvenance) {
+      // `provenance` is overwritten wholesale below, and the deprecated
+      // single-object shape cannot be read back (ADR 01023) — so writing over
+      // it would silently discard another model's outstanding review record.
+      // Refuse the file and name the migration instead.
+      if (hasLegacyProvenance(content)) {
+        throw new DockgError(
+          `${path}: kg.provenance is the deprecated single-object form, which docmeta:kg dropped. ` +
+            `Filling would overwrite it and lose its attribution — convert it to a one-entry list ` +
+            `(a leading "- ", and generatedBy renamed to generated-by) first.`,
+        );
+      }
       const prior = existingProvenance(content);
-      const mine = prior.find((e) => e.generatedBy === identity.model);
+      const mine = prior.find((e) => e["generated-by"] === identity.model);
       const others = prior
-        .filter((e) => e.generatedBy !== identity.model)
+        .filter((e) => e["generated-by"] !== identity.model)
         .map((e) => dropFieldsFromEntry(e, realFields))
         .filter((e) => e.fields.length > 0);
       // Confidence rides in the entry too (ADR 01015): this run's scores for the
@@ -421,7 +432,7 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
         ...new Set([...(mine?.fields ?? []), ...realFields]),
       ].sort();
       const entry = {
-        generatedBy: identity.model,
+        "generated-by": identity.model,
         fields: fieldSet,
         confidence: Object.fromEntries(
           fieldSet
@@ -430,7 +441,7 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
         ),
       };
       values["provenance"] = [...others, entry].sort((a, b) =>
-        a.generatedBy < b.generatedBy ? -1 : 1,
+        a["generated-by"] < b["generated-by"] ? -1 : 1,
       );
     }
 

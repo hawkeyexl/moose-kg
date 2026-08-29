@@ -31,9 +31,7 @@ jobs:
           node-version: 24
           cache: npm
 
-      # npm install, not ci — see the note in ci.yml about the Windows-generated
-      # lock and rolldown's Linux-side optional deps.
-      - run: npm install
+      - run: npm ci
       - run: npm run build
 
       # The strategy is only useful while its invariants hold: every
@@ -73,7 +71,10 @@ jobs:
           cache-dependency-path: docs/package-lock.json
 
       # The docs site is its own npm project, so the published dockg package never
-      # carries a docs toolchain.
+      # carries a docs toolchain. Still `npm install` where the root job uses
+      # `npm ci`: the root lock was verified against a strict install when that
+      # switch was made (ADR 01023) and docs/package-lock.json was not, so this
+      # one stays loose until someone checks it the same way.
       - run: npm install
         working-directory: docs
       - run: npm run build

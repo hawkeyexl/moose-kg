@@ -118,7 +118,7 @@ describe("validateGraph", () => {
     ).toBe(true);
   });
 
-  it("warns (not fails) on prefLabel collisions from slug convergence", async () => {
+  it("warns (not fails) on skos:prefLabel collisions from slug convergence", async () => {
     const c = concept("configuration");
     const store = build([
       ...conformingTriples(),
@@ -275,13 +275,13 @@ describe("validateGraph", () => {
 
   it("accepts a reified fill-field entry with confidence (ADR 01015)", async () => {
     const activity = `${BASE}doc/docs/a.md#prov.kg-fill.m1`;
-    const entry = `${activity}.field.prefLabel`;
+    const entry = `${activity}.field.label`;
     const store = build([
       ...conformingTriples(),
       [activity, RDF_TYPE, `${NS.prov}Activity`],
       [activity, `${NS.prov}wasAssociatedWith`, `${BASE}agent/software/m1`],
       [activity, `${NS.dockg}filledFieldEntry`, entry],
-      [entry, `${NS.dockg}filledField`, { lit: "prefLabel" }],
+      [entry, `${NS.dockg}filledField`, { lit: "label" }],
       [entry, `${NS.dockg}confidence`, { lit: "0.9", dt: `${NS.xsd}decimal` }],
       [`${BASE}agent/software/m1`, RDF_TYPE, `${NS.prov}SoftwareAgent`],
       [`${BASE}agent/software/m1`, `${NS.foaf}name`, { lit: "m1" }],

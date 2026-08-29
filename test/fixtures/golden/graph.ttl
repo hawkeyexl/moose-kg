@@ -11,7 +11,7 @@
 
 <https://example.com/kg/activity/build> a prov:Activity ;
   prov:qualifiedAssociation <https://example.com/kg/activity/build.assoc.dockg> ;
-  prov:used <https://example.com/kg/doc/docs/configuration.md>, <https://example.com/kg/doc/docs/getting-started.md>, <https://example.com/kg/doc/docs/no-frontmatter.md>, <https://example.com/kg/doc/docs/windows-notes.md> ;
+  prov:used <https://example.com/kg/doc/docs/configuration.md>, <https://example.com/kg/doc/docs/getting-started.md>, <https://example.com/kg/doc/docs/harvest.md>, <https://example.com/kg/doc/docs/no-frontmatter.md>, <https://example.com/kg/doc/docs/windows-notes.md> ;
   prov:wasAssociatedWith <https://example.com/kg/agent/software/dockg> .
 
 <https://example.com/kg/activity/build.assoc.dockg> a prov:Association ;
@@ -20,6 +20,9 @@
 
 <https://example.com/kg/agent/person/jane-doe> a prov:Person ;
   foaf:name "Jane Doe" .
+
+<https://example.com/kg/agent/software/claude-sonnet-4-5> a prov:SoftwareAgent ;
+  foaf:name "claude-sonnet-4-5" .
 
 <https://example.com/kg/agent/software/dockg> a prov:SoftwareAgent ;
   foaf:name "dockg" ;
@@ -47,6 +50,10 @@
 <https://example.com/kg/concept/setup> a skos:Concept ;
   skos:inScheme <https://example.com/kg/scheme> ;
   skos:prefLabel "setup" .
+
+<https://example.com/kg/concept/upgrade> a skos:Concept ;
+  skos:inScheme <https://example.com/kg/scheme> ;
+  skos:prefLabel "upgrade" .
 
 <https://example.com/kg/doc/docs/configuration.md> a prov:Entity, dockg:Document ;
   iirds:has-subject iirdsSft:Interface ;
@@ -119,6 +126,31 @@
 <https://example.com/kg/doc/docs/getting-started.md#prov.attribution.jane-doe> a prov:Attribution ;
   prov:agent <https://example.com/kg/agent/person/jane-doe> ;
   prov:hadRole dockg:authorRole .
+
+<https://example.com/kg/doc/docs/harvest.md> a prov:Entity, dockg:Document ;
+  iirds:has-topic-type iirds:GenericTask ;
+  iirds:relates-to-product-variant <https://example.com/kg/product/sp-x100> ;
+  dcterms:description "Move an existing install to the current release." ;
+  dcterms:hasPart <https://example.com/kg/doc/docs/harvest.md#upgrading> ;
+  dcterms:references <https://example.com/kg/doc/docs/getting-started.md> ;
+  dcterms:subject <https://example.com/kg/concept/upgrade> ;
+  dcterms:title "Upgrading" ;
+  prov:wasGeneratedBy <https://example.com/kg/doc/docs/harvest.md#prov.generation> ;
+  prov:wasRevisionOf <https://example.com/kg/doc/docs/getting-started.md> ;
+  dockg:path "docs/harvest.md" .
+
+<https://example.com/kg/doc/docs/harvest.md#prov.generation> a prov:Activity ;
+  prov:qualifiedAssociation <https://example.com/kg/doc/docs/harvest.md#prov.generation.assoc.claude-sonnet-4-5> ;
+  prov:wasAssociatedWith <https://example.com/kg/agent/software/claude-sonnet-4-5> .
+
+<https://example.com/kg/doc/docs/harvest.md#prov.generation.assoc.claude-sonnet-4-5> a prov:Association ;
+  prov:agent <https://example.com/kg/agent/software/claude-sonnet-4-5> ;
+  prov:hadRole dockg:generatorRole .
+
+<https://example.com/kg/doc/docs/harvest.md#upgrading> a dockg:Section ;
+  dcterms:title "Upgrading" ;
+  dockg:level 1 ;
+  dockg:order 1 .
 
 <https://example.com/kg/doc/docs/no-frontmatter.md> a prov:Entity, dockg:Document ;
   dcterms:hasPart <https://example.com/kg/doc/docs/no-frontmatter.md#loose-notes> ;

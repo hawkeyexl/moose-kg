@@ -44,9 +44,10 @@ provenance:
   git: auto
   qualified: true
 
-# Schemas \`dockg validate\` checks via docmeta. Default: the frontmatter
-# schema bundled with dockg (schemas/frontmatter-0.8.json). Override with
-# file paths, URLs, or docmeta built-in ids:
+# Schemas \`dockg validate\` checks via docmeta. Default: docmeta's \`kg\`
+# vocabulary, vendored with dockg
+# (schemas/docmeta-kg-1.0.0-proposal.1.json). Override with file paths,
+# URLs, or docmeta built-in ids:
 # validate:
 #   schemas: ["./my-schema.json"]
 

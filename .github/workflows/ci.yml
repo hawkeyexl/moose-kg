@@ -19,11 +19,13 @@ jobs:
           node-version: 24
           cache: npm
 
-      # npm install, not ci: the committed lock is generated on Windows and
-      # omits the Linux-side optional deps of @napi-rs/wasm-runtime
-      # (@emnapi/core, @emnapi/runtime), which rolldown's wasm binding pulls
-      # in — a strict lock check can't be satisfied on both platforms.
-      - run: npm install
+      # `npm ci`, restored: the "platform-skewed lock" this used to work around
+      # was a misdiagnosis (ADR 01023). The lock records all fourteen rolldown
+      # bindings with their os/cpu, Linux included, and rolldown no longer ships
+      # a wasm32-wasi binding at all — so the @emnapi/* peers it once reached are
+      # not in the tree. The real variable was npm's own version: <=11.6.2
+      # dropped those entries on every OS, and 11.6.3 keeps them on every OS.
+      - run: npm ci
 
       # The husky commit-msg hook is the first line of defense, but it is
       # bypassable (--no-verify, the GitHub web editor, a clone that never ran

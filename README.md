@@ -49,11 +49,12 @@ error.
 | [Fix a failing check](https://hawkeyexl.github.io/dockg/fix/) | Decode an error and fix the page |
 | [Reference](https://hawkeyexl.github.io/dockg/reference/) | CLI, configuration, frontmatter, exit codes, embedding models |
 
-dockg's frontmatter schemas and SHACL shapes ship in the package, so any JSON Schema or SHACL
-tool can be pointed at them directly:
+The frontmatter schema and SHACL shapes ship in the package, so any JSON Schema or SHACL tool can
+be pointed at them directly. The `kg` block is [`docmeta:kg`](https://hawkeyexl.github.io/docmeta/),
+a common vocabulary docmeta publishes and dockg implements against:
 
 ```bash
-docmeta validate --schema node_modules/@hawkeyexl/dockg/schemas/frontmatter-0.8.json docs/
+docmeta validate --schema node_modules/@hawkeyexl/dockg/schemas/docmeta-kg-1.0.0-proposal.1.json docs/
 ```
 
 ## Contributing

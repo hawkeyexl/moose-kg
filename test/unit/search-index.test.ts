@@ -34,7 +34,7 @@ Other things.
 const LOOSE_MD = `---
 title: Loose
 kg:
-  prefLabel: Marmalade
+  label: Marmalade
 ---
 
 No headings besides the title. Mentions marmalade.
@@ -132,9 +132,11 @@ describe("buildSearchIndex", () => {
 
   it("strips frontmatter from a document's body text", () => {
     const loose = byId(build().entries, LOOSE);
-    // Frontmatter is machinery, not prose: indexed, a query for `prefLabel`
-    // matches every sectionless document.
-    expect(loose?.text).not.toContain("prefLabel");
+    // Frontmatter is machinery, not prose: indexed, a query for `alt-labels`
+    // would match every sectionless document. Asserted on a token that can
+    // only come from frontmatter — `label` alone also matches ordinary prose,
+    // so it would fail the moment this fixture's body mentioned one.
+    expect(loose?.text).not.toContain("alt-labels");
     expect(loose?.text).not.toContain("---");
     expect(loose?.text?.startsWith("No headings")).toBe(true);
   });

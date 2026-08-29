@@ -44,39 +44,39 @@ const enumArray = (values: string[], description: string) => ({
 
 /** Exported for the schema-sync drift guard (test/unit/schema-sync.test.ts). */
 export const FIELD_SCHEMAS: Record<FillField, Record<string, unknown>> = {
-  prefLabel: {
+  label: {
     type: "string",
     minLength: 1,
     description:
       "Preferred label of the single concept this document is primarily about.",
   },
-  altLabels: labelArray(
+  "alt-labels": labelArray(
     "Alternative labels: synonyms, abbreviations, common variants.",
   ),
   broader: labelArray("Labels of broader (parent) concepts."),
   narrower: labelArray("Labels of narrower (child) concepts."),
-  related: labelArray("Labels of associatively related concepts."),
-  subjects: labelArray("Subject labels for the document, like tags."),
-  topicType: {
+  "related-concepts": labelArray("Labels of associatively related concepts."),
+  concepts: labelArray("Subject labels for the document, like tags."),
+  type: {
     enum: TOPIC_TYPES,
     description:
       "iiRDS topic type — the functional kind of this page. Only if the page clearly fits one.",
   },
-  appliesTo: labelArray(
+  "applies-to": labelArray(
     "Product/variant names this page applies to. ONLY names the text explicitly states; never guess product names.",
   ),
-  softwareLifecyclePhase: enumArray(
+  "about-product-lifecycle": enumArray(
     LIFECYCLE_PHASES,
     "Software lifecycle phases this page covers, only if clearly evidenced.",
   ),
-  softwareSubject: enumArray(
+  "about-product-aspect": enumArray(
     SOFTWARE_SUBJECTS,
     "Software information subjects this page is about, only if clearly evidenced.",
   ),
-  notApplicableTo: labelArray(
+  "not-applicable-to": labelArray(
     "Product/variant names the text EXPLICITLY says this page does NOT apply to. Only with explicit textual evidence.",
   ),
-  notSoftwareSubject: enumArray(
+  "not-about-product-aspect": enumArray(
     SOFTWARE_SUBJECTS,
     "Software subjects the text EXPLICITLY says this page is NOT about. Only with explicit textual evidence.",
   ),
@@ -146,8 +146,8 @@ export const SYSTEM_PROMPT = [
   "",
   "For every field you propose a value for, include a `confidence` (0..1) and",
   "a one-sentence `reasoning` grounded in the text. Score honestly and",
-  "conservatively. Product/variant fields (appliesTo, notApplicableTo) and the",
-  "negative fields (notApplicableTo, notSoftwareSubject) require EXPLICIT",
+  "conservatively. Product/variant fields (applies-to, not-applicable-to) and the",
+  "negative fields (not-applicable-to, not-about-product-aspect) require EXPLICIT",
   "textual evidence — score them low and prefer to omit unless the page states",
   "them outright. A field with no value needs no confidence or reasoning.",
 ].join("\n");

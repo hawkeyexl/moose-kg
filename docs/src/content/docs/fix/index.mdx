@@ -40,7 +40,8 @@ A validation failure looks like this:
 
 ```
 ✗ bad-kg.md
-    /kg  must NOT have additional property 'bogus'  (line 3)  [/repo/schemas/frontmatter-0.8.json]
+    /kg  must NOT have additional property 'bogus'  (line 3)  [/repo/schemas/docmeta-kg-1.0.0-proposal.1.json]
+    /kg  must have property label when property alt-labels is present  (line 3)  [/repo/schemas/docmeta-kg-1.0.0-proposal.1.json]
 
 1 file checked, 0 passed, 1 failed, 2 errors
 ```
@@ -51,7 +52,7 @@ A validation failure looks like this:
 | `/kg` | Where in the frontmatter — here, inside the `kg:` block |
 | `must NOT have additional property 'bogus'` | The rule that fired |
 | `(line 3)` | Where the `kg:` block starts, not necessarily the offending line |
-| `[…frontmatter-0.8.json]` | The schema being enforced |
+| `[…docmeta-kg-1.0.0-proposal.1.json]` | The schema being enforced |
 
 A graph-level finding from `dockg check` looks different — it names a concept rather than a file,
 and lists the files responsible at the end:
@@ -77,41 +78,41 @@ line. Check the spelling against the [frontmatter reference](/dockg/reference/fr
   ---
   kg:
 -   bogus: true
-+   topicType: task
++   type: task
   ---
 ```
 
-### A relationship without `prefLabel`
+### A relationship without `label`
 
 ```
-/kg  must have property prefLabel when property altLabels is present
+/kg  must have property label when property alt-labels is present
 ```
 
-`altLabels`, `broader`, `narrower`, and `related` all describe a concept, so there has to be a
-concept to describe. Add the `prefLabel`, or remove the relationship.
+`alt-labels`, `broader`, `narrower`, and `related-concepts` all describe a concept, so there has to be a
+concept to describe. Add the `label`, or remove the relationship.
 
 ```diff lang="md" title="docs/guide.md"
   ---
   kg:
-+   prefLabel: Rate limiting
-    altLabels: [throttling]
++   label: Rate limiting
+    alt-labels: [throttling]
   ---
 ```
 
 ### A value outside a controlled vocabulary
 
 ```
-/kg/topicType  must be equal to one of the allowed values
+/kg/type  must be equal to one of the allowed values
 ```
 
-`topicType`, `softwareLifecyclePhase`, and `softwareSubject` accept fixed lists — they map onto a
+`type`, `about-product-lifecycle`, and `about-product-aspect` accept fixed lists — they map onto a
 published standard, so you cannot invent a value.
 
 ```diff lang="md" title="docs/guide.md"
   ---
   kg:
--   topicType: procedure
-+   topicType: task
+-   type: procedure
++   type: task
   ---
 ```
 
@@ -133,7 +134,7 @@ to match the new heading, or delete it.
     sections:
 -     install-the-cli:
 +     installation:
-        topicType: task
+        type: task
   ---
 
 - ## Install the CLI
@@ -154,7 +155,7 @@ published site — the repo may be missing
 ### Applicability that contradicts itself
 
 ```
-violation: … dockg:notApplicableToVariant — appliesTo and notApplicableTo share a value
+violation: … dockg:notApplicableToVariant — applies-to and not-applicable-to share a value
 ```
 
 A topic cannot both apply and not apply to the same product variant. Decide which is true and

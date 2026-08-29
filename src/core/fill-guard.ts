@@ -2,7 +2,7 @@
  * Graph guardrail for `dockg fill`: before a proposal is written to
  * frontmatter, simulate it in the derived graph and drop any field that
  * would violate the SHACL shapes contract — broader/narrower cycles,
- * related⨯broaderTransitive conflicts, prefLabel collisions. Accepted
+ * related⨯broaderTransitive conflicts, label collisions. Accepted
  * proposals fold into the guard's state so two docs in one run cannot
  * jointly corrupt the graph.
  */
@@ -27,20 +27,20 @@ const { namedNode, literal, quad } = DataFactory;
 /**
  * Proposal fields the guard simulates; others cannot break the shapes. The
  * SKOS relation fields can form cycles/collisions; the applicability fields can
- * form an appliesTo⨯notApplicableTo (or softwareSubject⨯notSoftwareSubject)
- * `sh:disjoint` conflict (ADR 01015). topicType/softwareLifecyclePhase carry
+ * form an applies-to⨯not-applicable-to (or about-product-aspect⨯not-about-product-aspect)
+ * `sh:disjoint` conflict (ADR 01015). type/about-product-lifecycle carry
  * only enum constraints, which the proposal JSON schema already enforces, so
  * they need no structural simulation.
  */
 const GUARDED_FIELDS = [
-  "prefLabel",
+  "label",
   "broader",
   "narrower",
-  "related",
-  "appliesTo",
-  "notApplicableTo",
-  "softwareSubject",
-  "notSoftwareSubject",
+  "related-concepts",
+  "applies-to",
+  "not-applicable-to",
+  "about-product-aspect",
+  "not-about-product-aspect",
 ] as const;
 
 /** Concept + iiRDS edges: the SKOS subgraph plus the applicability predicates,
@@ -152,25 +152,26 @@ export class FillGuard {
   ): string[] {
     const hierarchy = ["broader", "narrower"].filter((f) => proposed.has(f));
     if (finding.path === `${NS.skos}prefLabel`) {
-      return proposed.has("prefLabel") ? ["prefLabel"] : [];
+      return proposed.has("label") ? ["label"] : [];
     }
     if (finding.message.includes("cycle")) return hierarchy;
     if (finding.path === `${NS.skos}broader`) return hierarchy;
     if (finding.path === `${NS.skos}narrower`) return hierarchy;
     if (finding.path === `${NS.skos}related`) {
-      return proposed.has("related") ? ["related"] : [];
+      return proposed.has("related-concepts") ? ["related-concepts"] : [];
     }
     // Negative-scope disjointness (ADR 01014/01015): the finding sits on the
     // negative predicate's shape. Drop the proposed side of the conflict,
     // preferring the negative when both were proposed.
     if (finding.path === DOCKG_NOT_APPLICABLE_TO_VARIANT) {
-      if (proposed.has("notApplicableTo")) return ["notApplicableTo"];
-      if (proposed.has("appliesTo")) return ["appliesTo"];
+      if (proposed.has("not-applicable-to")) return ["not-applicable-to"];
+      if (proposed.has("applies-to")) return ["applies-to"];
       return [];
     }
     if (finding.path === DOCKG_NOT_SOFTWARE_SUBJECT) {
-      if (proposed.has("notSoftwareSubject")) return ["notSoftwareSubject"];
-      if (proposed.has("softwareSubject")) return ["softwareSubject"];
+      if (proposed.has("not-about-product-aspect"))
+        return ["not-about-product-aspect"];
+      if (proposed.has("about-product-aspect")) return ["about-product-aspect"];
       return [];
     }
     return []; // unattributable — caller rejects everything guarded
@@ -178,8 +179,8 @@ export class FillGuard {
 
   /**
    * Simulate `values` applied to the doc and drop fields until the graph
-   * stays clean. New violations always reject; new prefLabel warnings
-   * reject the proposed prefLabel (an LLM must not introduce a second
+   * stays clean. New violations always reject; new label warnings
+   * reject the proposed label (an LLM must not introduce a second
    * spelling of an existing concept).
    */
   async vet(

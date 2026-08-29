@@ -19,7 +19,7 @@ steps:
   - stage: act
     doc: /dockg/model/concepts-skos/
     exists: true
-    note: "prefLabel establishes the concept; altLabels/broader/narrower/related depend on it."
+    note: "label establishes the concept; alt-labels/broader/narrower/related depend on it."
   - stage: verify
     doc: /dockg/model/concepts-skos/
     exists: true
@@ -53,10 +53,10 @@ time; one that gets it subtly wrong loses their trust permanently.
 
 ## What they need to reach, in order
 
-1. **The mapping table.** `prefLabel` establishes the concept this document is primarily about;
-   `altLabels`, `broader`, `narrower`, and `related` describe it. This is the whole surface, and
+1. **The mapping table.** `label` establishes the concept this document is primarily about;
+   `alt-labels`, `broader`, `narrower`, and `related` describe it. This is the whole surface, and
    it is small — say so, because they are braced for more.
-2. **The dependency rule.** The four relationship fields require `prefLabel`, enforced in the
+2. **The dependency rule.** The four relationship fields require `label`, enforced in the
    schema and again in `fill`'s proposal gate. Without it there is no subject for the
    relationship to hang from.
 3. **How concept IRIs converge.** Concepts are minted from slugified labels, so two spellings of

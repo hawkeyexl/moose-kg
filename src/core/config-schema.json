@@ -107,7 +107,7 @@
                 "created": { "type": "number", "minimum": 0, "maximum": 100 },
                 "modified": { "type": "number", "minimum": 0, "maximum": 100 },
                 "subject": { "type": "number", "minimum": 0, "maximum": 100 },
-                "prefLabel": { "type": "number", "minimum": 0, "maximum": 100 }
+                "label": { "type": "number", "minimum": 0, "maximum": 100 }
               }
             }
           ]
@@ -134,18 +134,18 @@
           "uniqueItems": true,
           "items": {
             "enum": [
-              "prefLabel",
-              "altLabels",
+              "label",
+              "alt-labels",
               "broader",
               "narrower",
-              "related",
-              "subjects",
-              "topicType",
-              "appliesTo",
-              "softwareLifecyclePhase",
-              "softwareSubject",
-              "notApplicableTo",
-              "notSoftwareSubject"
+              "related-concepts",
+              "concepts",
+              "type",
+              "applies-to",
+              "about-product-lifecycle",
+              "about-product-aspect",
+              "not-applicable-to",
+              "not-about-product-aspect"
             ]
           }
         },

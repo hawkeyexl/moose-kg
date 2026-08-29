@@ -66,7 +66,7 @@ describe("dockg check", () => {
     expect(stdout).toContain("docs/beta.md");
     // related ⨯ broaderTransitive
     expect(stdout).toContain("broaderTransitive");
-    // prefLabel collision surfaces as a warning, not a violation
+    // skos:prefLabel collision surfaces as a warning, not a violation
     expect(stdout).toMatch(/warning:.*prefLabel/);
   });
 

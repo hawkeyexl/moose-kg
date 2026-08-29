@@ -82,7 +82,7 @@ it should not depend on how someone typed the command.
    ```
 
    ```
-   Wrote kg/graph.ttl (4 docs, 139 triples)
+   Wrote kg/graph.ttl (5 docs, 167 triples)
    ```
 
 </Steps>
@@ -94,15 +94,18 @@ dockg stats
 ```
 
 ```
-Triples:    139
-Documents:  4
-Sections:   8
-Concepts:   5
-References: 6
+Triples:    167
+Documents:  5
+Sections:   9
+Concepts:   6
+References: 7
 
 Most connected:
   docs/configuration.md (5)
-  docs/getting-started.md (3)
+  docs/getting-started.md (4)
+  docs/harvest.md (1)
+  docs/no-frontmatter.md (1)
+  docs/windows-notes.md (1)
 
 Orphan docs (0):
   (none)
@@ -114,9 +117,13 @@ Broken section refs (1):
   docs/getting-started.md -> #missing-heading
 
 Coverage:
-  title        4/4  100.0%
-  description  1/4  25.0%
-  prefLabel    1/4  25.0%
+  title        5/5  100.0%
+  description  2/5  40.0%
+  creator      1/5  20.0%
+  created      1/5  20.0%
+  modified     1/5  20.0%
+  subject      3/5  60.0%
+  label        1/5  20.0%
 ```
 
 **Most connected** are your hub documents — the ones whose removal or rename hurts most.

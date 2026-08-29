@@ -6,15 +6,15 @@ date: 2026-05-01
 updated: 2026-07-01
 tags: [setup, installation]
 kg:
-  topicType: task
-  softwareLifecyclePhase: [deployment]
+  type: task
+  about-product-lifecycle: [deployment]
   sections:
     install:
-      topicType: reference
-      appliesTo: [SP-X200]
-      subjects: [installation]
+      type: reference
+      applies-to: [SP-X200]
+      concepts: [installation]
     missing-heading:
-      topicType: concept
+      type: concept
 ---
 
 # Getting Started

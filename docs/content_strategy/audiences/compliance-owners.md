@@ -21,7 +21,7 @@ evidence_basis:
   - the PROV-O surface — qualified attribution and association with role individuals (ADR 01002), collision-proof provenance IRIs and per-model fill attribution (ADR 01003), agent IRIs segmented by PROV agent kind (ADR 01004)
   - ADR 01015 (fill proposes all fields, gated by model confidence) plus the kg.provenance frontmatter block with per-field confidence — a machine-vs-human authorship record
   - ADR 01011 (metadata coverage in dockg stats, gated by per-field thresholds) and the --check exit-1 contract
-  - the sh:disjoint contradiction checks between appliesTo and notApplicableTo in shapes/dockg-0.5.ttl
+  - the sh:disjoint contradiction checks between applies-to and not-applicable-to in shapes/dockg-0.5.ttl
   - the determinism contract itself — reproducible output is what makes graph-derived evidence admissible rather than anecdotal
 ---
 

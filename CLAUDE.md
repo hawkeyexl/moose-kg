@@ -20,10 +20,27 @@ from the npm registry (`^1.3.0`), so a clean checkout needs nothing but:
 npm install
 ```
 
-CI mirrors this exactly. Use `npm install` rather than `npm ci`: the committed lock is
-generated on Windows and omits the Linux-side optional dependencies of
-`@napi-rs/wasm-runtime` (rolldown's wasm binding), so a strict lock check cannot pass on
-both platforms. Regenerating the lock on Linux would just invert the problem.
+CI runs `npm ci`, and so can you. This repo carried a "never `npm ci`, the lock is
+platform-skewed" rule for a while, on the theory that a Windows-generated lock omits the
+Linux-side optional dependencies of `@napi-rs/wasm-runtime` (rolldown's wasm binding).
+**That was a misdiagnosis**, twice over:
+
+- The lock records **all fourteen** `@rolldown/binding-*` packages — every Linux one included —
+  each with its `os`/`cpu`, `resolved`, and `integrity`. Nothing platform-specific is missing.
+- rolldown no longer ships a `wasm32-wasi` binding at all, so `@emnapi/core` and `@emnapi/runtime`
+  are not reachable in this tree and cannot be dropped from anywhere.
+
+The real variable was **npm's own version**, not the contributor's OS — the same finding docmeta
+recorded after hitting this through the identical dependency path. npm ≤ 11.6.2 drops those
+entries on Linux, macOS and Windows alike; 11.6.3 keeps them on all three.
+
+That floor is enforced, not advisory: `engines.npm` is `>=11.6.3` and [.npmrc](.npmrc) sets
+`engine-strict=true`, so a too-old npm fails at install with `EBADENGINE` instead of quietly
+writing a lockfile CI will reject. Do not assume the Node floor covers it — Node 24.11.0 satisfies
+`>=24` and bundles npm **11.6.1**. Above the floor, regenerate the lock normally.
+
+Still worth doing after any dependency change: **read the lockfile diff**. A change that adds
+packages you cannot name, or removes any, is worth stopping for.
 
 There is no sibling-checkout step: dockg depended on `file:../docmeta` while docmeta's
 `extractFrontmatter` export was unreleased, and that dependency is gone — never
@@ -63,11 +80,22 @@ gotcha, a decision, a convention — record it **in the repo, in the same change
 - **Naming:** the *frontmatter key* is `kg:`; the *RDF namespace prefix* is `dockg:`
   (`https://dockg.dev/ns#`). Never conflate them. The custom namespace stays minimal — prefer
   dcterms/skos/prov/schema.org/foaf terms wherever one exists.
-- **Schemas and shapes are self-hosted.** dockg's frontmatter JSON Schemas live in
-  [schemas/](schemas) and its SHACL shapes contract in [shapes/](shapes); both ship in the npm
-  package, and `dockg validate` / `dockg check` default to the bundled newest version by file
-  path. Never add dockg schemas to docmeta's built-in registry — that pattern was deliberately
-  removed. Published schema and shapes files are immutable; evolve by adding a new version file.
+- **The frontmatter schema is docmeta's; the shapes are dockg's.** docmeta publishes the common
+  metadata vocabularies and dockg implements graph behavior against them
+  ([ADR 01023](adrs/01023-adopt-docmetas-common-kg-vocabulary.md)). The `kg` block is
+  `docmeta:kg`, shipped as **byte-verbatim vendored bytes** at
+  `schemas/docmeta-kg-1.0.0-proposal.1.json` — `$id` and all — because docmeta's proposal 0023 is
+  under review and forbids registering the id until it concludes. Never edit those bytes or
+  re-point the `$id` at `dockg.dev`: a sha256 pin in `test/unit/kg-vocabulary.test.ts` is what
+  notices an upstream revision, and it only works on an exact copy. The SHACL shapes contract in
+  [shapes/](shapes) stays self-hosted. Both ship in the npm package, and `dockg validate` /
+  `dockg check` default to the bundled file by path.
+- **Published schema and shapes files are immutable**; evolve by adding a new version file, and
+  make the new file's version **three-segment** (`1.0.0`, not `0.9`). Two segments force a
+  description-only fix to announce itself as a MINOR that adds fields it did not add. MAJOR = a
+  document that used to validate now fails · MINOR = one that used to fail may now pass · PATCH =
+  no validation-behavior change. The existing `frontmatter-0.N.json` / `dockg-0.N.ttl` files are
+  published and stay as they are; the convention binds the next version file.
 - **Exit codes:** `0` ok · `1` findings (validation failures, `check` violations, `stats --check`
   broken links, fill errors) · `2` operational error (`DockgError`). `cli.ts fail()` rethrows
   non-DockgError. SHACL severities map onto this: `sh:Violation` → 1, `sh:Warning`/`sh:Info` →
@@ -144,6 +172,18 @@ key, CLI flag, output shape) also needs:
   and an n3 parser round-trip of emitted Turtle.
 - Integration tests live in `test/integration/` and run the built CLI against
   `test/fixtures/corpus/` or per-test `mkdtempSync` directories.
+- **A contract ships with a ladder.** A schema or a shapes file is covered by an executable ladder
+  of *named* cases — positives and, just as importantly, negatives — each pinned to the reason it
+  holds (`test/unit/kg-vocabulary.test.ts` is the model; it is docmeta's own review ladder, ported
+  case for case). A negative that passes for the wrong reason is a silent hole, so assert *which*
+  key the rejection names, not merely that one happened.
+
+Changing the corpus fixture invalidates **six** byte-exact goldens under `test/fixtures/golden/` —
+`graph.ttl`, `graph.jsonld`, `metadata.rdf`, `search.json`, `traverse.json`, `vectors.bin` — plus
+the doc/triple counts asserted across `build`, `validate`, `query-stats` and `runtime-sparql`. All
+six are regenerable from the built CLI (`vectors.bin` via `dockg embed --model mock --no-cache`, so
+the optional `@huggingface/transformers` peer is not needed). Note `dockg stats --check` exits `1`
+on this fixture by design: it carries a deliberate broken link and a broken section ref.
 
 ## Documentation impact (required)
 

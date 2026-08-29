@@ -1,11 +1,13 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { basename, dirname, join } from "node:path";
+import { Ajv2020 } from "ajv/dist/2020.js";
 import { describe, expect, it } from "vitest";
 import { bundledSchemaPath, bundledShapesPath } from "../../src/core/pkg.js";
 import { FIELD_SCHEMAS } from "../../src/llm/prompt.js";
 import { COVERAGE_FIELD_NAMES } from "../../src/core/coverage.js";
 import {
+  PAGE_TYPE_TO_TOPIC_TYPE,
   SOFTWARE_LIFECYCLE_IRIS,
   SOFTWARE_SUBJECT_IRIS,
   TOPIC_TYPE_IRIS,
@@ -20,7 +22,7 @@ describe("prompt FIELD_SCHEMAS ↔ bundled schema", () => {
   const schema = JSON.parse(
     readFileSync(bundledSchemaPath(import.meta.url), "utf8"),
   ) as {
-    properties: { kg: { properties: Record<string, { type?: unknown }> } };
+    properties: { kg: { properties: Record<string, unknown> } };
     $defs?: {
       provenanceEntry?: {
         properties?: { fields?: { items?: { enum?: string[] } } };
@@ -29,16 +31,41 @@ describe("prompt FIELD_SCHEMAS ↔ bundled schema", () => {
   };
   const kgProperties = schema.properties.kg.properties;
 
-  it("every fillable field exists in the bundled schema with a matching type", () => {
-    for (const [field, fieldSchema] of Object.entries(FIELD_SCHEMAS)) {
+  it("every fillable field exists in the bundled schema", () => {
+    for (const field of Object.keys(FIELD_SCHEMAS)) {
       expect(
         kgProperties,
         `schema is missing fill field "${field}"`,
       ).toHaveProperty(field);
-      expect(kgProperties[field]!.type).toBe(
-        (fieldSchema as { type: unknown }).type,
-      );
     }
+  });
+
+  /**
+   * The property the guard exists for, tested directly rather than through a
+   * proxy: a `kg` block shaped the way fill proposes must validate. Comparing
+   * declared `type` strings stopped working once docmeta:kg put every field
+   * behind a $ref — and it was always the weaker check, since it never proved
+   * a proposed *value* was legal.
+   */
+  it("a kg block shaped like fill's proposal validates", () => {
+    const sample = (fieldSchema: Record<string, unknown>): unknown => {
+      if (Array.isArray(fieldSchema.enum)) return fieldSchema.enum[0];
+      if (fieldSchema.type === "string") return "Sample";
+      const items = fieldSchema.items as { enum?: string[] } | undefined;
+      return [items?.enum ? items.enum[0] : "Sample"];
+    };
+    const kg = Object.fromEntries(
+      Object.entries(FIELD_SCHEMAS).map(([field, fieldSchema]) => [
+        field,
+        sample(fieldSchema),
+      ]),
+    );
+
+    const validate = new Ajv2020({
+      allErrors: true,
+      allowUnionTypes: true,
+    }).compile(schema);
+    expect(validate({ kg }), JSON.stringify(validate.errors)).toBe(true);
   });
 
   it("the provenance fields enum covers every fillable field", () => {
@@ -98,68 +125,104 @@ describe("COVERAGE_FIELD_NAMES ↔ config schema", () => {
  * would derive no triple (or Ajv would reject a mapped one). ADR 01012.
  */
 describe("iiRDS enums ↔ bundled schema", () => {
-  type Field = { enum?: string[]; items?: { enum?: string[] } };
+  type Node = {
+    $ref?: string;
+    enum?: string[];
+    items?: { enum?: string[] };
+    then?: { items?: { enum?: string[] } };
+    else?: { enum?: string[] };
+  };
   const parsed = JSON.parse(
     readFileSync(bundledSchemaPath(import.meta.url), "utf8"),
   ) as {
-    properties: { kg: { properties: Record<string, Field> } };
-    $defs: { sectionMetadata: { properties: Record<string, Field> } };
+    properties: { kg: { properties: Record<string, Node> } };
+    $defs: Record<string, Node> & {
+      sectionMetadata: { properties: Record<string, Node> };
+    };
   };
   const kg = parsed.properties.kg.properties;
   const sec = parsed.$defs.sectionMetadata.properties;
+
+  /**
+   * Follow the one $ref level docmeta:kg uses. Resolving rather than reading
+   * `$defs` directly is deliberate: it catches a field repointed at the wrong
+   * definition, which reading the definition by name never would.
+   */
+  const deref = (node: Node | undefined): Node | undefined => {
+    if (!node?.$ref) return node;
+    const name = node.$ref.replace("#/$defs/", "");
+    return parsed.$defs[name];
+  };
+
+  /**
+   * The values a field accepts. Every list field takes the single-string
+   * shorthand (docmeta:kg widened these over dockg 0.8), so its enum lives on
+   * both branches of a string-or-list conditional — and the two branches must
+   * agree, or one spelling would accept a value the other rejects.
+   */
+  const valuesOf = (node: Node | undefined): string[] => {
+    const d = deref(node);
+    if (!d) return [];
+    if (d.enum) return d.enum;
+    const list = d.then?.items?.enum ?? d.items?.enum ?? [];
+    const scalar = d.else?.enum;
+    if (scalar) expect([...scalar].sort()).toEqual([...list].sort());
+    return list;
+  };
 
   // Both the document-level fields and the section-level (sectionMetadata)
   // fields are pinned to the same iirds.ts maps, so they cannot diverge from
   // the source of truth — or from each other. ADR 01012/01013.
   it.each([
-    ["kg.topicType", () => kg.topicType!.enum, TOPIC_TYPE_IRIS],
+    ["kg.type", () => valuesOf(kg["type"]), TOPIC_TYPE_IRIS],
     [
-      "kg.softwareLifecyclePhase",
-      () => kg.softwareLifecyclePhase!.items!.enum,
+      "kg.about-product-lifecycle",
+      () => valuesOf(kg["about-product-lifecycle"]),
       SOFTWARE_LIFECYCLE_IRIS,
     ],
     [
-      "kg.softwareSubject",
-      () => kg.softwareSubject!.items!.enum,
+      "kg.about-product-aspect",
+      () => valuesOf(kg["about-product-aspect"]),
       SOFTWARE_SUBJECT_IRIS,
     ],
-    ["section.topicType", () => sec.topicType!.enum, TOPIC_TYPE_IRIS],
+    ["section.type", () => valuesOf(sec["type"]), TOPIC_TYPE_IRIS],
     [
-      "section.softwareLifecyclePhase",
-      () => sec.softwareLifecyclePhase!.items!.enum,
+      "section.about-product-lifecycle",
+      () => valuesOf(sec["about-product-lifecycle"]),
       SOFTWARE_LIFECYCLE_IRIS,
     ],
     [
-      "section.softwareSubject",
-      () => sec.softwareSubject!.items!.enum,
+      "section.about-product-aspect",
+      () => valuesOf(sec["about-product-aspect"]),
       SOFTWARE_SUBJECT_IRIS,
     ],
     // Negative-scope subject enums share the same value set (ADR 01014).
     [
-      "kg.notSoftwareSubject",
-      () => kg.notSoftwareSubject!.items!.enum,
+      "kg.not-about-product-aspect",
+      () => valuesOf(kg["not-about-product-aspect"]),
       SOFTWARE_SUBJECT_IRIS,
     ],
     [
-      "section.notSoftwareSubject",
-      () => sec.notSoftwareSubject!.items!.enum,
+      "section.not-about-product-aspect",
+      () => valuesOf(sec["not-about-product-aspect"]),
       SOFTWARE_SUBJECT_IRIS,
     ],
   ] as const)("%s enum matches its IRI map keys", (_name, getEnum, map) => {
-    expect([...(getEnum() ?? [])].sort()).toEqual(Object.keys(map).sort());
+    expect([...getEnum()].sort()).toEqual(Object.keys(map).sort());
+  });
+
+  /**
+   * The page-type derivation (ADR 01024) targets `kg.type`, so every value it
+   * can produce must be a legal one — otherwise a derived type would silently
+   * emit no triple.
+   */
+  it("every derived page type is a legal kg.type value", () => {
+    for (const derived of Object.values(PAGE_TYPE_TO_TOPIC_TYPE)) {
+      expect(valuesOf(kg["type"])).toContain(derived);
+    }
   });
 });
 
-/**
- * Drift guard: the docs name the bundled-default schema and shapes files as a
- * user-facing fact. Each bundled-path bump left stale version numbers behind
- * (caught twice in review); pin the current-state references to the actual
- * bundled filenames so a future bump fails here instead of shipping a wrong doc.
- *
- * These facts used to live in the README and now live on the configuration
- * reference page, which is where a reader looks up a default. The guard moved
- * with them rather than being dropped.
- */
 describe("documented bundled defaults ↔ pkg.ts", () => {
   const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
   const configPage = readFileSync(

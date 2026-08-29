@@ -1,7 +1,7 @@
 ---
 title: Beta
 kg:
-  prefLabel: Beta
+  label: Beta
   broader: [Alpha, Gamma]
 ---
 
