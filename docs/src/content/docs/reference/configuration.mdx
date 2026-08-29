@@ -67,7 +67,7 @@ become real edges.
 | Key | Type | Default | Notes |
 |---|---|---|---|
 | `validate.schemas` | string[] | `[]` → bundled `schemas/docmeta-kg-1.0.0-proposal.1.json` | File paths, URLs, or docmeta built-in ids. |
-| `check.shapes` | string[] | `[]` → bundled `shapes/dockg-0.5.ttl` | Overridable with `--shapes`. |
+| `check.shapes` | string[] | `[]` → bundled `shapes/dockg-0.6.ttl` | Overridable with `--shapes`. |
 
 Both bundled files ship in the npm package, so any JSON Schema or SHACL tool can be pointed at
 them directly. Published versions are immutable — evolution adds a new version file.
@@ -85,7 +85,7 @@ them directly. Published versions are immutable — evolution adds a new version
 |---|---|---|---|
 | `stats.coverageThreshold` | number (0–100) or map | `{}` | Gates nothing by default. Only enforced under `stats --check`. |
 
-A number applies to all seven fields. A map sets them individually, which is usually what a real
+A number applies to all eleven measured fields. A map sets them individually, which is usually what a real
 obligation looks like:
 
 ```yaml title="dockg.config.yaml"
@@ -96,14 +96,18 @@ stats:
     label: 40
 ```
 
-Map keys: `title`, `description`, `creator`, `created`, `modified`, `subject`, `label`. The
-per-field map is **config-only**; `--coverage-threshold` can only set one number for all fields.
+Map keys: `title`, `description`, `creator`, `created`, `modified`, `subject`, `label`, `type`,
+`applies-to`, `about-product-lifecycle`, `about-product-aspect`. The per-field map is
+**config-only**; `--coverage-threshold` can only set one number for all fields.
+
+Section coverage is reported but never gated, so it has no threshold key. See
+[prove coverage](/dockg/govern/coverage/).
 
 ## `fill`
 
 | Key | Type | Default | Notes |
 |---|---|---|---|
-| `fill.provider` | enum | `anthropic` | `anthropic`, `openai`, `claude-cli`, `mock`. |
+| `fill.provider` | enum | `anthropic` | `anthropic`, `openai`, `claude-cli`, `llama-cpp`, `mock`. `llama-cpp` runs a local model in-process — no key, no network, no spend — and requires an explicit `fill.model`. |
 | `fill.model` | string | `null` | Provider default. |
 | `fill.apiKeyEnv` | string | `null` | The **name** of the env var, not the key. |
 | `fill.baseUrl` | string | `https://api.openai.com/v1` | Any OpenAI-compatible endpoint. |
@@ -114,6 +118,7 @@ per-field map is **config-only**; `--coverage-threshold` can only set one number
 | `fill.minConfidence` | number (0–1) | `0.7` | Fields scored below this are not written. |
 | `fill.writeProvenance` | boolean | `true` | Record `kg.provenance` on filled docs. |
 | `fill.validateGraph` | boolean | `true` | SHACL guardrail on proposals. |
+| `fill.sections` | boolean | `false` | Also propose per-section metadata. Opt-in: more output per call, and section metadata is explicit-only. |
 | `fill.fields` | enum[] | all twelve | Restrict what may ever be proposed. |
 | `fill.pricing.inputPerMTok` | number | — | Both pricing keys required together. |
 | `fill.pricing.outputPerMTok` | number | — | Overrides the built-in price table. |

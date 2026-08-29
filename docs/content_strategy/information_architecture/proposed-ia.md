@@ -94,6 +94,7 @@ none is flagged in [`ia-gap-analysis.md`](ia-gap-analysis.md).
 | Page | CUJ | ★ | Notes |
 |---|---|:--:|---|
 | `index.mdx` | `cuj-first-graph` | ★ | Splash. Hero, a 30-second proof (one command, its real output), a "what are you trying to do?" router card grid, and a checks/doesn't-check pair. |
+| `ns.mdx` | `cuj-export-to-consumer` | | **Sits at the site root because an IRI decides its address, not the nav.** `https://hawkeyexl.github.io/dockg/ns#` is the namespace every minted term lives under, so stripping the fragment must land somewhere real. Defines each term; links the Turtle at `/dockg/ns.ttl`. It is not in the sidebar — a reader arrives by dereferencing an IRI, not by browsing. |
 
 ### Get started (`get-started/`)
 
@@ -181,7 +182,7 @@ is part of the change's definition of done.
 | `reference/configuration.mdx` | `src/core/config-schema.json`, `src/core/config.ts` |
 | `reference/frontmatter.mdx` | `schemas/frontmatter-0.8.json`, `src/core/derive.ts` |
 | `reference/vocabulary.mdx` | `src/core/vocab.ts`, `src/core/iirds.ts` |
-| `reference/shapes.mdx` | `shapes/dockg-0.5.ttl` |
+| `reference/shapes.mdx` | `shapes/dockg-0.6.ttl` |
 | `reference/output-and-exit-codes.mdx` | `src/cli.ts` `fail()`, each `src/commands/*.ts` core |
 | `reference/runtime-api.mdx` | `src/runtime.ts` exports, `package.json` `exports` |
 | `reference/library-api.mdx` | `src/index.ts` exports |

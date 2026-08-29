@@ -34,6 +34,10 @@ steps:
     exists: true
     note: "Package-only terms that appear in an iiRDS export but never in the built graph."
   - stage: extend
+    doc: /dockg/ns/
+    exists: true
+    note: "What each dockg: term means, for a consumer that hit one and needs a definition — the RDFS document the namespace IRI resolves to, machine-readable at /dockg/ns.ttl."
+  - stage: extend
     doc: /dockg/reference/library-api/
     exists: true
     note: "For a consumer wiring export into a Node pipeline rather than shelling out to the CLI."

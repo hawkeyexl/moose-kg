@@ -181,7 +181,29 @@ describe("runFill", () => {
     expect(renderFill(report, "pretty")).toContain("LLM cost: $");
   });
 
-  it("reports no budget when the cap is switched off", async () => {
+  it("reports no budget when the cap is switched off on a priced model", async () => {
+    const dir = setup(
+      { "a.md": "---\ntitle: A\n---\n" },
+      "fill:\n  maxCostUsd: null\n",
+    );
+    const provider = new MockProvider([{ json: PROPOSAL }], "gpt-4o-mini");
+    const report = await runFill({
+      cwd: dir,
+      providerInstance: provider,
+      dryRun: true,
+      noCache: true,
+    });
+    expect(report.budget).toBe("off");
+    expect(report.warnings).toEqual([]);
+    // Priced, so the total means something and is worth printing.
+    expect(renderFill(report, "pretty")).toContain("LLM cost: $");
+  });
+
+  it("still says unpriceable when no cap was set, without warning", async () => {
+    // `budget` answers two questions that are not the same: can the cap be
+    // applied, and is `costUsd` measurable at all. Keying the render on the cap
+    // let an uncapped run against an unpriced model print a confident
+    // "$0.0000" — the very output ADR 01027 exists to remove.
     const dir = setup(
       { "a.md": "---\ntitle: A\n---\n" },
       "fill:\n  maxCostUsd: null\n",
@@ -193,10 +215,30 @@ describe("runFill", () => {
       dryRun: true,
       noCache: true,
     });
-    // No cap was asked for, so there is nothing to warn about — an unpriced
-    // model is only a problem when a limit depends on the price.
-    expect(report.budget).toBe("off");
+    expect(report.budget).toBe("unpriceable");
+    // No cap was asked for, so there is nothing to warn about.
     expect(report.warnings).toEqual([]);
+    expect(renderFill(report, "pretty")).not.toContain("$0.0000");
+  });
+
+  it("reports a local provider as free, and does not warn about a cap", async () => {
+    const dir = setup({ "a.md": "---\ntitle: A\n---\n" });
+    const provider = new MockProvider(
+      [{ json: PROPOSAL }],
+      "granite-4.1-3b-q2",
+    );
+    // The provider name is what makes it free; llama-cpp cannot spend, so the
+    // default 5 USD cap has nothing to enforce and must not warn.
+    Object.defineProperty(provider, "provider", { value: () => "llama-cpp" });
+    const report = await runFill({
+      cwd: dir,
+      providerInstance: provider,
+      dryRun: true,
+      noCache: true,
+    });
+    expect(report.budget).toBe("free");
+    expect(report.warnings).toEqual([]);
+    expect(renderFill(report, "pretty")).toContain("LLM cost: none");
   });
 
   it("reports schema-invalid proposals as errors with exit 1", async () => {
@@ -503,6 +545,49 @@ describe("runFill confidence gate (ADR 01015)", () => {
     const written = readFileSync(join(dir, "a.md"), "utf8");
     expect(written).toMatch(/generated-by: m1/);
     expect(written).toMatch(/confidence:[\s\S]*?label: 0\.91/);
+  });
+
+  it("a malformed score costs that field, not the whole proposal", async () => {
+    // ADR 01034. Reproduced against llama3.2:1b at temperature 0, which
+    // deterministically returned a string for one score — and dockg threw away
+    // a perfectly good `concepts` array over it, reporting `error`. The values
+    // are the contract; the self-reported scores ride alongside.
+    const dir = setup({ "a.md": "---\ntitle: T\n---\n\n# T\n" }, SKOS_FIELDS);
+    const provider = new MockProvider([
+      {
+        json: {
+          label: "Config",
+          concepts: ["search"],
+          confidence: { label: "high", concepts: 0.95 },
+        },
+      },
+    ]);
+    const report = await runFill({ cwd: dir, providerInstance: provider });
+
+    expect(report.exitCode).toBe(0);
+    const r = report.results[0]!;
+    expect(r.status).toBe("filled");
+    // `label` goes unscored, so the gate drops it exactly as it would an
+    // absent score. `concepts` is unaffected by its neighbour.
+    expect(r.fields).toEqual(["concepts"]);
+    expect(r.lowConfidence?.map((l) => l.field)).toEqual(["label"]);
+  });
+
+  it("treats an out-of-range score as unscored, not as certainty", async () => {
+    // A percentage where a fraction was asked for. GBNF cannot express
+    // `minimum`/`maximum`, so no grammar stops it and 90 would otherwise clear
+    // every threshold — the model's mistake read as maximum confidence.
+    const dir = setup({ "a.md": "---\ntitle: T\n---\n\n# T\n" }, SKOS_FIELDS);
+    const provider = new MockProvider([
+      { json: { label: "Config", confidence: { label: 90.5 } } },
+    ]);
+    const report = await runFill({ cwd: dir, providerInstance: provider });
+
+    expect(report.results[0]?.status).toBe("nothing-proposed");
+    expect(report.results[0]?.lowConfidence?.[0]).toMatchObject({
+      field: "label",
+      confidence: 0,
+    });
   });
 
   it("a field with no confidence score is never written", async () => {
