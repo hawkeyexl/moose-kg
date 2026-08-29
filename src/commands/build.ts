@@ -11,6 +11,7 @@ import { loadConfig } from "../core/config.js";
 import { deriveGraph } from "../core/derive.js";
 import { discoverFiles } from "../core/discover.js";
 import { emitTurtle } from "../core/emit.js";
+import { harvestWarnings } from "../core/harvest.js";
 import { collectGitHistory } from "../core/git.js";
 import { toolVersion } from "../core/pkg.js";
 
@@ -56,7 +57,10 @@ export async function runBuild(opts: BuildOptions = {}): Promise<BuildResult> {
     }),
   );
 
-  const warnings: string[] = [];
+  // Page-level keys that look like harvest inputs but are not. The kg block is
+  // schema-strict, so a typo there is a hard error; at the page level nothing
+  // validates, and a near miss derives silently nothing (ADR 01028).
+  const warnings: string[] = harvestWarnings(docs);
   // The git pass only feeds the provenance derive source — skip the subprocess
   // entirely when that source, or provenance.git itself, is off. Under "auto"
   // an unavailable git degrades to a warning; under `true` the user demanded

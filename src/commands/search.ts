@@ -135,12 +135,21 @@ export async function runSearch(opts: SearchOptions): Promise<SearchReport> {
   // `--vectors <path>`. A typo'd path would otherwise fall through to the
   // default-path branch, find nothing, and return lexical results with exit 0 —
   // a confident answer to a question the user did not ask.
+  //
+  // One predicate for both decisions. Testing `!== undefined` here while the
+  // path below tested truthiness meant `--vectors ""` demanded the vector leg
+  // and then resolved the *default* sidecar — failing, or answering, about a
+  // file the user never named.
+  const explicitVectors =
+    opts.vectors !== undefined && opts.vectors !== ""
+      ? opts.vectors
+      : undefined;
   const wantsVector =
     opts.mode === "vector" ||
     opts.mode === "hybrid" ||
-    (opts.vectors !== undefined && opts.mode !== "lexical");
-  const vectorsPath = opts.vectors
-    ? resolve(cwd, opts.vectors)
+    (explicitVectors !== undefined && opts.mode !== "lexical");
+  const vectorsPath = explicitVectors
+    ? resolve(cwd, explicitVectors)
     : resolve(cwd, config.embed.out);
   let vectors: VectorIndex | undefined;
   if (opts.mode !== "lexical" && existsSync(vectorsPath)) {
@@ -181,7 +190,13 @@ export async function runSearch(opts: SearchOptions): Promise<SearchReport> {
 
   let embedder: Embedder | undefined;
   if (vectors) {
-    embedder = await resolveEmbedder(opts, vectors, wantsVector);
+    // Only an explicit `--mode vector|hybrid` makes a missing embedder fatal.
+    // Naming a sidecar says which file to use, not that the optional
+    // transformers peer must be installed — threading `wantsVector` here turned
+    // `--vectors ./v.bin` on a machine without the peer from "degrade to
+    // lexical, exit 0" into exit 2.
+    const requireEmbedder = opts.mode === "vector" || opts.mode === "hybrid";
+    embedder = await resolveEmbedder(opts, vectors, requireEmbedder);
   }
 
   const entry = await findEntry(opts.query, {

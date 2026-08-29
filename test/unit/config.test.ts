@@ -194,6 +194,15 @@ describe("parseConfig", () => {
     ).toThrow(DockgError);
   });
 
+  it("accepts the local llama-cpp provider", () => {
+    const c = parseConfig(
+      "version: 1\nfill:\n  provider: llama-cpp\n  model: granite-4.1-3b-q2\n",
+      "/tmp/dockg.config.yaml",
+    );
+    expect(c.fill.provider).toBe("llama-cpp");
+    expect(c.fill.model).toBe("granite-4.1-3b-q2");
+  });
+
   it("parses route mappings with defaults and normalization", () => {
     const c = parseConfig(
       "version: 1\nroutes:\n  - basePath: /docs/\n    root: docs/pages/\n",
@@ -248,9 +257,14 @@ describe("parseConfig", () => {
       "version: 1\nstats:\n  coverageThreshold: 80\n",
       "/tmp/dockg.config.yaml",
     );
-    // Every one of the seven fields gated at the same value.
+    // Every measured field gated at the same value — including the iiRDS
+    // typing added in Phases 2-4 (ADR 01029). Growing the fixed list means a
+    // uniform shorthand starts gating the new fields, which is the ratchet.
     expect(c.stats.coverageThreshold.title).toBe(80);
     expect(Object.keys(c.stats.coverageThreshold).sort()).toEqual([
+      "about-product-aspect",
+      "about-product-lifecycle",
+      "applies-to",
       "created",
       "creator",
       "description",
@@ -258,6 +272,7 @@ describe("parseConfig", () => {
       "modified",
       "subject",
       "title",
+      "type",
     ]);
   });
 
