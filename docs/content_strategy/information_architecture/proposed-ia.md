@@ -94,6 +94,7 @@ none is flagged in [`ia-gap-analysis.md`](ia-gap-analysis.md).
 | Page | CUJ | ★ | Notes |
 |---|---|:--:|---|
 | `index.mdx` | `cuj-first-graph` | ★ | Splash. Hero, a 30-second proof (one command, its real output), a "what are you trying to do?" router card grid, and a checks/doesn't-check pair. |
+| `ns.mdx` | `cuj-export-to-consumer` | | **Sits at the site root because an IRI decides its address, not the nav.** `https://hawkeyexl.github.io/dockg/ns#` is the namespace every minted term lives under, so stripping the fragment must land somewhere real. Defines each term; links the Turtle at `/dockg/ns.ttl`. It is not in the sidebar — a reader arrives by dereferencing an IRI, not by browsing. |
 
 ### Get started (`get-started/`)
 

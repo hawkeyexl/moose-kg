@@ -1,0 +1,100 @@
+---
+title: The dockg vocabulary
+description: The RDFS document defining every term in the dockg namespace — what each class, property, and role individual means, with machine-readable Turtle at /dockg/ns.ttl.
+head:
+  - tag: link
+    attrs:
+      rel: alternate
+      type: text/turtle
+      href: /dockg/ns.ttl
+      title: The dockg vocabulary (Turtle)
+tableOfContents: false
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+This page is what `https://hawkeyexl.github.io/dockg/ns#` resolves to. Every term dockg mints
+lives under it.
+
+**Machine-readable form: [`/dockg/ns.ttl`](/dockg/ns.ttl)** — RDFS in Turtle, also shipped in the
+npm package under `ns/dockg-1.0.0.ttl` so an offline consumer can load it by path.
+
+<Aside type="note" title="This document defines; the shapes constrain">
+  RDFS says what a term **means**. It does not say what a **valid** dockg graph looks like — that is
+  the [SHACL contract](/dockg/reference/shapes/), and keeping the two apart is deliberate. OWL
+  axioms here would duplicate the shapes while inviting reasoners to infer things
+  [open-world semantics](/dockg/concepts/open-world/) exists to refuse.
+
+  For the same reason, domain and range are stated with `schema:domainIncludes` and
+  `schema:rangeIncludes` rather than `rdfs:domain`/`rdfs:range`. Those are documentation;
+  `rdfs:domain` is an entailment rule, and a reasoner acting on it would type nodes dockg never
+  claimed to type.
+</Aside>
+
+## Classes
+
+| Term | Means |
+|---|---|
+| `dockg:Document` | One source file in the corpus, also a `prov:Entity`. An index entry, not the content — its prose is never in the graph, and a consumer joins back through `dockg:path`. |
+| `dockg:Section` | A heading within a Document, identified by the GitHub-style slug link anchors use. Sections nest through `dcterms:hasPart` and inherit nothing from their Document. |
+
+## Structure
+
+| Term | Domain | Range | Means |
+|---|---|---|---|
+| `dockg:path` | Document | string | Repo-relative path, forward slashes on every platform. The join key between graph and files. |
+| `dockg:order` | Section | integer | Zero-based position among siblings, in document order. RDF has no inherent ordering. |
+| `dockg:level` | Section | integer | Markdown heading depth: 1 for an H1. |
+| `dockg:codeLanguage` | Document | string | A language tag on a fenced code block, verbatim. One triple per distinct language. |
+
+## Findings
+
+These record what dockg could not resolve. A finding is a statement about **this corpus at build
+time**, never a claim about the world.
+
+| Term | Domain | Range | Means |
+|---|---|---|---|
+| `dockg:brokenLink` | Document | string | A link target that resolved to no file in the corpus, as written. Not a claim that the target does not exist — an external URL or a route dockg was not taught both produce this. |
+| `dockg:brokenSectionRef` | Document | string | A section-metadata key that matched no heading. The metadata was dropped rather than attached to nothing. |
+
+## Negative scope
+
+No published vocabulary has these: iiRDS is affirmative-only, and schema.org's `negativeNotes` is
+review prose. They are plain triples rather than `owl:NegativePropertyAssertion`, which would
+mandate a blank node dockg never emits and give SHACL nothing to validate.
+
+| Term | Domain | Range | Means |
+|---|---|---|---|
+| `dockg:notApplicableToVariant` | Document, Section | `iirds:ProductVariant` | This node does **not** apply to a variant. An explicit exclusion — absence of the positive edge means *unknown*, never "does not apply". |
+| `dockg:notSoftwareSubject` | Document, Section | resource | This node is **not** about a software subject. Same open-world reading. |
+
+A retrieval interlock queries these predicates. It must never infer exclusion from a missing
+affirmative edge.
+
+## Provenance
+
+| Term | Domain | Range | Means |
+|---|---|---|---|
+| `dockg:version` | `prov:SoftwareAgent` | string | Version of an agent — the dockg release that built the graph, or a model that proposed metadata. Distinct from `owl:versionInfo`, which versions this vocabulary. |
+| `dockg:filledFieldEntry` | `prov:Activity` | resource | Links a fill activity to one reified record of a field it wrote. Reified because each field carries its own confidence. |
+| `dockg:filledField` | | string | The frontmatter field name a fill entry records. |
+| `dockg:confidence` | | decimal | The model's self-reported confidence in one filled field, 0..1, rounded to two decimals so the literal is stable. An estimate of its own reliability, not a measurement. |
+
+## Roles
+
+Individuals, not properties: objects of `prov:hadRole` on a qualified attribution or association.
+
+| Term | Means |
+|---|---|
+| `dockg:authorRole` | The agent wrote the document. |
+| `dockg:generatorRole` | The agent generated content or metadata in the document. |
+| `dockg:toolRole` | The agent is the tool that performed the build — dockg itself. |
+
+## Versioning
+
+The namespace IRI never versions: terms do not move. The **document** versions, as
+`ns/dockg-1.0.0.ttl`, three-segment, evolved by adding a file rather than editing one — the same
+rule the [schemas](/dockg/reference/frontmatter/) and [shapes](/dockg/reference/shapes/) follow.
+
+A drift guard checks both directions on every run: every term the emitter can produce is defined
+here, and nothing is defined that the emitter cannot produce.
