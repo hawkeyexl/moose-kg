@@ -152,6 +152,10 @@ The link target does not exist on disk. Either fix the path, or — if the link 
 published site — the repo may be missing
 [route mappings](/dockg/build/routes/), which is a config problem rather than yours.
 
+A link to something that is not a document — an archive, a PDF, an OpenAPI `.yaml` — never
+appears here. dockg reads any explicit extension outside your `extensions` list as a static asset
+your site serves, so there is nothing to fix and nothing is reported.
+
 ### Applicability that contradicts itself
 
 ```

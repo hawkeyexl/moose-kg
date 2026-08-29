@@ -118,6 +118,16 @@ usually a page that was moved or deleted without its inbound links being updated
 That list is now small enough to act on, and stable enough to
 [gate on in CI](/dockg/govern/ci/).
 
+Links to files that are not documents are not in it. Your `extensions` list says what a document
+looks like in this corpus, so a target carrying some other explicit extension — a downloadable
+archive, a linked PDF, an OpenAPI `.yaml`, dockg's own [`/dockg/ns.ttl`](/dockg/ns.ttl) — is read
+as a static asset your site serves, not as a document dockg failed to find. There is no Markdown
+file you could add to fix such a finding, so dockg does not raise one.
+
+The check that matters is unchanged. `/docs/actions/missing` and `/docs/actions/missing/` are
+still broken, and so is `/docs/actions/missing.mdx` — you wrote a document target and it does not
+resolve. Only a non-document extension is skipped.
+
 <Aside type="note" title="Route mapping applies to component links too">
   A route written as `<LinkCard href="/docs/actions/find" />` in an `.mdx` file resolves through the
   same mapping as a Markdown link. If your site is component-heavy, expect the broken-link count to

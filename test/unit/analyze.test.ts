@@ -199,6 +199,17 @@ describe("analyzeDoc — links", () => {
     expect(doc.links[1]).toEqual({ raw: "file%zz.md", kind: "broken" });
   });
 
+  it("skips a relative link to a non-document file", () => {
+    // Same rule as the route branch (ADR 01033): a download beside the page is
+    // not a document dockg failed to find.
+    const doc = analyzeDoc(
+      "[the turtle](./ns.ttl) and [the archive](../dist.zip)\n",
+      "docs/intro.md",
+      ALL,
+    );
+    expect(doc.links).toEqual([]);
+  });
+
   it("marks links escaping the root as broken", () => {
     const doc = analyzeDoc("[out](../../outside.md)\n", "docs/intro.md", ALL);
     expect(doc.links).toEqual([{ raw: "../../outside.md", kind: "broken" }]);
@@ -300,6 +311,34 @@ describe("analyzeDoc — route mapping", () => {
     );
     expect(doc.links).toEqual([
       { raw: "/docs/actions/missing", kind: "broken" },
+    ]);
+  });
+
+  it("skips a route target whose extension is not a document extension", () => {
+    // A mapping's `extensions` declares what its DOCUMENTS look like. A site
+    // also serves static assets under the same basePath — dockg's own
+    // /dockg/ns.ttl — and calling one a broken document link is a finding the
+    // author cannot act on: there is no .md they could add. (ADR 01033)
+    const doc = analyzeDoc(
+      "[turtle](/docs/ns.ttl) and [spec](/docs/actions/spec.pdf)\n",
+      "docs/linker.md",
+      paths,
+      { routes },
+    );
+    expect(doc.links).toEqual([]);
+  });
+
+  it("still breaks on a route target that IS a document extension", () => {
+    // The narrowing is about non-document extensions only. A link written with
+    // the source extension still has to resolve.
+    const doc = analyzeDoc(
+      "[typo](/docs/actions/missing.mdx)\n",
+      "docs/linker.md",
+      paths,
+      { routes },
+    );
+    expect(doc.links).toEqual([
+      { raw: "/docs/actions/missing.mdx", kind: "broken" },
     ]);
   });
 
