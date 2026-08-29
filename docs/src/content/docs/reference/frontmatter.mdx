@@ -37,6 +37,16 @@ Five facts can be stated at either altitude. **The deeper declaration wins, per 
 field that is present replaces its page-level twin rather than adding to it — and where the block
 is silent, the page-level field feeds the graph.
 
+<Aside type="caution" title="These five are not schema-validated">
+  The `kg` block rejects an unknown key outright. These five cannot: a page may carry any key its
+  site generator or team needs, so dockg has no way to tell a typo from someone else's field. A
+  misspelled `applies_to` is therefore not an error — it is simply a key dockg does not read, and
+  the fact goes missing from the graph.
+
+  `dockg build` warns when a page key is one or two characters from one of these five, or when a
+  page `type` value is that close to a mapped one. Spell them exactly as the table shows.
+</Aside>
+
 | Page-level key | `kg` twin | Emits |
 |---|---|---|
 | `type` | `kg.type` | `iirds:has-topic-type`, through the mapping below |
