@@ -155,4 +155,16 @@ describe("the dockg vocabulary document", () => {
     expect(readFileSync(VOCAB, "utf8")).not.toContain("dockg.dev");
     expect(NS.dockg).toBe("https://hawkeyexl.github.io/dockg/ns#");
   });
+
+  it("is byte-identical to the copy the namespace IRI resolves to", () => {
+    // The guard above protects the copy that ships in the npm package. The one
+    // a consumer actually reaches by dereferencing
+    // https://hawkeyexl.github.io/dockg/ns is docs/public/ns.ttl, and a
+    // hand-kept second copy is exactly what this file's docstring warns drifts.
+    const published = join(root, "docs", "public", "ns.ttl");
+    expect(
+      readFileSync(published, "utf8"),
+      "docs/public/ns.ttl is stale — copy ns/dockg-1.0.0.ttl over it",
+    ).toBe(readFileSync(VOCAB, "utf8"));
+  });
 });
