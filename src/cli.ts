@@ -163,6 +163,11 @@ program
         provider: opts.provider as string | undefined,
         model: opts.model as string | undefined,
       });
+      // Same channel discipline as build: warnings on stderr, so stdout stays
+      // the report, and a warning never changes the exit code.
+      for (const warning of report.warnings) {
+        console.error(pc.yellow(`dockg: ${warning}`));
+      }
       console.log(renderFill(report, opts.format as "pretty" | "json"));
       process.exitCode = report.exitCode;
     } catch (e) {

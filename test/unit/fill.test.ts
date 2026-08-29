@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { runFill } from "../../src/commands/fill.js";
+import { renderFill, runFill } from "../../src/commands/fill.js";
 import { MockProvider } from "@hawkeyexl/inference";
 
 function setup(files: Record<string, string>, config = ""): string {
@@ -121,6 +121,82 @@ describe("runFill", () => {
       "skipped-budget",
     ]);
     expect(provider.requests).toHaveLength(1);
+  });
+
+  it("says so when the cost cap cannot be applied to the model", async () => {
+    // The bug this pins: pricingFor returns undefined for any model outside the
+    // six in the price table, costOfUsage then returns 0, and `costUsd >= cap`
+    // never fires. The cap defaults to 5 USD, so the silent case was the common
+    // one — every claude-cli model, every local model, every model newer than
+    // the table. A run reported "$0.0000" whether it was free or unmeasured.
+    const dir = setup({
+      "a.md": "---\ntitle: A\n---\n",
+      "b.md": "---\ntitle: B\n---\n",
+    });
+    const provider = new MockProvider(
+      [
+        {
+          json: PROPOSAL,
+          usage: { inputTokens: 10_000_000, outputTokens: 1_000_000 },
+        },
+      ],
+      "some-unpriced-model",
+    );
+    const report = await runFill({
+      cwd: dir,
+      providerInstance: provider,
+      dryRun: true,
+      maxCost: 0.01,
+      noCache: true,
+    });
+
+    expect(report.budget).toBe("unpriceable");
+    expect(report.warnings).toHaveLength(1);
+    expect(report.warnings[0]).toContain("cannot be enforced");
+    expect(report.warnings[0]).toContain("some-unpriced-model");
+
+    // Unchanged and deliberate: dockg cannot total an unpriceable run, so it
+    // cannot stop one either. Both documents are still processed — the fix is
+    // that the report no longer implies a cap was in force.
+    expect(report.results.map((r) => r.status)).toEqual([
+      "proposed",
+      "proposed",
+    ]);
+    expect(renderFill(report, "pretty")).toContain("LLM cost: unpriceable");
+    expect(renderFill(report, "pretty")).not.toContain("$0.0000");
+  });
+
+  it("enforces the cap when the model is priced", async () => {
+    const dir = setup({ "a.md": "---\ntitle: A\n---\n" });
+    const provider = new MockProvider([{ json: PROPOSAL }], "gpt-4o-mini");
+    const report = await runFill({
+      cwd: dir,
+      providerInstance: provider,
+      dryRun: true,
+      maxCost: 5,
+      noCache: true,
+    });
+    expect(report.budget).toBe("enforced");
+    expect(report.warnings).toEqual([]);
+    expect(renderFill(report, "pretty")).toContain("LLM cost: $");
+  });
+
+  it("reports no budget when the cap is switched off", async () => {
+    const dir = setup(
+      { "a.md": "---\ntitle: A\n---\n" },
+      "fill:\n  maxCostUsd: null\n",
+    );
+    const provider = new MockProvider([{ json: PROPOSAL }], "unpriced-too");
+    const report = await runFill({
+      cwd: dir,
+      providerInstance: provider,
+      dryRun: true,
+      noCache: true,
+    });
+    // No cap was asked for, so there is nothing to warn about — an unpriced
+    // model is only a problem when a limit depends on the price.
+    expect(report.budget).toBe("off");
+    expect(report.warnings).toEqual([]);
   });
 
   it("reports schema-invalid proposals as errors with exit 1", async () => {

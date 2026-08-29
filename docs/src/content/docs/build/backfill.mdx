@@ -34,6 +34,18 @@ the run — so two documents cannot jointly form a cycle.
 **A cost cap.** `fill.maxCostUsd` defaults to `5`. Past it, remaining documents are skipped with a
 `skipped-budget` status rather than silently costing more.
 
+The cap needs a price to work against. dockg knows prices for a fixed set of models; for anything
+else — a local model, a `claude-cli` run, a model newer than the table — spend cannot be totalled,
+so the cap **cannot be applied**. dockg says so rather than pretending:
+
+```
+dockg: Cost cap of 5 USD cannot be enforced: no price is known for model "…", so spend cannot be
+totalled. Set fill.pricing to enforce it, or fill.maxCostUsd: null if you meant no cap.
+```
+
+and the run reports `LLM cost: unpriceable` instead of `$0.0000`, because costing nothing and being
+unmeasurable are different facts. Set `fill.pricing` to make the cap real.
+
 <Aside type="caution" title="Exit 0 does not mean everything was written">
   Low-confidence drops and guardrail rejections are **routine operation**, and the run still exits
   `0`. Only a per-document `error` status exits `1`. This is deliberate — an orchestrating script

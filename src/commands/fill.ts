@@ -82,9 +82,30 @@ export interface FillDocResult {
   error?: string;
 }
 
+/**
+ * Whether the cost cap could actually be applied to this run.
+ *
+ * - `off` — no cap was set (`fill.maxCostUsd: null`).
+ * - `enforced` — a cap was set and the model has a price, so `costUsd` is real
+ *   and `skipped-budget` can fire.
+ * - `unpriceable` — a cap was set and the model has no entry in the price
+ *   table, so nothing can be totalled and the cap **cannot** be applied.
+ *
+ * The third case used to be indistinguishable from a run that cost nothing:
+ * `pricingFor` returns undefined, `costOfUsage` then returns 0, and the gate
+ * `costUsd >= maxCostUsd` never fires. Costing zero and being unpriceable are
+ * not the same thing, and the default cap is 5 USD while the price table has
+ * six models in it — so the silent case was the common one.
+ */
+export type BudgetState = "off" | "enforced" | "unpriceable";
+
 export interface FillReport {
   results: FillDocResult[];
   costUsd: number;
+  /** Whether `costUsd` means anything, and whether the cap could be applied. */
+  budget: BudgetState;
+  /** Non-fatal diagnostics. Never affects the exit code. */
+  warnings: string[];
   exitCode: 0 | 1;
 }
 
@@ -187,6 +208,25 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
   const maxCostUsd = opts.maxCost ?? config.fill.maxCostUsd;
   const minConfidence = opts.minConfidence ?? config.fill.minConfidence;
 
+  // A cap dockg cannot apply must say so. Silently not enforcing a spend limit
+  // the caller asked for is the one failure here that costs money.
+  const budget: BudgetState =
+    maxCostUsd === null
+      ? "off"
+      : pricing === undefined
+        ? "unpriceable"
+        : "enforced";
+  const warnings: string[] =
+    budget === "unpriceable"
+      ? [
+          `Cost cap of ${maxCostUsd} USD cannot be enforced: no price is known for model "${identity.model}", ` +
+            `so spend cannot be totalled. Set fill.pricing to enforce it, or fill.maxCostUsd: null if you meant no cap.`,
+        ]
+      : [];
+  // Null unless the cap is both set and applicable, so the gate below needs
+  // no non-null assertion and cannot fire on an unpriceable run.
+  const enforcedCap = budget === "enforced" ? maxCostUsd : null;
+
   const allPaths = new Set(files);
   const results: FillDocResult[] = [];
   let costUsd = 0;
@@ -244,7 +284,7 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
   }
 
   const hasErrors = results.some((r) => r.status === "error");
-  return { results, costUsd, exitCode: hasErrors ? 1 : 0 };
+  return { results, costUsd, budget, warnings, exitCode: hasErrors ? 1 : 0 };
 
   async function fillOne(
     path: string,
@@ -269,7 +309,7 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
       };
     }
 
-    if (maxCostUsd !== null && costUsd >= maxCostUsd) {
+    if (enforcedCap !== null && costUsd >= enforcedCap) {
       return {
         path,
         status: "skipped-budget",
@@ -523,6 +563,13 @@ export function renderFill(
         break;
     }
   }
-  lines.push("", `LLM cost: $${report.costUsd.toFixed(4)}`);
+  // "$0.0000" reads as "this run was free". Under an unpriceable model it means
+  // "nothing could be totalled", which is a different thing, so say which.
+  lines.push(
+    "",
+    report.budget === "unpriceable"
+      ? "LLM cost: unpriceable — no price known for this model, so the cap was not applied"
+      : `LLM cost: $${report.costUsd.toFixed(4)}`,
+  );
   return lines.join("\n");
 }

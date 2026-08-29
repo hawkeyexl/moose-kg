@@ -109,7 +109,7 @@ per-field map is **config-only**; `--coverage-threshold` can only set one number
 | `fill.baseUrl` | string | `https://api.openai.com/v1` | Any OpenAI-compatible endpoint. |
 | `fill.command` | string | `claude` | Executable for the `claude-cli` provider. |
 | `fill.temperature` | number (0–2) | `0` | |
-| `fill.maxCostUsd` | number or `null` | `5` | `null` is unbounded. |
+| `fill.maxCostUsd` | number or `null` | `5` | `null` is unbounded. Needs a known price to apply — see `fill.pricing`. |
 | `fill.cacheDir` | string | `.dockg/cache` | |
 | `fill.minConfidence` | number (0–1) | `0.7` | Fields scored below this are not written. |
 | `fill.writeProvenance` | boolean | `true` | Record `kg.provenance` on filled docs. |
