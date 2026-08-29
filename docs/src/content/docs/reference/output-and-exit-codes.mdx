@@ -30,7 +30,7 @@ contributor should fix a document, `2` means whoever owns the pipeline should lo
 | `fill` | any document's status is `error` | no inputs matched; a file is unreadable; TOML/JSON frontmatter |
 | `query` | never | the graph is missing or unparseable |
 | `stats` | `--check` and broken links or coverage below threshold | the graph is missing or unparseable |
-| `search` | never | index missing; sidecar missing under vector/hybrid; stale sidecar; model will not load |
+| `search` | never | index missing; sidecar missing or stale *when the vector leg was asked for*; model will not load |
 | `traverse` | never | node, variant, or subject not found in the graph |
 | `embed` | never | index missing; `@huggingface/transformers` absent; model will not load |
 | `export` | never | unknown format; the graph is missing |

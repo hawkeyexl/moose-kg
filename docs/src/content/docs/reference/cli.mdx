@@ -257,7 +257,14 @@ Rank graph nodes for a text query (needs `export --format search`).
 | `-f, --format <format>` | Output format: pretty \| json (default: `"pretty"`) |
 
 A missing embedder degrades to lexical — unless `--mode vector` or `--mode hybrid` was requested
-explicitly, which errors instead. A stale sidecar is refused rather than ranked with.
+explicitly, which errors instead.
+
+A stale sidecar follows the same rule. Ask for the vector leg — an explicit `--mode vector`,
+`--mode hybrid`, or an explicit `--vectors` path — and a stale sidecar is an error, because you
+asked for something that cannot be delivered. Merely *find* one beside the graph and `dockg
+search` warns on stderr and falls back to lexical: the vector leg is additive, and turning a
+working lexical search into a failure would be the worse answer. It is never silently ranked
+with.
 
 ## `traverse`
 
