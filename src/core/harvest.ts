@@ -66,16 +66,19 @@ function nearestKnown(
   candidate: string,
   known: readonly string[],
 ): string | undefined {
+  // Split camelCase BEFORE lowercasing — doing it after is a no-op, because
+  // there is no uppercase left to match. `appliesTo` then reaches `applies-to`
+  // exactly, instead of relying on the distance fallback to rescue it, and
+  // `notApplicabelTo` (two typos plus a case boundary) becomes reachable at
+  // all.
   const normalize = (s: string): string =>
-    s.toLowerCase().replace(/[_\s]+/g, "-");
+    s
+      .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+      .toLowerCase()
+      .replace(/[_\s]+/g, "-");
   const c = normalize(candidate);
   for (const k of known) {
     if (c === normalize(k) && candidate !== k) return k;
-  }
-  // camelCase → kebab, so `appliesTo` reaches `applies-to`.
-  const kebab = c.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
-  for (const k of known) {
-    if (kebab === normalize(k) && candidate !== k) return k;
   }
   let best: { key: string; d: number } | undefined;
   for (const k of known) {
@@ -115,7 +118,13 @@ export function harvestWarnings(docs: readonly DocModel[]): string[] {
     // references iiRDS terms and never mints them. That is correct for
     // `blog-post`, and almost never what the author meant for `how to`.
     const type = fm["type"];
-    if (typeof type === "string" && !(type in PAGE_TYPE_TO_TOPIC_TYPE)) {
+    // Object.hasOwn, not `in`: `type: constructor` and `type: toString` walk
+    // the prototype chain and would be read as mapped types, silently skipping
+    // the check.
+    if (
+      typeof type === "string" &&
+      !Object.hasOwn(PAGE_TYPE_TO_TOPIC_TYPE, type)
+    ) {
       const meant = nearestKnown(type, mappedTypes);
       if (meant !== undefined) {
         out.push(
