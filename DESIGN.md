@@ -323,7 +323,10 @@ Delivered ([ADR 01017](adrs/01017-iirds-package-export.md)):
 Out of scope (later): iiRDS/A and iiRDS/H (content converters / PDF-A + JSON-LD
 twin); rendered-HTML renditions; iiRDS **ingest**; a `DirectoryNode` ToC tree.
 
-## The GraphRAG runtime (Phases 7–10)
+## The GraphRAG runtime (Phases 7–8b, then 9–10)
+
+Phases 8c and 8d interrupt this arc. They are compile-side work — the
+serve side is not built on top of integrations nothing exercises.
 
 **Constraint set by the maintainer:** triples compilation stays in Node; the
 layer that *serves* the graph must be **browser-safe**, ideally browser-native,
@@ -454,6 +457,134 @@ Unlike every other dockg artifact, `kg/vectors.bin` **cannot be regenerated in
 CI** (weights are a download), so it is gitignored, built in the deploy
 pipeline, and gated in tests with a deterministic mock embedder.
 
+**Correction pending (Phase 8c).** "Node and browser compute the same function"
+does not survive measurement — Node and Chrome agree to cosine 0.999914, not
+exactly. The forced-WASM reasoning above is superseded; what replaces it is
+decisive ordering within a bounded noise floor, and the phase that lands the
+repair rewrites this section.
+
+## Landed outside the phase structure — **done**
+
+Work that arrived between Phase 8b and Phase 8c without a roadmap slot. Recorded
+because a living document that stops recording is just an old document — two of
+these are breaking changes, and one redefines what frontmatter dockg reads.
+
+- **[ADR 01021](adrs/01021-take-inference-from-the-shared-library.md)** — the
+  inference layer moved to `@hawkeyexl/inference`. `src/llm/` keeps only the SKOS
+  prompt, the cache-key composition, and the config → `ProviderSpec` mapping.
+  Three copies of provider code had already drifted apart once.
+- **[ADR 01022](adrs/01022-parse-mdx-and-derive-from-jsx-attributes.md)** — `.mdx`
+  parses through `remark-mdx`, and a JSX element's `href`/`src` derive links and
+  images. Found by building a graph from dockg's own docs and reading a number
+  that disagreed: 26 reference edges and 5 orphans became 129 and 0.
+- **[ADR 01023](adrs/01023-adopt-docmetas-common-kg-vocabulary.md)** — breaking.
+  The `kg` block is now `docmeta:kg`, vendored byte-verbatim; docmeta publishes
+  the vocabulary and dockg implements graph behavior against it.
+- **[ADR 01024](adrs/01024-the-harvest-rule.md)** — deeper wins, per fact. Five
+  page-level keys became graph inputs, so a page with no `kg` block at all can
+  now derive iiRDS triples. Phase 8d closes the validation hole this opened.
+
+## Phase 8c — Exercise every third party, on every platform
+
+**Goal:** every integration dockg has with code it does not own is driven for
+real by something in CI, on every platform the tool claims to support.
+
+Placed before the runtime endgame deliberately. Phase 9 is orchestration over
+parts whose real-path behavior is currently unproven — and one of those parts
+does not work.
+
+**Why now.** `dockg embed` against a real model has never run in CI, and it fails
+at pipeline construction: `createLocalEmbedder` hardcodes `device: "wasm"`, which
+transformers.js v4 rejects in Node. It shipped that way because the only embedder
+coverage was its *absence* path plus a mock that validates nothing about the
+library — and the `options.transformers` seam that would have caught it
+hermetically exists but is used by no test.
+
+A survey of all 55 third parties — dependencies, external binaries, network
+endpoints, and file-format contracts — found the same shape in four more places,
+and found the suite in better condition than assumed in two: git is genuinely
+exercised (real `git init`, real commits, real subprocess), and docmeta is real
+on two independent paths rather than a stub.
+
+**The rule (ADR):** *every third party is driven for real by something in CI;
+where that is impossible the exception is named in the ADR, with its reason and
+its compensating hermetic seam.* A mock with no real counterpart is an untested
+integration wearing a green check. A byte-golden of our own output is not a
+consumer — it locks in whatever we emit today, correct or not.
+
+Slices, in priority order:
+
+1. **The embedder repair.** Land the unmerged `test/real-embedder` branch,
+   renumbering its ADR 01021 → **01025** (main took 01021 while it sat). It
+   supersedes ADR 01020's determinism section: the guarantee is decisive
+   ordering within a bounded noise floor, not bit-identity.
+2. **The format consumers.** `metadata.rdf` is never parsed by any RDF/XML
+   parser; the `.iirds` ZIP is read back only by hand-rolled readers inside the
+   tests; `graph.jsonld` is never expanded by a JSON-LD processor; and the
+   plusmeta validator that ADR 01017 names as the de-facto iiRDS gate is not in
+   the repo. Turtle is the one emitter with a real consumer check.
+3. **Documented command output.** doc-detective returns, with the guard that
+   makes a silently-skipped step fail rather than pass. Eight documented outputs
+   have already drifted, and one was wrong the day it was written.
+4. **The installed package.** `npm pack` → install → run, so a `files` omission
+   or a broken `exports` map fails here rather than for a user.
+5. **The platform matrix.** ubuntu × macos × windows, with a cross-OS byte
+   comparison rather than three independent golden checks — three per-OS passes
+   prove three platforms each match one golden; the join is what proves they
+   match each other.
+6. **LLM providers.** Lowest priority. Exercised through Ollama and the local
+   provider rather than paid keys; no Claude Code auth in the test path.
+
+Decisions to make (ADRs): the rule above and its exception list; whether
+`claude-cli` gains an exec seam or is dropped, since it has no injection point at
+all today; and the `--max-cost` gate, which is inert for any model absent from
+the price table and so cannot distinguish "genuinely free" from "unpriceable".
+
+Research: Ollama's OpenAI- and Anthropic-compatibility endpoints, specifically
+whether they honor strict `json_schema` and forced tool calls — the two
+mechanisms the providers use for structured output. An endpoint that accepts the
+request and ignores the constraint yields a green test that proves nothing.
+
+## Phase 8d — Vocabulary integrity
+
+**Goal:** every fact dockg claims to read is validated, every fact it lifts is
+measured, and every term it mints is defined.
+
+The vocabulary grew through Phases 2–5 and again in ADRs 01023–01024; the
+machinery around it did not follow.
+
+Decisions to make (ADRs):
+
+- **Validating the harvest rule's inputs.** ADR 01024 made five page-level keys
+  load-bearing, and `validate` checks only the `kg` block. A page carrying
+  `type: how to`, `applies_to:`, `concept:` and `supersede:` passes clean and
+  derives nothing — four facts the author believed they declared, silently
+  absent, while the same typos *inside* `kg` are hard errors. The constraint: the
+  harvested keys belong to vocabularies dockg deliberately does not implement, so
+  validating them must not become adopting them.
+- **Coverage catching up.** The seven measured fields are all pre-Phase-2. The
+  evaporation countermeasure measures none of the iiRDS typing, variants,
+  lifecycle phases or negative scope added since, and no section-level coverage
+  at all — though the graph has had section nodes since Phase 3.
+- **`fill` reaching sections.** Deferred in Phase 5; now the binding constraint
+  on the brownfield lens, which is the audience `fill` exists for.
+- **A vocabulary document for `dockg:`.** Two classes, ten properties and three
+  role individuals are minted and defined nowhere: the shapes constrain them, no
+  file says what they mean, and the namespace IRI resolves to nothing. It moves
+  to the docs origin in the same change — breaking, and therefore free now and
+  expensive later.
+
+The vocabulary document is **RDFS, not OWL**: dockg emits nothing that depends on
+reasoning, and OWL axioms would duplicate the shapes while inviting exactly the
+inference [ADR 01014](adrs/01014-negative-scope.md) refuses. The split to hold is
+*RDFS defines what a term means; SHACL says what a valid graph looks like.*
+Domain and range are stated with `schema:domainIncludes`/`schema:rangeIncludes`
+rather than `rdfs:domain`, which is an entailment rule rather than documentation.
+It is versioned and immutable like schemas and shapes (`ns/dockg-1.0.0.ttl`),
+ships in the package, is dereferenceable as a hash namespace, and is pinned by a
+drift guard in both directions — every emitted term defined, and no term defined
+that the emitter cannot produce.
+
 ## Phase 9 — `retrieve` + MCP serving
 
 **Goal:** one call from a question to a citation-bearing context bundle, and the
@@ -502,6 +633,11 @@ of the phase that needs it, not before):
 | iiRDS 1.3 package conformance rules; CDP intake validation practices | Phase 6b |
 | QUDT adoption for quantitative properties (sizes, torques) lifted by fill | Phase 5/6 |
 | Browser vector-search options if the sidecar outgrows brute-force cosine | Phase 8b |
+| RDF/XML, JSON-LD and ZIP readers suitable for a hermetic consumer check | Phase 8c |
+| The plusmeta iiRDS minimum-requirements graph: vendor it, or drive the hosted validator out-of-band | Phase 8c |
+| Ollama's OpenAI- and Anthropic-compatibility endpoints: strict `json_schema` and forced tool calls, or accepted-and-ignored | Phase 8c |
+| npm versions shipped by each GitHub runner image; Playwright install cost on macOS/Windows | Phase 8c |
+| Vocabulary-publishing conventions: VANN, `owl:versionIRI`, serving a hash namespace from GitHub Pages | Phase 8d |
 | MCP server conventions for doc/knowledge tools | Phase 9 |
 
 ## Process per phase
