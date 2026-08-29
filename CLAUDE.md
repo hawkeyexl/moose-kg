@@ -225,14 +225,27 @@ point, and these are pointers into it, not a summary of it.
    committed fixture under [test/fixtures/](test/fixtures). Determinism means what you capture is
    what every reader sees — and a transcribed approximation is a claim nothing checks.
 
-Three gates run in CI and all of them block: `npm run docs:check-strategy` (anchor and coverage
-invariants), `npm run docs:check-cli` (reference/cli.mdx vs commander), and
-`npm run docs:check-links` (every `/dockg/…` target resolves). The docs workflow also builds a
-graph from the docs themselves and holds it to `dockg check` and `dockg stats --check`.
+Four gates run in CI and all of them block: `npm run docs:check-strategy` (anchor and coverage
+invariants), `npm run docs:check-cli` (reference/cli.mdx vs commander),
+`npm run docs:check-links` (every `/dockg/…` target resolves), and `npm run docs:test` (Doc
+Detective, below). The docs workflow also builds a graph from the docs themselves and holds it to
+`dockg check` and `dockg stats --check`.
 
-**Automated doc testing is deliberately absent.** Command output on a page is currently verified
-by whoever captures it, not by CI. Re-adding a runner is planned; until then, treat a changed
-command's documented output as something you must re-capture by hand.
+**Documented command output is executed, not trusted.** Seven pages carry trailing
+`{/* test … */}` / `{/* step … */}` blocks that run the built CLI against `test/fixtures/dd/` and
+assert on its output. Run them with `npm run docs:test`, which needs the build linked as `dockg`
+(`npm link && npm link @hawkeyexl/dockg`). Three things about them are load-bearing:
+
+- **Output is asserted with `stdio`**, a single field matching stdout *or* stderr. `stdout` and
+  `stderr` are not properties of the `runShell` schema, and a step using them is **dropped without
+  failing the run** — that is how 22 of 33 steps once vanished from a green run.
+- **`--exit-on-fail` is not optional.** The CLI exits 0 on a failing step without it.
+- **`scripts/check-doc-tests.mjs` is the backstop**, and it fails on both halves: a step that
+  declared but did not run, and a step that ran but did not pass. `docs:test` runs it after the
+  suite; never run the suite without it.
+
+Fixtures for these tests live in `test/fixtures/dd/`, deliberately apart from
+`test/fixtures/corpus/`, which feeds the six byte-exact goldens and must not gain files.
 
 ## SHACL shapes impact (required)
 

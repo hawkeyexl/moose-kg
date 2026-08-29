@@ -148,3 +148,20 @@ The graph and the search index are text and can reasonably be committed.
     description="The tested set, their context limits, and the truncation trap."
   />
 </CardGrid>
+
+{/* Doc Detective inline tests: verify this page against the local build, exposed
+    as `dockg` via `npm link` (see .github/workflows/doc-detective.yml), over the
+    fixtures in test/fixtures/dd/. Writes go to .tmp/, never into a fixture.
+    Two things to know before editing these. Output is asserted with `stdio`,
+    which matches stdout or stderr; `stdout`/`stderr` are not schema properties,
+    and a step using them is dropped without failing the run (scripts/check-doc-
+    tests.mjs is the guard against that). And paths are repo-root-relative with
+    the input globs in the fixture config, because a glob on the command line
+    would close this comment. Run with `npx doc-detective`. */}
+{/* test {"testId":"retrieve-artifacts","description":"The artifact chain: search index, vectors, and a ranked query."} */}
+{/* step {"description":"Build the graph the artifacts derive from.","runShell":{"command":"dockg build -c test/fixtures/dd/dockg.config.yaml","exitCodes":[0]}} */}
+{/* step {"description":"export --format search writes the lexical index.","runShell":{"command":"dockg export -c test/fixtures/dd/dockg.config.yaml --format search -o .tmp/dd/search.json","exitCodes":[0],"stdio":"nodes to"}} */}
+{/* step {"description":"embed --model mock computes deterministic vectors with no download and no network.","runShell":{"command":"dockg embed -c test/fixtures/dd/dockg.config.yaml -i .tmp/dd/search.json -o .tmp/dd/vectors.bin --model mock","exitCodes":[0],"stdio":"mock)"}} */}
+{/* step {"description":"search ranks graph nodes, fusing both legs when a sidecar exists.","runShell":{"command":"dockg search configuration -c test/fixtures/dd/dockg.config.yaml -i .tmp/dd/search.json --vectors .tmp/dd/vectors.bin --limit 3","exitCodes":[0],"stdio":"(hybrid)"}} */}
+{/* step {"description":"A missing search index is an operational error with the fix in the message.","runShell":{"command":"dockg search configuration -c test/fixtures/dd/dockg.config.yaml -i .tmp/dd/absent.json","exitCodes":[2],"stdio":"Search index not found"}} */}
+{/* test end */}
