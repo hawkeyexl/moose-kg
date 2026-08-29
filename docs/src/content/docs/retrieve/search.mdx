@@ -27,7 +27,7 @@ npm install @huggingface/transformers
    ```
 
    ```
-   Wrote 17 nodes to kg/search.json
+   Wrote 20 nodes to kg/search.json
    ```
 
    The index lives beside the graph rather than inside it. Prose belongs in neither — the index
@@ -40,8 +40,8 @@ npm install @huggingface/transformers
    ```
 
    ```
-   Wrote 17 vectors (384-d, onnx-community/granite-embedding-small-english-r2-ONNX) to kg/vectors.bin
-     17 embedded, 0 from cache
+   Wrote 20 vectors (384-d, onnx-community/granite-embedding-small-english-r2-ONNX) to kg/vectors.bin
+     20 embedded, 0 from cache
    ```
 
    For an offline or CI run with no model download, use deterministic hash vectors:
@@ -53,16 +53,20 @@ npm install @huggingface/transformers
 3. **Query it.**
 
    ```sh
-   dockg search "configuration" --limit 3
+   dockg search "configuration" --limit 3 --mode lexical
    ```
 
    ```
    0.0164  https://example.com/kg/concept/configuration [skos:Concept] — Configuration
-   0.0164  https://example.com/kg/doc/docs/getting-started.md#getting-started [dockg:Section] — Getting Started
-   0.0161  https://example.com/kg/doc/docs/configuration.md#advanced [dockg:Section] — Advanced
+   0.0161  https://example.com/kg/doc/docs/configuration.md#configuration [dockg:Section] — Configuration
+   0.0159  https://example.com/kg/doc/docs/configuration.md [dockg:Document] — Configuration Reference
 
-   3 results (hybrid)
+   3 results (lexical)
    ```
+
+   Drop `--mode lexical` and the same query runs `hybrid` when a sidecar is present: both legs
+   score, and the fusion reorders. The trailing `(lexical)` / `(hybrid)` tells you which happened,
+   so a run that quietly lost its vector leg is visible rather than merely worse.
 
 </Steps>
 

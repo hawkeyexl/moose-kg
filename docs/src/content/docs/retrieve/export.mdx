@@ -17,12 +17,23 @@ The graph is Turtle. Your destination probably is not. `dockg export` reserializ
 
 ```sh
 dockg export                              # JSON-LD, beside the graph
+```
+
+```
+Wrote 33 nodes to kg/graph.jsonld
+```
+
+```sh
 dockg export --format iirds -o dist/docs.iirds
 ```
 
 ```
-Wrote 17 nodes to kg/graph.jsonld
+Wrote 13 nodes to dist/docs.iirds
 ```
+
+The counts differ because the two formats carry different things. JSON-LD is the whole graph, one
+node per distinct subject. The iiRDS package is a *projection* — only the nodes iiRDS has terms
+for, which is why it is the lossy one of the two.
 
 <Aside type="caution" title="`-f` means the export format here">
   On every other command `-f/--format` selects how output is rendered (`pretty` or `json`). On
