@@ -547,6 +547,49 @@ describe("runFill confidence gate (ADR 01015)", () => {
     expect(written).toMatch(/confidence:[\s\S]*?label: 0\.91/);
   });
 
+  it("a malformed score costs that field, not the whole proposal", async () => {
+    // ADR 01034. Reproduced against llama3.2:1b at temperature 0, which
+    // deterministically returned a string for one score — and dockg threw away
+    // a perfectly good `concepts` array over it, reporting `error`. The values
+    // are the contract; the self-reported scores ride alongside.
+    const dir = setup({ "a.md": "---\ntitle: T\n---\n\n# T\n" }, SKOS_FIELDS);
+    const provider = new MockProvider([
+      {
+        json: {
+          label: "Config",
+          concepts: ["search"],
+          confidence: { label: "high", concepts: 0.95 },
+        },
+      },
+    ]);
+    const report = await runFill({ cwd: dir, providerInstance: provider });
+
+    expect(report.exitCode).toBe(0);
+    const r = report.results[0]!;
+    expect(r.status).toBe("filled");
+    // `label` goes unscored, so the gate drops it exactly as it would an
+    // absent score. `concepts` is unaffected by its neighbour.
+    expect(r.fields).toEqual(["concepts"]);
+    expect(r.lowConfidence?.map((l) => l.field)).toEqual(["label"]);
+  });
+
+  it("treats an out-of-range score as unscored, not as certainty", async () => {
+    // A percentage where a fraction was asked for. GBNF cannot express
+    // `minimum`/`maximum`, so no grammar stops it and 90 would otherwise clear
+    // every threshold — the model's mistake read as maximum confidence.
+    const dir = setup({ "a.md": "---\ntitle: T\n---\n\n# T\n" }, SKOS_FIELDS);
+    const provider = new MockProvider([
+      { json: { label: "Config", confidence: { label: 90.5 } } },
+    ]);
+    const report = await runFill({ cwd: dir, providerInstance: provider });
+
+    expect(report.results[0]?.status).toBe("nothing-proposed");
+    expect(report.results[0]?.lowConfidence?.[0]).toMatchObject({
+      field: "label",
+      confidence: 0,
+    });
+  });
+
   it("a field with no confidence score is never written", async () => {
     const dir = setup({ "a.md": "---\ntitle: T\n---\n" }, SKOS_FIELDS);
     // label proposed but unscored — the model must score to write.

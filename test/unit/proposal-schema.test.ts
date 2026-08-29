@@ -57,4 +57,41 @@ describe("proposalSchema", () => {
       proposalSchema(["label", "related-concepts"]),
     );
   });
+
+  it("types the advisory scores in the request schema", () => {
+    // The request schema is what a provider is asked to satisfy, and what a
+    // grammar-capable one compiles. Confidence is a number there.
+    const props = proposalSchema(["label"])["properties"] as Record<
+      string,
+      Record<string, unknown>
+    >;
+    const confidence = props["confidence"]!["properties"] as Record<
+      string,
+      unknown
+    >;
+    expect(confidence["label"]).toMatchObject({ type: "number" });
+  });
+
+  it("does not type them in the lenient validation schema", () => {
+    // ADR 01034: a malformed self-reported score must not discard the values,
+    // which are the actual contract. `numberMap` ignores a non-number score,
+    // so the field simply goes unscored and the confidence gate decides.
+    const props = proposalSchema(["label"], { lenient: true })[
+      "properties"
+    ] as Record<string, Record<string, unknown>>;
+    const confidence = props["confidence"]!["properties"] as Record<
+      string,
+      unknown
+    >;
+    expect(confidence["label"]).toEqual({});
+    // The VALUES stay strictly typed — leniency is only about the advisory
+    // metadata riding alongside them.
+    expect(props["label"]).toMatchObject({ type: "string" });
+  });
+
+  it("memoizes the lenient schema separately", () => {
+    const lenient = proposalSchema(["label"], { lenient: true });
+    expect(lenient).toBe(proposalSchema(["label"], { lenient: true }));
+    expect(lenient).not.toBe(proposalSchema(["label"]));
+  });
 });

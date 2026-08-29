@@ -148,7 +148,13 @@ function numberMap(v: unknown): Record<string, number> {
   const out: Record<string, number> = {};
   if (v && typeof v === "object" && !Array.isArray(v)) {
     for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
-      if (typeof val === "number") out[k] = val;
+      // In range, or not a score at all (ADR 01034). A model that answers 90
+      // where 0..1 was asked for meant "very confident", but reading it as
+      // written would clear every threshold there is — the model's slip
+      // becoming certainty. GBNF cannot express `minimum`/`maximum`, so no
+      // grammar stops this upstream; dropping the score leaves the field
+      // unscored, which the confidence gate already knows how to handle.
+      if (typeof val === "number" && val >= 0 && val <= 1) out[k] = val;
     }
   }
   return out;
@@ -226,8 +232,13 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
   // subset: proposals are validated leniently and narrowed afterwards, so a
   // provider that volunteers a field this doc didn't ask for is fine.
   const withSections = opts.sections ?? config.fill.sections;
+  // Validation uses the LENIENT schema (ADR 01034): the values are checked
+  // exactly as strictly as ever, while the model's self-reported confidence and
+  // reasoning are accepted in whatever shape they arrive. A weak provider that
+  // scores one field with a string must not cost the run every other field it
+  // got right.
   const validateProposal = validatorFor(
-    proposalSchema(fields, { sections: withSections }),
+    proposalSchema(fields, { sections: withSections, lenient: true }),
   );
   const cache = new FillCache(
     resolve(cwd, config.fill.cacheDir),

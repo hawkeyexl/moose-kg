@@ -107,7 +107,7 @@ export const SECTION_FILL_FIELDS: readonly FillField[] = [
 
 export function proposalSchema(
   fields: FillField[],
-  options: { sections?: boolean } = {},
+  options: { sections?: boolean; lenient?: boolean } = {},
 ): Record<string, unknown> {
   // Build from the SAME sorted list the key is derived from. Keying on the
   // sorted set while building from the caller's order would make the cached
@@ -117,10 +117,11 @@ export function proposalSchema(
   // prompts across runs. Determinism is the product contract here.
   const sorted = [...fields].sort();
   const withSections = options.sections === true;
-  const key = `${withSections ? "s:" : ""}${sorted.join(",")}`;
+  const lenient = options.lenient === true;
+  const key = `${withSections ? "s:" : ""}${lenient ? "l:" : ""}${sorted.join(",")}`;
   const memoized = schemaCache.get(key);
   if (memoized) return memoized;
-  const built = buildProposalSchema(sorted, withSections);
+  const built = buildProposalSchema(sorted, withSections, lenient);
   schemaCache.set(key, built);
   return built;
 }
@@ -128,14 +129,25 @@ export function proposalSchema(
 function buildProposalSchema(
   fields: FillField[],
   withSections: boolean,
+  lenient: boolean,
 ): Record<string, unknown> {
+  // The value schemas are the contract and never relax. `confidence` and
+  // `reasoning` are the model's own commentary on those values, and in the
+  // validation schema they are accepted in whatever shape they arrive
+  // (ADR 01034): `numberMap`/`stringMap` already ignore anything of the wrong
+  // type, so a malformed score costs that one field its score rather than
+  // discarding an otherwise good proposal. The REQUEST schema keeps the types,
+  // so a provider is still asked — and a grammar-capable one still constrained
+  // — to send a number.
+  const scoreSchema = lenient ? {} : { type: "number", minimum: 0, maximum: 1 };
+  const noteSchema = lenient ? {} : { type: "string" };
   const properties: Record<string, unknown> = {};
   const confidence: Record<string, unknown> = {};
   const reasoning: Record<string, unknown> = {};
   for (const field of fields) {
     properties[field] = FIELD_SCHEMAS[field];
-    confidence[field] = { type: "number", minimum: 0, maximum: 1 };
-    reasoning[field] = { type: "string" };
+    confidence[field] = scoreSchema;
+    reasoning[field] = noteSchema;
   }
   properties["confidence"] = {
     type: "object",
@@ -171,8 +183,8 @@ function buildProposalSchema(
     const sectionReasoning: Record<string, unknown> = {};
     for (const field of sectionFields) {
       sectionProps[field] = FIELD_SCHEMAS[field];
-      sectionConfidence[field] = { type: "number", minimum: 0, maximum: 1 };
-      sectionReasoning[field] = { type: "string" };
+      sectionConfidence[field] = scoreSchema;
+      sectionReasoning[field] = noteSchema;
     }
     sectionProps["confidence"] = {
       type: "object",
