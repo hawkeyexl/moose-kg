@@ -75,7 +75,7 @@ export const SECTION_COVERAGE_FIELDS: readonly CoverageField[] =
   SECTION_FIELD_NAMES.map((name) => {
     const field = COVERAGE_FIELDS.find((f) => f.field === name);
     /* c8 ignore next 3 -- unreachable while the two lists agree, which the
-       drift guard in test/unit/vocabulary-coverage is what keeps true. */
+       drift guard in test/unit/schema-sync.test.ts keeps true. */
     if (field === undefined) {
       throw new Error(
         `SECTION_FIELD_NAMES names ${name}, which COVERAGE_FIELDS does not define`,

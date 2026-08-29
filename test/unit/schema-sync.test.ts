@@ -8,6 +8,8 @@ import { FIELD_SCHEMAS } from "../../src/llm/prompt.js";
 import {
   COVERAGE_FIELDS,
   COVERAGE_FIELD_NAMES,
+  SECTION_COVERAGE_FIELDS,
+  UNMEASURED_BY_DESIGN,
 } from "../../src/core/coverage.js";
 import { PROVIDER_NAMES } from "../../src/core/config.js";
 import {
@@ -337,6 +339,33 @@ describe("the library entry point ↔ what the docs promise", () => {
         index[name],
         `${name} is not exported from src/index.ts`,
       ).toBeDefined();
+    }
+  });
+});
+
+describe("SECTION_FIELD_NAMES ↔ COVERAGE_FIELDS", () => {
+  // The guard `src/core/coverage.ts` points at for its unreachable throw. It
+  // pointed at a path that did not exist, so the name agreement it describes
+  // was enforced only by the throw itself — at runtime, in the one code path
+  // `c8 ignore` says is never taken.
+  it("every section field resolves to a measured document field", () => {
+    const measured = new Set(COVERAGE_FIELDS.map((f) => f.field));
+    for (const { field } of SECTION_COVERAGE_FIELDS) {
+      expect(measured.has(field), `${field} is not in COVERAGE_FIELDS`).toBe(
+        true,
+      );
+    }
+    expect(SECTION_COVERAGE_FIELDS.length).toBeGreaterThan(0);
+  });
+
+  it("keeps the two negative predicates out of coverage, on purpose", () => {
+    // ADR 01014/01029: absence of a negative predicate means *unknown* under
+    // open-world semantics, not under-annotation, so counting it would park two
+    // rows near zero on every healthy corpus. UNMEASURED_BY_DESIGN records that
+    // decision; this asserts it, so the constant is enforced rather than prose.
+    const measured = new Set(COVERAGE_FIELDS.map((f) => f.field));
+    for (const field of UNMEASURED_BY_DESIGN) {
+      expect(measured.has(field), `${field} is measured after all`).toBe(false);
     }
   });
 });
