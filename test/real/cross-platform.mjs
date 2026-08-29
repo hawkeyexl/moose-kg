@@ -1,5 +1,5 @@
 /**
- * The cross-platform ranking gate (ADR 01021).
+ * The cross-platform ranking gate (ADR 01025).
  *
  * dockg's real shape is: **corpus vectors built in Node, query embedded in the
  * browser.** Node and the browser run different ONNX backends and cannot be made
@@ -149,7 +149,7 @@ try {
   if (t.env?.backends?.onnx?.wasm) t.env.backends.onnx.wasm.numThreads = 1;
   const ex = await t.pipeline("feature-extraction", ${JSON.stringify(DEFAULT_MODEL)}, { device: "wasm", dtype: "q8" });
   // Read the pinned thread count back: setting a property that nothing reads is
-  // exactly the failure ADR 01021 documents on the Node side.
+  // exactly the failure ADR 01025 documents on the Node side.
   window.__THREADS = t.env?.backends?.onnx?.wasm?.numThreads ?? null;
   const out = [];
   for (const q of ${JSON.stringify(queries)}) {
@@ -294,7 +294,7 @@ async function main() {
     // observed score noise — no amount of the disagreement measured on this run
     // could reorder it. Those must hold. Pairs closer than that are genuine
     // near-ties, and q8 arithmetic does not resolve them identically on two
-    // backends (ADR 01021); they are allowed to swap.
+    // backends (ADR 01025); they are allowed to swap.
     const threshold = 2 * scoreNoise;
     const ids = corpusVectors.map((c) => c.id);
     for (let a = 0; a < ids.length; a++) {
@@ -339,12 +339,12 @@ async function main() {
   // library regression that doubles the disagreement would silently widen the
   // tolerance and keep passing. This ceiling is ~3x the noise observed when the
   // gate was written (7e-3); crossing it means something changed and the
-  // measurements in ADR 01021 need redoing.
+  // measurements in ADR 01025 need redoing.
   const NOISE_CEILING = 2e-2;
   if (worstScoreNoise > NOISE_CEILING) {
     console.error(
       `\nScore noise ${worstScoreNoise.toExponential(3)} exceeds the ${NOISE_CEILING.toExponential(1)} ceiling — ` +
-        `the platforms have drifted further apart than ADR 01021 measured. Re-measure before widening this.`,
+        `the platforms have drifted further apart than ADR 01025 measured. Re-measure before widening this.`,
     );
     process.exit(1);
   }

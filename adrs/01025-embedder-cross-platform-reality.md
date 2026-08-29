@@ -1,8 +1,8 @@
 ---
 status: accepted
 date: 2026-07-25
-decision-makers: hawkeyexl
-supersedes: 01020 (its "Node and the browser compute the same function" section only)
+decision-makers: [hawkeyexl]
+supersedes: 01020 (section 1, "One implementation on both sides", only)
 ---
 
 # Embedder cross-platform behavior, as measured

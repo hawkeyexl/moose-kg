@@ -1,12 +1,12 @@
 /**
  * The local embedder ([ADR 01020](../../adrs/01020-local-embeddings.md), corrected
- * by [ADR 01021](../../adrs/01021-embedder-cross-platform-reality.md)).
+ * by [ADR 01025](../../adrs/01025-embedder-cross-platform-reality.md)).
  *
  * Node and the browser **do not** run the same implementation, and cannot be made
  * to. transformers.js v4 takes disjoint `device` vocabularies per platform — Node
  * accepts `dml | webgpu | cpu`, the browser accepts `webgpu | wasm` — so no single
  * value selects one backend everywhere. An earlier version of this file forced
- * `device: "wasm"`, which threw on every real Node run; see ADR 01021 for the
+ * `device: "wasm"`, which threw on every real Node run; see ADR 01025 for the
  * measurements.
  *
  * What that costs, measured on granite q8: Node native vs browser WASM agree to
@@ -129,14 +129,14 @@ export async function createLocalEmbedder(
   // Discipline 1, set before the pipeline is built. Optional-chained because
   // the Node build's `env.backends.onnx.wasm` may be absent or a stub — this
   // pins the browser side, and asserting it pinned both is the mistake ADR
-  // 01021 documents.
+  // 01025 documents.
   if (transformers.env?.backends?.onnx?.wasm) {
     transformers.env.backends.onnx.wasm.numThreads = 1;
   }
 
   const extractor = await transformers.pipeline("feature-extraction", model, {
     // No `device`: its accepted values are disjoint across platforms, so any
-    // hardcoded choice throws on one of them (ADR 01021).
+    // hardcoded choice throws on one of them (ADR 01025).
     ...(options.device === undefined ? {} : { device: options.device }),
     dtype,
   });

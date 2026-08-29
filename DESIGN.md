@@ -428,10 +428,15 @@ Delivered ([ADR 01020](adrs/01020-local-embeddings.md)):
 - **Local-only, hard requirement.** No API, no key, no spend. Model runs under
   `@huggingface/transformers` as an **optional peer** behind `dockg/embed`, so
   the runtime never grows a model stack and most users never install it.
-- **Node and browser compute the same function.** transformers.js uses a native
-  runtime in Node and WASM in the browser, and they measurably disagree — which
-  would compare build vectors against query vectors from a *different* function.
-  Forced WASM both sides, single-threaded, q8, one text per call.
+- **Node and browser rank the same; they do not compute the same floats.**
+  Written here first as "compute the same function", forced WASM on both sides —
+  which was reasoned from the WASM spec and never measured. transformers.js
+  accepts *different* `device` values on each platform, so no single value forces
+  one backend everywhere; measured, the two agree to cosine 0.999914. Corrected
+  in Phase 8c ([ADR 01025](adrs/01025-embedder-cross-platform-reality.md)): the
+  guarantee is **decisive ordering** within a bounded noise floor, gated against
+  the real model in a real browser. Still pinned: single-threaded on the WASM
+  side, q8, one text per call.
 - **Model is configurable**, defaulting to granite-embedding-small-english-r2
   (8192 ctx, no prefixes). Open string, not an enum; prefix conventions applied
   automatically for models that need them.
@@ -456,12 +461,6 @@ throws on `Float32Array`), and Orama — the credible alternative — runs
 Unlike every other dockg artifact, `kg/vectors.bin` **cannot be regenerated in
 CI** (weights are a download), so it is gitignored, built in the deploy
 pipeline, and gated in tests with a deterministic mock embedder.
-
-**Correction pending (Phase 8c).** "Node and browser compute the same function"
-does not survive measurement — Node and Chrome agree to cosine 0.999914, not
-exactly. The forced-WASM reasoning above is superseded; what replaces it is
-decisive ordering within a bounded noise floor, and the phase that lands the
-repair rewrites this section.
 
 ## Landed outside the phase structure — **done**
 

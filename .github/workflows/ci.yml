@@ -61,7 +61,7 @@ jobs:
           sed 's/dockg:version "[^"]*"/dockg:version "X"/' ../golden/graph.ttl > /tmp/golden-norm.ttl
           cmp /tmp/gate-a-norm.ttl /tmp/golden-norm.ttl
 
-  # The embedder against the real model and a real browser (ADR 01021).
+  # The embedder against the real model and a real browser (ADR 01025).
   #
   # Separate from build-test on purpose: this is the only job allowed network
   # beyond npm, and the only one that downloads model weights. `npm test` stays
@@ -75,7 +75,12 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - run: npm install
+
+      # `npm ci`, matching build-test. This job predates the switch back to it
+      # (ADR 01023) and merged in still carrying `npm install`, which would have
+      # left the two jobs installing differently — one against the lockfile, one
+      # free to resolve around it.
+      - run: npm ci
 
       # --save-dev, not a bare install: npm treats a plain
       # `npm install @huggingface/transformers` as already satisfied here,

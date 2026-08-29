@@ -111,7 +111,7 @@ gotcha, a decision, a convention — record it **in the repo, in the same change
   use, and the exec seam is injectable for git/CLI subprocess tests. **A mock is not coverage
   of the thing it stands in for** — `createLocalEmbedder` shipped a hardcoded `device: "wasm"`
   that throws on every real Node call, and mocks certified it for a whole release
-  ([ADR 01021](adrs/01021-embedder-cross-platform-reality.md)). Where a mock stands in for a
+  ([ADR 01025](adrs/01025-embedder-cross-platform-reality.md)). Where a mock stands in for a
   third-party API, the real one must be exercised **somewhere**: `test/real/` holds those,
   excluded from `npm test` (`vitest.config.ts`), run by the `embed-real` CI job with
   `npm run test:real` and `npm run test:real:cross`. Adding a mock for an external library

@@ -1,5 +1,5 @@
 /**
- * Real-model tests (ADR 01021) — kept out of `npm test` on purpose.
+ * Real-model tests (ADR 01025) — kept out of `npm test` on purpose.
  *
  * These download model weights and need network, which the default suite must
  * never do. They run only in the `embed-real` CI job, which also installs the

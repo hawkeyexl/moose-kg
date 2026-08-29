@@ -1,5 +1,5 @@
 /**
- * The real embedder, against the real model (ADR 01021).
+ * The real embedder, against the real model (ADR 01025).
  *
  * **Not part of `npm test`.** This suite downloads model weights and is excluded
  * from the default config; it runs only in the `embed-real` CI job, via

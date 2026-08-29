@@ -1,5 +1,5 @@
 /**
- * `createLocalEmbedder`'s wiring, hermetically (ADR 01021).
+ * `createLocalEmbedder`'s wiring, hermetically (ADR 01025).
  *
  * These assert what dockg *passes* transformers.js — which `test/real/` cannot
  * do cheaply, and which the real suite would only catch by crashing. The real
