@@ -38,7 +38,7 @@ jobs:
       # whose bundled npm is older fails `npm ci` with EBADENGINE and nothing in
       # the log explains why. The floor does not ride on the Node floor: Node
       # 24.11.0 satisfies >=24 and bundles npm 11.6.1. Pin it rather than hope.
-      - name: Pin npm above the engines floor
+      - name: Enforce the npm engines floor
         run: npm install -g npm@^11.6.3
 
       # `npm ci`, restored: the "platform-skewed lock" this used to work around
@@ -88,6 +88,12 @@ jobs:
 
       # Emit every artifact whose bytes are supposed to be platform-independent,
       # for the cross-platform job below to compare across runners.
+      #
+      # All six byte-exact goldens CLAUDE.md names are represented here.
+      # `metadata.rdf` is covered transitively: it is `META-INF/metadata.rdf`
+      # inside package.iirds, whose zip entry timestamps are pinned to a fixed
+      # epoch (src/core/zip.ts), so byte-identical archives imply a
+      # byte-identical member.
       - name: Emit the comparable artifacts
         working-directory: test/fixtures/corpus
         run: |
@@ -97,6 +103,21 @@ jobs:
           cli export -f jsonld -g "$RUNNER_TEMP/artifacts/graph.ttl" -o "$RUNNER_TEMP/artifacts/graph.jsonld"
           cli export -f search -g "$RUNNER_TEMP/artifacts/graph.ttl" -o "$RUNNER_TEMP/artifacts/search.json"
           cli export -f iirds  -g "$RUNNER_TEMP/artifacts/graph.ttl" -o "$RUNNER_TEMP/artifacts/package.iirds"
+          # A traversal trace is where a locale-sensitive sort or a path -> IRI
+          # difference would surface, and it surfaces nowhere else — the same
+          # invocation test/integration/traverse.test.ts uses for its golden.
+          cli traverse https://example.com/kg/doc/docs/configuration.md \
+            -g "$RUNNER_TEMP/artifacts/graph.ttl" \
+            -d 2 --predicates dcterms:references dcterms:hasPart \
+            --variant SP-X100 -f json > "$RUNNER_TEMP/artifacts/traverse.json"
+          # The mock model, so no weights are downloaded and the optional
+          # @huggingface/transformers peer is not needed. Float layout in the
+          # sidecar is exactly the kind of thing that could differ by platform.
+          #
+          # Must stay after the search export: `embed` reads search.json from
+          # beside the graph, and without it exits 2 rather than emitting.
+          cli embed -g "$RUNNER_TEMP/artifacts/graph.ttl" --model mock --no-cache \
+            -o "$RUNNER_TEMP/artifacts/vectors.bin"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -136,7 +157,7 @@ jobs:
           echo "comparing $platforms platforms"
 
           status=0
-          for file in graph.ttl graph.jsonld search.json package.iirds; do
+          for file in graph.ttl graph.jsonld search.json package.iirds traverse.json vectors.bin; do
             echo "--- $file"
             # One digest per platform. More than one distinct value means the
             # emitters disagree by platform, which the determinism contract
@@ -171,7 +192,7 @@ jobs:
       # Same engine floor as build-test: engines.npm is >=11.6.3 with
       # engine-strict, so a runner image below it fails `npm ci` with
       # EBADENGINE and nothing in the log says why.
-      - name: Pin npm above the engines floor
+      - name: Enforce the npm engines floor
         run: npm install -g npm@^11.6.3
 
       # `npm ci`, matching build-test. This job predates the switch back to it
