@@ -341,7 +341,10 @@ the repo's `CLAUDE_CODE_OAUTH_TOKEN` secret.
 
 ## Related files
 
-- [.github/workflows/ci.yml](.github/workflows/ci.yml) — the full loop plus the determinism gate
+- [.github/workflows/ci.yml](.github/workflows/ci.yml) — the full loop and the determinism gate on
+  ubuntu × macos × windows, then a `cross-platform` job that compares the emitted artifacts'
+  digests *across* runners. Three per-OS golden checks prove three platforms each match one golden;
+  the join is what proves they match each other
 - [.github/workflows/docs.yml](.github/workflows/docs.yml) — strategy invariants, CLI drift, page
   frontmatter, the graph gate over dockg's own docs, then the Pages deploy
 - [scripts/](scripts) — `check-content-strategy.mjs`, `check-cli-reference.mjs`,
