@@ -274,10 +274,17 @@ export function renderStats(
   // Sections are explicit-only (ADR 01013), so this block is reported and not
   // gated — a corpus that has not started on section metadata should not fail.
   lines.push("", "Coverage (sections, not gated):");
-  for (const { field, docs, pct } of report.sectionCoverage) {
-    lines.push(
-      `  ${field.padEnd(width)}  ${docs}/${report.sections}  ${pct.toFixed(1)}%`,
-    );
+  if (report.sections === 0) {
+    // The vacuous-100% convention exists to stop an empty graph tripping a
+    // gate. This block gates nothing, so printing "0/0 100.0%" on a corpus with
+    // no sections would just assert the opposite of the truth.
+    lines.push("  (no sections in this graph)");
+  } else {
+    for (const { field, docs, pct } of report.sectionCoverage) {
+      lines.push(
+        `  ${field.padEnd(width)}  ${docs}/${report.sections}  ${pct.toFixed(1)}%`,
+      );
+    }
   }
   return lines.join("\n");
 }
