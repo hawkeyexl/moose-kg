@@ -36,7 +36,9 @@ describe("emitTurtle", () => {
   it("emits sorted prefixes, subjects, and predicates with rdf:type as `a` first", () => {
     const ttl = emitTurtle(sample());
     expect(ttl).toContain("@prefix dcterms: <http://purl.org/dc/terms/> .");
-    expect(ttl).toContain("@prefix dockg: <https://dockg.dev/ns#> .");
+    expect(ttl).toContain(
+      "@prefix dockg: <https://hawkeyexl.github.io/dockg/ns#> .",
+    );
     // concept subject sorts before doc subject
     const conceptAt = ttl.indexOf("<https://example.com/kg/concept/a>");
     const docAt = ttl.indexOf(`<${DOC}>`);
@@ -117,6 +119,6 @@ describe("emitTurtle", () => {
     const ttl = emitTurtle([
       { s: DOC, p: `${NS.dcterms}title`, o: iri(`${NS.dockg}weird/local`) },
     ]);
-    expect(ttl).toContain("<https://dockg.dev/ns#weird/local>");
+    expect(ttl).toContain("<https://hawkeyexl.github.io/dockg/ns#weird/local>");
   });
 });
