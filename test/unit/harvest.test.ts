@@ -46,6 +46,10 @@ describe("harvestWarnings", () => {
       ],
       ["transposed", { conceptss: ["a"] }, "concepts"],
       ["uppercase", { Supersedes: "./old.md" }, "supersedes"],
+      // The pair ADR 01028 calls out by name: one edit apart, different
+      // meanings. On its own `types` reads as a typo for `type`, and warning is
+      // the intended behavior — not an accident of the threshold.
+      ["plural of a short key", { types: ["a"] }, "type"],
     ];
 
     for (const [name, fm, expected] of cases) {
@@ -83,6 +87,18 @@ describe("harvestWarnings", () => {
           }),
         ]),
       ).toEqual([]);
+    });
+
+    it("on `types`, which is one edit from `type` and means something else", () => {
+      // ADR 01028 names this pair as a known consequence of the distance-1
+      // threshold on short keys, and the ADR was the only place it was
+      // recorded. `types` on a page that also declares `type` is silent —
+      // the author has made their choice — so this pins the shape the ADR
+      // actually claims, rather than leaving the next reader to guess whether
+      // the warning below is intended or a bug.
+      expect(harvestWarnings([doc({ type: "concept", types: ["a"] })])).toEqual(
+        [],
+      );
     });
 
     it("when the page declares both the near miss and the real key", () => {

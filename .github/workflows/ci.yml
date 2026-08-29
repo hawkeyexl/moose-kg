@@ -162,9 +162,19 @@ jobs:
             # One digest per platform. More than one distinct value means the
             # emitters disagree by platform, which the determinism contract
             # forbids.
+            # Check the file exists before digesting it. `sha256sum` failing
+            # inside a command substitution used as a printf argument does not
+            # trip `set -e` — the same masking shape the comment above warns
+            # about, one line lower. Today an upstream `bash -eo pipefail`
+            # already fails the job if an emit step breaks, but that makes this
+            # loop's safety depend on another step's shell options.
             digests=$(for dir in artifacts-*/; do
+              if [ ! -f "$dir$file" ]; then
+                echo "::error::$dir$file is missing — nothing to compare" >&2
+                exit 1
+              fi
               printf '%s  %s\n' "$(sha256sum "$dir$file" | cut -d' ' -f1)" "${dir%/}"
-            done | sort)
+            done | sort) || exit 1
             echo "$digests"
             distinct=$(echo "$digests" | awk '{print $1}' | sort -u | wc -l)
             if [ "$distinct" -ne 1 ]; then

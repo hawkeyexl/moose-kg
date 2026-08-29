@@ -30,7 +30,7 @@ jobs:
 
       # `npm ci`, matching ci.yml — the lockfile is authoritative (ADR 01023).
       # Same engine floor as ci.yml; below it npm ci fails with EBADENGINE.
-      - name: Pin npm above the engines floor
+      - name: Enforce the npm engines floor
         run: npm install -g npm@^11.6.3
       - run: npm ci
       - run: npm run build
