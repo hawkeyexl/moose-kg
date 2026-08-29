@@ -127,6 +127,13 @@ const HAS_EXTENSION = /\.[a-z0-9]+$/i;
  */
 function addressesDocument(target: string, extensions: string[]): boolean {
   if (target === "" || !HAS_EXTENSION.test(target)) return true;
+  // No configured extensions means the mapping has declared nothing about what
+  // its documents look like — so there is no list to judge the target against,
+  // and the narrowing does not apply. Gating on an empty list would answer "no"
+  // to every extension-bearing target and skip genuinely broken `.md` links,
+  // turning a narrowing into a way to switch the check off. `extensions: []` is
+  // schema-valid (no minItems), so this is reachable config, not a theoretical.
+  if (extensions.length === 0) return true;
   const ext = target.slice(target.lastIndexOf(".")).toLowerCase();
   return extensions.some((e) => e.toLowerCase() === ext);
 }

@@ -454,3 +454,29 @@ describe("analyzeDoc — images and code", () => {
     expect(doc.codeLanguages).toEqual(["bash", "python"]);
   });
 });
+
+describe("analyzeDoc — a route mapping with no configured extensions", () => {
+  // `extensions: []` is schema-valid (no minItems). ADR 01033's narrowing asks
+  // "is this extension one of the mapping's document extensions?" — and against
+  // an empty list the answer is always no, which would skip EVERY
+  // extension-bearing target, including a genuinely broken `.md` link. The
+  // narrowing must not become a way to turn the check off.
+  const paths = new Set(["docs/pages/actions/find.mdx"]);
+  const routes = [
+    { basePath: "/docs", root: "docs/pages", extensions: [], indexFiles: [] },
+  ];
+
+  it("still reports a broken document link", () => {
+    const doc = analyzeDoc(
+      "[gone](/docs/actions/missing.md)\n",
+      "docs/l.md",
+      paths,
+      {
+        routes,
+      },
+    );
+    expect(doc.links).toEqual([
+      { raw: "/docs/actions/missing.md", kind: "broken" },
+    ]);
+  });
+});

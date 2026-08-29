@@ -83,6 +83,19 @@ describe("numeric options are range-checked", () => {
       ["fill", "--max-cost", "-1"],
       "--max-cost must be >= 0",
     ],
+    // The one this sweep first missed. NaN here is worse than a wrong number:
+    // `pct < NaN` is false for every field, so the coverage gate silently
+    // passes rather than failing.
+    [
+      "a non-numeric --coverage-threshold",
+      ["stats", "--check", "--coverage-threshold", "abc"],
+      "--coverage-threshold expects a number",
+    ],
+    [
+      "a --coverage-threshold above 100",
+      ["stats", "--coverage-threshold", "101"],
+      "--coverage-threshold must be 0..100",
+    ],
   ];
   for (const [name, args, message] of cases) {
     it(`refuses ${name}`, () => {

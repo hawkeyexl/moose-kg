@@ -282,7 +282,10 @@ program
   .option(
     "--coverage-threshold <pct>",
     "Minimum metadata coverage % (all fields); overrides config for this run",
-    (v) => Number.parseFloat(v),
+    // A percentage, so 0..100 rather than the 0..1 of a confidence. NaN here is
+    // worse than a wrong number: `pct < NaN` is false for every field, so the
+    // gate this flag exists to tighten would silently pass instead.
+    numericOption("--coverage-threshold", { min: 0, max: 100 }),
   )
   .action(
     (opts: {
