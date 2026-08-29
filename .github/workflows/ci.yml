@@ -122,6 +122,19 @@ jobs:
           set -euo pipefail
           cd artifacts
           ls -1
+
+          # Assert the inputs exist before comparing them. Without nullglob an
+          # unmatched `artifacts-*/` leaves the literal pattern in $dir; the
+          # sha256sum failure is swallowed because it sits in a command
+          # substitution used as a printf argument, so every file reports one
+          # distinct digest and the gate passes having compared nothing.
+          platforms=$(find . -maxdepth 1 -type d -name 'artifacts-*' | wc -l)
+          if [ "$platforms" -lt 2 ]; then
+            echo "::error::expected one artifact directory per platform, found $platforms — nothing was compared"
+            exit 1
+          fi
+          echo "comparing $platforms platforms"
+
           status=0
           for file in graph.ttl graph.jsonld search.json package.iirds; do
             echo "--- $file"
@@ -154,6 +167,12 @@ jobs:
         with:
           node-version: 24
           cache: npm
+
+      # Same engine floor as build-test: engines.npm is >=11.6.3 with
+      # engine-strict, so a runner image below it fails `npm ci` with
+      # EBADENGINE and nothing in the log says why.
+      - name: Pin npm above the engines floor
+        run: npm install -g npm@^11.6.3
 
       # `npm ci`, matching build-test. This job predates the switch back to it
       # (ADR 01023) and merged in still carrying `npm install`, which would have
