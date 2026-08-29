@@ -118,6 +118,7 @@ Section coverage is reported but never gated, so it has no threshold key. See
 | `fill.minConfidence` | number (0–1) | `0.7` | Fields scored below this are not written. |
 | `fill.writeProvenance` | boolean | `true` | Record `kg.provenance` on filled docs. |
 | `fill.validateGraph` | boolean | `true` | SHACL guardrail on proposals. |
+| `fill.sections` | boolean | `false` | Also propose per-section metadata. Opt-in: more output per call, and section metadata is explicit-only. |
 | `fill.fields` | enum[] | all twelve | Restrict what may ever be proposed. |
 | `fill.pricing.inputPerMTok` | number | — | Both pricing keys required together. |
 | `fill.pricing.outputPerMTok` | number | — | Overrides the built-in price table. |

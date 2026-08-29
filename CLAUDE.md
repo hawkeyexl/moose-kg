@@ -234,11 +234,16 @@ point, and these are pointers into it, not a summary of it.
    committed fixture under [test/fixtures/](test/fixtures). Determinism means what you capture is
    what every reader sees — and a transcribed approximation is a claim nothing checks.
 
-Four gates run in CI and all of them block: `npm run docs:check-strategy` (anchor and coverage
-invariants), `npm run docs:check-cli` (reference/cli.mdx vs commander),
-`npm run docs:check-links` (every `/dockg/…` target resolves), and `npm run docs:test` (Doc
-Detective, below). The docs workflow also builds a graph from the docs themselves and holds it to
+Three gates run in [docs.yml](.github/workflows/docs.yml) and all of them block:
+`npm run docs:check-strategy` (anchor and coverage invariants), `npm run docs:check-cli`
+(reference/cli.mdx vs commander), and `npm run docs:check-links` (every `/dockg/…` target
+resolves). The docs workflow also builds a graph from the docs themselves and holds it to
 `dockg check` and `dockg stats --check`.
+
+Doc Detective is a **fourth gate with a narrower reach**: it lives in its own workflow
+([doc-detective.yml](.github/workflows/doc-detective.yml)) because its steps execute shell from the
+pull request's own content, so it is skipped on fork PRs — and a skipped job does not block. Treat
+fork contributions as unverified for command output.
 
 **Documented command output is executed, not trusted.** Seven pages carry trailing
 `{/* test … */}` / `{/* step … */}` blocks that run the built CLI against `test/fixtures/dd/` and

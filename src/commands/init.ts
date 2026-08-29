@@ -52,7 +52,7 @@ provenance:
 #   schemas: ["./my-schema.json"]
 
 # SHACL shapes \`dockg check\` validates the built graph against. Default:
-# the shapes contract bundled with dockg (shapes/dockg-0.5.ttl).
+# the shapes contract bundled with dockg (shapes/dockg-0.6.ttl).
 # check:
 #   shapes: ["./my-shapes.ttl"]
 
@@ -80,6 +80,9 @@ fill:
   # Reject proposals that would violate the SHACL shapes contract
   # (broader/narrower cycles, conflicting labels).
   validateGraph: true
+  # Also propose per-section metadata. Off by default: it costs more output per
+  # call, and section metadata is explicit-only, so review it as carefully.
+  sections: false
 
 # Local embeddings for semantic search (\`dockg embed\`). Needs the optional
 # peer: npm install @huggingface/transformers

@@ -9,7 +9,12 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    include: ["test/real/**/*.test.ts"],
+    // Named explicitly, not globbed. `test/real/**` swept in the fill test
+    // too, whose beforeAll dials an OpenAI-compatible server — so the
+    // embed-real job, which starts no such server, failed with ECONNREFUSED on
+    // a file it was never meant to run. Each real-model job owns its own
+    // config for the same reason it owns its own service dependencies.
+    include: ["test/real/node-embedder.test.ts"],
     environment: "node",
     // A cold model download plus ONNX session init dwarfs vitest's default.
     testTimeout: 600_000,

@@ -49,7 +49,7 @@
     "dev": "node scripts/clean-dist.mjs && tsup --watch",
     "test": "vitest run",
     "test:real": "vitest run --config vitest.real.config.ts",
-    "test:real:fill": "vitest run --config vitest.real.config.ts test/real/fill-openai.test.ts",
+    "test:real:fill": "vitest run --config vitest.fill.config.ts",
     "test:real:cross": "node test/real/cross-platform.mjs",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",

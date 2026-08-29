@@ -184,7 +184,13 @@ function resolveKg(
   // one.
   if (k["type"] === undefined || k["type"] === null) {
     const pageType = asString(fmValue(fm, ["type"]));
-    const derived = pageType ? PAGE_TYPE_TO_TOPIC_TYPE[pageType] : undefined;
+    // hasOwn guards the prototype chain: `type: constructor` would otherwise
+    // resolve to Object and pass the truthiness check below, writing a
+    // function into kg.type.
+    const derived =
+      pageType && Object.hasOwn(PAGE_TYPE_TO_TOPIC_TYPE, pageType)
+        ? PAGE_TYPE_TO_TOPIC_TYPE[pageType]
+        : undefined;
     if (derived) k["type"] = derived;
   }
 

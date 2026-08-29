@@ -284,6 +284,9 @@
               "minimum": 0
             }
           }
+        },
+        "sections": {
+          "type": "boolean"
         }
       }
     },
