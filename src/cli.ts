@@ -32,6 +32,31 @@ program
   )
   .version(toolVersion(import.meta.url));
 
+/**
+ * Parse a numeric CLI option, refusing what the config schema refuses.
+ *
+ *  returns NaN for abc and silently accepts out-of-range
+ * values, and NaN then disables whatever gate it feeds — a cost cap that never
+ * fires, a confidence gate that writes everything. The documented precedence is
+ * config → Ajv → CLI override, so the override has to be held to the same range.
+ */
+function numericOption(
+  flag: string,
+  { min, max }: { min: number; max?: number },
+) {
+  return (raw: string): number => {
+    const value = Number.parseFloat(raw);
+    if (!Number.isFinite(value)) {
+      throw new DockgError(`${flag} expects a number, got "${raw}".`);
+    }
+    if (value < min || (max !== undefined && value > max)) {
+      const range = max === undefined ? `>= ${min}` : `${min}..${max}`;
+      throw new DockgError(`${flag} must be ${range}, got ${value}.`);
+    }
+    return value;
+  };
+}
+
 function fail(e: unknown): never {
   if (e instanceof DockgError) {
     console.error(pc.red(`dockg: ${e.message}`));
@@ -137,13 +162,15 @@ program
   .option("--no-cache", "Bypass the proposal cache")
   .option("--no-validate-graph", "Skip the SHACL graph guardrail on proposals")
   .option("--sections", "Also propose per-section metadata")
-  .option("--max-cost <usd>", "Stop proposing past this cost", (v) =>
-    Number.parseFloat(v),
+  .option(
+    "--max-cost <usd>",
+    "Stop proposing past this cost",
+    numericOption("--max-cost", { min: 0 }),
   )
   .option(
     "--min-confidence <n>",
     "Minimum model confidence (0..1) to write a field (default: config, 0.7)",
-    (v) => Number.parseFloat(v),
+    numericOption("--min-confidence", { min: 0, max: 1 }),
   )
   .option(
     "--provider <name>",

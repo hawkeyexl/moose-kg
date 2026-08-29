@@ -11,6 +11,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { renderFill, runFill } from "../../src/commands/fill.js";
+import { runValidate } from "../../src/commands/validate.js";
 import { MockProvider } from "@hawkeyexl/inference";
 
 const PAGE = [
@@ -32,11 +33,11 @@ const PAGE = [
   "",
 ].join("\n");
 
-function setup(config = ""): string {
+function setup(fields = "[type]"): string {
   const dir = mkdtempSync(join(tmpdir(), "dockg-fillsec-"));
   writeFileSync(
     join(dir, "dockg.config.yaml"),
-    `version: 1\ninputs: ["*.md"]\nfill:\n  fields: [type]\n${config}`,
+    `version: 1\ninputs: ["*.md"]\nfill:\n  fields: ${fields}\n`,
   );
   writeFileSync(join(dir, "a.md"), PAGE);
   return dir;
@@ -182,6 +183,120 @@ describe("fill --sections", () => {
     expect(report.results[0]!.preserved).toContain(
       "sections.install-the-sdk.type",
     );
+  });
+
+  it("vets section proposals against the shapes, and blames the section", async () => {
+    // Regression: GUARDED_FIELDS held bare names, so `sections.<slug>.applies-to`
+    // matched none of them and vet() returned before simulating anything. A
+    // section that applied and did not apply to the same variant was written,
+    // and the next `dockg check` exited 1 on a file fill had just produced.
+    const dir = setup("[applies-to, not-applicable-to]");
+    const provider = new MockProvider([
+      {
+        json: {
+          sections: [
+            {
+              slug: "install-the-sdk",
+              "applies-to": ["SP-X100"],
+              "not-applicable-to": ["SP-X100"],
+              confidence: { "applies-to": 0.95, "not-applicable-to": 0.95 },
+            },
+          ],
+        },
+      },
+    ]);
+
+    const report = await runFill({
+      cwd: dir,
+      providerInstance: provider,
+      sections: true,
+      noCache: true,
+    });
+
+    const result = report.results[0]!;
+    // The negative side is dropped, and named by its SECTION — blaming the
+    // bare `not-applicable-to` would drop a document-level value instead.
+    expect(result.rejected).toEqual([
+      "sections.install-the-sdk.not-applicable-to",
+    ]);
+    const written = readFileSync(join(dir, "a.md"), "utf8");
+    expect(written).toContain("applies-to");
+    expect(written).not.toContain("not-applicable-to");
+  });
+
+  it("writes provenance dockg validate accepts", async () => {
+    // Regression: dotted section names went straight into kg.provenance, whose
+    // `fields` and `confidence` keys the vendored docmeta:kg schema bounds to
+    // the twelve document-level names — so every default `--sections` run wrote
+    // frontmatter dockg's own validate rejected with 3 Ajv errors.
+    const dir = setup();
+    const provider = new MockProvider([
+      {
+        json: proposal([
+          { slug: "install-the-sdk", type: "task", confidence: { type: 0.95 } },
+        ]),
+      },
+    ]);
+
+    const report = await runFill({
+      cwd: dir,
+      providerInstance: provider,
+      sections: true,
+      noCache: true,
+    });
+
+    const written = readFileSync(join(dir, "a.md"), "utf8");
+    expect(written).toContain("install-the-sdk:");
+    // The section value is written; only its provenance entry is omitted.
+    expect(written).not.toContain("sections.install-the-sdk.type");
+
+    const validated = await runValidate({ cwd: dir, globs: ["a.md"] });
+    expect(validated.exitCode, JSON.stringify(validated.run)).toBe(0);
+
+    // And the gap is loud rather than silent.
+    expect(report.warnings.join(" ")).toContain(
+      "NOT recorded in kg.provenance",
+    );
+  });
+
+  it("still fills sections when the document's own fields are complete", async () => {
+    // Regression: `missing.length === 0` short-circuited to `complete` before
+    // any section handling, so the primary workflow — fill the corpus, then
+    // enable --sections — did nothing on every already-annotated page.
+    const dir = setup();
+    writeFileSync(
+      join(dir, "a.md"),
+      PAGE.replace(
+        "title: Widget SDK",
+        "title: Widget SDK\nkg:\n  type: reference",
+      ),
+    );
+    const provider = new MockProvider([
+      {
+        json: {
+          sections: [
+            {
+              slug: "install-the-sdk",
+              type: "task",
+              confidence: { type: 0.95 },
+            },
+          ],
+        },
+      },
+    ]);
+
+    const report = await runFill({
+      cwd: dir,
+      providerInstance: provider,
+      sections: true,
+      noCache: true,
+    });
+
+    expect(report.results[0]!.status).not.toBe("complete");
+    const written = readFileSync(join(dir, "a.md"), "utf8");
+    expect(written).toContain("install-the-sdk:");
+    // The human's document-level value is untouched.
+    expect(written).toContain("type: reference");
   });
 
   it("proposes nothing for sections unless asked", async () => {

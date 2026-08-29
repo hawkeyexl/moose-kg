@@ -181,7 +181,29 @@ describe("runFill", () => {
     expect(renderFill(report, "pretty")).toContain("LLM cost: $");
   });
 
-  it("reports no budget when the cap is switched off", async () => {
+  it("reports no budget when the cap is switched off on a priced model", async () => {
+    const dir = setup(
+      { "a.md": "---\ntitle: A\n---\n" },
+      "fill:\n  maxCostUsd: null\n",
+    );
+    const provider = new MockProvider([{ json: PROPOSAL }], "gpt-4o-mini");
+    const report = await runFill({
+      cwd: dir,
+      providerInstance: provider,
+      dryRun: true,
+      noCache: true,
+    });
+    expect(report.budget).toBe("off");
+    expect(report.warnings).toEqual([]);
+    // Priced, so the total means something and is worth printing.
+    expect(renderFill(report, "pretty")).toContain("LLM cost: $");
+  });
+
+  it("still says unpriceable when no cap was set, without warning", async () => {
+    // `budget` answers two questions that are not the same: can the cap be
+    // applied, and is `costUsd` measurable at all. Keying the render on the cap
+    // let an uncapped run against an unpriced model print a confident
+    // "$0.0000" — the very output ADR 01027 exists to remove.
     const dir = setup(
       { "a.md": "---\ntitle: A\n---\n" },
       "fill:\n  maxCostUsd: null\n",
@@ -193,10 +215,30 @@ describe("runFill", () => {
       dryRun: true,
       noCache: true,
     });
-    // No cap was asked for, so there is nothing to warn about — an unpriced
-    // model is only a problem when a limit depends on the price.
-    expect(report.budget).toBe("off");
+    expect(report.budget).toBe("unpriceable");
+    // No cap was asked for, so there is nothing to warn about.
     expect(report.warnings).toEqual([]);
+    expect(renderFill(report, "pretty")).not.toContain("$0.0000");
+  });
+
+  it("reports a local provider as free, and does not warn about a cap", async () => {
+    const dir = setup({ "a.md": "---\ntitle: A\n---\n" });
+    const provider = new MockProvider(
+      [{ json: PROPOSAL }],
+      "granite-4.1-3b-q2",
+    );
+    // The provider name is what makes it free; llama-cpp cannot spend, so the
+    // default 5 USD cap has nothing to enforce and must not warn.
+    Object.defineProperty(provider, "provider", { value: () => "llama-cpp" });
+    const report = await runFill({
+      cwd: dir,
+      providerInstance: provider,
+      dryRun: true,
+      noCache: true,
+    });
+    expect(report.budget).toBe("free");
+    expect(report.warnings).toEqual([]);
+    expect(renderFill(report, "pretty")).toContain("LLM cost: none");
   });
 
   it("reports schema-invalid proposals as errors with exit 1", async () => {

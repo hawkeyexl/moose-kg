@@ -129,11 +129,8 @@ Two behaviors worth knowing before you run it:
 
 - **A slug the model invents is dropped, not written.** Writing a block against a heading that does
   not exist would create exactly the broken section ref this page tells you to fix, so `fill`
-  refuses and reports it:
-
-  ```
-  proposed  docs/guide.md (type) [no such section: renamed-heading] — dry run, not written
-  ```
+  refuses. The report names the slug it discarded in a trailing
+  `[no such section: …]`, and the JSON report carries it as `unknownSections`.
 
 - **Preservation is per field, per section.** A value you set on one section is never overwritten
   without `--force`, and that does not stop the section beside it from being filled.

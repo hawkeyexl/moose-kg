@@ -10,6 +10,7 @@ import { resolve } from "node:path";
 
 import { analyzeDoc } from "../core/analyze.js";
 import { loadConfig, type FillField } from "../core/config.js";
+import type { DocModel } from "../types.js";
 import { discoverFiles } from "../core/discover.js";
 import {
   applyKgFields,
@@ -95,7 +96,8 @@ export interface FillDocResult {
 /**
  * Whether the cost cap could actually be applied to this run.
  *
- * - `off` — no cap was set (`fill.maxCostUsd: null`).
+ * - `off` — the model is priced and no cap was set (`fill.maxCostUsd: null`).
+ * - `free` — the provider cannot spend, so there is nothing to cap.
  * - `enforced` — a cap was set and the model has a price, so `costUsd` is real
  *   and `skipped-budget` can fire.
  * - `unpriceable` — a cap was set and the model has no entry in the price
@@ -107,7 +109,21 @@ export interface FillDocResult {
  * not the same thing, and the default cap is 5 USD while the price table has
  * six models in it — so the silent case was the common one.
  */
-export type BudgetState = "off" | "enforced" | "unpriceable";
+export type BudgetState = "off" | "free" | "enforced" | "unpriceable";
+
+/**
+ * Providers that cannot spend money, whatever the cap says.
+ *
+ * `llama-cpp` runs in-process against local weights, and the config reference
+ * documents it as "no key, no network, no spend" — so warning that a cap cannot
+ * be enforced there answers a question nobody asked, and trains the reader to
+ * ignore the warning that matters: an unpriced *hosted* model.
+ *
+ * `mock` is deliberately NOT here. It is a test double that stands in for a
+ * real provider, priced ones included, so treating it as free would make the
+ * enforcement path itself untestable.
+ */
+const FREE_PROVIDERS = new Set(["llama-cpp"]);
 
 export interface FillReport {
   results: FillDocResult[];
@@ -223,19 +239,29 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
 
   // A cap dockg cannot apply must say so. Silently not enforcing a spend limit
   // the caller asked for is the one failure here that costs money.
-  const budget: BudgetState =
-    maxCostUsd === null
-      ? "off"
-      : pricing === undefined
-        ? "unpriceable"
+  // Two orthogonal questions, and conflating them is what produced the bug
+  // this state exists to fix:
+  //   1. Is `costUsd` measurable at all?  → pricing !== undefined
+  //   2. Was a cap asked for, and can it be applied?  → maxCostUsd, pricing
+  // `unpriceable` answers (1) whether or not a cap was set, so an uncapped run
+  // against an unpriced model no longer renders a confident "$0.0000".
+  const budget: BudgetState = FREE_PROVIDERS.has(identity.provider)
+    ? "free"
+    : pricing === undefined
+      ? "unpriceable"
+      : maxCostUsd === null
+        ? "off"
         : "enforced";
+  // The warning is about (2): only fire it when a cap was actually requested.
   const warnings: string[] =
-    budget === "unpriceable"
+    budget === "unpriceable" && maxCostUsd !== null
       ? [
           `Cost cap of ${maxCostUsd} USD cannot be enforced: no price is known for model "${identity.model}", ` +
             `so spend cannot be totalled. Set fill.pricing to enforce it, or fill.maxCostUsd: null if you meant no cap.`,
         ]
       : [];
+  /** Set when section fields were written but could not be recorded. */
+  let sectionsUnrecorded = false;
   // Null unless the cap is both set and applicable, so the gate below needs
   // no non-null assertion and cannot fire on an unpriceable run.
   const enforcedCap = budget === "enforced" ? maxCostUsd : null;
@@ -296,6 +322,14 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
     }
   }
 
+  if (sectionsUnrecorded) {
+    warnings.push(
+      "Section metadata was written but is NOT recorded in kg.provenance: docmeta:kg bounds " +
+        "provenance to document-level field names. Review section values by hand — the review " +
+        "queue will not list them.",
+    );
+  }
+
   const hasErrors = results.some((r) => r.status === "error");
   return { results, costUsd, budget, warnings, exitCode: hasErrors ? 1 : 0 };
 
@@ -312,7 +346,10 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
 
     const present = new Set(existingKgFields(content));
     const missing = opts.force ? fields : fields.filter((f) => !present.has(f));
-    if (missing.length === 0) {
+    // With --sections, a document whose own fields are complete may still have
+    // unfilled sections, so completeness at document level is not completeness
+    // (ADR 01032).
+    if (missing.length === 0 && !withSections) {
       return {
         path,
         status: "complete",
@@ -347,11 +384,14 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
     }
     const cached = proposal !== undefined;
 
-    // Outside the cache-miss branch: a *cached* proposal can carry sections
-    // too, and its slugs still have to be checked against real headings.
-    const doc = analyzeDoc(content, path, allPaths, {
-      routes: config.routes,
-    });
+    // Lazy: a *cached* proposal can carry sections, so the slugs still need
+    // checking outside the cache-miss branch — but a sections-off run that hits
+    // the cache should not pay for a full markdown parse it never reads.
+    let docModel: DocModel | undefined;
+    const doc = (): DocModel =>
+      (docModel ??= analyzeDoc(content, path, allPaths, {
+        routes: config.routes,
+      }));
 
     if (proposal === undefined) {
       // completeValidatedJSON validates and retries once before giving up.
@@ -365,7 +405,7 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
       const run = await completeValidatedJSON<Record<string, unknown>>({
         provider: getProvider(),
         system: SYSTEM_PROMPT,
-        user: buildUserPrompt(doc, content, missing, {
+        user: buildUserPrompt(doc(), content, missing, {
           sections: withSections,
         }),
         schema: proposalSchema(missing, { sections: withSections }),
@@ -400,7 +440,7 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
     // fields (ADR 01032).
     const unknownSlugs: string[] = [];
     if (withSections) {
-      const realSlugs = new Set(doc.sections.map((s) => s.slug));
+      const realSlugs = new Set(doc().sections.map((s) => s.slug));
       for (const entry of Array.isArray(proposal["sections"])
         ? (proposal["sections"] as Array<Record<string, unknown>>)
         : []) {
@@ -450,6 +490,9 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
     // here is normal operation, reported but never an error (exit stays 0).
     const lowConfidence: FillDocResult["lowConfidence"] = [];
     for (const field of Object.keys(narrowed)) {
+      // Unscored counts as 0, so minConfidence: 0 stays a working opt-out from
+      // the gate. The related hazard — stamping a confidence the model never
+      // gave into kg.provenance — is fixed where provenance is built, not here.
       const c = confidence[field] ?? 0;
       if (c < minConfidence) {
         lowConfidence.push({
@@ -527,9 +570,24 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
       const myConfidence: Record<string, number> = {
         ...(mine?.confidence ?? {}),
       };
-      for (const f of realFields) myConfidence[f] = round2(confidence[f] ?? 0);
+      // Document-level names only. `docmeta:kg` bounds provenanceEntry.fields
+      // and confidence.propertyNames to the twelve flat field names, and says
+      // why: "section typing and document lineage are curated by hand, not
+      // machine-proposed". Those bytes are immutable (ADR 01023), so writing a
+      // dotted name here emits frontmatter `dockg validate` rejects — the one
+      // thing this whole guardrail exists to prevent (ADR 01032).
+      const recordable = realFields.filter((f) => !f.includes("."));
+      // Loud, not silent: metadata a model wrote with no entry in the review
+      // queue is exactly the thing kg.provenance exists to prevent.
+      if (recordable.length < realFields.length) sectionsUnrecorded = true;
+      // Only record a score the model actually gave. `?? 0` stamped a
+      // confidence of 0.00 the model never asserted whenever it omitted one.
+      for (const f of recordable) {
+        const c = confidence[f];
+        if (c !== undefined) myConfidence[f] = round2(c);
+      }
       const fieldSet = [
-        ...new Set([...(mine?.fields ?? []), ...realFields]),
+        ...new Set([...(mine?.fields ?? []), ...recordable]),
       ].sort();
       const entry = {
         "generated-by": identity.model,
@@ -631,13 +689,18 @@ export function renderFill(
         break;
     }
   }
-  // "$0.0000" reads as "this run was free". Under an unpriceable model it means
-  // "nothing could be totalled", which is a different thing, so say which.
+  // "$0.0000" reads as "this run was free". Three different things can produce
+  // it, and only one of them is true — so say which. Keyed on whether the cost
+  // is *measurable*, not on whether a cap was set: `budget: "off"` over an
+  // unpriced model reached the misleading branch when this only checked
+  // "unpriceable".
   lines.push(
     "",
-    report.budget === "unpriceable"
-      ? "LLM cost: unpriceable — no price known for this model, so the cap was not applied"
-      : `LLM cost: $${report.costUsd.toFixed(4)}`,
+    report.budget === "free"
+      ? "LLM cost: none — this provider does not spend"
+      : report.budget === "unpriceable"
+        ? "LLM cost: unpriceable — no price known for this model, so the cap was not applied"
+        : `LLM cost: $${report.costUsd.toFixed(4)}`,
   );
   return lines.join("\n");
 }
