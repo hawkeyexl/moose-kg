@@ -52,7 +52,7 @@ provenance:
 #   schemas: ["./my-schema.json"]
 
 # SHACL shapes \`dockg check\` validates the built graph against. Default:
-# the shapes contract bundled with dockg (shapes/dockg-0.5.ttl).
+# the shapes contract bundled with dockg (shapes/dockg-0.6.ttl).
 # check:
 #   shapes: ["./my-shapes.ttl"]
 
