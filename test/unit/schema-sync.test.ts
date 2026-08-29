@@ -5,9 +5,16 @@ import { Ajv2020 } from "ajv/dist/2020.js";
 import { describe, expect, it } from "vitest";
 import { bundledSchemaPath, bundledShapesPath } from "../../src/core/pkg.js";
 import { FIELD_SCHEMAS } from "../../src/llm/prompt.js";
-import { COVERAGE_FIELD_NAMES } from "../../src/core/coverage.js";
+import {
+  COVERAGE_FIELDS,
+  COVERAGE_FIELD_NAMES,
+} from "../../src/core/coverage.js";
 import { PROVIDER_NAMES } from "../../src/core/config.js";
 import {
+  IIRDS_HAS_SUBJECT,
+  IIRDS_HAS_TOPIC_TYPE,
+  IIRDS_RELATES_TO_LIFECYCLE_PHASE,
+  IIRDS_RELATES_TO_PRODUCT_VARIANT,
   PAGE_TYPE_TO_TOPIC_TYPE,
   SOFTWARE_LIFECYCLE_IRIS,
   SOFTWARE_SUBJECT_IRIS,
@@ -276,5 +283,60 @@ describe("PROVIDER_NAMES ↔ config schema", () => {
     expect([...PROVIDER_NAMES].sort()).toEqual(
       [...schema.properties.fill.properties.provider.enum].sort(),
     );
+  });
+});
+
+describe("coverage IRIs ↔ iirds.ts", () => {
+  it("measures the same iiRDS predicates the emitter mints", () => {
+    // A drift guard, and only that: comparing values cannot tell an imported
+    // constant from a retyped literal that happens to match. What it does
+    // catch is the failure that matters — a predicate moving in iirds.ts (a
+    // namespace revision, an iiRDS version bump) while coverage.ts still
+    // counts the old IRI, and every row silently reads 0%.
+    const byField = new Map(COVERAGE_FIELDS.map((f) => [f.field, f.iri]));
+    expect(byField.get("type")).toBe(IIRDS_HAS_TOPIC_TYPE);
+    expect(byField.get("applies-to")).toBe(IIRDS_RELATES_TO_PRODUCT_VARIANT);
+    expect(byField.get("about-product-lifecycle")).toBe(
+      IIRDS_RELATES_TO_LIFECYCLE_PHASE,
+    );
+    expect(byField.get("about-product-aspect")).toBe(IIRDS_HAS_SUBJECT);
+  });
+});
+
+describe("the library entry point ↔ what the docs promise", () => {
+  it("re-exports every coverage symbol library-api.mdx names", async () => {
+    // reference/library-api.mdx tells a consumer to import these from
+    // "@hawkeyexl/dockg". `SECTION_COVERAGE_FIELDS` was documented there while
+    // living only in src/core/coverage.ts, which is not a public entry point —
+    // so the documented import resolved to undefined.
+    const page = readFileSync(
+      join(
+        dirname(fileURLToPath(import.meta.url)),
+        "..",
+        "..",
+        "docs",
+        "src",
+        "content",
+        "docs",
+        "reference",
+        "library-api.mdx",
+      ),
+      "utf8",
+    );
+    const index = (await import("../../src/index.js")) as Record<
+      string,
+      unknown
+    >;
+    for (const name of [
+      "COVERAGE_FIELDS",
+      "COVERAGE_FIELD_NAMES",
+      "SECTION_COVERAGE_FIELDS",
+    ]) {
+      expect(page, `${name} is not named on the page`).toContain(name);
+      expect(
+        index[name],
+        `${name} is not exported from src/index.ts`,
+      ).toBeDefined();
+    }
   });
 });

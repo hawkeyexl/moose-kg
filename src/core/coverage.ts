@@ -9,6 +9,12 @@
  * config schema so it cannot silently drift.
  */
 import { NS } from "./vocab.js";
+import {
+  IIRDS_HAS_SUBJECT,
+  IIRDS_HAS_TOPIC_TYPE,
+  IIRDS_RELATES_TO_LIFECYCLE_PHASE,
+  IIRDS_RELATES_TO_PRODUCT_VARIANT,
+} from "./iirds.js";
 
 export interface CoverageField {
   /** Config/report key. */
@@ -33,13 +39,13 @@ export const COVERAGE_FIELDS: readonly CoverageField[] = [
   // The iiRDS typing added in Phases 2–4. Coverage predates all of it, so the
   // measure of "what a graph-side consumer can see" was silent about the
   // vocabulary the project spent four phases adding (ADR 01029).
-  { field: "type", iri: `${NS.iirds}has-topic-type` },
-  { field: "applies-to", iri: `${NS.iirds}relates-to-product-variant` },
+  { field: "type", iri: IIRDS_HAS_TOPIC_TYPE },
+  { field: "applies-to", iri: IIRDS_RELATES_TO_PRODUCT_VARIANT },
   {
     field: "about-product-lifecycle",
-    iri: `${NS.iirds}relates-to-product-lifecycle-phase`,
+    iri: IIRDS_RELATES_TO_LIFECYCLE_PHASE,
   },
-  { field: "about-product-aspect", iri: `${NS.iirds}has-subject` },
+  { field: "about-product-aspect", iri: IIRDS_HAS_SUBJECT },
 ];
 
 /**
