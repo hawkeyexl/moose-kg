@@ -138,6 +138,8 @@ export interface DockgConfig {
     writeProvenance: boolean;
     /** Reject proposals that would violate the SHACL shapes contract. */
     validateGraph: boolean;
+    /** Also propose per-section metadata (ADR 01032). Opt-in: more output. */
+    sections: boolean;
     pricing?: Pricing;
   };
   stats: {
@@ -299,6 +301,7 @@ export function parseConfig(text: string, configPath: string): DockgConfig {
       minConfidence: r.fill?.minConfidence ?? 0.7,
       writeProvenance: r.fill?.writeProvenance ?? true,
       validateGraph: r.fill?.validateGraph ?? true,
+      sections: r.fill?.sections ?? false,
       pricing: r.fill?.pricing,
     },
     embed: {

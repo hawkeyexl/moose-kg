@@ -32,6 +32,7 @@ import {
 import { FillCache, cacheKey } from "../llm/cache.js";
 import {
   SYSTEM_PROMPT,
+  SECTION_FILL_FIELDS,
   buildUserPrompt,
   proposalSchema,
 } from "../llm/prompt.js";
@@ -51,6 +52,8 @@ export interface FillOptions {
   model?: string;
   /** Disable the graph guardrail (`--no-validate-graph`). */
   noValidateGraph?: boolean;
+  /** Propose per-section metadata as well as document-level (ADR 01032). */
+  sections?: boolean;
   /** Injection seam for tests: bypasses the provider factory. */
   providerInstance?: InferenceProvider;
 }
@@ -72,6 +75,13 @@ export interface FillDocResult {
   preserved: string[];
   /** Fields dropped by the graph guardrail (fill.validateGraph). */
   rejected?: string[];
+  /**
+   * Section slugs the model proposed that match no heading in the document.
+   * Dropped rather than written: writing one would mint a
+   * dockg:brokenSectionRef, a finding fill must report and never manufacture
+   * (ADR 01032).
+   */
+  unknownSections?: string[];
   /** Fields the model proposed but scored below fill.minConfidence (ADR 01015). */
   lowConfidence?: Array<{
     field: string;
@@ -199,7 +209,10 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
   // Compiled against the full configured field set, not any one doc's missing
   // subset: proposals are validated leniently and narrowed afterwards, so a
   // provider that volunteers a field this doc didn't ask for is fine.
-  const validateProposal = validatorFor(proposalSchema(fields));
+  const withSections = opts.sections ?? config.fill.sections;
+  const validateProposal = validatorFor(
+    proposalSchema(fields, { sections: withSections }),
+  );
   const cache = new FillCache(
     resolve(cwd, config.fill.cacheDir),
     !opts.noCache,
@@ -319,7 +332,13 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
       };
     }
 
-    const key = cacheKey(identity.provider, identity.model, content, missing);
+    const key = cacheKey(
+      identity.provider,
+      identity.model,
+      content,
+      missing,
+      withSections,
+    );
     // Cached proposals are validated too: a stale or hand-edited cache entry
     // must not bypass the schema (treat invalid entries as a miss).
     let proposal = cache.get(key);
@@ -328,10 +347,13 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
     }
     const cached = proposal !== undefined;
 
+    // Outside the cache-miss branch: a *cached* proposal can carry sections
+    // too, and its slugs still have to be checked against real headings.
+    const doc = analyzeDoc(content, path, allPaths, {
+      routes: config.routes,
+    });
+
     if (proposal === undefined) {
-      const doc = analyzeDoc(content, path, allPaths, {
-        routes: config.routes,
-      });
       // completeValidatedJSON validates and retries once before giving up.
       // fill previously aborted the document on a single malformed response;
       // one bad completion is not worth losing the work over.
@@ -343,8 +365,10 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
       const run = await completeValidatedJSON<Record<string, unknown>>({
         provider: getProvider(),
         system: SYSTEM_PROMPT,
-        user: buildUserPrompt(doc, content, missing),
-        schema: proposalSchema(missing),
+        user: buildUserPrompt(doc, content, missing, {
+          sections: withSections,
+        }),
+        schema: proposalSchema(missing, { sections: withSections }),
         validate: validateProposal,
         temperature: config.fill.temperature,
       });
@@ -369,6 +393,41 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
         .filter(([k]) => missing.includes(k as FillField))
         .map(([k, v]) => [k, Array.isArray(v) ? [...new Set(v)] : v]),
     );
+
+    // Section proposals arrive as a list of {slug, …} and become dotted field
+    // names — `sections.<slug>.type` — so the writer, the confidence gate, the
+    // graph guardrail and the provenance record all treat them as ordinary
+    // fields (ADR 01032).
+    const unknownSlugs: string[] = [];
+    if (withSections) {
+      const realSlugs = new Set(doc.sections.map((s) => s.slug));
+      for (const entry of Array.isArray(proposal["sections"])
+        ? (proposal["sections"] as Array<Record<string, unknown>>)
+        : []) {
+        const slug = typeof entry["slug"] === "string" ? entry["slug"] : "";
+        // A slug matching no heading is dropped, never written. Writing it
+        // would mint a dockg:brokenSectionRef — a finding fill must report
+        // rather than manufacture.
+        if (!realSlugs.has(slug)) {
+          if (slug) unknownSlugs.push(slug);
+          continue;
+        }
+        const entryConfidence = numberMap(entry["confidence"]);
+        const entryReasoning = stringMap(entry["reasoning"]);
+        for (const [field, value] of Object.entries(entry)) {
+          if (!SECTION_FILL_FIELDS.includes(field as FillField)) continue;
+          if (!fields.includes(field as FillField)) continue;
+          const name = `sections.${slug}.${field}`;
+          narrowed[name] = Array.isArray(value) ? [...new Set(value)] : value;
+          // Fold the per-section scores into the flat maps the gate reads, so
+          // one code path scores document and section fields alike.
+          if (entryConfidence[field] !== undefined)
+            confidence[name] = entryConfidence[field];
+          if (entryReasoning[field] !== undefined)
+            reasoning[name] = entryReasoning[field];
+        }
+      }
+    }
 
     // docmeta:kg requires `label` alongside any alt-label/relation field
     // (dependentRequired) — never write output our own validate rejects.
@@ -434,6 +493,7 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
         fields: [],
         preserved: [],
         ...(rejected ? { rejected } : {}),
+        ...(unknownSlugs.length > 0 ? { unknownSections: unknownSlugs } : {}),
         ...lowConf,
         cached,
       };
@@ -498,6 +558,7 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
         fields: [],
         preserved: applied.skipped,
         ...(rejected ? { rejected } : {}),
+        ...(unknownSlugs.length > 0 ? { unknownSections: unknownSlugs } : {}),
         ...lowConf,
         cached,
       };
@@ -513,6 +574,7 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
       fields: reportedFields,
       preserved: applied.skipped,
       ...(rejected ? { rejected } : {}),
+      ...(unknownSlugs.length > 0 ? { unknownSections: unknownSlugs } : {}),
       ...lowConf,
       cached,
     };
@@ -536,15 +598,21 @@ export function renderFill(
             .map((l) => `${l.field} ${l.confidence.toFixed(2)}`)
             .join(", ")}]`
         : "";
+    // Visible rather than silent: the model addressed a heading that is not
+    // there, which usually means the page was edited after it was described.
+    const unknown =
+      r.unknownSections && r.unknownSections.length > 0
+        ? ` [no such section: ${r.unknownSections.join(", ")}]`
+        : "";
     switch (r.status) {
       case "filled":
         lines.push(
-          `filled    ${r.path} (${r.fields.join(", ")})${r.cached ? " [cached]" : ""}${dropped}${lowConf}`,
+          `filled    ${r.path} (${r.fields.join(", ")})${r.cached ? " [cached]" : ""}${dropped}${unknown}${lowConf}`,
         );
         break;
       case "proposed":
         lines.push(
-          `proposed  ${r.path} (${r.fields.join(", ")})${r.cached ? " [cached]" : ""}${dropped}${lowConf} — dry run, not written`,
+          `proposed  ${r.path} (${r.fields.join(", ")})${r.cached ? " [cached]" : ""}${dropped}${unknown}${lowConf} — dry run, not written`,
         );
         break;
       case "complete":
@@ -552,7 +620,7 @@ export function renderFill(
         break;
       case "nothing-proposed":
         lines.push(
-          `no-op     ${r.path} (model proposed nothing new)${dropped}${lowConf}`,
+          `no-op     ${r.path} (model proposed nothing new)${dropped}${unknown}${lowConf}`,
         );
         break;
       case "skipped-budget":

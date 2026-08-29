@@ -136,6 +136,7 @@ program
   .option("--force", "Overwrite human-set kg fields")
   .option("--no-cache", "Bypass the proposal cache")
   .option("--no-validate-graph", "Skip the SHACL graph guardrail on proposals")
+  .option("--sections", "Also propose per-section metadata")
   .option("--max-cost <usd>", "Stop proposing past this cost", (v) =>
     Number.parseFloat(v),
   )
@@ -158,6 +159,7 @@ program
         force: opts.force as boolean | undefined,
         noCache: opts.cache === false,
         noValidateGraph: opts.validateGraph === false,
+        sections: opts.sections as boolean | undefined,
         maxCost: opts.maxCost as number | undefined,
         minConfidence: opts.minConfidence as number | undefined,
         provider: opts.provider as string | undefined,

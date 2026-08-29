@@ -9,7 +9,7 @@ import type { FillField } from "../core/config.js";
 import type { DocModel } from "../types.js";
 
 /** Bump when the prompt changes — invalidates the fill cache. */
-export const PROMPT_VERSION = 2;
+export const PROMPT_VERSION = 3;
 
 const TOPIC_TYPES = [
   "task",
@@ -90,7 +90,25 @@ export const FIELD_SCHEMAS: Record<FillField, Record<string, unknown>> = {
  */
 const schemaCache = new Map<string, Record<string, unknown>>();
 
-export function proposalSchema(fields: FillField[]): Record<string, unknown> {
+/**
+ * The `kg` fields a section block accepts (ADR 01013). `label` is absent
+ * deliberately — a "primary topic per section" is meaningless, so it is not
+ * proposable either.
+ */
+export const SECTION_FILL_FIELDS: readonly FillField[] = [
+  "type",
+  "applies-to",
+  "about-product-lifecycle",
+  "about-product-aspect",
+  "not-applicable-to",
+  "not-about-product-aspect",
+  "concepts",
+];
+
+export function proposalSchema(
+  fields: FillField[],
+  options: { sections?: boolean } = {},
+): Record<string, unknown> {
   // Build from the SAME sorted list the key is derived from. Keying on the
   // sorted set while building from the caller's order would make the cached
   // schema's property order depend on whichever call arrived first — and that
@@ -98,15 +116,19 @@ export function proposalSchema(fields: FillField[]): Record<string, unknown> {
   // and json_object prompts, so identical inputs could produce different
   // prompts across runs. Determinism is the product contract here.
   const sorted = [...fields].sort();
-  const key = sorted.join(",");
+  const withSections = options.sections === true;
+  const key = `${withSections ? "s:" : ""}${sorted.join(",")}`;
   const memoized = schemaCache.get(key);
   if (memoized) return memoized;
-  const built = buildProposalSchema(sorted);
+  const built = buildProposalSchema(sorted, withSections);
   schemaCache.set(key, built);
   return built;
 }
 
-function buildProposalSchema(fields: FillField[]): Record<string, unknown> {
+function buildProposalSchema(
+  fields: FillField[],
+  withSections: boolean,
+): Record<string, unknown> {
   const properties: Record<string, unknown> = {};
   const confidence: Record<string, unknown> = {};
   const reasoning: Record<string, unknown> = {};
@@ -129,6 +151,56 @@ function buildProposalSchema(fields: FillField[]): Record<string, unknown> {
     description:
       "For every field you propose a value for, a one-sentence justification grounded in the page text.",
   };
+
+  if (withSections) {
+    // A **list** keyed by an explicit `slug`, not a map keyed by slug. Strict
+    // structured output (OpenAI's json_schema, and the GBNF grammar it becomes)
+    // requires `additionalProperties: false` on every object, which cannot
+    // express an open-keyed map. A list of {slug, …} says the same thing in a
+    // shape every provider can constrain.
+    const sectionFields = fields.filter((f) => SECTION_FILL_FIELDS.includes(f));
+    const sectionProps: Record<string, unknown> = {
+      slug: {
+        type: "string",
+        minLength: 1,
+        description:
+          "The heading slug, copied exactly from the outline. Do not invent one.",
+      },
+    };
+    const sectionConfidence: Record<string, unknown> = {};
+    const sectionReasoning: Record<string, unknown> = {};
+    for (const field of sectionFields) {
+      sectionProps[field] = FIELD_SCHEMAS[field];
+      sectionConfidence[field] = { type: "number", minimum: 0, maximum: 1 };
+      sectionReasoning[field] = { type: "string" };
+    }
+    sectionProps["confidence"] = {
+      type: "object",
+      additionalProperties: false,
+      properties: sectionConfidence,
+      description:
+        "For every field you propose on this section, a confidence 0..1.",
+    };
+    sectionProps["reasoning"] = {
+      type: "object",
+      additionalProperties: false,
+      properties: sectionReasoning,
+      description:
+        "For every field you propose on this section, a one-sentence justification.",
+    };
+    properties["sections"] = {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["slug"],
+        properties: sectionProps,
+      },
+      description:
+        "Per-section metadata. Only for sections whose own content differs meaningfully from the page as a whole; omit a section rather than repeating the page's values.",
+    };
+  }
+
   return {
     type: "object",
     additionalProperties: false,
@@ -158,6 +230,7 @@ export function buildUserPrompt(
   doc: DocModel,
   body: string,
   fields: FillField[],
+  options: { sections?: boolean } = {},
 ): string {
   const title =
     (typeof doc.frontmatter["title"] === "string" &&
@@ -165,12 +238,24 @@ export function buildUserPrompt(
     doc.firstH1 ||
     "(untitled)";
   const tags = doc.frontmatter["tags"] ?? doc.frontmatter["keywords"];
+  // With sections on, the outline carries each heading's slug: it is the key
+  // the model must copy, and a slug it invents is dropped rather than written
+  // (which would otherwise mint a dockg:brokenSectionRef — a finding fill must
+  // never manufacture).
+  const withSections = options.sections === true && doc.sections.length > 0;
   const outline = doc.sections
-    .map((s) => `${"  ".repeat(Math.max(0, s.level - 1))}- ${s.title}`)
+    .map(
+      (s) =>
+        `${"  ".repeat(Math.max(0, s.level - 1))}- ${s.title}` +
+        (withSections ? `  [slug: ${s.slug}]` : ""),
+    )
     .join("\n");
 
   return [
     `Propose the following frontmatter fields for this documentation page, with per-field confidence and reasoning: ${fields.join(", ")}.`,
+    withSections
+      ? "Also propose per-section metadata in `sections`, using the exact slug shown in the outline. Include a section ONLY when its own content differs meaningfully from the page as a whole — repeating the page's values on every heading adds noise, not granularity."
+      : "",
     "",
     `Path: ${doc.path}`,
     `Title: ${title}`,
