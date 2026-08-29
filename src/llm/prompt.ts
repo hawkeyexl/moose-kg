@@ -105,9 +105,19 @@ export const SECTION_FILL_FIELDS: readonly FillField[] = [
   "concepts",
 ];
 
+/**
+ * @param fields  Document-level fields to offer — narrowed to what this
+ *   document is missing, so a provider cannot propose over a human's value.
+ * @param options.sections  Section-level fields to offer, or absent for no
+ *   section half. Passed **separately and unnarrowed** on purpose: section
+ *   presence is independent of document presence (ADR 01032), so a page whose
+ *   `kg.type` is already set must still be able to type its sections. Deriving
+ *   this list from `fields` handed a strictly-constrained provider a section
+ *   item with no data properties at all.
+ */
 export function proposalSchema(
   fields: FillField[],
-  options: { sections?: boolean; lenient?: boolean } = {},
+  options: { sections?: FillField[]; lenient?: boolean } = {},
 ): Record<string, unknown> {
   // Build from the SAME sorted list the key is derived from. Keying on the
   // sorted set while building from the caller's order would make the cached
@@ -116,19 +126,29 @@ export function proposalSchema(
   // and json_object prompts, so identical inputs could produce different
   // prompts across runs. Determinism is the product contract here.
   const sorted = [...fields].sort();
-  const withSections = options.sections === true;
+  // Sorted for the same reason `fields` is: the section item's property order
+  // is observable through the stringified schema in the prompt.
+  const sortedSections = options.sections
+    ? [...options.sections]
+        .filter((f) => SECTION_FILL_FIELDS.includes(f))
+        .sort()
+    : undefined;
   const lenient = options.lenient === true;
-  const key = `${withSections ? "s:" : ""}${lenient ? "l:" : ""}${sorted.join(",")}`;
+  const key = [
+    sortedSections ? `s:${sortedSections.join(",")}` : "",
+    lenient ? "l:" : "",
+    sorted.join(","),
+  ].join("|");
   const memoized = schemaCache.get(key);
   if (memoized) return memoized;
-  const built = buildProposalSchema(sorted, withSections, lenient);
+  const built = buildProposalSchema(sorted, sortedSections, lenient);
   schemaCache.set(key, built);
   return built;
 }
 
 function buildProposalSchema(
   fields: FillField[],
-  withSections: boolean,
+  sectionFields: FillField[] | undefined,
   lenient: boolean,
 ): Record<string, unknown> {
   // The value schemas are the contract and never relax. `confidence` and
@@ -164,13 +184,12 @@ function buildProposalSchema(
       "For every field you propose a value for, a one-sentence justification grounded in the page text.",
   };
 
-  if (withSections) {
+  if (sectionFields !== undefined) {
     // A **list** keyed by an explicit `slug`, not a map keyed by slug. Strict
     // structured output (OpenAI's json_schema, and the GBNF grammar it becomes)
     // requires `additionalProperties: false` on every object, which cannot
     // express an open-keyed map. A list of {slug, …} says the same thing in a
     // shape every provider can constrain.
-    const sectionFields = fields.filter((f) => SECTION_FILL_FIELDS.includes(f));
     const sectionProps: Record<string, unknown> = {
       slug: {
         type: "string",

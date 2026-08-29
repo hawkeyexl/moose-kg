@@ -35,19 +35,23 @@ program
 /**
  * Parse a numeric CLI option, refusing what the config schema refuses.
  *
- *  returns NaN for abc and silently accepts out-of-range
- * values, and NaN then disables whatever gate it feeds — a cost cap that never
- * fires, a confidence gate that writes everything. The documented precedence is
+ * `Number.parseFloat`/`parseInt` return NaN for `abc` and silently accept
+ * out-of-range values, and NaN then disables whatever gate it feeds — a cost
+ * cap that never fires, a confidence gate that writes everything, a `--top`
+ * that asks for a negative number of rows. The documented precedence is
  * config → Ajv → CLI override, so the override has to be held to the same range.
  */
 function numericOption(
   flag: string,
-  { min, max }: { min: number; max?: number },
+  { min, max, integer }: { min: number; max?: number; integer?: boolean },
 ) {
   return (raw: string): number => {
     const value = Number.parseFloat(raw);
     if (!Number.isFinite(value)) {
       throw new DockgError(`${flag} expects a number, got "${raw}".`);
+    }
+    if (integer && !Number.isInteger(value)) {
+      throw new DockgError(`${flag} expects a whole number, got ${value}.`);
     }
     if (value < min || (max !== undefined && value > max)) {
       const range = max === undefined ? `>= ${min}` : `${min}..${max}`;
@@ -55,6 +59,11 @@ function numericOption(
     }
     return value;
   };
+}
+
+/** A count: a whole number, at least `min` (1 unless the flag allows zero). */
+function countOption(flag: string, min = 1) {
+  return numericOption(flag, { min, integer: true });
 }
 
 function fail(e: unknown): never {
@@ -245,8 +254,10 @@ program
     "--check",
     "Exit 1 when broken internal links exist or coverage is below threshold",
   )
-  .option("--top <n>", "How many most-connected docs to list", (v) =>
-    Number.parseInt(v, 10),
+  .option(
+    "--top <n>",
+    "How many most-connected docs to list",
+    countOption("--top"),
   )
   .option(
     "--coverage-threshold <pct>",
@@ -284,9 +295,7 @@ program
     "-i, --index <path>",
     "Search index path (default: search.json beside the graph)",
   )
-  .option("--limit <n>", "Maximum results (default 10)", (v) =>
-    Number.parseInt(v, 10),
-  )
+  .option("--limit <n>", "Maximum results (default 10)", countOption("--limit"))
   .option("--vectors <path>", "Vector sidecar path (default: config embed.out)")
   .option(
     "--mode <mode>",
@@ -326,7 +335,8 @@ program
   .option(
     "-d, --depth <n>",
     "Maximum hops from the node (default 1; 3 under --impact)",
-    (v) => Number.parseInt(v, 10),
+    // Zero is allowed: it means the node itself, which is a real answer.
+    countOption("--depth", 0),
   )
   .option("--predicates <curies...>", "Only follow these predicates")
   .option("--reverse", "Follow inbound edges (who points at this node)")
@@ -336,9 +346,7 @@ program
     "Scope filter: product variant IRI, title, or slug",
   )
   .option("--subject <subject>", "Scope filter: software subject")
-  .option("--limit <n>", "Stop after this many nodes", (v) =>
-    Number.parseInt(v, 10),
-  )
+  .option("--limit <n>", "Stop after this many nodes", countOption("--limit"))
   .option("-f, --format <format>", "Output format: pretty | json", "pretty")
   .action(
     (
@@ -467,4 +475,15 @@ function isMain(): boolean {
   }
 }
 
-if (isMain()) program.parse();
+if (isMain()) {
+  // `fail()` covers what a command's `.action` throws, but an option parser
+  // runs during `parse()` itself — outside every action. A DockgError from
+  // `numericOption` was escaping as an unhandled exception: a raw stack trace
+  // instead of the one-line message, and Node's exit 1 (findings) where the
+  // contract says 2 (operational).
+  try {
+    program.parse();
+  } catch (e) {
+    fail(e);
+  }
+}

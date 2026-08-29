@@ -12,6 +12,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { renderFill, runFill } from "../../src/commands/fill.js";
 import { runValidate } from "../../src/commands/validate.js";
+import { runBuild } from "../../src/commands/build.js";
+import { runCheck } from "../../src/commands/check.js";
 import { MockProvider } from "@hawkeyexl/inference";
 
 const PAGE = [
@@ -297,6 +299,107 @@ describe("fill --sections", () => {
     expect(written).toContain("install-the-sdk:");
     // The human's document-level value is untouched.
     expect(written).toContain("type: reference");
+  });
+
+  it("offers the section fields to the provider, not just accepts them back", async () => {
+    // MockProvider returns its canned JSON whatever schema it is handed, so a
+    // test that only asserts on the written file proves the WRITE path and
+    // says nothing about the REQUEST path. This provider answers *from* the
+    // schema it was given, the way a provider under strict structured output
+    // is constrained to — so a field missing from the schema cannot appear in
+    // the response, and the file assertion below becomes evidence about both.
+    const dir = setup();
+    writeFileSync(
+      join(dir, "a.md"),
+      PAGE.replace(
+        "title: Widget SDK",
+        "title: Widget SDK\nkg:\n  type: reference",
+      ),
+    );
+
+    let sectionProperties: string[] = [];
+    const schemaBound = {
+      provider: () => "mock",
+      modelName: () => "m1",
+      completeJSON: (req: { schema?: Record<string, unknown> }) => {
+        const props = (req.schema?.["properties"] ?? {}) as Record<
+          string,
+          { items?: { properties?: Record<string, unknown> } }
+        >;
+        const item = props["sections"]?.items?.properties ?? {};
+        sectionProperties = Object.keys(item).sort();
+        // Answer only with what the schema actually offers.
+        const json: Record<string, unknown> = {};
+        if ("sections" in props && "type" in item) {
+          json["sections"] = [
+            {
+              slug: "install-the-sdk",
+              type: "task",
+              confidence: { type: 0.95 },
+            },
+          ];
+        }
+        return Promise.resolve({ json });
+      },
+    };
+
+    const report = await runFill({
+      cwd: dir,
+      providerInstance: schemaBound,
+      sections: true,
+      noCache: true,
+    });
+
+    expect(sectionProperties).toEqual([
+      "confidence",
+      "reasoning",
+      "slug",
+      "type",
+    ]);
+    expect(report.results[0]!.fields).toEqual([
+      "sections.install-the-sdk.type",
+    ]);
+    expect(readFileSync(join(dir, "a.md"), "utf8")).toContain(
+      "install-the-sdk:",
+    );
+  });
+
+  it("writes sections dockg check accepts", async () => {
+    // The end-to-end claim ADR 01032 makes, run against the real SHACL engine
+    // rather than against the guard's own return value: propose, write, build,
+    // check. `vet()` returning clean is not the same as `dockg check` exiting 0.
+    const dir = setup("[applies-to, not-applicable-to]");
+    const provider = new MockProvider([
+      {
+        json: {
+          sections: [
+            {
+              slug: "install-the-sdk",
+              "applies-to": ["SP-X100"],
+              confidence: { "applies-to": 0.95 },
+            },
+            {
+              slug: "troubleshoot-a-failed-install",
+              "not-applicable-to": ["SP-X100"],
+              confidence: { "not-applicable-to": 0.95 },
+            },
+          ],
+        },
+      },
+    ]);
+
+    await runFill({
+      cwd: dir,
+      providerInstance: provider,
+      sections: true,
+      noCache: true,
+    });
+
+    const built = await runBuild({ cwd: dir, out: join(dir, "graph.ttl") });
+    expect(built.docs).toBe(1);
+    const checked = await runCheck({ cwd: dir, graph: join(dir, "graph.ttl") });
+    expect(checked.exitCode, JSON.stringify(checked.findings)).toBe(0);
+    expect(checked.findings).toHaveLength(0);
   });
 
   it("proposes nothing for sections unless asked", async () => {

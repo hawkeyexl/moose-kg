@@ -232,13 +232,22 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
   // subset: proposals are validated leniently and narrowed afterwards, so a
   // provider that volunteers a field this doc didn't ask for is fine.
   const withSections = opts.sections ?? config.fill.sections;
+  // The section half of the schema is built from the FULL configured field
+  // set, never from a document's missing set (ADR 01032): section presence is
+  // independent of document presence, so a page whose `kg.type` is already set
+  // must still be offered a section-level `type`. Narrowing this the way the
+  // document half is narrowed handed a strictly-constrained provider a section
+  // item with no data properties on it at all.
+  const sectionFields = withSections
+    ? fields.filter((f) => SECTION_FILL_FIELDS.includes(f))
+    : undefined;
   // Validation uses the LENIENT schema (ADR 01034): the values are checked
   // exactly as strictly as ever, while the model's self-reported confidence and
   // reasoning are accepted in whatever shape they arrive. A weak provider that
   // scores one field with a string must not cost the run every other field it
   // got right.
   const validateProposal = validatorFor(
-    proposalSchema(fields, { sections: withSections, lenient: true }),
+    proposalSchema(fields, { sections: sectionFields, lenient: true }),
   );
   const cache = new FillCache(
     resolve(cwd, config.fill.cacheDir),
@@ -419,7 +428,7 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
         user: buildUserPrompt(doc(), content, missing, {
           sections: withSections,
         }),
-        schema: proposalSchema(missing, { sections: withSections }),
+        schema: proposalSchema(missing, { sections: sectionFields }),
         validate: validateProposal,
         temperature: config.fill.temperature,
       });
