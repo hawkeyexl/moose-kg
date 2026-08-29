@@ -31,8 +31,14 @@ export function providerSpecFor(
   // library's `ProviderSpec["provider"]` is `ProviderSelector | undefined`,
   // which admits `undefined` and `"auto"` — both of which the synchronous
   // `makeProvider` throws on, and neither of which the compiler would flag
-  // through a cast. dockg's own ProviderName is the narrower union, and config
-  // validation guarantees the value is one of it, so cast from there.
+  // through a cast. dockg's own ProviderName is the narrower union, so cast
+  // from there.
+  //
+  // Both inputs are checked against PROVIDER_NAMES before they arrive:
+  // `fill.provider` by Ajv against the schema enum, `options.provider` by
+  // `enumOption` in cli.ts. They were not always — the CLI override used to be
+  // an arbitrary string — so `schema-sync.test.ts` pins the two lists together
+  // rather than leaving the soundness of this cast to a comment.
   const name: ProviderName = (options.provider ??
     fill.provider) as ProviderName;
   const spec: ProviderSpec = {

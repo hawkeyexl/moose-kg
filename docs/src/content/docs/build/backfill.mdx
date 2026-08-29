@@ -40,12 +40,6 @@ the run — so two documents cannot jointly form a cycle.
 **A cost cap.** `fill.maxCostUsd` defaults to `5`. Past it, remaining documents are skipped with a
 `skipped-budget` status rather than silently costing more.
 
-**A local option, if spending nothing matters more than quality.** `fill.provider: llama-cpp` runs a
-model in-process — no key, no network, no spend, and no document text leaves the machine. It needs
-an explicit `fill.model` (a curated alias, an `hf:` URI, or a `.gguf` path); selectors like `auto`
-resolve against the machine and are not supported. Expect to lean harder on the confidence gate: a
-small local model proposes more and knows less, so review what it writes.
-
 The cap needs a price to work against. dockg knows prices for a fixed set of models; for anything
 else — a local model, a `claude-cli` run, a model newer than the table — spend cannot be totalled,
 so the cap **cannot be applied**. dockg says so rather than pretending:
@@ -57,6 +51,16 @@ totalled. Set fill.pricing to enforce it, or fill.maxCostUsd: null if you meant 
 
 and the run reports `LLM cost: unpriceable` instead of `$0.0000`, because costing nothing and being
 unmeasurable are different facts. Set `fill.pricing` to make the cap real.
+
+## Spending nothing at all
+
+The three mechanisms above bound what a run writes and what it costs. If the budget is zero rather
+than small, `fill.provider: llama-cpp` runs a model in-process — no key, no network, no spend, and
+no document text leaves the machine. It needs an explicit `fill.model` (a curated alias, an `hf:`
+URI, or a `.gguf` path); selectors like `auto` resolve against the machine and are not supported.
+
+This is a trade, not a free win. Expect to lean harder on the confidence gate: a small local model
+proposes more and knows less, so review what it writes.
 
 <Aside type="caution" title="Exit 0 does not mean everything was written">
   Low-confidence drops and guardrail rejections are **routine operation**, and the run still exits

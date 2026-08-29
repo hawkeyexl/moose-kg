@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import { bundledSchemaPath, bundledShapesPath } from "../../src/core/pkg.js";
 import { FIELD_SCHEMAS } from "../../src/llm/prompt.js";
 import { COVERAGE_FIELD_NAMES } from "../../src/core/coverage.js";
+import { PROVIDER_NAMES } from "../../src/core/config.js";
 import {
   PAGE_TYPE_TO_TOPIC_TYPE,
   SOFTWARE_LIFECYCLE_IRIS,
@@ -246,5 +247,34 @@ describe("documented bundled defaults ↔ pkg.ts", () => {
 
   it("names the current bundled shapes file", () => {
     expect(configPage).toContain(`shapes/${shapesFile}`);
+  });
+});
+
+describe("PROVIDER_NAMES ↔ config schema", () => {
+  it("names exactly the providers the schema accepts", () => {
+    // One source of truth for the provider list. `--provider` is validated
+    // against PROVIDER_NAMES and `fill.provider` against the JSON schema enum;
+    // if the two drift, one path admits a name the other refuses, and
+    // `providerSpecFor`'s cast to ProviderName stops being sound.
+    const schema = JSON.parse(
+      readFileSync(
+        join(
+          dirname(fileURLToPath(import.meta.url)),
+          "..",
+          "..",
+          "src",
+          "core",
+          "config-schema.json",
+        ),
+        "utf8",
+      ),
+    ) as {
+      properties: {
+        fill: { properties: { provider: { enum: string[] } } };
+      };
+    };
+    expect([...PROVIDER_NAMES].sort()).toEqual(
+      [...schema.properties.fill.properties.provider.enum].sort(),
+    );
   });
 });

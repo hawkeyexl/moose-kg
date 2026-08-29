@@ -100,3 +100,21 @@ describe("numeric options are range-checked", () => {
     expect(stderr).not.toContain("--depth");
   });
 });
+
+describe("enum options are checked against the same list config is", () => {
+  it("refuses an unknown --provider, naming the valid ones", () => {
+    // `fill.provider` is Ajv-validated against the schema enum, but the CLI
+    // override was an arbitrary string cast straight to ProviderName. The
+    // documented precedence is config → Ajv → CLI override, so the override
+    // has to be held to the same list.
+    const { status, stderr } = runCli(["fill", "--provider", "bogus"]);
+    expect(stderr).toContain("--provider must be one of");
+    expect(stderr).toContain("llama-cpp");
+    expect(status).toBe(2);
+  });
+
+  it("still accepts a real provider name", () => {
+    const { stderr } = runCli(["fill", "--provider", "mock"]);
+    expect(stderr).not.toContain("--provider");
+  });
+});

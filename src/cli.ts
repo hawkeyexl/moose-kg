@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { Command } from "commander";
 import pc from "picocolors";
 import { DockgError } from "./types.js";
+import { PROVIDER_NAMES } from "./core/config.js";
 import { toolVersion } from "./core/pkg.js";
 import { runBuild } from "./commands/build.js";
 import { renderCheck, runCheck } from "./commands/check.js";
@@ -64,6 +65,24 @@ function numericOption(
 /** A count: a whole number, at least `min` (1 unless the flag allows zero). */
 function countOption(flag: string, min = 1) {
   return numericOption(flag, { min, integer: true });
+}
+
+/**
+ * Hold a CLI override to the same list its config key is held to.
+ *
+ * `fill.provider` is Ajv-validated against the schema enum; the `--provider`
+ * override was an arbitrary string cast straight to `ProviderName`, so the
+ * documented config → Ajv → CLI precedence had a hole at the last step.
+ */
+function enumOption<T extends string>(flag: string, allowed: readonly T[]) {
+  return (raw: string): T => {
+    if (!(allowed as readonly string[]).includes(raw)) {
+      throw new DockgError(
+        `${flag} must be one of ${allowed.join(" | ")}, got "${raw}".`,
+      );
+    }
+    return raw as T;
+  };
 }
 
 function fail(e: unknown): never {
@@ -183,7 +202,8 @@ program
   )
   .option(
     "--provider <name>",
-    "Provider: anthropic | openai | claude-cli | llama-cpp | mock",
+    `Provider: ${PROVIDER_NAMES.join(" | ")}`,
+    enumOption("--provider", PROVIDER_NAMES),
   )
   .option("--model <model>", "Model override")
   .action(async (globs: string[], opts: Record<string, unknown>) => {
