@@ -131,6 +131,7 @@
     "@types/node": "^26.0.1",
     "@types/yauzl": "^3.4.0",
     "doc-detective": "^4.38.1",
+    "esbuild": "^0.27.7",
     "eslint": "^10.7.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.7.0",

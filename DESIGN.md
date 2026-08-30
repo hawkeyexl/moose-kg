@@ -511,7 +511,9 @@ its compensating hermetic seam.* A mock with no real counterpart is an untested
 integration wearing a green check. A byte-golden of our own output is not a
 consumer — it locks in whatever we emit today, correct or not.
 
-Slices, in priority order:
+Slices, in the priority order they were planned in — kept in the future tense
+they were written in, because the record of what the phase set out to do is the
+point. What each one actually became is under *Delivered*, below.
 
 1. **The embedder repair.** Land the unmerged `test/real-embedder` branch,
    renumbering its ADR 01021 → **01025** (main took 01021 while it sat). It
