@@ -483,7 +483,7 @@ these are breaking changes, and one redefines what frontmatter dockg reads.
   page-level keys became graph inputs, so a page with no `kg` block at all can
   now derive iiRDS triples. Phase 8d closes the validation hole this opened.
 
-## Phase 8c — Exercise every third party, on every platform
+## Phase 8c — Exercise every third party, on every platform — **done**
 
 **Goal:** every integration dockg has with code it does not own is driven for
 real by something in CI, on every platform the tool claims to support.
@@ -534,17 +534,39 @@ Slices, in priority order:
 6. **LLM providers.** Lowest priority. Exercised through Ollama and the local
    provider rather than paid keys; no Claude Code auth in the test path.
 
-Decisions to make (ADRs): the rule above and its exception list; whether
-`claude-cli` gains an exec seam or is dropped, since it has no injection point at
-all today; and the `--max-cost` gate, which is inert for any model absent from
-the price table and so cannot distinguish "genuinely free" from "unpriceable".
+Decided ([ADR 01026](adrs/01026-exercise-every-third-party.md), the rule and its
+exception list; [ADR 01031](adrs/01031-exercising-the-llm-providers.md), the
+providers):
 
-Research: Ollama's OpenAI- and Anthropic-compatibility endpoints, specifically
-whether they honor strict `json_schema` and forced tool calls — the two
-mechanisms the providers use for structured output. An endpoint that accepts the
-request and ignores the constraint yields a green test that proves nothing.
+- **A golden is not a consumer**, and the difference is demonstrable: drop a
+  namespace declaration from the RDF/XML emitter and the golden comparison
+  fails, as designed — but regenerate the golden the way any deliberate emitter
+  change would, and all 13 export tests pass while the file is no longer
+  parseable RDF.
+- **Ollama covers the `openai` provider for real** and cannot cover `anthropic`.
+  It compiles `response_format: json_schema` to a GBNF grammar, so the mechanism
+  under test is genuinely applied; its Anthropic-compatible endpoint accepts
+  `tool_choice` and never reads it, which is the entire forcing mechanism that
+  provider depends on. A test there would be green, hollow, and intermittently
+  red — importing the failure this phase exists to remove, not removing it.
+- **`claude-cli` keeps its provider and stays uncovered**, named as an exception.
+  No Claude Code auth in the test path was the constraint; the exec seam is worth
+  adding when someone needs it.
+- **`--max-cost` was inert** for every model outside the six in the price table —
+  which is every `claude-cli` model, every local model, and any model newer than
+  the table, while the cap is on by default. Now reported as
+  `budget: "unpriceable"` rather than as a cost of zero
+  ([ADR 01027](adrs/01027-unenforceable-cost-caps.md)).
 
-## Phase 8d — Vocabulary integrity
+Delivered: the embedder repair rebased and renumbered
+([ADR 01025](adrs/01025-embedder-cross-platform-reality.md)); RDF/XML, ZIP and
+JSON-LD read by independent consumers, each verified against a deliberate
+mutation of the emitter it guards; doc-detective back with `--exit-on-fail` and a
+guard that fails on both a skipped step and a failing one; the packed tarball run
+as a consumer receives it; the three-platform matrix with a cross-OS digest join;
+the local `llama-cpp` provider and a live `openai` run against Ollama.
+
+## Phase 8d — Vocabulary integrity — **done**
 
 **Goal:** every fact dockg claims to read is validated, every fact it lifts is
 measured, and every term it mints is defined.
@@ -552,7 +574,7 @@ measured, and every term it mints is defined.
 The vocabulary grew through Phases 2–5 and again in ADRs 01023–01024; the
 machinery around it did not follow.
 
-Decisions to make (ADRs):
+Decided:
 
 - **Validating the harvest rule's inputs.** ADR 01024 made five page-level keys
   load-bearing, and `validate` checks only the `kg` block. A page carrying
@@ -567,7 +589,7 @@ Decisions to make (ADRs):
   at all — though the graph has had section nodes since Phase 3.
 - **`fill` reaching sections.** Deferred in Phase 5; now the binding constraint
   on the brownfield lens, which is the audience `fill` exists for.
-- **A vocabulary document for `dockg:`.** Two classes, ten properties and three
+- **A vocabulary document for `dockg:`.** Two classes, twelve properties and three
   role individuals are minted and defined nowhere: the shapes constrain them, no
   file says what they mean, and the namespace IRI resolves to nothing. It moves
   to the docs origin in the same change — breaking, and therefore free now and
@@ -583,6 +605,17 @@ It is versioned and immutable like schemas and shapes (`ns/dockg-1.0.0.ttl`),
 ships in the package, is dereferenceable as a hash namespace, and is pinned by a
 drift guard in both directions — every emitted term defined, and no term defined
 that the emitter cannot produce.
+
+Delivered: near-miss warnings for the harvest rule's page-level keys
+([ADR 01028](adrs/01028-near-miss-warnings-for-harvested-keys.md)) — a schema
+cannot catch these, because rejecting unknown page keys would reject every page;
+coverage over the iiRDS typing plus a second, ungated table over sections
+([ADR 01029](adrs/01029-coverage-catches-up-with-the-vocabulary.md)); the
+vocabulary document and the namespace move
+([ADR 01030](adrs/01030-the-dockg-vocabulary-document.md)); and section-level
+fill, riding in the document's own call and dropping any slug that matches no
+heading rather than manufacturing a brokenSectionRef
+([ADR 01032](adrs/01032-fill-reaches-sections.md)).
 
 ## Phase 9 — `retrieve` + MCP serving
 
@@ -632,11 +665,11 @@ of the phase that needs it, not before):
 | iiRDS 1.3 package conformance rules; CDP intake validation practices | Phase 6b |
 | QUDT adoption for quantitative properties (sizes, torques) lifted by fill | Phase 5/6 |
 | Browser vector-search options if the sidecar outgrows brute-force cosine | Phase 8b |
-| RDF/XML, JSON-LD and ZIP readers suitable for a hermetic consumer check | Phase 8c |
-| The plusmeta iiRDS minimum-requirements graph: vendor it, or drive the hosted validator out-of-band | Phase 8c |
-| Ollama's OpenAI- and Anthropic-compatibility endpoints: strict `json_schema` and forced tool calls, or accepted-and-ignored | Phase 8c |
-| npm versions shipped by each GitHub runner image; Playwright install cost on macOS/Windows | Phase 8c |
-| Vocabulary-publishing conventions: VANN, `owl:versionIRI`, serving a hash namespace from GitHub Pages | Phase 8d |
+| RDF/XML, JSON-LD and ZIP readers suitable for a hermetic consumer check | Phase 8c — **done**: rdfxml-streaming-parser, jsonld, yauzl |
+| The plusmeta iiRDS minimum-requirements graph: vendor it, or drive the hosted validator out-of-band | Phase 8c — **done**: out-of-band; the mandatory set is asserted against the parsed graph |
+| Ollama's OpenAI- and Anthropic-compatibility endpoints | Phase 8c — **done**: `json_schema` compiles to a GBNF grammar; `tool_choice` is accepted and never read |
+| npm versions shipped by each GitHub runner image; Playwright install cost on macOS/Windows | Phase 8c — npm pinned explicitly rather than surveyed; Playwright stays Linux-only |
+| Vocabulary-publishing conventions: VANN, `owl:versionIRI`, serving a hash namespace from GitHub Pages | Phase 8d — **done** |
 | MCP server conventions for doc/knowledge tools | Phase 9 |
 
 ## Process per phase

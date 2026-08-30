@@ -12,6 +12,9 @@ export {
 export {
   COVERAGE_FIELDS,
   COVERAGE_FIELD_NAMES,
+  // reference/library-api.mdx names this alongside the other two, so it has to
+  // be reachable from the entry point that page tells consumers to import from.
+  SECTION_COVERAGE_FIELDS,
   type CoverageField,
 } from "./core/coverage.js";
 export { discoverFiles } from "./core/discover.js";

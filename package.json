@@ -25,6 +25,7 @@
   },
   "files": [
     "dist",
+    "ns",
     "schemas",
     "shapes"
   ],
@@ -48,6 +49,7 @@
     "dev": "node scripts/clean-dist.mjs && tsup --watch",
     "test": "vitest run",
     "test:real": "vitest run --config vitest.real.config.ts",
+    "test:real:fill": "vitest run --config vitest.fill.config.ts",
     "test:real:cross": "node test/real/cross-platform.mjs",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
@@ -93,7 +95,7 @@
     }
   },
   "dependencies": {
-    "@hawkeyexl/inference": "^0.1.0",
+    "@hawkeyexl/inference": "^0.3.1",
     "ajv": "^8.17.1",
     "commander": "^15.0.0",
     "docmeta": "^4.12.0",

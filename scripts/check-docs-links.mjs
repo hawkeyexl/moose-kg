@@ -22,12 +22,22 @@ function filesUnder(dir) {
   });
 }
 
-/** A site route is built as `<route>/index.html`, with the root as `index.html`. */
+/**
+ * A site route is built as `<route>/index.html`, with the root as `index.html`.
+ *
+ * A link may also target a published *file* rather than a page — `/dockg/ns.ttl`
+ * is the machine-readable half of the vocabulary, copied from `public/`. Those
+ * have no `index.html` and are not broken links, so check for the file itself
+ * when the href carries an extension.
+ */
 function routeIsBuilt(href) {
   const rel = href.slice(BASE.length).replace(/\/$/, "");
-  return existsSync(
-    rel === "" ? join(DIST, "index.html") : join(DIST, rel, "index.html"),
-  );
+  if (rel === "") return existsSync(join(DIST, "index.html"));
+  if (existsSync(join(DIST, rel, "index.html"))) return true;
+  // Only an extension distinguishes an asset from a route that was never built;
+  // without this guard a missing page would pass whenever a same-named file
+  // happened to exist.
+  return /\.[a-z0-9]+$/i.test(rel) && existsSync(join(DIST, rel));
 }
 
 if (!existsSync(DIST)) {

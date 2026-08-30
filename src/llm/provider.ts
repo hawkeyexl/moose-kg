@@ -13,7 +13,8 @@ import {
   type InferenceProvider,
   type ProviderSpec,
 } from "@hawkeyexl/inference";
-import type { DockgConfig } from "../core/config.js";
+import type { DockgConfig, ProviderName } from "../core/config.js";
+import { DockgError } from "../types.js";
 
 export interface ProviderOptions {
   provider?: string;
@@ -26,8 +27,22 @@ export function providerSpecFor(
   options: ProviderOptions = {},
 ): ProviderSpec {
   const fill = config.fill;
+  // The cast is narrower than it looks, and deliberately so. Since 0.2.0 the
+  // library's `ProviderSpec["provider"]` is `ProviderSelector | undefined`,
+  // which admits `undefined` and `"auto"` — both of which the synchronous
+  // `makeProvider` throws on, and neither of which the compiler would flag
+  // through a cast. dockg's own ProviderName is the narrower union, so cast
+  // from there.
+  //
+  // Both inputs are checked against PROVIDER_NAMES before they arrive:
+  // `fill.provider` by Ajv against the schema enum, `options.provider` by
+  // `enumOption` in cli.ts. They were not always — the CLI override used to be
+  // an arbitrary string — so `schema-sync.test.ts` pins the two lists together
+  // rather than leaving the soundness of this cast to a comment.
+  const name: ProviderName = (options.provider ??
+    fill.provider) as ProviderName;
   const spec: ProviderSpec = {
-    provider: (options.provider ?? fill.provider) as ProviderSpec["provider"],
+    provider: name,
     baseUrl: fill.baseUrl,
     command: fill.command,
   };
@@ -35,6 +50,21 @@ export function providerSpecFor(
   // omitting the key means to the library — so don't pass the nulls through.
   const model = options.model ?? fill.model;
   if (model !== null && model !== undefined) spec.model = model;
+
+  // `llama-cpp`'s library default is the selector "auto", which resolves
+  // against this machine's memory and therefore cannot be resolved
+  // synchronously — the library throws rather than guess. dockg keeps the
+  // provider chain synchronous (going async would make makeProvider, which
+  // src/index.ts re-exports, a breaking API change), so the model must be
+  // concrete. Say that, instead of surfacing the library's message about a
+  // selector the user never typed.
+  if (name === "llama-cpp" && spec.model === undefined) {
+    throw new DockgError(
+      "fill.provider is llama-cpp but no fill.model is set. A local model must be named " +
+        'explicitly — try fill.model: "granite-4.1-3b-q2", a curated alias, an hf: URI, or a ' +
+        ".gguf path. Selectors like `auto` are resolved against the machine and are not supported.",
+    );
+  }
   if (fill.apiKeyEnv !== null) spec.apiKeyEnv = fill.apiKeyEnv;
   if (fill.pricing) spec.pricing = fill.pricing;
   return spec;

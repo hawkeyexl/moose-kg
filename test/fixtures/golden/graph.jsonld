@@ -1,7 +1,7 @@
 {
   "@context": {
     "dcterms": "http://purl.org/dc/terms/",
-    "dockg": "https://dockg.dev/ns#",
+    "dockg": "https://hawkeyexl.github.io/dockg/ns#",
     "foaf": "http://xmlns.com/foaf/0.1/",
     "iirds": "http://iirds.tekom.de/iirds#",
     "iirdsSft": "http://iirds.tekom.de/iirds/domain/software#",
@@ -46,7 +46,7 @@
         "@id": "https://example.com/kg/agent/software/dockg"
       },
       "prov:hadRole": {
-        "@id": "https://dockg.dev/ns#toolRole"
+        "@id": "https://hawkeyexl.github.io/dockg/ns#toolRole"
       }
     },
     {
@@ -350,7 +350,7 @@
         "@id": "https://example.com/kg/agent/person/jane-doe"
       },
       "prov:hadRole": {
-        "@id": "https://dockg.dev/ns#authorRole"
+        "@id": "https://hawkeyexl.github.io/dockg/ns#authorRole"
       }
     },
     {
@@ -401,7 +401,7 @@
         "@id": "https://example.com/kg/agent/software/claude-sonnet-4-5"
       },
       "prov:hadRole": {
-        "@id": "https://dockg.dev/ns#generatorRole"
+        "@id": "https://hawkeyexl.github.io/dockg/ns#generatorRole"
       }
     },
     {

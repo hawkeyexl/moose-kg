@@ -262,14 +262,94 @@ describe("dockg stats — metadata coverage", () => {
       { field: "modified", predicate: "dcterms:modified", docs: 1, pct: 20 },
       { field: "subject", predicate: "dcterms:subject", docs: 3, pct: 60 },
       { field: "label", predicate: "foaf:primaryTopic", docs: 1, pct: 20 },
+      // The iiRDS typing from Phases 2-4, which coverage did not measure until
+      // ADR 01029. The two negative predicates are excluded on purpose: an
+      // absent negative means "unknown", not "missing".
+      { field: "type", predicate: "iirds:has-topic-type", docs: 3, pct: 60 },
+      {
+        field: "applies-to",
+        predicate: "iirds:relates-to-product-variant",
+        docs: 2,
+        pct: 40,
+      },
+      {
+        field: "about-product-lifecycle",
+        predicate: "iirds:relates-to-product-lifecycle-phase",
+        docs: 1,
+        pct: 20,
+      },
+      {
+        field: "about-product-aspect",
+        predicate: "iirds:has-subject",
+        docs: 1,
+        pct: 20,
+      },
     ]);
   });
 
-  it("renders a coverage block in pretty output", () => {
+  it("reports section coverage over the corpus's nine sections", () => {
+    const { stdout, status } = run(["stats", "-f", "json", "-g", graph]);
+    expect(status).toBe(0);
+    const report = JSON.parse(stdout) as {
+      sections: number;
+      sectionCoverage: Array<{ field: string; docs: number; pct: number }>;
+    };
+    expect(report.sections).toBe(9);
+    // Sections are explicit-only (ADR 01013), so one section carrying a block
+    // is the whole of it. That number is the point: it says how far the corpus
+    // is from the granularity the graph already models.
+    expect(report.sectionCoverage).toEqual([
+      { field: "type", predicate: "iirds:has-topic-type", docs: 1, pct: 11.1 },
+      {
+        field: "applies-to",
+        predicate: "iirds:relates-to-product-variant",
+        docs: 1,
+        pct: 11.1,
+      },
+      {
+        field: "about-product-lifecycle",
+        predicate: "iirds:relates-to-product-lifecycle-phase",
+        docs: 0,
+        pct: 0,
+      },
+      {
+        field: "about-product-aspect",
+        predicate: "iirds:has-subject",
+        docs: 0,
+        pct: 0,
+      },
+      { field: "subject", predicate: "dcterms:subject", docs: 1, pct: 11.1 },
+    ]);
+  });
+
+  it("renders both coverage blocks in pretty output", () => {
     const { stdout } = run(["stats", "-g", graph]);
-    expect(stdout).toContain("Coverage");
+    expect(stdout).toContain("Coverage (documents):");
+    expect(stdout).toContain("Coverage (sections, not gated):");
     expect(stdout).toMatch(/title\s+5\/5\s+100\.0%/);
     expect(stdout).toMatch(/label\s+1\/5\s+20\.0%/);
+    expect(stdout).toMatch(/type\s+3\/5\s+60\.0%/);
+    expect(stdout).toMatch(/type\s+1\/9\s+11\.1%/);
+  });
+
+  it("never gates on section coverage, however low it is", () => {
+    // Sections start at zero on every corpus that has not adopted kg.sections.
+    // Gating by default would fail all of them, so the block is reported only
+    // (ADR 01009: reporting on does not imply gating on).
+    //
+    // Gate `title` alone, which the H1 satisfies, so the only thing that could
+    // fail this run is section coverage — and it must not.
+    const dir = scratch("", "stats:\n  coverageThreshold:\n    title: 100\n");
+    const { stdout, status } = statsIn(dir, ["--check", "-f", "json"]);
+    const report = JSON.parse(stdout) as {
+      sections: number;
+      sectionCoverage: Array<{ pct: number }>;
+      coverageFindings: unknown[];
+    };
+    expect(report.sections).toBeGreaterThan(0);
+    expect(report.sectionCoverage.every((r) => r.pct === 0)).toBe(true);
+    expect(report.coverageFindings).toEqual([]);
+    expect(status).toBe(0);
   });
 
   it("--check gates on a uniform coverage threshold", () => {

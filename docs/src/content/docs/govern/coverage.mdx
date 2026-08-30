@@ -11,7 +11,7 @@ enforces.
 
 ## What "covered" means
 
-Coverage is computed over seven fields. Before agreeing to a threshold, know exactly what is being
+Coverage is computed over eleven fields. Before agreeing to a threshold, know exactly what is being
 counted:
 
 | Field | A document counts as covered when |
@@ -23,10 +23,41 @@ counted:
 | `modified` | Frontmatter `updated`, `lastmod`, or `modified`, or a git committer time |
 | `subject` | At least one `tags`, `keywords`, or `kg.concepts` value |
 | `label` | `kg.label` |
+| `type` | `kg.type`, or a page `type` that maps to an iiRDS topic type |
+| `applies-to` | At least one product variant |
+| `about-product-lifecycle` | A software lifecycle phase |
+| `about-product-aspect` | A software subject |
 
 Note that `created` and `modified` depend on `provenance.git`. Turning git derivation off drops
 both numbers for any document without explicit frontmatter dates — the corpus did not change, the
 measurement did.
+
+<Aside type="note" title="Two things are deliberately not counted">
+  **Negative scope.** `not-applicable-to` and `not-about-product-aspect` are absent from almost
+  every document, and that absence is correct: under
+  [open-world semantics](/dockg/concepts/open-world/) it means *unknown*, not *missing*. Counting it
+  as a gap would leave every healthy corpus near zero on two rows and teach you to skip the table.
+
+  **`label` on sections.** A section has no primary topic to name, so it cannot be missing one.
+</Aside>
+
+## The second table: sections
+
+`stats` reports a second block over `dockg:Section` nodes, and it is usually the more uncomfortable
+number:
+
+```
+Coverage (sections, not gated):
+  type                     1/9  11.1%
+```
+
+Section metadata is **explicit-only** — a section gets exactly what its own `kg.sections` block
+declares and nothing from its document — so this starts at zero on any corpus that has not adopted
+it. That is the [granularity](/dockg/concepts/granularity/) question made numeric: the graph already
+models sections, and this says whether your metadata does.
+
+It is reported, never gated. A default gate on it would fail every corpus on day one, which is the
+opposite of useful.
 
 ## Read the current number
 
@@ -35,19 +66,30 @@ dockg stats
 ```
 
 ```
-Coverage:
-  title        5/5  100.0%
-  description  2/5  40.0%
-  creator      1/5  20.0%
-  created      1/5  20.0%
-  modified     1/5  20.0%
-  subject      3/5  60.0%
-  label        1/5  20.0%
+Coverage (documents):
+  title                    5/5  100.0%
+  description              2/5  40.0%
+  creator                  1/5  20.0%
+  created                  1/5  20.0%
+  modified                 1/5  20.0%
+  subject                  3/5  60.0%
+  label                    1/5  20.0%
+  type                     3/5  60.0%
+  applies-to               2/5  40.0%
+  about-product-lifecycle  1/5  20.0%
+  about-product-aspect     1/5  20.0%
+
+Coverage (sections, not gated):
+  type                     1/9  11.1%
+  applies-to               1/9  11.1%
+  about-product-lifecycle  0/9  0.0%
+  about-product-aspect     0/9  0.0%
+  subject                  1/9  11.1%
 ```
 
 ## Set thresholds per field
 
-A single number across all seven fields is almost never what a real obligation looks like —
+A single number across all eleven fields is almost never what a real obligation looks like —
 `title` at 100% and `label` at 40% is a coherent policy that one number cannot express.
 
 ```yaml title="dockg.config.yaml"

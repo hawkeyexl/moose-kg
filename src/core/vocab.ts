@@ -1,11 +1,12 @@
 /**
  * Namespace table. Standard vocabularies wherever a term exists; the custom
- * `dockg:` namespace stays minimal (2 classes, 10 properties). The prefix set
+ * `dockg:` namespace stays minimal (2 classes, 12 properties, 3 role individuals; the
+ * vocabulary document at ns/dockg-1.0.0.ttl defines every one). The prefix set
  * is fixed — every emitted graph carries the same header.
  */
 export const NS = {
   dcterms: "http://purl.org/dc/terms/",
-  dockg: "https://dockg.dev/ns#",
+  dockg: "https://hawkeyexl.github.io/dockg/ns#",
   foaf: "http://xmlns.com/foaf/0.1/",
   iirds: "http://iirds.tekom.de/iirds#",
   iirdsSft: "http://iirds.tekom.de/iirds/domain/software#",

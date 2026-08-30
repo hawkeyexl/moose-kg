@@ -113,9 +113,18 @@ gotcha, a decision, a convention — record it **in the repo, in the same change
   that throws on every real Node call, and mocks certified it for a whole release
   ([ADR 01025](adrs/01025-embedder-cross-platform-reality.md)). Where a mock stands in for a
   third-party API, the real one must be exercised **somewhere**: `test/real/` holds those,
-  excluded from `npm test` (`vitest.config.ts`), run by the `embed-real` CI job with
-  `npm run test:real` and `npm run test:real:cross`. Adding a mock for an external library
-  means adding the real-path test in the same change.
+  excluded from `npm test` (`vitest.config.ts`), run by the `embed-real` and `fill-live` CI jobs
+  (`test:real`, `test:real:cross`, `test:real:fill`). Adding a mock for an external library means
+  adding the real-path test in the same change — and where that is impossible, naming the exception
+  in [ADR 01026](adrs/01026-exercise-every-third-party.md) with its reason.
+  `vitest.config.ts` sets `INFERENCE_NO_AUTO_INSTALL`, because the inference library installs
+  `node-llama-cpp` on demand: without it, a test that reached the local provider by accident would
+  download from the network.
+- **A green run against a server that ignores the constraint proves nothing.** Ollama covers the
+  `openai` provider for real — it compiles `response_format: json_schema` to a GBNF grammar — but
+  accepts `tool_choice` and never reads it, which is the entire mechanism the `anthropic` provider
+  depends on. That path stays an exception rather than gaining a test that would be green, hollow,
+  and intermittently red ([ADR 01031](adrs/01031-exercising-the-llm-providers.md)).
 - **LF everywhere.** [.gitattributes](.gitattributes) declares `* text=auto eol=lf`, so the
   object store and every working tree are LF on every platform regardless of a contributor's
   global `core.autocrlf`. Exemptions use `-text` and **must stay below** the `*` rule — the last
@@ -225,13 +234,18 @@ point, and these are pointers into it, not a summary of it.
    committed fixture under [test/fixtures/](test/fixtures). Determinism means what you capture is
    what every reader sees — and a transcribed approximation is a claim nothing checks.
 
-Four gates run in CI and all of them block: `npm run docs:check-strategy` (anchor and coverage
-invariants), `npm run docs:check-cli` (reference/cli.mdx vs commander),
-`npm run docs:check-links` (every `/dockg/…` target resolves), and `npm run docs:test` (Doc
-Detective, below). The docs workflow also builds a graph from the docs themselves and holds it to
+Three gates run in [docs.yml](.github/workflows/docs.yml) and all of them block:
+`npm run docs:check-strategy` (anchor and coverage invariants), `npm run docs:check-cli`
+(reference/cli.mdx vs commander), and `npm run docs:check-links` (every `/dockg/…` target
+resolves). The docs workflow also builds a graph from the docs themselves and holds it to
 `dockg check` and `dockg stats --check`.
 
-**Documented command output is executed, not trusted.** Seven pages carry trailing
+Doc Detective is a **fourth gate with a narrower reach**: it lives in its own workflow
+([doc-detective.yml](.github/workflows/doc-detective.yml)) because its steps execute shell from the
+pull request's own content, so it is skipped on fork PRs — and a skipped job does not block. Treat
+fork contributions as unverified for command output.
+
+**Documented command output is executed, not trusted.** Eight pages carry trailing
 `{/* test … */}` / `{/* step … */}` blocks that run the built CLI against `test/fixtures/dd/` and
 assert on its output. Run them with `npm run docs:test`, which needs the build linked as `dockg`
 (`npm link && npm link @hawkeyexl/dockg`). Three things about them are load-bearing:
@@ -341,7 +355,10 @@ the repo's `CLAUDE_CODE_OAUTH_TOKEN` secret.
 
 ## Related files
 
-- [.github/workflows/ci.yml](.github/workflows/ci.yml) — the full loop plus the determinism gate
+- [.github/workflows/ci.yml](.github/workflows/ci.yml) — the full loop and the determinism gate on
+  ubuntu × macos × windows, then a `cross-platform` job that compares the emitted artifacts'
+  digests *across* runners. Three per-OS golden checks prove three platforms each match one golden;
+  the join is what proves they match each other
 - [.github/workflows/docs.yml](.github/workflows/docs.yml) — strategy invariants, CLI drift, page
   frontmatter, the graph gate over dockg's own docs, then the Pages deploy
 - [scripts/](scripts) — `check-content-strategy.mjs`, `check-cli-reference.mjs`,

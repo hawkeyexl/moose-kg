@@ -8,7 +8,22 @@ on:
 
 jobs:
   build-test:
-    runs-on: ubuntu-latest
+    # Byte-identical rebuilds are the product contract on every platform dockg
+    # claims, so the suite and the determinism gate run on all three. Windows in
+    # particular exercises what only Windows can break: the CRLF fixture pinned
+    # by .gitattributes, path → IRI derivation, and the git-provenance
+    # subprocess tests.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        # The determinism gate is a bash script (cmp, sed). GitHub ships bash on
+        # every runner including Windows, so one script serves all three rather
+        # than a PowerShell variant that would drift.
+        shell: bash
     steps:
       - uses: actions/checkout@v7
         with:
@@ -18,6 +33,13 @@ jobs:
         with:
           node-version: 24
           cache: npm
+
+      # engines.npm is >=11.6.3 and .npmrc sets engine-strict, so a runner image
+      # whose bundled npm is older fails `npm ci` with EBADENGINE and nothing in
+      # the log explains why. The floor does not ride on the Node floor: Node
+      # 24.11.0 satisfies >=24 and bundles npm 11.6.1. Pin it rather than hope.
+      - name: Enforce the npm engines floor
+        run: npm install -g npm@^11.6.3
 
       # `npm ci`, restored: the "platform-skewed lock" this used to work around
       # was a misdiagnosis (ADR 01023). The lock records all fourteen rolldown
@@ -35,7 +57,8 @@ jobs:
       # PR's individual commits; if a PR is ever squash-merged, the squashed
       # subject is the PR title, which this does not see.
       - name: Commit messages (conventional commits)
-        if: github.event_name == 'pull_request'
+        # One platform is enough: commit messages do not vary by runner.
+        if: matrix.os == 'ubuntu-latest' && github.event_name == 'pull_request'
         run: >
           npx commitlint
           --from ${{ github.event.pull_request.base.sha }}
@@ -51,15 +74,115 @@ jobs:
       # Determinism gate: byte-identical output is the product contract.
       # (Golden comparison normalizes the dockg:version literal so release
       # version bumps don't invalidate it.)
+      #
+      # RUNNER_TEMP rather than /tmp: /tmp is not a path on a Windows runner.
       - name: Determinism gate
         working-directory: test/fixtures/corpus
         run: |
-          node ../../../dist/cli.js build --out /tmp/gate-a.ttl
-          node ../../../dist/cli.js build --out /tmp/gate-b.ttl
-          cmp /tmp/gate-a.ttl /tmp/gate-b.ttl
-          sed 's/dockg:version "[^"]*"/dockg:version "X"/' /tmp/gate-a.ttl > /tmp/gate-a-norm.ttl
-          sed 's/dockg:version "[^"]*"/dockg:version "X"/' ../golden/graph.ttl > /tmp/golden-norm.ttl
-          cmp /tmp/gate-a-norm.ttl /tmp/golden-norm.ttl
+          node ../../../dist/cli.js build --out "$RUNNER_TEMP/gate-a.ttl"
+          node ../../../dist/cli.js build --out "$RUNNER_TEMP/gate-b.ttl"
+          cmp "$RUNNER_TEMP/gate-a.ttl" "$RUNNER_TEMP/gate-b.ttl"
+          sed 's/dockg:version "[^"]*"/dockg:version "X"/' "$RUNNER_TEMP/gate-a.ttl" > "$RUNNER_TEMP/gate-a-norm.ttl"
+          sed 's/dockg:version "[^"]*"/dockg:version "X"/' ../golden/graph.ttl > "$RUNNER_TEMP/golden-norm.ttl"
+          cmp "$RUNNER_TEMP/gate-a-norm.ttl" "$RUNNER_TEMP/golden-norm.ttl"
+
+      # Emit every artifact whose bytes are supposed to be platform-independent,
+      # for the cross-platform job below to compare across runners.
+      #
+      # All six byte-exact goldens CLAUDE.md names are represented here.
+      # `metadata.rdf` is covered transitively: it is `META-INF/metadata.rdf`
+      # inside package.iirds, whose zip entry timestamps are pinned to a fixed
+      # epoch (src/core/zip.ts), so byte-identical archives imply a
+      # byte-identical member.
+      - name: Emit the comparable artifacts
+        working-directory: test/fixtures/corpus
+        run: |
+          mkdir -p "$RUNNER_TEMP/artifacts"
+          cli() { node ../../../dist/cli.js "$@"; }
+          cli build --out "$RUNNER_TEMP/artifacts/graph.ttl"
+          cli export -f jsonld -g "$RUNNER_TEMP/artifacts/graph.ttl" -o "$RUNNER_TEMP/artifacts/graph.jsonld"
+          cli export -f search -g "$RUNNER_TEMP/artifacts/graph.ttl" -o "$RUNNER_TEMP/artifacts/search.json"
+          cli export -f iirds  -g "$RUNNER_TEMP/artifacts/graph.ttl" -o "$RUNNER_TEMP/artifacts/package.iirds"
+          # A traversal trace is where a locale-sensitive sort or a path -> IRI
+          # difference would surface, and it surfaces nowhere else — the same
+          # invocation test/integration/traverse.test.ts uses for its golden.
+          cli traverse https://example.com/kg/doc/docs/configuration.md \
+            -g "$RUNNER_TEMP/artifacts/graph.ttl" \
+            -d 2 --predicates dcterms:references dcterms:hasPart \
+            --variant SP-X100 -f json > "$RUNNER_TEMP/artifacts/traverse.json"
+          # The mock model, so no weights are downloaded and the optional
+          # @huggingface/transformers peer is not needed. Float layout in the
+          # sidecar is exactly the kind of thing that could differ by platform.
+          #
+          # Must stay after the search export: `embed` reads search.json from
+          # beside the graph, and without it exits 2 rather than emitting.
+          cli embed -g "$RUNNER_TEMP/artifacts/graph.ttl" --model mock --no-cache \
+            -o "$RUNNER_TEMP/artifacts/vectors.bin"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: artifacts-${{ matrix.os }}
+          path: ${{ runner.temp }}/artifacts/
+          if-no-files-found: error
+
+  # Three green per-OS golden checks prove three platforms each match one
+  # golden. They do not prove the platforms match *each other* — a golden
+  # regenerated on one OS would hide exactly that. This is the job that checks
+  # it, and it is the actual claim the README makes.
+  cross-platform:
+    needs: build-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: artifacts-*
+          path: artifacts
+
+      - name: Byte-identical across platforms
+        run: |
+          set -euo pipefail
+          cd artifacts
+          ls -1
+
+          # Assert the inputs exist before comparing them. Without nullglob an
+          # unmatched `artifacts-*/` leaves the literal pattern in $dir; the
+          # sha256sum failure is swallowed because it sits in a command
+          # substitution used as a printf argument, so every file reports one
+          # distinct digest and the gate passes having compared nothing.
+          platforms=$(find . -maxdepth 1 -type d -name 'artifacts-*' | wc -l)
+          if [ "$platforms" -lt 2 ]; then
+            echo "::error::expected one artifact directory per platform, found $platforms — nothing was compared"
+            exit 1
+          fi
+          echo "comparing $platforms platforms"
+
+          status=0
+          for file in graph.ttl graph.jsonld search.json package.iirds traverse.json vectors.bin; do
+            echo "--- $file"
+            # One digest per platform. More than one distinct value means the
+            # emitters disagree by platform, which the determinism contract
+            # forbids.
+            # Check the file exists before digesting it. `sha256sum` failing
+            # inside a command substitution used as a printf argument does not
+            # trip `set -e` — the same masking shape the comment above warns
+            # about, one line lower. Today an upstream `bash -eo pipefail`
+            # already fails the job if an emit step breaks, but that makes this
+            # loop's safety depend on another step's shell options.
+            digests=$(for dir in artifacts-*/; do
+              if [ ! -f "$dir$file" ]; then
+                echo "::error::$dir$file is missing — nothing to compare" >&2
+                exit 1
+              fi
+              printf '%s  %s\n' "$(sha256sum "$dir$file" | cut -d' ' -f1)" "${dir%/}"
+            done | sort) || exit 1
+            echo "$digests"
+            distinct=$(echo "$digests" | awk '{print $1}' | sort -u | wc -l)
+            if [ "$distinct" -ne 1 ]; then
+              echo "::error file=$file::$file differs across platforms ($distinct distinct digests)"
+              status=1
+            fi
+          done
+          exit $status
 
   # The embedder against the real model and a real browser (ADR 01025).
   #
@@ -75,6 +198,12 @@ jobs:
         with:
           node-version: 24
           cache: npm
+
+      # Same engine floor as build-test: engines.npm is >=11.6.3 with
+      # engine-strict, so a runner image below it fails `npm ci` with
+      # EBADENGINE and nothing in the log says why.
+      - name: Enforce the npm engines floor
+        run: npm install -g npm@^11.6.3
 
       # `npm ci`, matching build-test. This job predates the switch back to it
       # (ADR 01023) and merged in still carrying `npm install`, which would have
@@ -119,3 +248,54 @@ jobs:
       # different ONNX backends and cannot be made to run the same one.
       - name: Cross-platform ranking agreement
         run: npm run test:real:cross
+
+  # `dockg fill` against a real OpenAI-compatible server (ADR 01031).
+  #
+  # Ollama, not a paid key: it maps response_format json_schema onto its native
+  # format field, which llama-server compiles to a GBNF grammar — so the
+  # structured-output mechanism OpenAICompatProvider depends on is genuinely
+  # applied. Its Anthropic-compatible endpoint accepts tool_choice and never
+  # reads it, so the same test there would be green and prove nothing; that path
+  # stays a named exception in ADR 01026.
+  fill-live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm install -g npm@^11.6.3
+      - run: npm ci
+
+      # ~1.3 GB. A cold pull is 8-12 minutes and a restore is well under one,
+      # so the cache is not optional. Keyed by model so changing it misses
+      # rather than silently testing the old one.
+      - name: Cache the model
+        uses: actions/cache@v4
+        with:
+          path: ~/.ollama/models
+          key: ollama-llama3.2-1b
+
+      - name: Install and start Ollama
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          ollama serve &
+          # Backgrounding the server and pulling immediately races it, so poll
+          # until it answers before going on.
+          for _ in $(seq 1 60); do
+            curl -sf http://localhost:11434/api/version >/dev/null && break
+            sleep 1
+          done
+          curl -sf http://localhost:11434/api/version
+
+      - run: ollama pull llama3.2:1b
+
+      - run: npm run build
+      - run: npm run test:real:fill
+        env:
+          OLLAMA_BASE_URL: http://localhost:11434/v1
+          OLLAMA_MODEL: llama3.2:1b
+          # Ollama ignores the value; the provider needs the variable to exist.
+          OLLAMA_API_KEY: ollama
