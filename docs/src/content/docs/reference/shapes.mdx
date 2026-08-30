@@ -8,7 +8,7 @@ import { Aside } from '@astrojs/starlight/components';
 `dockg check` validates the **assembled graph** against a published SHACL shapes contract. This page
 is the catalog: what each rule catches, and whether it gates.
 
-The shapes ship in the package at `shapes/dockg-0.6.ttl`. Point any SHACL tool at it, or override
+The shapes ship in the package at `shapes/dockg-0.7.ttl`. Point any SHACL tool at it, or override
 with `check.shapes` / `--shapes`.
 
 ## Severities and exit codes
@@ -84,7 +84,7 @@ Enforced on both documents and sections.
 
 Cycle detection and the transitive SKOS S27 check run in **TypeScript**, because core SHACL cannot
 express transitive closure. They are part of `dockg check` regardless — you will not find them by
-reading `shapes/dockg-0.6.ttl`, which is worth knowing before you go looking.
+reading `shapes/dockg-0.7.ttl`, which is worth knowing before you go looking.
 
 ```
 violation: https://example.com/kg/concept/alpha skos:broader — skos:broader cycle through …/alpha, …/beta (…/alpha → …/beta) — a concept cannot be its own ancestor [docs/alpha.md, docs/beta.md]

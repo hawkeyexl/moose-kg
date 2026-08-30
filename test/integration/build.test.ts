@@ -50,7 +50,7 @@ describe("dockg build (integration)", () => {
     // must equal the triple count `build` reports for the corpus
     // (135 + 4 negative-scope triples: notApplicableToVariant + its
     // ProductVariant node, and a section not-about-product-aspect — ADR 01014)
-    expect(quads.length).toBe(167);
+    expect(quads.length).toBe(172);
   });
 
   it("reports docs and triples on stdout", () => {

@@ -64,4 +64,9 @@ export interface DocModel {
   images: DocImage[];
   /** Distinct fenced code block languages, sorted. */
   codeLanguages: string[];
+  /**
+   * Lowercase sha256 hex digest of the document's UTF-8 content, as read —
+   * line endings included, so it matches `sha256sum <file>` (ADR 01036).
+   */
+  contentHash: string;
 }

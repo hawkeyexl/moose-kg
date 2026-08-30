@@ -12,6 +12,8 @@ const SHAPES = [bundledShapesPath(import.meta.url)];
 const doc = (path: string) => `${BASE}doc/${path}`;
 const concept = (slug: string) => `${BASE}concept/${slug}`;
 const SCHEME = `${BASE}scheme`;
+/** A syntactically valid sha256: 64 lowercase hex characters. */
+const HASH = "a".repeat(64);
 
 /** Store builder: [s, p, o] with strings; o starting with "http" is an IRI. */
 function build(
@@ -41,6 +43,9 @@ function conformingTriples(): Array<
   return [
     [d, RDF_TYPE, `${NS.dockg}Document`],
     [d, `${NS.dockg}path`, { lit: "docs/a.md" }],
+    // Required since shapes 0.7 (ADR 01036). Any well-formed digest will do —
+    // these tests are about the shapes, not about hashing.
+    [d, `${NS.dockg}contentHash`, { lit: HASH }],
     [d, `${NS.dcterms}title`, { lit: "A" }],
     [d, `${NS.dcterms}subject`, c],
     [c, RDF_TYPE, `${NS.skos}Concept`],
@@ -393,5 +398,56 @@ describe("validateGraph", () => {
     const firstWarning = severities.indexOf("warning");
     const lastViolation = severities.lastIndexOf("violation");
     expect(lastViolation).toBeLessThan(firstWarning);
+  });
+});
+
+describe("Document content hash (ADR 01036)", () => {
+  it("rejects a document with no content hash", () => {
+    // Required, not optional: the predicate is unconditional, so a regression
+    // that stops emitting it must fail rather than pass quietly.
+    const triples = conformingTriples().filter(
+      ([, p]) => p !== `${NS.dockg}contentHash`,
+    );
+    return expect(
+      validateGraph(build(triples), SHAPES).then((f) =>
+        f.map((x) => x.path ?? ""),
+      ),
+    ).resolves.toContain(`${NS.dockg}contentHash`);
+  });
+
+  it("rejects a hash that is not 64 lowercase hex characters", async () => {
+    for (const bad of [
+      "not-a-hash",
+      "A".repeat(64), // uppercase
+      "a".repeat(63), // too short
+      "a".repeat(65), // too long
+    ]) {
+      const triples = conformingTriples().map(
+        ([s, p, o]): [string, string, string | { lit: string }] =>
+          p === `${NS.dockg}contentHash` ? [s, p, { lit: bad }] : [s, p, o],
+      );
+      const findings = await validateGraph(build(triples), SHAPES);
+      expect(
+        findings.map((f) => f.path ?? ""),
+        `expected "${bad}" to be rejected`,
+      ).toContain(`${NS.dockg}contentHash`);
+    }
+  });
+
+  it("rejects a second content hash on one document", async () => {
+    const triples = conformingTriples();
+    triples.push([
+      doc("docs/a.md"),
+      `${NS.dockg}contentHash`,
+      { lit: "b".repeat(64) },
+    ]);
+    const findings = await validateGraph(build(triples), SHAPES);
+    expect(findings.map((f) => f.path ?? "")).toContain(
+      `${NS.dockg}contentHash`,
+    );
+  });
+
+  it("accepts a well-formed hash", async () => {
+    expect(await validateGraph(build(conformingTriples()), SHAPES)).toEqual([]);
   });
 });

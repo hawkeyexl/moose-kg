@@ -22,6 +22,9 @@ function doc(
     links: [],
     images: [],
     codeLanguages: [],
+    // Any digest: harvestWarnings never reads it, and a fixed value keeps this
+    // stub from depending on content it does not have.
+    contentHash: "0".repeat(64),
   };
 }
 

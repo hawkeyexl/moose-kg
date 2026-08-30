@@ -28,7 +28,7 @@ dockg check           # graph-level SHACL validation
 ```
 
 ```
-Wrote kg/graph.ttl (5 docs, 167 triples)
+Wrote kg/graph.ttl (5 docs, 172 triples)
 ```
 
 No config file needed for the first run. Exit codes: `0` ok · `1` findings · `2` operational

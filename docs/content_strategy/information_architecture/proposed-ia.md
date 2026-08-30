@@ -182,7 +182,7 @@ is part of the change's definition of done.
 | `reference/configuration.mdx` | `src/core/config-schema.json`, `src/core/config.ts` |
 | `reference/frontmatter.mdx` | `schemas/frontmatter-0.8.json`, `src/core/derive.ts` |
 | `reference/vocabulary.mdx` | `src/core/vocab.ts`, `src/core/iirds.ts` |
-| `reference/shapes.mdx` | `shapes/dockg-0.6.ttl` |
+| `reference/shapes.mdx` | `shapes/dockg-0.7.ttl` |
 | `reference/output-and-exit-codes.mdx` | `src/cli.ts` `fail()`, each `src/commands/*.ts` core |
 | `reference/runtime-api.mdx` | `src/runtime.ts` exports, `package.json` `exports` |
 | `reference/library-api.mdx` | `src/index.ts` exports |
