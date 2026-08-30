@@ -14,7 +14,28 @@ import { COVERAGE_FIELD_NAMES } from "./coverage.js";
 // Pure data module (no transformers import), so config stays Node-light.
 import { DEFAULT_MODEL as DEFAULT_EMBED_MODEL } from "../embed/types.js";
 
-export type ProviderName = "anthropic" | "openai" | "claude-cli" | "mock";
+/**
+ * Every provider `fill` accepts, as data.
+ *
+ * A runtime list, not just a type: `fill.provider` is validated by Ajv against
+ * the schema enum, but the `--provider` CLI override is a raw string, and
+ * `providerSpecFor` casts whichever arrives to `ProviderName`. That cast is
+ * only sound if both paths are checked against the same list — so the CLI
+ * checks against this one, and `test/unit/schema-sync.test.ts` pins it to the
+ * schema enum so the two cannot drift.
+ *
+ * `llama-cpp` is an in-process local model via node-llama-cpp: no key, no
+ * network, no spend.
+ */
+export const PROVIDER_NAMES = [
+  "anthropic",
+  "openai",
+  "claude-cli",
+  "llama-cpp",
+  "mock",
+] as const;
+
+export type ProviderName = (typeof PROVIDER_NAMES)[number];
 
 export type DeriveSource =
   | "frontmatter"
@@ -132,6 +153,8 @@ export interface DockgConfig {
     writeProvenance: boolean;
     /** Reject proposals that would violate the SHACL shapes contract. */
     validateGraph: boolean;
+    /** Also propose per-section metadata (ADR 01032). Opt-in: more output. */
+    sections: boolean;
     pricing?: Pricing;
   };
   stats: {
@@ -293,6 +316,7 @@ export function parseConfig(text: string, configPath: string): DockgConfig {
       minConfidence: r.fill?.minConfidence ?? 0.7,
       writeProvenance: r.fill?.writeProvenance ?? true,
       validateGraph: r.fill?.validateGraph ?? true,
+      sections: r.fill?.sections ?? false,
       pricing: r.fill?.pricing,
     },
     embed: {

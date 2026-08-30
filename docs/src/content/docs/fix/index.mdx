@@ -152,6 +152,10 @@ The link target does not exist on disk. Either fix the path, or — if the link 
 published site — the repo may be missing
 [route mappings](/dockg/build/routes/), which is a config problem rather than yours.
 
+A link to something that is not a document — an archive, a PDF, an OpenAPI `.yaml` — never
+appears here. dockg reads any explicit extension outside your `extensions` list as a static asset
+your site serves, so there is nothing to fix and nothing is reported.
+
 ### Applicability that contradicts itself
 
 ```
@@ -181,6 +185,30 @@ warning: … concept carries multiple prefLabels (same slug, different spellings
 
 This is a **warning**, not a violation. It exits `0` and does not fail a build — if your job is
 red, this is not why.
+
+### A page-level key that derives nothing
+
+```
+dockg: test/fixtures/dd/harvest/guide.md: page key "applies_to" is not read by dockg and looks like "applies-to" — nothing was derived from it
+```
+
+The five page-level keys dockg reads — `type`, `concepts`, `applies-to`, `not-applicable-to`,
+`supersedes` — are **not** schema-validated, because a page may legitimately carry any other key
+its site generator or team needs. So a misspelling is not an error; it is just a key dockg does not
+read, and the fact you meant to declare is missing from the graph.
+
+`dockg build` warns when a page key is one or two characters from one it does read. Fix the
+spelling and rebuild. The same message appears for a page `type` value:
+
+```
+dockg: test/fixtures/dd/harvest/guide.md: page type "how to" maps to no iiRDS topic type and looks like "how-to" — no kg.type was derived
+```
+
+A page `type` with no iiRDS counterpart — `blog-post`, `release-note` — derives nothing on purpose
+and is not warned about. dockg references published iiRDS terms and never invents one.
+
+This is a **warning**: exit `0`, and nothing is derived either way. dockg reports what it did not
+understand rather than guessing what you meant.
 
 ## Reproduce it locally
 
@@ -214,3 +242,23 @@ Pushing a fix and re-running is usually faster than chasing that difference.
     description="If you have merged and are now curious what this thing was for."
   />
 </CardGrid>
+
+{/* Doc Detective inline tests: verify this page against the local build, exposed
+    as `dockg` via `npm link` (see .github/workflows/doc-detective.yml), over the
+    fixtures in test/fixtures/dd/. Writes go to .tmp/, never into a fixture.
+    Two things to know before editing these. Output is asserted with `stdio`,
+    which matches stdout or stderr; `stdout`/`stderr` are not schema properties,
+    and a step using them is dropped without failing the run (scripts/check-doc-
+    tests.mjs is the guard against that). And paths are repo-root-relative with
+    the input globs in the fixture config, because a glob on the command line
+    would close this comment. Run with `npx doc-detective`. */}
+{/* test {"testId":"fix-a-failing-check","description":"The failure catalog: each error message the fix page tells a contributor to look for."} */}
+{/* step {"description":"An unknown key inside kg is rejected rather than ignored.","runShell":{"command":"dockg validate -c test/fixtures/dd/invalid.config.yaml","exitCodes":[1],"stdio":"must NOT have additional property 'bogus'"}} */}
+{/* step {"description":"A relationship field without prefLabel is a schema error.","runShell":{"command":"dockg validate -c test/fixtures/dd/invalid.config.yaml","exitCodes":[1],"stdio":"must have property label when property alt-labels is present"}} */}
+{/* step {"description":"Build the corpus whose section key no longer matches a heading.","runShell":{"command":"dockg build -c test/fixtures/dd/dockg.config.yaml","exitCodes":[0]}} */}
+{/* step {"description":"A kg.sections key matching no heading is reported as a broken section ref.","runShell":{"command":"dockg stats -c test/fixtures/dd/dockg.config.yaml","exitCodes":[0],"stdio":"Broken section refs (1)"}} */}
+{/* step {"description":"Build the corpus that contains the cycle.","runShell":{"command":"dockg build -c test/fixtures/dd/violations.config.yaml","exitCodes":[0]}} */}
+{/* step {"description":"A concept cycle names every document responsible, not just the last one edited.","runShell":{"command":"dockg check -c test/fixtures/dd/violations.config.yaml","exitCodes":[1],"stdio":"a concept cannot be its own ancestor"}} */}
+{/* step {"description":"A page key one edit from a harvested key is reported, and the build still exits 0.","runShell":{"command":"dockg build -c test/fixtures/dd/harvest.config.yaml","exitCodes":[0],"stdio":"page key \"applies_to\" is not read by dockg and looks like \"applies-to\""}} */}
+{/* step {"description":"A page type one edit from a mapped type is reported too.","runShell":{"command":"dockg build -c test/fixtures/dd/harvest.config.yaml","exitCodes":[0],"stdio":"page type \"how to\" maps to no iiRDS topic type"}} */}
+{/* test end */}

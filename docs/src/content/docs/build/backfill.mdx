@@ -25,6 +25,12 @@ does.
 `fill.minConfidence` (default `0.7`) is dropped and reported. A field with *no* score is also
 dropped — no score, no write.
 
+A score that is not a number between 0 and 1 counts as no score. Small local models get this
+wrong in two ways: a string where a number was asked for, and a percentage — `90.5` — where a
+fraction was. Neither is trusted, and neither costs the rest of the proposal: the field goes
+unscored and appears in the low-confidence report, while every other field the model got right is
+still written.
+
 **A graph guardrail.** Proposals are simulated against the SHACL shapes before being written, so a
 proposal that would create a `broader` cycle, conflict with an existing `related` edge, introduce
 a second spelling of an existing concept, or contradict an `applies-to` is rejected. The guardrail
@@ -33,6 +39,29 @@ the run — so two documents cannot jointly form a cycle.
 
 **A cost cap.** `fill.maxCostUsd` defaults to `5`. Past it, remaining documents are skipped with a
 `skipped-budget` status rather than silently costing more.
+
+The cap needs a price to work against. dockg knows prices for a fixed set of models; for anything
+else — a local model, a `claude-cli` run, a model newer than the table — spend cannot be totalled,
+so the cap **cannot be applied**. dockg says so rather than pretending:
+
+```
+dockg: Cost cap of 5 USD cannot be enforced: no price is known for model
+"no-such-model-in-the-price-table", so spend cannot be totalled. Set fill.pricing to enforce it, or
+fill.maxCostUsd: null if you meant no cap.
+```
+
+and the run reports `LLM cost: unpriceable` instead of `$0.0000`, because costing nothing and being
+unmeasurable are different facts. Set `fill.pricing` to make the cap real.
+
+## Spending nothing at all
+
+The three mechanisms above bound what a run writes and what it costs. If the budget is zero rather
+than small, `fill.provider: llama-cpp` runs a model in-process — no key, no network, no spend, and
+no document text leaves the machine. It needs an explicit `fill.model` (a curated alias, an `hf:`
+URI, or a `.gguf` path); selectors like `auto` resolve against the machine and are not supported.
+
+This is a trade, not a free win. Expect to lean harder on the confidence gate: a small local model
+proposes more and knows less, so review what it writes.
 
 <Aside type="caution" title="Exit 0 does not mean everything was written">
   Low-confidence drops and guardrail rejections are **routine operation**, and the run still exits
@@ -141,3 +170,8 @@ confident it was, and a review queue that shrinks as humans work through it.
     description="Machine-proposed concepts still have to fit a governed vocabulary."
   />
 </CardGrid>
+
+{/* test {"testId":"backfill-cost-cap","description":"The cost cap's two messages, captured from a corpus whose model has no price."} */}
+{/* step {"description":"A cap dockg cannot total against says so, and the run still exits 0.","runShell":{"command":"dockg fill -c test/fixtures/dd/unpriced.config.yaml --dry-run --no-cache","exitCodes":[0],"stdio":"cannot be enforced: no price is known for model"}} */}
+{/* step {"description":"The run reports the spend as unpriceable rather than as zero.","runShell":{"command":"dockg fill -c test/fixtures/dd/unpriced.config.yaml --dry-run --no-cache","exitCodes":[0],"stdio":"LLM cost: unpriceable"}} */}
+{/* test end */}
