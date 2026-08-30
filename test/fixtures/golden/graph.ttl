@@ -1,5 +1,5 @@
 @prefix dcterms: <http://purl.org/dc/terms/> .
-@prefix dockg: <https://dockg.dev/ns#> .
+@prefix dockg: <https://hawkeyexl.github.io/dockg/ns#> .
 @prefix foaf: <http://xmlns.com/foaf/0.1/> .
 @prefix iirds: <http://iirds.tekom.de/iirds#> .
 @prefix iirdsSft: <http://iirds.tekom.de/iirds/domain/software#> .

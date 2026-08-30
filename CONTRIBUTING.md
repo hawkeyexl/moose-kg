@@ -67,11 +67,19 @@ The docs workflow additionally builds a graph from the documentation site itself
 default — update [`docs/src/content/docs/reference/cli.mdx`](docs/src/content/docs/reference/cli.mdx)
 in the same change. The drift check enforces it.
 
-**Command output on a page is not verified by CI.** Capture it by running the built binary
-against a committed fixture under [`test/fixtures/`](test/fixtures), never from memory —
-determinism means what you capture is what every reader sees. Automated doc testing was removed
-and is planned to return; until it does, re-capturing output when a command changes is a manual
-obligation.
+**Command output on a page is executed by CI.** Capture it by running the built binary against a
+committed fixture under [`test/fixtures/`](test/fixtures), never from memory — determinism means
+what you capture is what every reader sees. Seven pages then assert that output through Doc
+Detective:
+
+```bash
+npm link && npm link @hawkeyexl/dockg && npm run docs:test
+```
+
+Output is asserted with `stdio`, which matches stdout or stderr. `stdout` and `stderr` are **not**
+schema properties, and a step using them is silently dropped rather than failed —
+`scripts/check-doc-tests.mjs` runs after the suite and fails on both a step that never ran and a
+step that ran but did not pass.
 
 ## Commit messages
 

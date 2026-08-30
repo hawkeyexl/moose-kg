@@ -38,11 +38,28 @@ dockg query -p dcterms:title
 ```
 <https://example.com/kg/doc/docs/configuration.md> dcterms:title "Configuration Reference"
 <https://example.com/kg/doc/docs/configuration.md#advanced> dcterms:title "Advanced"
+<https://example.com/kg/doc/docs/configuration.md#configuration> dcterms:title "Configuration"
+<https://example.com/kg/doc/docs/configuration.md#options> dcterms:title "Options"
 <https://example.com/kg/doc/docs/getting-started.md> dcterms:title "Getting Started"
+<https://example.com/kg/doc/docs/getting-started.md#getting-started> dcterms:title "Getting Started"
+<https://example.com/kg/doc/docs/getting-started.md#install> dcterms:title "Install"
+<https://example.com/kg/doc/docs/getting-started.md#install-1> dcterms:title "Install"
+<https://example.com/kg/doc/docs/harvest.md> dcterms:title "Upgrading"
+<https://example.com/kg/doc/docs/harvest.md#upgrading> dcterms:title "Upgrading"
+<https://example.com/kg/doc/docs/no-frontmatter.md> dcterms:title "Loose Notes"
+<https://example.com/kg/doc/docs/no-frontmatter.md#loose-notes> dcterms:title "Loose Notes"
+<https://example.com/kg/doc/docs/windows-notes.md> dcterms:title "Windows Notes"
+<https://example.com/kg/doc/docs/windows-notes.md#windows-notes> dcterms:title "Windows Notes"
 <https://example.com/kg/product/sp-x100> dcterms:title "SP-X100"
+<https://example.com/kg/product/sp-x200> dcterms:title "SP-X200"
+<https://example.com/kg/product/sp-x300> dcterms:title "SP-X300"
+<https://example.com/kg/scheme> dcterms:title "dockg concepts"
 
-16 match(es)
+18 match(es)
 ```
+
+Note the two `#install` anchors: `install` and `install-1`. Repeated headings get a numeric
+suffix, the same rule GitHub uses, so a section IRI stays stable and unique.
 
 Everything the graph asserts about one node:
 
@@ -108,8 +125,9 @@ dockg traverse "https://example.com/kg/doc/docs/getting-started.md" \
 ```
 https://example.com/kg/doc/docs/getting-started.md — Getting Started
   https://example.com/kg/doc/docs/configuration.md — Configuration Reference
+  https://example.com/kg/doc/docs/harvest.md — Upgrading
 
-2 nodes, 1 hop, 0 excluded
+3 nodes, 2 hops, 0 excluded
 ```
 
 **Run this before you move, rename, or delete a page.** It is the whole reason link derivation
@@ -123,11 +141,12 @@ dockg traverse "https://example.com/kg/doc/docs/getting-started.md" --impact
 
 ```
   https://example.com/kg/doc/docs/configuration.md — Configuration Reference
+  https://example.com/kg/doc/docs/harvest.md — Upgrading
   https://example.com/kg/activity/build
     https://example.com/kg/doc/docs/windows-notes.md — Windows Notes
     https://example.com/kg/graph
 
-4 nodes, 7 hops, 0 excluded
+5 nodes, 10 hops, 0 excluded
 ```
 
 <Aside type="caution" title="`--impact` changes the depth default">

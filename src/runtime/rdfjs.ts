@@ -16,7 +16,7 @@
  * Quads are plain data rather than a hand-rolled `Source` stream on purpose:
  * every engine already accepts a store, stores accept quad arrays, and faking
  * Node's stream contract in a browser-safe module is fragile for no gain. At
- * docs scale materializing is trivial (the reference corpus is 139 quads).
+ * docs scale materializing is trivial (the reference corpus is 167 quads).
  *
  * Honest caveat: engine results are bindings, not walker traces —
  * explainability lives in the walker API.

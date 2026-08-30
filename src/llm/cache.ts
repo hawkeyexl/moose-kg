@@ -15,6 +15,8 @@ export function cacheKey(
   model: string,
   content: string,
   fields: FillField[],
+  /** Whether the request also asked for per-section metadata (ADR 01032). */
+  sections = false,
 ): string {
   return buildCacheKey([
     provider,
@@ -23,6 +25,10 @@ export function cacheKey(
     // Pre-hashed: documents are large and key parts should stay short.
     sha256(content),
     fields.join(","),
+    // Same fields, different request: a sections run sends a different schema
+    // and a different prompt, so its answer must not be served from a
+    // doc-only entry (or the other way round).
+    sections ? "sections" : "doc-only",
   ]);
 }
 

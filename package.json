@@ -25,6 +25,7 @@
   },
   "files": [
     "dist",
+    "ns",
     "schemas",
     "shapes"
   ],
@@ -48,12 +49,15 @@
     "dev": "node scripts/clean-dist.mjs && tsup --watch",
     "test": "vitest run",
     "test:real": "vitest run --config vitest.real.config.ts",
+    "test:real:fill": "vitest run --config vitest.fill.config.ts",
     "test:real:cross": "node test/real/cross-platform.mjs",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "docs:check-strategy": "node scripts/check-content-strategy.mjs",
     "docs:check-links": "node scripts/check-docs-links.mjs",
     "docs:check-cli": "node scripts/check-cli-reference.mjs",
+    "docs:check-doc-tests": "node scripts/check-doc-tests.mjs",
+    "docs:test": "doc-detective --exit-on-fail && node scripts/check-doc-tests.mjs",
     "docs:dev": "npm --prefix docs run dev",
     "docs:build": "npm --prefix docs run build",
     "lint": "eslint .",
@@ -91,7 +95,7 @@
     }
   },
   "dependencies": {
-    "@hawkeyexl/inference": "^0.1.0",
+    "@hawkeyexl/inference": "^0.3.1",
     "ajv": "^8.17.1",
     "commander": "^15.0.0",
     "docmeta": "^4.12.0",
@@ -126,6 +130,7 @@
     "@types/n3": "^1.26.0",
     "@types/node": "^26.0.1",
     "@types/yauzl": "^3.4.0",
+    "doc-detective": "^4.38.1",
     "eslint": "^10.7.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.7.0",

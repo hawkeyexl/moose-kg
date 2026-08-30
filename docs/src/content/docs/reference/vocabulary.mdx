@@ -8,6 +8,16 @@ import { Aside } from '@astrojs/starlight/components';
 dockg emits standard vocabulary wherever a standard term exists, and mints its own only where none does.
 That is a deliberate constraint: a graph full of bespoke predicates is a graph nobody else can read.
 
+<Aside type="tip" title="The dockg namespace resolves">
+  Fetch [`https://hawkeyexl.github.io/dockg/ns`](/dockg/ns/) and you get a machine-readable RDFS
+  document defining every term below — label, comment, and non-entailing domain and range. The
+  Turtle is at [`/dockg/ns.ttl`](/dockg/ns.ttl), and it ships in the npm package under `ns/` so an
+  offline consumer can load it by path.
+
+  It says what each term **means**. What a *valid* dockg graph looks like is a separate question,
+  answered by the [SHACL shapes](/dockg/reference/shapes/). RDFS defines; SHACL constrains.
+</Aside>
+
 ## Namespaces
 
 Every emitted graph carries the same header, sorted by prefix.
@@ -15,7 +25,7 @@ Every emitted graph carries the same header, sorted by prefix.
 | Prefix | IRI |
 |---|---|
 | `dcterms` | `http://purl.org/dc/terms/` |
-| `dockg` | `https://dockg.dev/ns#` |
+| `dockg` | `https://hawkeyexl.github.io/dockg/ns#` |
 | `foaf` | `http://xmlns.com/foaf/0.1/` |
 | `iirds` | `http://iirds.tekom.de/iirds#` |
 | `iirdsSft` | `http://iirds.tekom.de/iirds/domain/software#` |
