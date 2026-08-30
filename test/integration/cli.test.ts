@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -10,23 +10,30 @@ const cli = join(root, "dist", "cli.js");
  * Run the built CLI; returns { stdout, stderr, status }. Never throws on
  * nonzero exit. stderr is captured because dockg's error messages go there —
  * a test that can only see stdout can assert an exit code but not the reason.
+ *
+ * `spawnSync`, not `execFileSync`: the latter surfaces stderr only when the
+ * child exits nonzero, so a success path can only ever hardcode `stderr: ""`.
+ * That is not a smaller version of the truth — it is a value that makes any
+ * assertion about it pass unconditionally. dockg writes warnings to stderr and
+ * still exits 0 (ADR 01010), so the success path is exactly where a stderr
+ * assertion has something to say.
  */
 export function runCli(args: string[], opts: { cwd?: string } = {}) {
-  try {
-    const stdout = execFileSync(process.execPath, [cli, ...args], {
-      encoding: "utf8",
-      cwd: opts.cwd ?? root,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    return { stdout, stderr: "", status: 0 };
-  } catch (e) {
-    const err = e as { stdout?: string; stderr?: string; status?: number };
-    return {
-      stdout: err.stdout ?? "",
-      stderr: err.stderr ?? "",
-      status: err.status ?? -1,
-    };
-  }
+  const r = spawnSync(process.execPath, [cli, ...args], {
+    encoding: "utf8",
+    cwd: opts.cwd ?? root,
+  });
+  const stdout = r.stdout ?? "";
+  const stderr = r.stderr ?? "";
+  return {
+    stdout,
+    stderr,
+    output: stdout + stderr,
+    // spawnSync gives a null status when the process died on a signal or could
+    // not be spawned; r.error carries the reason in the latter case.
+    status: r.status ?? -1,
+    error: r.error,
+  };
 }
 
 describe("dockg CLI", () => {
@@ -127,7 +134,14 @@ describe("enum options are checked against the same list config is", () => {
   });
 
   it("still accepts a real provider name", () => {
-    const { stderr } = runCli(["fill", "--provider", "mock"]);
-    expect(stderr).not.toContain("--provider");
+    const { stderr, status } = runCli(["fill", "--provider", "mock"]);
+    // This assertion was vacuous until `runCli` captured stderr for real: the
+    // helper hardcoded `stderr: ""` on the success path, so `not.toContain`
+    // held no matter what the CLI wrote. The run does write to stderr — an
+    // unpriceable-cap warning — so the empty string was not even close to
+    // the truth, and it is now checked against what actually came back.
+    expect(stderr).toContain("Cost cap of 5 USD cannot be enforced");
+    expect(stderr).not.toContain("--provider must be one of");
+    expect(status).toBe(0);
   });
 });

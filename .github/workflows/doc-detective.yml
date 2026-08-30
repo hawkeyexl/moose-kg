@@ -8,6 +8,15 @@ on:
       - "test/fixtures/dd/**"
       - ".doc-detective.json"
       - ".github/workflows/doc-detective.yml"
+      # The guard itself, and the manifest that pins doc-detective's version.
+      # docs.yml lists its own checker scripts for this reason; without them a
+      # PR that only edits the declared-vs-executed comparison, or only bumps
+      # the runner, never triggers the workflow that would exercise it — so the
+      # silent-skip failure this guard exists to catch could return inside the
+      # guard, unrun.
+      - "scripts/check-doc-tests.mjs"
+      - "package.json"
+      - "package-lock.json"
   workflow_dispatch:
 
 permissions:

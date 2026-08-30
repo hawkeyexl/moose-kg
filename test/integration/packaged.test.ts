@@ -63,7 +63,12 @@ function run(
   // shell on Windows.
   const r = spawnSync(cmd, args, { encoding: "utf8", cwd });
   const stdout = r.stdout ?? "";
-  const stderr = r.stderr ?? "";
+  // `r.error` is set when the executable itself could not be spawned (tar not
+  // installed, say). Both streams are empty then, so without it the caller's
+  // failure message would be blank — the one case where it is the only thing
+  // that could explain the failure.
+  const stderr =
+    (r.stderr ?? "") + (r.error ? `spawn failed: ${r.error.message}` : "");
   return { stdout, stderr, output: stdout + stderr, status: r.status ?? -1 };
 }
 
