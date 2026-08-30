@@ -245,7 +245,8 @@ Doc Detective is a **fourth gate with a narrower reach**: it lives in its own wo
 pull request's own content, so it is skipped on fork PRs — and a skipped job does not block. Treat
 fork contributions as unverified for command output.
 
-**Documented command output is executed, not trusted.** Eight pages carry trailing
+**Documented command output is executed, not trusted**
+([ADR 01035](adrs/01035-executing-documented-command-output.md)). Eight pages carry trailing
 `{/* test … */}` / `{/* step … */}` blocks that run the built CLI against `test/fixtures/dd/` and
 assert on its output. Run them with `npm run docs:test`, which needs the build linked as `dockg`
 (`npm link && npm link @hawkeyexl/dockg`). Three things about them are load-bearing:
