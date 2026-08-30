@@ -27,12 +27,7 @@ import { extname, join, resolve } from "node:path";
 import { chromium } from "playwright";
 // The built artifact, not src: this is what a consumer imports, and plain Node
 // cannot resolve TypeScript's .js-means-.ts specifiers. Run `npm run build` first.
-import {
-  createLocalEmbedder,
-  DEFAULT_MODEL,
-  profileFor,
-  withPrefix,
-} from "../../dist/embed.js";
+import { createLocalEmbedder, DEFAULT_MODEL } from "../../dist/embed.js";
 
 const WORK = resolve(".tmp/real/cross");
 
@@ -115,7 +110,20 @@ function rank(queryVector, corpusVectors) {
 }
 
 /**
- * Bundle the transformers web build so the page needs no import map.
+ * Bundle the transformers web build **and dockg's own embedder** so the page
+ * needs no import map.
+ *
+ * Both, not just transformers: the page used to call `t.pipeline(...)` directly
+ * with an explicit `device`, which meant the browser half of this gate never
+ * touched `createLocalEmbedder` — the function whose platform-default device
+ * selection is the entire subject of ADR 01025, and whose Node half is driven
+ * for real below. A gate that certifies a hand-rolled reimplementation of the
+ * thing it exists to certify is the "a byte-golden is not a consumer" mistake
+ * ADR 01026 refuses.
+ *
+ * `dist/embed.js` bundles cleanly for the browser: it imports nothing from Node,
+ * and its `transformers` option is an injection seam, so the page hands it the
+ * web build rather than letting it resolve the Node one.
  *
  * The web dist imports bare specifiers (`onnxruntime-web/webgpu`), which a plain
  * browser cannot resolve. esbuild's JS API rather than its CLI: spawning `npx`
@@ -124,9 +132,16 @@ function rank(queryVector, corpusVectors) {
 async function bundleForBrowser() {
   mkdirSync(WORK, { recursive: true });
   const entry = join(WORK, "entry.mjs");
+  const web = resolve(
+    "node_modules/@huggingface/transformers/dist/transformers.web.js",
+  );
   writeFileSync(
     entry,
-    `export * from ${JSON.stringify(resolve("node_modules/@huggingface/transformers/dist/transformers.web.js"))};\n`,
+    [
+      `export * as transformers from ${JSON.stringify(web)};`,
+      `export { createLocalEmbedder } from ${JSON.stringify(resolve("dist/embed.js"))};`,
+      "",
+    ].join("\n"),
   );
   const esbuild = await import("esbuild");
   await esbuild.build({
@@ -134,6 +149,11 @@ async function bundleForBrowser() {
     bundle: true,
     format: "esm",
     outfile: join(WORK, "bundle.mjs"),
+    // dist/embed.js also carries a dynamic `import("@huggingface/transformers")`
+    // for the case where nothing is injected. The page always injects, so that
+    // path is dead here — but esbuild still resolves it, and would pull in the
+    // *Node* build. Point it at the web one.
+    alias: { "@huggingface/transformers": web },
     logLevel: "error",
   });
 }
@@ -145,16 +165,24 @@ function writePage(queries) {
 <script type="module">
 const log = (s) => { document.getElementById("o").textContent += "\\n" + s; };
 try {
-  const t = await import("./bundle.mjs");
-  if (t.env?.backends?.onnx?.wasm) t.env.backends.onnx.wasm.numThreads = 1;
-  const ex = await t.pipeline("feature-extraction", ${JSON.stringify(DEFAULT_MODEL)}, { device: "wasm", dtype: "q8" });
+  const { transformers, createLocalEmbedder } = await import("./bundle.mjs");
+  // dockg's own embedder, with the web transformers injected — not a
+  // hand-rolled pipeline call. This is what makes the browser leg a consumer of
+  // the shipped code rather than a second implementation of it, so the platform
+  // default device selection ADR 01025 turns on is genuinely exercised here.
+  // No \`device\` is passed, for the same reason \`createLocalEmbedder\` does not
+  // pass one: the accepted values are disjoint across platforms.
+  const embedder = await createLocalEmbedder({ role: "query", transformers });
   // Read the pinned thread count back: setting a property that nothing reads is
-  // exactly the failure ADR 01025 documents on the Node side.
-  window.__THREADS = t.env?.backends?.onnx?.wasm?.numThreads ?? null;
+  // exactly the failure ADR 01025 documents on the Node side. It is set by
+  // createLocalEmbedder now, so this also proves the injected module is the one
+  // it configured.
+  window.__THREADS = transformers.env?.backends?.onnx?.wasm?.numThreads ?? null;
   const out = [];
+  // Raw queries: the embedder applies the model's own prefix convention, which
+  // is the behavior under test rather than something for the page to replicate.
   for (const q of ${JSON.stringify(queries)}) {
-    const r = await ex(q, { pooling: "mean", normalize: true });
-    out.push(Array.from(r.data));
+    out.push(Array.from(await embedder.embed(q)));
   }
   window.__VECTORS = out;
   document.title = "DONE";
@@ -186,13 +214,13 @@ async function main() {
 
   console.log("bundling web build…");
   await bundleForBrowser();
-  // The page calls the raw pipeline, so it must be handed the *prefixed* text
-  // `Embedder.embed` would apply. granite has no prefix convention, but the gate
-  // is keyed to DEFAULT_MODEL — switch that to bge-small (already in the tested
-  // table) and an unprefixed page would compare two different strings and
-  // certify nothing.
-  const profile = profileFor(DEFAULT_MODEL);
-  writePage(QUERIES.map((q) => withPrefix(profile, "query", q)));
+  // Raw queries. The page now calls `createLocalEmbedder`, which applies the
+  // model's prefix convention itself — the same code the Node leg above ran —
+  // so pre-applying it here would prefix twice and compare two strings neither
+  // platform would ever produce. (When the page called the raw pipeline it had
+  // to be handed prefixed text; that asymmetry is what made an unprefixed page
+  // able to certify nothing under a model like bge-small.)
+  writePage(QUERIES);
 
   const server = createServer(async (req, res) => {
     const p = join(

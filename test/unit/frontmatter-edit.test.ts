@@ -29,6 +29,36 @@ describe("applyKgFields", () => {
     expect(result.content.endsWith("# No frontmatter\n")).toBe(true);
   });
 
+  it("nests a dotted field when the file has no frontmatter at all", () => {
+    // The no-frontmatter branch builds the whole `kg` map from scratch, and a
+    // dotted section path has to nest inside it rather than land as a key
+    // literally named `sections.install.type` (ADR 01032). Every fixture in
+    // fill-sections.test.ts starts from a page that already has a block, so
+    // this branch had no coverage.
+    const content = "# No frontmatter\n";
+    const result = applyKgFields(content, "a.md", {
+      "sections.install.type": "task",
+    });
+    expect(result.applied).toEqual(["sections.install.type"]);
+    expect(result.content).toContain("sections:");
+    expect(result.content).toContain("install:");
+    expect(result.content).toContain("type: task");
+    expect(result.content).not.toContain("sections.install.type");
+  });
+
+  it("leaves a non-map where a section path needs one, and reports it", () => {
+    // A human wrote `kg.sections: none`. Writing through it would destroy their
+    // value to make room for a shape we cannot infer they wanted, so the field
+    // is skipped rather than applied — the `missingParent` guard.
+    const content = `---\ntitle: T\nkg:\n  sections: none\n---${BODY}`;
+    const result = applyKgFields(content, "a.md", {
+      "sections.install.type": "task",
+    });
+    expect(result.applied).toEqual([]);
+    expect(result.skipped).toEqual(["sections.install.type"]);
+    expect(result.content).toContain("sections: none");
+  });
+
   it("preserves human-set fields unless forced", () => {
     const content = `---\nkg:\n  label: Human Choice\n---${BODY}`;
     const soft = applyKgFields(content, "a.md", { label: "Model Choice" });

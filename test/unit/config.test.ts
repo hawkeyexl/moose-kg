@@ -203,6 +203,34 @@ describe("parseConfig", () => {
     expect(c.fill.model).toBe("granite-4.1-3b-q2");
   });
 
+  it("defaults fill.sections to off", () => {
+    // Opt-in by design (ADR 01032): more output per document, and section
+    // metadata carries the same review obligation as anything else a model
+    // writes. ADR 01009's default-on rule covers hermetic features; this is
+    // neither hermetic nor free.
+    const c = parseConfig("version: 1\n", "/tmp/dockg.config.yaml");
+    expect(c.fill.sections).toBe(false);
+  });
+
+  it("accepts fill.sections: true", () => {
+    const c = parseConfig(
+      "version: 1\nfill:\n  sections: true\n",
+      "/tmp/dockg.config.yaml",
+    );
+    expect(c.fill.sections).toBe(true);
+  });
+
+  it("rejects a non-boolean fill.sections", () => {
+    // additionalProperties is false everywhere and every knob is typed, so a
+    // truthy-looking string must fail loudly rather than silently enable it.
+    expect(() =>
+      parseConfig(
+        "version: 1\nfill:\n  sections: yes-please\n",
+        "/tmp/dockg.config.yaml",
+      ),
+    ).toThrow(DockgError);
+  });
+
   it("parses route mappings with defaults and normalization", () => {
     const c = parseConfig(
       "version: 1\nroutes:\n  - basePath: /docs/\n    root: docs/pages/\n",

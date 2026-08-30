@@ -568,6 +568,22 @@ guard that fails on both a skipped step and a failing one; the packed tarball ru
 as a consumer receives it; the three-platform matrix with a cross-OS digest join;
 the local `llama-cpp` provider and a live `openai` run against Ollama.
 
+Two of the gates found defects the moment they were pointed at something real,
+which is the whole argument for building them:
+
+- **Documented output is now executed, not trusted**
+  ([ADR 01035](adrs/01035-executing-documented-command-output.md)). The
+  interesting part is not the runner but its failure modes: it exits 0 on a
+  failing step unless told otherwise, and silently *skips* a step with a schema
+  error — which is how an earlier attempt ran 11 of 33 steps and reported green.
+  The declared-vs-executed guard is what makes that visible.
+- **The live `fill` run failed on its first real call**, and the bug was dockg's:
+  a malformed self-reported confidence score discarded an otherwise good
+  proposal, and an out-of-range one (a percentage where a fraction was asked for)
+  was trusted as certainty. GBNF cannot express `minimum`/`maximum`, so no
+  grammar stops the second on any provider
+  ([ADR 01034](adrs/01034-advisory-scores-do-not-fail-a-proposal.md)).
+
 ## Phase 8d — Vocabulary integrity — **done**
 
 **Goal:** every fact dockg claims to read is validated, every fact it lifts is
@@ -618,6 +634,13 @@ vocabulary document and the namespace move
 fill, riding in the document's own call and dropping any slug that matches no
 heading rather than manufacturing a brokenSectionRef
 ([ADR 01032](adrs/01032-fill-reaches-sections.md)).
+
+The namespace move then produced a finding of its own: dockg's docs gate started
+failing on `/dockg/ns.ttl`, a link that works. A link whose explicit extension is
+not one a route's documents use is a static asset, not a document dockg failed to
+find, and reporting it was a finding no author could act on — there is no
+Markdown file they could add
+([ADR 01033](adrs/01033-links-to-non-document-files.md)).
 
 ## Phase 9 — `retrieve` + MCP serving
 

@@ -78,7 +78,9 @@ gotcha, a decision, a convention — record it **in the repo, in the same change
   derivation, not this repo's HEAD committer date; git-derived output is covered by the
   temp-repo tests instead.
 - **Naming:** the *frontmatter key* is `kg:`; the *RDF namespace prefix* is `dockg:`
-  (`https://dockg.dev/ns#`). Never conflate them. The custom namespace stays minimal — prefer
+  (`https://hawkeyexl.github.io/dockg/ns#` — moved there by
+  [ADR 01030](adrs/01030-the-dockg-vocabulary-document.md), which is where it resolves).
+  Never conflate them. The custom namespace stays minimal — prefer
   dcterms/skos/prov/schema.org/foaf terms wherever one exists.
 - **The frontmatter schema is docmeta's; the shapes are dockg's.** docmeta publishes the common
   metadata vocabularies and dockg implements graph behavior against them
