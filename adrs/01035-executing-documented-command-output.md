@@ -68,13 +68,27 @@ not pass. This is the part that makes a silent skip visible: without it, a dropp
 passing step are the same observation. It is why the count in its output is stated as
 `N declared · N executed` rather than a pass tally.
 
-**Eight pages carry step blocks; the rest do not, deliberately.** The excluded ones fall into two
-groups. Six pages (`model/*`, `reference/frontmatter.mdx`, `govern/provenance.mdx`) illustrate a
-fictional corpus whose files exist nowhere, so there is nothing to run them against; giving them
-a fixture would mean inventing a second corpus to serve prose. `retrieve/search.mdx`'s vector
-transcript needs model weights, which the default gate must not download (ADR 01025). These are
-recorded here rather than left as an absence, because an unexplained gap in a gate reads as an
-oversight and invites someone to "fix" it by weakening the gate.
+**Coverage is partial, and the boundary is a rule rather than a list.** A page is in the gate when
+its output can be produced by running the built CLI against a committed fixture. The count is
+whatever `npm run docs:test` reports — deliberately not written down here, because an ADR about
+transcribed numbers drifting is the last place to transcribe one. (An earlier draft of this
+section did exactly that, and was wrong within the same pull request.)
+
+Two categories sit outside it, and both are gaps rather than decisions to leave alone:
+
+- **Pages illustrating a corpus that exists nowhere in the repo** — frontmatter examples chosen to
+  teach a shape, not to be run. These are prose about a hypothetical, so there is no command whose
+  output could be asserted; closing this would mean inventing a second corpus to serve
+  illustration.
+- **Pages quoting output from a corpus no fixture reproduces.** These are the real residue: the
+  output is real, it just came from a corpus the gate cannot rebuild. Each is closable by adding a
+  fixture, one page at a time, and `retrieve/search.mdx` was closed exactly that way — its vector
+  transcript runs under `embed --model mock`, which is deterministic and downloads nothing
+  (ADR 01025).
+
+Naming the categories rather than the members is what keeps this true as coverage grows. An
+unexplained gap in a gate reads as an oversight and invites someone to "fix" it by weakening the
+gate; an enumerated one goes stale the first time somebody closes an item.
 
 **Fixtures live in `test/fixtures/dd/`, never in `test/fixtures/corpus/`.** The corpus fixture
 feeds six byte-exact goldens; a file added to it to serve a doc page would invalidate all six.
@@ -102,7 +116,8 @@ CLAUDE.md rather than left for someone to discover.
   **fails**; then delete a declared step's execution and confirm `check-doc-tests.mjs` fails on
   the mismatch. The first integration was green while dropping two thirds of its steps, so a
   green run on its own proves nothing about this gate.
-- `npm run docs:test` reports `8 pages · 38 steps declared · 38 executed`.
+- `npm run docs:test` reports `N pages · N steps declared · N executed`, with the two counts equal
+  — that equality is the assertion, not the number.
 
 ## Pros and Cons of the Options
 

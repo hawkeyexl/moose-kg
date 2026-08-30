@@ -213,16 +213,18 @@ and its return, **eight documented outputs drifted**, and one of them —
 `retrieve/export.mdx`'s JSON-LD node count — had never matched any build of any corpus, because it
 was the `search.json` count pasted under the wrong heading.
 
-Doc Detective is back, with the guard that makes it mean something: seven pages, 34 steps, run
-against `test/fixtures/dd/` by `npm run docs:test`. Both failure modes are covered — a step whose
+Doc Detective is back, with the guard that makes it mean something, run against
+`test/fixtures/dd/` by `npm run docs:test`. Both failure modes are covered — a step whose
 assertion no longer holds fails the run, and a step the schema silently drops fails
 `scripts/check-doc-tests.mjs`. The second matters as much as the first: the previous integration
 was green while executing 11 of its 33 steps.
 
-Six pages remain outside the runner because they use an illustrative corpus that exists nowhere in
-the repo (`model/*`, `reference/frontmatter.mdx`, `govern/provenance.mdx`). Their output is still
-verified by whoever captures it. That is the residue of this gap, and it is much smaller than the
-gap was.
+Coverage is partial, and [ADR 01035](../../../adrs/01035-executing-documented-command-output.md)
+states the boundary as a rule rather than a page list, so it stays true as pages are added. Two
+categories are outside: pages illustrating a corpus that exists nowhere in the repo, where there is
+no command to run; and pages quoting output from a corpus no fixture reproduces, each closable by
+adding a fixture. Their output is still verified by whoever captured it. That is the residue of
+this gap, and it is much smaller than the gap was.
 
 ### 2. Deliberate non-gaps
 

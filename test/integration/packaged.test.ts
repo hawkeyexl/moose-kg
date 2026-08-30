@@ -67,8 +67,12 @@ function run(
   // installed, say). Both streams are empty then, so without it the caller's
   // failure message would be blank — the one case where it is the only thing
   // that could explain the failure.
-  const stderr =
-    (r.stderr ?? "") + (r.error ? `spawn failed: ${r.error.message}` : "");
+  const stderr = [
+    r.stderr ?? "",
+    r.error ? `spawn failed: ${r.error.message}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
   return { stdout, stderr, output: stdout + stderr, status: r.status ?? -1 };
 }
 
