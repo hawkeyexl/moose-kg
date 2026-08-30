@@ -246,10 +246,12 @@ pull request's own content, so it is skipped on fork PRs — and a skipped job d
 fork contributions as unverified for command output.
 
 **Documented command output is executed, not trusted**
-([ADR 01035](adrs/01035-executing-documented-command-output.md)). Eight pages carry trailing
+([ADR 01035](adrs/01035-executing-documented-command-output.md)). Some pages carry trailing
 `{/* test … */}` / `{/* step … */}` blocks that run the built CLI against `test/fixtures/dd/` and
-assert on its output. Run them with `npm run docs:test`, which needs the build linked as `dockg`
-(`npm link && npm link @hawkeyexl/dockg`). Three things about them are load-bearing:
+assert on its output; `npm run docs:test` prints how many and is the only place that count belongs
+— written here it goes stale the first time somebody adds a page, which has already happened once.
+The run needs the build linked as `dockg` (`npm link && npm link @hawkeyexl/dockg`). Three things
+about these blocks are load-bearing:
 
 - **Output is asserted with `stdio`**, a single field matching stdout *or* stderr. `stdout` and
   `stderr` are not properties of the `runShell` schema, and a step using them is **dropped without
