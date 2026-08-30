@@ -1,10 +1,14 @@
 import { execFileSync, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { Parser } from "n3";
+import { DataFactory, Parser, Store } from "n3";
+import { NS, RDF_TYPE } from "../../src/core/vocab.js";
+
+const { namedNode } = DataFactory;
 import { hermeticEnv } from "../helpers/git-env.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -51,6 +55,55 @@ describe("dockg build (integration)", () => {
     // (135 + 4 negative-scope triples: notApplicableToVariant + its
     // ProductVariant node, and a section not-about-product-aspect — ADR 01014)
     expect(quads.length).toBe(172);
+  });
+
+  it("stamps every document with the sha256 of its file (ADR 01036)", () => {
+    // Verified against a digest computed here, from the bytes on disk, so the
+    // assertion does not simply restate what the emitter did. Reading the graph
+    // with a parser rather than a grep: the point is that the hash attached to
+    // *this* document is the hash of *that* file, and only the subject links
+    // them.
+    const store = new Store(
+      new Parser({ format: "text/turtle" }).parse(
+        readFileSync(golden, "utf8"),
+      ) as never,
+    );
+    const pathOf = new Map<string, string>();
+    for (const q of store.getQuads(
+      null,
+      namedNode(`${NS.dockg}path`),
+      null,
+      null,
+    )) {
+      pathOf.set(q.subject.value, q.object.value);
+    }
+
+    const docs = store.getQuads(
+      null,
+      namedNode(RDF_TYPE),
+      namedNode(`${NS.dockg}Document`),
+      null,
+    );
+    expect(docs.length).toBe(5);
+
+    for (const { subject } of docs) {
+      const hashes = store.getQuads(
+        subject,
+        namedNode(`${NS.dockg}contentHash`),
+        null,
+        null,
+      );
+      const path = pathOf.get(subject.value);
+      expect(path, `${subject.value} has no dockg:path`).toBeDefined();
+      // Exactly one: the shape says maxCount 1, and a second would make the
+      // join key ambiguous for a consumer.
+      expect(hashes.length, `${path} carries ${hashes.length} hashes`).toBe(1);
+      expect(hashes[0]!.object.value).toBe(
+        createHash("sha256")
+          .update(readFileSync(join(corpus, path!)))
+          .digest("hex"),
+      );
+    }
   });
 
   it("reports docs and triples on stdout", () => {
