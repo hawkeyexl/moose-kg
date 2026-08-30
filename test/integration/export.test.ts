@@ -113,7 +113,7 @@ describe("dockg export (integration)", () => {
     );
     const doc = JSON.parse(readFileSync(out, "utf8"));
     expect(Array.isArray(doc["@graph"])).toBe(true);
-    expect(doc["@context"].dockg).toBe("https://dockg.dev/ns#");
+    expect(doc["@context"].dockg).toBe("https://hawkeyexl.github.io/dockg/ns#");
     const ids = doc["@graph"].map((n: { "@id": string }) => n["@id"]);
     expect(new Set(ids).size).toBe(ids.length);
     expect(stdout).toContain(`${ids.length} node`);

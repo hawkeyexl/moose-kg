@@ -52,7 +52,11 @@ describe("dockg fill --provider mock (CLI smoke)", () => {
       dir,
     );
     expect(status).toBe(0);
-    expect(stdout).toContain("LLM cost: $0.00");
+    // Not "$0.0000". The mock has no price-table entry, so the default 5 USD
+    // cap cannot be applied and nothing can be totalled — which is a different
+    // statement from "this run was free" (ADR 01027). This assertion used to
+    // pin the misleading version.
+    expect(stdout).toContain("LLM cost: unpriceable");
     expect(readFileSync(join(dir, "a.md"), "utf8")).toBe(doc);
   });
 

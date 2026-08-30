@@ -5,8 +5,18 @@ import { Ajv2020 } from "ajv/dist/2020.js";
 import { describe, expect, it } from "vitest";
 import { bundledSchemaPath, bundledShapesPath } from "../../src/core/pkg.js";
 import { FIELD_SCHEMAS } from "../../src/llm/prompt.js";
-import { COVERAGE_FIELD_NAMES } from "../../src/core/coverage.js";
 import {
+  COVERAGE_FIELDS,
+  COVERAGE_FIELD_NAMES,
+  SECTION_COVERAGE_FIELDS,
+  UNMEASURED_BY_DESIGN,
+} from "../../src/core/coverage.js";
+import { PROVIDER_NAMES } from "../../src/core/config.js";
+import {
+  IIRDS_HAS_SUBJECT,
+  IIRDS_HAS_TOPIC_TYPE,
+  IIRDS_RELATES_TO_LIFECYCLE_PHASE,
+  IIRDS_RELATES_TO_PRODUCT_VARIANT,
   PAGE_TYPE_TO_TOPIC_TYPE,
   SOFTWARE_LIFECYCLE_IRIS,
   SOFTWARE_SUBJECT_IRIS,
@@ -246,5 +256,116 @@ describe("documented bundled defaults ↔ pkg.ts", () => {
 
   it("names the current bundled shapes file", () => {
     expect(configPage).toContain(`shapes/${shapesFile}`);
+  });
+});
+
+describe("PROVIDER_NAMES ↔ config schema", () => {
+  it("names exactly the providers the schema accepts", () => {
+    // One source of truth for the provider list. `--provider` is validated
+    // against PROVIDER_NAMES and `fill.provider` against the JSON schema enum;
+    // if the two drift, one path admits a name the other refuses, and
+    // `providerSpecFor`'s cast to ProviderName stops being sound.
+    const schema = JSON.parse(
+      readFileSync(
+        join(
+          dirname(fileURLToPath(import.meta.url)),
+          "..",
+          "..",
+          "src",
+          "core",
+          "config-schema.json",
+        ),
+        "utf8",
+      ),
+    ) as {
+      properties: {
+        fill: { properties: { provider: { enum: string[] } } };
+      };
+    };
+    expect([...PROVIDER_NAMES].sort()).toEqual(
+      [...schema.properties.fill.properties.provider.enum].sort(),
+    );
+  });
+});
+
+describe("coverage IRIs ↔ iirds.ts", () => {
+  it("measures the same iiRDS predicates the emitter mints", () => {
+    // A drift guard, and only that: comparing values cannot tell an imported
+    // constant from a retyped literal that happens to match. What it does
+    // catch is the failure that matters — a predicate moving in iirds.ts (a
+    // namespace revision, an iiRDS version bump) while coverage.ts still
+    // counts the old IRI, and every row silently reads 0%.
+    const byField = new Map(COVERAGE_FIELDS.map((f) => [f.field, f.iri]));
+    expect(byField.get("type")).toBe(IIRDS_HAS_TOPIC_TYPE);
+    expect(byField.get("applies-to")).toBe(IIRDS_RELATES_TO_PRODUCT_VARIANT);
+    expect(byField.get("about-product-lifecycle")).toBe(
+      IIRDS_RELATES_TO_LIFECYCLE_PHASE,
+    );
+    expect(byField.get("about-product-aspect")).toBe(IIRDS_HAS_SUBJECT);
+  });
+});
+
+describe("the library entry point ↔ what the docs promise", () => {
+  it("re-exports every coverage symbol library-api.mdx names", async () => {
+    // reference/library-api.mdx tells a consumer to import these from
+    // "@hawkeyexl/dockg". `SECTION_COVERAGE_FIELDS` was documented there while
+    // living only in src/core/coverage.ts, which is not a public entry point —
+    // so the documented import resolved to undefined.
+    const page = readFileSync(
+      join(
+        dirname(fileURLToPath(import.meta.url)),
+        "..",
+        "..",
+        "docs",
+        "src",
+        "content",
+        "docs",
+        "reference",
+        "library-api.mdx",
+      ),
+      "utf8",
+    );
+    const index = (await import("../../src/index.js")) as Record<
+      string,
+      unknown
+    >;
+    for (const name of [
+      "COVERAGE_FIELDS",
+      "COVERAGE_FIELD_NAMES",
+      "SECTION_COVERAGE_FIELDS",
+    ]) {
+      expect(page, `${name} is not named on the page`).toContain(name);
+      expect(
+        index[name],
+        `${name} is not exported from src/index.ts`,
+      ).toBeDefined();
+    }
+  });
+});
+
+describe("SECTION_FIELD_NAMES ↔ COVERAGE_FIELDS", () => {
+  // The guard `src/core/coverage.ts` points at for its unreachable throw. It
+  // pointed at a path that did not exist, so the name agreement it describes
+  // was enforced only by the throw itself — at runtime, in the one code path
+  // `c8 ignore` says is never taken.
+  it("every section field resolves to a measured document field", () => {
+    const measured = new Set(COVERAGE_FIELDS.map((f) => f.field));
+    for (const { field } of SECTION_COVERAGE_FIELDS) {
+      expect(measured.has(field), `${field} is not in COVERAGE_FIELDS`).toBe(
+        true,
+      );
+    }
+    expect(SECTION_COVERAGE_FIELDS.length).toBeGreaterThan(0);
+  });
+
+  it("keeps the two negative predicates out of coverage, on purpose", () => {
+    // ADR 01014/01029: absence of a negative predicate means *unknown* under
+    // open-world semantics, not under-annotation, so counting it would park two
+    // rows near zero on every healthy corpus. UNMEASURED_BY_DESIGN records that
+    // decision; this asserts it, so the constant is enforced rather than prose.
+    const measured = new Set(COVERAGE_FIELDS.map((f) => f.field));
+    for (const field of UNMEASURED_BY_DESIGN) {
+      expect(measured.has(field), `${field} is measured after all`).toBe(false);
+    }
   });
 });

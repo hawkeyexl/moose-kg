@@ -1,27 +1,32 @@
 /**
- * The local embedder (ADR 01020) — `@huggingface/transformers` configured so
- * Node and the browser compute the **same function**.
+ * The local embedder ([ADR 01020](../../adrs/01020-local-embeddings.md), corrected
+ * by [ADR 01025](../../adrs/01025-embedder-cross-platform-reality.md)).
  *
- * This is the whole reason dockg ships an embedder rather than telling hosts to
- * call transformers.js themselves. Its docs are explicit that Node uses
- * `onnxruntime-node` (native, CPUID-dispatched) while the browser uses
- * `onnxruntime-web` (WASM), and the two measurably disagree
- * (transformers.js#1046). Build-side vectors are cosine-compared against
- * browser-side query vectors, so a split implementation compares the outputs of
- * two different functions — retrieval degrades and nothing errors.
+ * Node and the browser **do not** run the same implementation, and cannot be made
+ * to. transformers.js v4 takes disjoint `device` vocabularies per platform — Node
+ * accepts `dml | webgpu | cpu`, the browser accepts `webgpu | wasm` — so no single
+ * value selects one backend everywhere. An earlier version of this file forced
+ * `device: "wasm"`, which threw on every real Node run; see ADR 01025 for the
+ * measurements.
  *
- * Four disciplines close that, and every one is pinned here rather than left to
- * the caller:
+ * What that costs, measured on granite q8: Node native vs browser WASM agree to
+ * cosine 0.999914 (max component diff 2.2e-3). dockg's guarantee is therefore
+ * **ranking agreement**, gated by `test/real/cross-platform.mjs`, not float
+ * equality.
  *
- *   1. `device: "wasm"` on both sides — the only cross-platform-reproducible
- *      path (the WASM spec mandates round-to-nearest-ties-to-even and forbids
- *      fusing operations to elide intermediate rounding).
- *   2. `numThreads = 1` — the default derives from `hardwareConcurrency`, so
- *      reduction splits would vary per machine.
- *   3. `dtype: "q8"` — int8 GEMM accumulates in int32, and integer addition is
+ * Three disciplines are real and pinned here:
+ *
+ *   1. `numThreads = 1` — binds on the WASM side, where the default follows
+ *      `hardwareConcurrency` and would vary reduction splits per machine. Inert
+ *      on the Node side, whose env object does not carry it.
+ *   2. `dtype: "q8"` — int8 GEMM accumulates in int32, and integer addition is
  *      associative.
- *   4. One text per call — a batched vector depends on what it was batched
- *      with, so adding a document would perturb its neighbours.
+ *   3. One text per call — a batched vector depends on what it was batched with,
+ *      so adding a document would perturb its neighbours.
+ *
+ * `device` is deliberately **not** passed: transformers.js then picks its platform
+ * default, which in Node is bit-identical to an explicit `cpu` (measured) and in
+ * the browser is WASM. A caller wanting `webgpu` can pass it.
  *
  * `@huggingface/transformers` is an **optional peer dependency**, imported
  * dynamically: it hard-depends on both ONNX runtimes plus native `sharp`, and
@@ -40,8 +45,15 @@ import { DEFAULT_MODEL } from "./types.js";
 export interface LocalEmbedderOptions {
   /** Hugging Face model id. Any id is accepted; the tested set is documented. */
   model?: string;
-  /** Weight quantization. Default `q8` — see discipline 3 above. */
+  /** Weight quantization. Default `q8` — see discipline 2 above. */
   dtype?: string;
+  /**
+   * ONNX execution provider. **Omitted by default on purpose** — the accepted
+   * values differ by platform (Node: `dml | webgpu | cpu`; browser: `webgpu |
+   * wasm`), so any hardcoded value throws somewhere. Pass one only if you know
+   * which platform this embedder runs on.
+   */
+  device?: string;
   /**
    * What these embeddings are for. Decides which prefix convention applies for
    * models that need one. Default "passage" (indexing); the query side passes
@@ -77,12 +89,17 @@ async function loadTransformers(injected?: any): Promise<any> {
   if (injected) return injected;
   try {
     // A literal specifier, so a consumer's bundler can resolve and chunk it
-    // normally when they *have* opted in. It does not typecheck here because
-    // the package is an optional peer and deliberately not installed in this
-    // repo — the same position every consumer who skips it is in. Nothing is
-    // lost: this boundary is untyped by design (see the eslint block above),
-    // and the missing-package path is exactly what the catch handles.
-    // @ts-expect-error optional peer dependency, may not be installed
+    // normally when they *have* opted in. Nothing is lost by leaving it
+    // untyped: this boundary is untyped by design (see the eslint block
+    // above), and the missing-package path is what the catch handles.
+    //
+    // `@ts-ignore`, not `@ts-expect-error`, precisely because whether this
+    // line errors depends on whether the optional peer happens to be
+    // installed. `@ts-expect-error` fails with TS2578 ("unused directive") the
+    // moment someone follows the README and installs it — which is exactly
+    // what the `embed-real` CI job does, and how this was caught.
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore optional peer dependency, may or may not be installed
     return await import("@huggingface/transformers");
   } catch (e) {
     throw new EmbedderUnavailableError(
@@ -109,11 +126,18 @@ export async function createLocalEmbedder(
 
   const transformers = await loadTransformers(options.transformers);
 
-  // Disciplines 1 and 2, set before the pipeline is built.
-  transformers.env.backends.onnx.wasm.numThreads = 1;
+  // Discipline 1, set before the pipeline is built. Optional-chained because
+  // the Node build's `env.backends.onnx.wasm` may be absent or a stub — this
+  // pins the browser side, and asserting it pinned both is the mistake ADR
+  // 01025 documents.
+  if (transformers.env?.backends?.onnx?.wasm) {
+    transformers.env.backends.onnx.wasm.numThreads = 1;
+  }
 
   const extractor = await transformers.pipeline("feature-extraction", model, {
-    device: "wasm",
+    // No `device`: its accepted values are disjoint across platforms, so any
+    // hardcoded choice throws on one of them (ADR 01025).
+    ...(options.device === undefined ? {} : { device: options.device }),
     dtype,
   });
 
@@ -126,7 +150,7 @@ export async function createLocalEmbedder(
       return dims;
     },
     async embed(text: string): Promise<Float32Array> {
-      // Discipline 4: one text per call, never a batch.
+      // Discipline 3: one text per call, never a batch.
       const output = await extractor(withPrefix(profile, role, text), {
         pooling: "mean",
         normalize: true,

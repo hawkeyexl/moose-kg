@@ -113,6 +113,31 @@ export function resolveRelative(
 
 const HAS_EXTENSION = /\.[a-z0-9]+$/i;
 
+/**
+ * Whether a link target addresses a *document* at all (ADR 01033).
+ *
+ * An extension list declares what documents look like in a corpus. A target
+ * carrying some other explicit extension — `/dockg/ns.ttl`, `./dist.zip`, a
+ * linked PDF — is a static asset the site serves, not a document dockg failed
+ * to find, and reporting it as a broken link produces a finding the author
+ * cannot act on: there is no `.md` they could add to fix it.
+ *
+ * Extensionless and directory targets stay in scope, so a genuine typo in a
+ * pretty URL is still caught.
+ */
+function addressesDocument(target: string, extensions: string[]): boolean {
+  if (target === "" || !HAS_EXTENSION.test(target)) return true;
+  // No configured extensions means the mapping has declared nothing about what
+  // its documents look like — so there is no list to judge the target against,
+  // and the narrowing does not apply. Gating on an empty list would answer "no"
+  // to every extension-bearing target and skip genuinely broken `.md` links,
+  // turning a narrowing into a way to switch the check off. `extensions: []` is
+  // schema-valid (no minItems), so this is reachable config, not a theoretical.
+  if (extensions.length === 0) return true;
+  const ext = target.slice(target.lastIndexOf(".")).toLowerCase();
+  return extensions.some((e) => e.toLowerCase() === ext);
+}
+
 /** Slug normalization for route matching: lowercase, dashes/underscores stripped. */
 function slugNorm(path: string): string {
   return path.toLowerCase().replace(/[-_]/g, "");
@@ -206,8 +231,13 @@ function resolveRoute(
     ) {
       continue;
     }
-    anyMatched = true;
+    // Matched the basePath, but this mapping's documents do not carry that
+    // extension — so the mapping says nothing about this target. Leave
+    // `anyMatched` alone: another mapping may still claim it, and if none
+    // does the caller skips the link rather than calling it broken.
     const rest = clean.slice(mapping.basePath.length).replace(/^\/+/, "");
+    if (!addressesDocument(rest, mapping.extensions)) continue;
+    anyMatched = true;
     const prefix = mapping.root ? `${mapping.root}/` : "";
     // Bare basePath targets the root directory itself (index files only).
     const stem = rest === "" ? mapping.root : `${prefix}${rest}`;
@@ -274,7 +304,12 @@ function classifyLink(
     if (allPaths.has(resolved)) {
       candidates = [resolved];
     } else if (HAS_EXTENSION.test(resolved)) {
-      candidates = []; // extension-bearing relative links are exact-or-broken
+      // Exact-or-broken — unless the extension is not a document extension at
+      // all, in which case it is an asset and no document was ever addressed
+      // (ADR 01033). Checked after `allPaths`, so an asset that IS in the
+      // corpus still links.
+      if (!addressesDocument(resolved, DEFAULT_LINK_EXTENSIONS)) return null;
+      candidates = [];
     } else {
       candidates = targetCandidates(
         resolved,

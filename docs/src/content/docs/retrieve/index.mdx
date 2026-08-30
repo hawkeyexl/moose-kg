@@ -56,8 +56,11 @@ Three files that must stay in sync:
 | `kg/search.json` | `dockg export --format search` | Lexical index |
 | `kg/vectors.bin` | `dockg embed` | Optional vector sidecar |
 
-A mismatched model, dtype, dimension count, or corpus digest is **refused** rather than ranked
-with — a stale sidecar produces plausible garbage, which is worse than an error.
+A mismatched model, dtype, dimension count, or corpus digest is **never ranked with** — a stale
+sidecar produces plausible garbage, which is worse than an error. The runtime refuses outright.
+`dockg search` refuses too when you asked for the vector leg, and otherwise warns and falls back
+to lexical, since a sidecar it merely found beside the graph should not turn a working search
+into a failure.
 
 ## Where to go next
 

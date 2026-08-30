@@ -72,6 +72,14 @@ This split is why the package has a separate `dockg/embed` entry point: a consum
 
 ## Everything runs locally
 
-No API, no key, no spend, and no corpus text leaves the machine. Models execute through WASM on
-both Node and the browser deliberately, so a vector computed in CI and a vector computed in a
-user's browser come from the same function and agree.
+No API, no key, no spend, and no corpus text leaves the machine.
+
+Node and the browser do **not** compute the same floats. transformers.js uses a native ONNX
+runtime in Node and WASM in the browser, and accepts different `device` values on each, so no
+single setting forces one backend everywhere. Measured on the default model, the two agree to
+cosine 0.999914 — close, but not identical.
+
+What holds across platforms is **decisive ordering**: any pair of results separated by more than
+twice the measured score noise keeps its order in both. Near-ties may swap. dockg pins what is
+pinnable — single-threaded on the WASM side, `q8` weights, one text per call — and gates the
+ordering guarantee in CI against the real model in a real browser.

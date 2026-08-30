@@ -2,9 +2,19 @@
 status: accepted
 date: 2026-07-25
 decision-makers: [manuel.r.b.silva]
+superseded-by: 01025 (section 1, "One implementation on both sides", only)
 ---
 
 # Vector entry with local-only embeddings
+
+> **Section 1 is superseded by
+> [ADR 01025](01025-embedder-cross-platform-reality.md).** The bit-identity
+> argument below was reasoned from the WebAssembly spec and never measured. It is
+> false in practice: transformers.js accepts *different* `device` values in Node
+> and the browser, so WASM cannot be forced on both sides, and the two backends
+> agree to cosine 0.999914 rather than exactly. What dockg guarantees instead is
+> decisive ordering within a bounded noise floor. Every other section of this ADR
+> stands.
 
 ## Context and Problem Statement
 

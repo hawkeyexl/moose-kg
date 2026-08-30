@@ -205,15 +205,26 @@ Three gaps found later and also closed:
 
 ## What is still open
 
-### 1. Command output on a page is verified by nobody
+### 1. Command output on a page is verified by nobody — **closed**
 
-Automated doc testing was added and then removed, to be re-added separately. The pages show real
-output captured from committed fixtures, and determinism means it is reproducible — but **nothing
-fails when a command's output changes.**
+This was the largest remaining risk in the set, on the grounds that it degrades silently: a page
+stays plausible long after it stops being true. It did exactly that. Between the runner's removal
+and its return, **eight documented outputs drifted**, and one of them —
+`retrieve/export.mdx`'s JSON-LD node count — had never matched any build of any corpus, because it
+was the `search.json` count pasted under the wrong heading.
 
-This is the largest remaining risk in the set, because it degrades silently: a page stays plausible
-long after it stops being true. `CLAUDE.md` and `CONTRIBUTING.md` name re-capturing output as a
-manual obligation until a runner returns.
+Doc Detective is back, with the guard that makes it mean something, run against
+`test/fixtures/dd/` by `npm run docs:test`. Both failure modes are covered — a step whose
+assertion no longer holds fails the run, and a step the schema silently drops fails
+`scripts/check-doc-tests.mjs`. The second matters as much as the first: the previous integration
+was green while executing 11 of its 33 steps.
+
+Coverage is partial, and [ADR 01035](../../../adrs/01035-executing-documented-command-output.md)
+states the boundary as a rule rather than a page list, so it stays true as pages are added. Two
+categories are outside: pages illustrating a corpus that exists nowhere in the repo, where there is
+no command to run; and pages quoting output from a corpus no fixture reproduces, each closable by
+adding a fixture. Their output is still verified by whoever captured it. That is the residue of
+this gap, and it is much smaller than the gap was.
 
 ### 2. Deliberate non-gaps
 
