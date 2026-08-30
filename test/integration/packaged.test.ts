@@ -14,7 +14,7 @@
  * `node_modules`, which keeps the test hermetic — no registry, no network — while
  * still exercising exactly the files that would ship (ADR 01026).
  */
-import { execFileSync, execSync } from "node:child_process";
+import { execSync, spawnSync } from "node:child_process";
 import {
   existsSync,
   mkdirSync,
@@ -36,31 +36,35 @@ const stage = join(root, ".tmp", "packaged");
  * npm ships as a .cmd shim on Windows, and Node 24 refuses to spawn a .cmd
  * through execFile at all (EINVAL — the batch-injection hardening). So the one
  * npm call here goes through a shell as a quoted command string, which both
- * cmd.exe and sh accept. Every other subprocess is a real executable and uses
- * execFile.
+ * cmd.exe and sh accept. Every other subprocess is a real executable and goes
+ * through `run` below, which needs no shell.
  */
 const NPM = process.platform === "win32" ? "npm.cmd" : "npm";
 
 /** The extracted package root: <stage>/package, as npm lays a tarball out. */
 let pkgRoot: string;
 
+/**
+ * Run a command and capture both streams on both paths.
+ *
+ * The failure path always merged stderr in; the success path returned
+ * `execFileSync`'s stdout alone and dropped it. dockg puts its warnings on
+ * stderr and still exits 0 (ADR 01010), so that shape silently discards exactly
+ * the output a degraded-but-successful run produces.
+ */
 function run(
   cmd: string,
   args: string[],
   cwd: string,
-): { stdout: string; status: number } {
-  try {
-    return {
-      stdout: execFileSync(cmd, args, { encoding: "utf8", cwd }),
-      status: 0,
-    };
-  } catch (e) {
-    const err = e as { stdout?: string; stderr?: string; status?: number };
-    return {
-      stdout: (err.stdout ?? "") + (err.stderr ?? ""),
-      status: err.status ?? -1,
-    };
-  }
+): { stdout: string; stderr: string; output: string; status: number } {
+  // spawnSync, not execFileSync: the latter hands stderr back only when the
+  // command throws, so there is no success path on which to read it. Only
+  // `tar` and `node` come through here — no `npm.cmd`, which would need a
+  // shell on Windows.
+  const r = spawnSync(cmd, args, { encoding: "utf8", cwd });
+  const stdout = r.stdout ?? "";
+  const stderr = r.stderr ?? "";
+  return { stdout, stderr, output: stdout + stderr, status: r.status ?? -1 };
 }
 
 beforeAll(() => {
@@ -88,14 +92,19 @@ beforeAll(() => {
   // Bare filename with cwd, not an absolute path: GNU tar reads `C:\…` as a
   // remote host spec and fails with "Cannot connect to C:".
   const extracted = run("tar", ["-xzf", tgz], stage);
+  // `output`, not `stdout`: tar reports its failures on stderr, which the old
+  // helper discarded on the path where the message would have been useful.
   if (extracted.status !== 0)
-    throw new Error(`tar failed: ${extracted.stdout}`);
+    throw new Error(`tar failed: ${extracted.output}`);
 
   pkgRoot = join(stage, "package");
 }, 120_000);
 
 /** Run the packaged CLI. */
-function cli(args: string[], cwd: string): { stdout: string; status: number } {
+function cli(
+  args: string[],
+  cwd: string,
+): { stdout: string; stderr: string; output: string; status: number } {
   return run(process.execPath, [join(pkgRoot, "dist", "cli.js"), ...args], cwd);
 }
 
