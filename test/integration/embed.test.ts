@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
@@ -10,20 +10,25 @@ const cli = join(root, "dist", "cli.js");
 const corpus = join(root, "test", "fixtures", "corpus");
 const golden = join(root, "test", "fixtures", "golden", "vectors.bin");
 
-function run(args: string[], cwd: string): { stdout: string; status: number } {
-  try {
-    const stdout = execFileSync(process.execPath, [cli, ...args], {
-      encoding: "utf8",
-      cwd,
-    });
-    return { stdout, status: 0 };
-  } catch (e) {
-    const err = e as { stdout?: string; stderr?: string; status?: number };
-    return {
-      stdout: (err.stdout ?? "") + (err.stderr ?? ""),
-      status: err.status ?? -1,
-    };
-  }
+/**
+ * `spawnSync`, not `execFileSync`, so **stderr is captured on success too**.
+ * Warnings — a stale sidecar degrading to lexical, say — are printed on a
+ * zero-exit run, and an assertion cannot see what the helper throws away.
+ *
+ * `stdout` stays pure so callers can `JSON.parse` it; `output` is the merged
+ * stream for tests that only care that a message appeared somewhere.
+ */
+function run(
+  args: string[],
+  cwd: string,
+): { stdout: string; stderr: string; output: string; status: number } {
+  const r = spawnSync(process.execPath, [cli, ...args], {
+    encoding: "utf8",
+    cwd,
+  });
+  const stdout = r.stdout ?? "";
+  const stderr = r.stderr ?? "";
+  return { stdout, stderr, output: stdout + stderr, status: r.status ?? -1 };
 }
 
 /** Build the corpus, its search index, and (optionally) its vectors. */
@@ -163,24 +168,24 @@ describe("dockg embed (integration)", () => {
       encoding: "utf8",
       cwd: corpus,
     });
-    const { status, stdout } = run(
+    const { status, output } = run(
       ["embed", "-g", graph, "--model", "mock"],
       corpus,
     );
     expect(status).toBe(2);
-    expect(stdout).toContain("export --format search");
+    expect(output).toContain("export --format search");
   });
 
   it("exits 2 with an install hint when the optional peer is absent", () => {
     // The real model path needs @huggingface/transformers, which this repo
     // deliberately does not install — the same position a user is in.
     const { dir, graph } = prepare(false);
-    const { status, stdout } = run(
+    const { status, output } = run(
       ["embed", "-g", graph, "-o", join(dir, "e.bin")],
       corpus,
     );
     expect(status).toBe(2);
-    expect(stdout).toContain("npm install @huggingface/transformers");
+    expect(output).toContain("npm install @huggingface/transformers");
   });
 });
 
@@ -256,12 +261,12 @@ describe("dockg search with vectors (integration)", () => {
 
   it("exits 2 when --mode vector is asked for without a sidecar", () => {
     const { graph } = prepare(false);
-    const { status, stdout } = run(
+    const { status, output } = run(
       ["search", "configuration", "-g", graph, "--mode", "vector"],
       corpus,
     );
     expect(status).toBe(2);
-    expect(stdout).toContain("dockg embed");
+    expect(output).toContain("dockg embed");
   });
 
   it("refuses a sidecar built from a different search index", () => {
@@ -281,12 +286,64 @@ describe("dockg search with vectors (integration)", () => {
     });
     writeFileSync(index, JSON.stringify(doc), "utf8");
 
-    const { status, stdout } = run(
+    const { status, output } = run(
       ["search", "configuration", "-g", graph, "--vectors", vectors],
       corpus,
     );
     expect(status).toBe(2);
-    expect(stdout).toContain("corpus changed");
+    expect(output).toContain("corpus changed");
+  });
+
+  it("degrades to lexical when a stale sidecar was never asked for", () => {
+    // The refusal above is right when the vector leg was requested. But a plain
+    // `dockg search` that merely *finds* a stale sidecar beside the graph must
+    // not turn a working lexical search into exit 2 — the leg is additive
+    // (ADR 01009). Warned on stderr, so the user learns why it went lexical.
+    const { graph, vectors } = prepare();
+    const index = join(dirname(graph), "search.json");
+    const doc = JSON.parse(readFileSync(index, "utf8")) as {
+      entries: Array<Record<string, string>>;
+    };
+    doc.entries.push({
+      id: "https://example.com/kg/doc/docs/brand-new.md",
+      type: "dockg:Document",
+      title: "Brand new",
+      text: "content that did not exist when the vectors were built",
+    });
+    writeFileSync(index, JSON.stringify(doc), "utf8");
+
+    // The sidecar has to be at the *configured default* path for this to be the
+    // discovered case — passing `--vectors` would make it explicitly requested,
+    // which is the exit-2 branch above.
+    const cfg = join(dirname(vectors), "dockg.config.yaml");
+    writeFileSync(
+      cfg,
+      `version: 1\nbaseIri: https://example.com/kg/\nembed:\n  out: ${JSON.stringify(vectors)}\n`,
+      "utf8",
+    );
+
+    // No --vectors and no --mode: the sidecar is discovered, not requested.
+    const { status, stdout, stderr } = run(
+      ["search", "configuration", "-g", graph, "-c", cfg, "-f", "json"],
+      dirname(vectors),
+    );
+    expect(status).toBe(0);
+    const report = JSON.parse(stdout.slice(stdout.indexOf("{"))) as SearchJson;
+    expect(report.mode).toBe("lexical");
+    expect(report.results.length).toBeGreaterThan(0);
+    expect(stderr).toContain("corpus changed");
+  });
+
+  it("errors on an explicit --vectors path that does not exist", () => {
+    // A typo'd path would otherwise fall through to lexical with exit 0 — a
+    // confident answer to a question the user did not ask.
+    const { graph } = prepare(false);
+    const { status, output } = run(
+      ["search", "configuration", "-g", graph, "--vectors", "nope.bin"],
+      corpus,
+    );
+    expect(status).toBe(2);
+    expect(output).toContain("Vector index not found");
   });
 
   it("exits 2 rather than crashing on a corrupt sidecar", () => {
@@ -295,13 +352,13 @@ describe("dockg search with vectors (integration)", () => {
     const { dir, graph } = prepare(false);
     const bad = join(dir, "not-vectors.bin");
     writeFileSync(bad, "definitely not a vector index", "utf8");
-    const { status, stdout } = run(
+    const { status, output } = run(
       ["search", "configuration", "-g", graph, "--vectors", bad],
       corpus,
     );
     expect(status).toBe(2);
-    expect(stdout).toContain("bad magic");
-    expect(stdout).not.toContain("at decodeVectorIndex");
+    expect(output).toContain("bad magic");
+    expect(output).not.toContain("at decodeVectorIndex");
   });
 
   it("reports the requested mode even when the vector leg matched nothing", () => {

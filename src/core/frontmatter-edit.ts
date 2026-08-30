@@ -113,9 +113,20 @@ export function applyKgFields(
   const split = splitYamlFrontmatter(content, path);
 
   if (split === null) {
-    // No frontmatter — create a block holding only the kg key.
+    // No frontmatter — create a block holding only the kg key. Dotted names
+    // nest here too, or `sections.intro.type` would become a literal key.
     const eol: "\n" | "\r\n" = content.includes("\r\n") ? "\r\n" : "\n";
-    const doc = new Document({ kg: Object.fromEntries(entries) });
+    const nested: Record<string, unknown> = {};
+    for (const [field, value] of entries) {
+      const segments = field.split(".");
+      let target = nested;
+      for (const segment of segments.slice(0, -1)) {
+        target[segment] ??= {};
+        target = target[segment] as Record<string, unknown>;
+      }
+      target[segments[segments.length - 1]!] = value;
+    }
+    const doc = new Document({ kg: nested });
     const kg = doc.get("kg", true);
     if (isMap(kg)) flowSeqs(kg);
     let block = doc.toString();
@@ -148,11 +159,38 @@ export function applyKgFields(
   const skipped: string[] = [];
   const alwaysOverwrite = new Set(options.alwaysOverwrite ?? []);
   for (const [field, value] of entries) {
-    if (kgMap.has(field) && !options.force && !alwaysOverwrite.has(field)) {
+    // A dotted name addresses a nested field — `sections.<slug>.type` writes
+    // into kg.sections.<slug>.type (ADR 01032). Preservation is decided at the
+    // *leaf*, so filling one section's type never disturbs a value a human set
+    // on the section beside it.
+    const segments = field.split(".");
+    const leaf = segments[segments.length - 1]!;
+    let target = kgMap;
+    let missingParent = false;
+    for (const segment of segments.slice(0, -1)) {
+      const existing = target.get(segment, true);
+      if (existing === undefined) {
+        const created = doc.createNode({}) as YAMLMap;
+        target.set(segment, created);
+        target = created;
+      } else if (isMap(existing)) {
+        target = existing;
+      } else {
+        // A non-map where a map must go: leave the author's value alone rather
+        // than overwrite a shape we do not understand.
+        missingParent = true;
+        break;
+      }
+    }
+    if (missingParent) {
       skipped.push(field);
       continue;
     }
-    setField(doc, kgMap, field, value);
+    if (target.has(leaf) && !options.force && !alwaysOverwrite.has(field)) {
+      skipped.push(field);
+      continue;
+    }
+    setField(doc, target, leaf, value);
     applied.push(field);
   }
 

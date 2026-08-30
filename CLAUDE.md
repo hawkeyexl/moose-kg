@@ -78,7 +78,9 @@ gotcha, a decision, a convention — record it **in the repo, in the same change
   derivation, not this repo's HEAD committer date; git-derived output is covered by the
   temp-repo tests instead.
 - **Naming:** the *frontmatter key* is `kg:`; the *RDF namespace prefix* is `dockg:`
-  (`https://dockg.dev/ns#`). Never conflate them. The custom namespace stays minimal — prefer
+  (`https://hawkeyexl.github.io/dockg/ns#` — moved there by
+  [ADR 01030](adrs/01030-the-dockg-vocabulary-document.md), which is where it resolves).
+  Never conflate them. The custom namespace stays minimal — prefer
   dcterms/skos/prov/schema.org/foaf terms wherever one exists.
 - **The frontmatter schema is docmeta's; the shapes are dockg's.** docmeta publishes the common
   metadata vocabularies and dockg implements graph behavior against them
@@ -106,9 +108,25 @@ gotcha, a decision, a convention — record it **in the repo, in the same change
   prompt and proposal schema (`prompt.ts`), the cache-key composition (`cache.ts`), and the
   config → `ProviderSpec` mapping (`provider.ts`). Never reimplement a provider here — three
   copies of this code drifted apart once already; a fix belongs upstream.
-- **No network in tests.** LLM code paths are tested through the library's `MockProvider`,
-  re-exported from [src/index.ts](src/index.ts) for downstream use. The exec seam is injectable
-  for git/CLI subprocess tests.
+- **No network in the default test suite.** `npm test` is hermetic: LLM code paths go through
+  the library's `MockProvider`, re-exported from [src/index.ts](src/index.ts) for downstream
+  use, and the exec seam is injectable for git/CLI subprocess tests. **A mock is not coverage
+  of the thing it stands in for** — `createLocalEmbedder` shipped a hardcoded `device: "wasm"`
+  that throws on every real Node call, and mocks certified it for a whole release
+  ([ADR 01025](adrs/01025-embedder-cross-platform-reality.md)). Where a mock stands in for a
+  third-party API, the real one must be exercised **somewhere**: `test/real/` holds those,
+  excluded from `npm test` (`vitest.config.ts`), run by the `embed-real` and `fill-live` CI jobs
+  (`test:real`, `test:real:cross`, `test:real:fill`). Adding a mock for an external library means
+  adding the real-path test in the same change — and where that is impossible, naming the exception
+  in [ADR 01026](adrs/01026-exercise-every-third-party.md) with its reason.
+  `vitest.config.ts` sets `INFERENCE_NO_AUTO_INSTALL`, because the inference library installs
+  `node-llama-cpp` on demand: without it, a test that reached the local provider by accident would
+  download from the network.
+- **A green run against a server that ignores the constraint proves nothing.** Ollama covers the
+  `openai` provider for real — it compiles `response_format: json_schema` to a GBNF grammar — but
+  accepts `tool_choice` and never reads it, which is the entire mechanism the `anthropic` provider
+  depends on. That path stays an exception rather than gaining a test that would be green, hollow,
+  and intermittently red ([ADR 01031](adrs/01031-exercising-the-llm-providers.md)).
 - **LF everywhere.** [.gitattributes](.gitattributes) declares `* text=auto eol=lf`, so the
   object store and every working tree are LF on every platform regardless of a contributor's
   global `core.autocrlf`. Exemptions use `-text` and **must stay below** the `*` rule — the last
@@ -218,14 +236,35 @@ point, and these are pointers into it, not a summary of it.
    committed fixture under [test/fixtures/](test/fixtures). Determinism means what you capture is
    what every reader sees — and a transcribed approximation is a claim nothing checks.
 
-Three gates run in CI and all of them block: `npm run docs:check-strategy` (anchor and coverage
-invariants), `npm run docs:check-cli` (reference/cli.mdx vs commander), and
-`npm run docs:check-links` (every `/dockg/…` target resolves). The docs workflow also builds a
-graph from the docs themselves and holds it to `dockg check` and `dockg stats --check`.
+Three gates run in [docs.yml](.github/workflows/docs.yml) and all of them block:
+`npm run docs:check-strategy` (anchor and coverage invariants), `npm run docs:check-cli`
+(reference/cli.mdx vs commander), and `npm run docs:check-links` (every `/dockg/…` target
+resolves). The docs workflow also builds a graph from the docs themselves and holds it to
+`dockg check` and `dockg stats --check`.
 
-**Automated doc testing is deliberately absent.** Command output on a page is currently verified
-by whoever captures it, not by CI. Re-adding a runner is planned; until then, treat a changed
-command's documented output as something you must re-capture by hand.
+Doc Detective is a **fourth gate with a narrower reach**: it lives in its own workflow
+([doc-detective.yml](.github/workflows/doc-detective.yml)) because its steps execute shell from the
+pull request's own content, so it is skipped on fork PRs — and a skipped job does not block. Treat
+fork contributions as unverified for command output.
+
+**Documented command output is executed, not trusted**
+([ADR 01035](adrs/01035-executing-documented-command-output.md)). Some pages carry trailing
+`{/* test … */}` / `{/* step … */}` blocks that run the built CLI against `test/fixtures/dd/` and
+assert on its output; `npm run docs:test` prints how many and is the only place that count belongs
+— written here it goes stale the first time somebody adds a page, which has already happened once.
+The run needs the build linked as `dockg` (`npm link && npm link @hawkeyexl/dockg`). Three things
+about these blocks are load-bearing:
+
+- **Output is asserted with `stdio`**, a single field matching stdout *or* stderr. `stdout` and
+  `stderr` are not properties of the `runShell` schema, and a step using them is **dropped without
+  failing the run** — that is how 22 of 33 steps once vanished from a green run.
+- **`--exit-on-fail` is not optional.** The CLI exits 0 on a failing step without it.
+- **`scripts/check-doc-tests.mjs` is the backstop**, and it fails on both halves: a step that
+  declared but did not run, and a step that ran but did not pass. `docs:test` runs it after the
+  suite; never run the suite without it.
+
+Fixtures for these tests live in `test/fixtures/dd/`, deliberately apart from
+`test/fixtures/corpus/`, which feeds the six byte-exact goldens and must not gain files.
 
 ## SHACL shapes impact (required)
 
@@ -321,7 +360,10 @@ the repo's `CLAUDE_CODE_OAUTH_TOKEN` secret.
 
 ## Related files
 
-- [.github/workflows/ci.yml](.github/workflows/ci.yml) — the full loop plus the determinism gate
+- [.github/workflows/ci.yml](.github/workflows/ci.yml) — the full loop and the determinism gate on
+  ubuntu × macos × windows, then a `cross-platform` job that compares the emitted artifacts'
+  digests *across* runners. Three per-OS golden checks prove three platforms each match one golden;
+  the join is what proves they match each other
 - [.github/workflows/docs.yml](.github/workflows/docs.yml) — strategy invariants, CLI drift, page
   frontmatter, the graph gate over dockg's own docs, then the Pages deploy
 - [scripts/](scripts) — `check-content-strategy.mjs`, `check-cli-reference.mjs`,

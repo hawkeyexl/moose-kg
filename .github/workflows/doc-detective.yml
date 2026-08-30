@@ -1,0 +1,69 @@
+name: Doc Detective
+
+on:
+  pull_request:
+    paths:
+      - "docs/**"
+      - "src/**"
+      - "test/fixtures/dd/**"
+      - ".doc-detective.json"
+      - ".github/workflows/doc-detective.yml"
+      # The guard itself, and the manifest that pins doc-detective's version.
+      # docs.yml lists its own checker scripts for this reason; without them a
+      # PR that only edits the declared-vs-executed comparison, or only bumps
+      # the runner, never triggers the workflow that would exercise it — so the
+      # silent-skip failure this guard exists to catch could return inside the
+      # guard, unrun.
+      - "scripts/check-doc-tests.mjs"
+      - "package.json"
+      - "package-lock.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inline-tests:
+    # The inline tests execute shell commands from the pull request's own
+    # content, so they must not run on code from a fork.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      # `npm ci`, matching ci.yml — the lockfile is authoritative (ADR 01023).
+      # Same engine floor as ci.yml; below it npm ci fails with EBADENGINE.
+      - name: Enforce the npm engines floor
+        run: npm install -g npm@^11.6.3
+      - run: npm ci
+      - run: npm run build
+
+      # Expose the freshly built CLI as `dockg`, so the pages can show the
+      # published command form while CI tests the working tree. dockg is
+      # published, so without the link `npx dockg` could silently fetch a
+      # different version than the one under test.
+      - name: Link the local build as `dockg`
+        run: |
+          npm link
+          npm link @hawkeyexl/dockg
+          dockg --version
+
+      # Run the version pinned in the lockfile rather than the marketplace action,
+      # so the suite and the guard below read the same results and the version
+      # cannot drift between them.
+      - name: Inline doc tests
+        run: npx doc-detective --exit-on-fail
+
+      # A green run is not sufficient on its own. Doc Detective skips a step it
+      # cannot parse — it logs a warning and carries on, so the run still reports
+      # success while testing less than it appears to. This compares the steps the
+      # pages declare against the steps that actually ran.
+      - name: Every declared step ran
+        if: always()
+        run: npm run docs:check-doc-tests

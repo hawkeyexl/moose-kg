@@ -131,9 +131,25 @@ export async function runSearch(opts: SearchOptions): Promise<SearchReport> {
   // The vector leg is opt-in by availability: a sidecar plus an embedder. Asked
   // for explicitly (`--mode vector|hybrid`) a missing piece is an error, since
   // silently answering lexically would look like the semantic leg ran.
-  const wantsVector = opts.mode === "vector" || opts.mode === "hybrid";
-  const vectorsPath = opts.vectors
-    ? resolve(cwd, opts.vectors)
+  // "Asked for" means an explicit `--mode vector|hybrid` *or* an explicit
+  // `--vectors <path>`. A typo'd path would otherwise fall through to the
+  // default-path branch, find nothing, and return lexical results with exit 0 —
+  // a confident answer to a question the user did not ask.
+  //
+  // One predicate for both decisions. Testing `!== undefined` here while the
+  // path below tested truthiness meant `--vectors ""` demanded the vector leg
+  // and then resolved the *default* sidecar — failing, or answering, about a
+  // file the user never named.
+  const explicitVectors =
+    opts.vectors !== undefined && opts.vectors !== ""
+      ? opts.vectors
+      : undefined;
+  const wantsVector =
+    opts.mode === "vector" ||
+    opts.mode === "hybrid" ||
+    (explicitVectors !== undefined && opts.mode !== "lexical");
+  const vectorsPath = explicitVectors
+    ? resolve(cwd, explicitVectors)
     : resolve(cwd, config.embed.out);
   let vectors: VectorIndex | undefined;
   if (opts.mode !== "lexical" && existsSync(vectorsPath)) {
@@ -153,8 +169,19 @@ export async function runSearch(opts: SearchOptions): Promise<SearchReport> {
     // Refuse rather than rank: vectors built from a different corpus point at
     // IRIs that may no longer exist and miss everything added since
     // (ADR 01020, "Mismatch is refused, not ranked").
+    //
+    // But only refuse when the vector leg was *asked for*. A plain `dockg
+    // search` that merely happens to find a stale sidecar beside the graph
+    // should degrade to lexical, not fail — the leg is additive, and turning a
+    // working lexical search into exit 2 is the new failure mode ADR 01009
+    // forbids. Warned about rather than silently dropped, so a user who
+    // expected semantic results learns why they did not get them.
     const stale = vectors.check({ source });
-    if (stale) throw new DockgError(stale.detail);
+    if (stale && wantsVector) throw new DockgError(stale.detail);
+    if (stale) {
+      process.stderr.write(`dockg: ${stale.detail} Falling back to lexical.\n`);
+      vectors = undefined;
+    }
   } else if (wantsVector) {
     throw new DockgError(
       `Vector index not found: ${vectorsPath} — run \`dockg embed\` first, or use \`--mode lexical\`.`,
@@ -163,7 +190,13 @@ export async function runSearch(opts: SearchOptions): Promise<SearchReport> {
 
   let embedder: Embedder | undefined;
   if (vectors) {
-    embedder = await resolveEmbedder(opts, vectors, wantsVector);
+    // Only an explicit `--mode vector|hybrid` makes a missing embedder fatal.
+    // Naming a sidecar says which file to use, not that the optional
+    // transformers peer must be installed — threading `wantsVector` here turned
+    // `--vectors ./v.bin` on a machine without the peer from "degrade to
+    // lexical, exit 0" into exit 2.
+    const requireEmbedder = opts.mode === "vector" || opts.mode === "hybrid";
+    embedder = await resolveEmbedder(opts, vectors, requireEmbedder);
   }
 
   const entry = await findEntry(opts.query, {
