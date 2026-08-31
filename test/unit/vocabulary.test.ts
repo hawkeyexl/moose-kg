@@ -20,7 +20,31 @@ import { NS, ROLE } from "../../src/core/vocab.js";
 
 const { namedNode } = DataFactory;
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const VOCAB = join(root, "ns", "dockg-1.0.0.ttl");
+/**
+ * The newest vocabulary version, resolved rather than named.
+ *
+ * Published versions are immutable, so a new term means a new file — and a
+ * hardcoded filename here would keep guarding the old one, silently, which is
+ * the drift this whole file exists to prevent. Sorted numerically so 1.10.0
+ * follows 1.9.0 rather than preceding it.
+ */
+function newestVocabulary(): string {
+  const parse = (name: string): number[] =>
+    (name.match(/(\d+)\.(\d+)\.(\d+)/) ?? []).slice(1).map(Number);
+  const files = readdirSync(join(root, "ns"))
+    .filter((f) => /^dockg-\d+\.\d+\.\d+\.ttl$/.test(f))
+    .sort((x, y) => {
+      const [a, b] = [parse(x), parse(y)];
+      for (let i = 0; i < 3; i++) if (a[i] !== b[i]) return a[i]! - b[i]!;
+      return 0;
+    });
+  const newest = files[files.length - 1];
+  if (newest === undefined) throw new Error("no vocabulary file in ns/");
+  return newest;
+}
+
+const VOCAB_FILE = newestVocabulary();
+const VOCAB = join(root, "ns", VOCAB_FILE);
 const ONTOLOGY = "https://hawkeyexl.github.io/dockg/ns";
 
 const store = new Store(
@@ -72,7 +96,7 @@ describe("the dockg vocabulary document", () => {
     const missing = [...mintedTerms()].filter((t) => !definedTerms().has(t));
     expect(
       missing.sort(),
-      `minted but undefined — add them to ns/dockg-1.0.0.ttl`,
+      `minted but undefined — add them to ns/${VOCAB_FILE}`,
     ).toEqual([]);
   });
 
@@ -164,7 +188,48 @@ describe("the dockg vocabulary document", () => {
     const published = join(root, "docs", "public", "ns.ttl");
     expect(
       readFileSync(published, "utf8"),
-      "docs/public/ns.ttl is stale — copy ns/dockg-1.0.0.ttl over it",
+      `docs/public/ns.ttl is stale — copy ns/${VOCAB_FILE} over it`,
     ).toBe(readFileSync(VOCAB, "utf8"));
+  });
+});
+
+describe("no file points at a superseded vocabulary version", () => {
+  /** Every tracked text file, minus the vocabulary documents themselves. */
+  function trackedText(): string[] {
+    const out: string[] = [];
+    const skip = new Set(["node_modules", ".git", "dist", ".tmp", "ns"]);
+    const walk = (dir: string): void => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        if (skip.has(entry.name)) continue;
+        const path = join(dir, entry.name);
+        if (entry.isDirectory()) walk(path);
+        else if (/\.(ts|mjs|md|mdx|json|yaml|yml)$/.test(entry.name))
+          out.push(path);
+      }
+    };
+    walk(root);
+    return out;
+  }
+
+  it("names only the newest one", () => {
+    // The nits this guard exists for: `src/core/vocab.ts` and
+    // `docs/src/content/docs/ns.mdx` both kept naming the 1.0.0 file after
+    // 1.1.0 shipped, and review found two of the four. Nothing failed — a prose
+    // reference to a superseded file is invisible to every other gate, and it
+    // points a reader at a document missing the term they came to look up.
+    //
+    // The `ns/` directory itself is exempt: an older version file may name
+    // itself, and 1.1.0 records 1.0.0 as its owl:priorVersion on purpose.
+    const stale: string[] = [];
+    for (const file of trackedText()) {
+      for (const m of readFileSync(file, "utf8").matchAll(
+        /ns\/(dockg-\d+\.\d+\.\d+\.ttl)/g,
+      )) {
+        if (m[1] !== VOCAB_FILE) {
+          stale.push(`${file.slice(root.length + 1)} → ${m[1]}`);
+        }
+      }
+    }
+    expect(stale, `superseded, should be ${VOCAB_FILE}`).toEqual([]);
   });
 });

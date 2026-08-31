@@ -619,7 +619,7 @@ inference [ADR 01014](adrs/01014-negative-scope.md) refuses. The split to hold i
 *RDFS defines what a term means; SHACL says what a valid graph looks like.*
 Domain and range are stated with `schema:domainIncludes`/`schema:rangeIncludes`
 rather than `rdfs:domain`, which is an entailment rule rather than documentation.
-It is versioned and immutable like schemas and shapes (`ns/dockg-1.0.0.ttl`),
+It is versioned and immutable like schemas and shapes (`ns/dockg-1.1.0.ttl`),
 ships in the package, is dereferenceable as a hash namespace, and is pinned by a
 drift guard in both directions — every emitted term defined, and no term defined
 that the emitter cannot produce.

@@ -367,6 +367,10 @@ export function deriveGraph(docs: DocModel[], options: DeriveOptions): Quad[] {
     add(docIri, RDF_TYPE, iri(`${NS.dockg}Document`));
     if (prov) add(docIri, RDF_TYPE, iri(`${NS.prov}Entity`));
     add(docIri, `${NS.dockg}path`, lit(normalizeDocPath(doc.path)));
+    // Intrinsic like path, not gated behind a derive source (ADR 01036): a hash
+    // present only sometimes cannot tell "unchanged" from "not stamped", which
+    // is the whole question it exists to answer.
+    add(docIri, `${NS.dockg}contentHash`, lit(doc.contentHash));
 
     if (sources.has("frontmatter")) {
       const title = asString(fmValue(fm, ["title"])) ?? doc.firstH1;

@@ -49,7 +49,7 @@ write yet.
    ```
 
    ```
-   Wrote kg/graph.ttl (5 docs, 167 triples)
+   Wrote kg/graph.ttl (5 docs, 172 triples)
    ```
 
    <Aside type="caution" title="Run it from where your paths are written">
@@ -119,7 +119,7 @@ dockg stats
 ```
 
 ```
-Triples:    167
+Triples:    172
 Documents:  5
 Sections:   9
 Concepts:   6
@@ -217,7 +217,7 @@ None of it is enforced yet. Nothing fails when the numbers get worse.
     would close this comment. Run with `npx doc-detective`. */}
 {/* test {"testId":"get-started","description":"Install check, first build, and reading the corpus back with stats."} */}
 {/* step {"description":"dockg is on PATH and reports a version.","runShell":{"command":"dockg --version","exitCodes":[0]}} */}
-{/* step {"description":"A build over a Markdown corpus reports the document and triple count it wrote.","runShell":{"command":"dockg build -c test/fixtures/dd/dockg.config.yaml","exitCodes":[0],"stdio":"3 docs, 101 triples"}} */}
+{/* step {"description":"A build over a Markdown corpus reports the document and triple count it wrote.","runShell":{"command":"dockg build -c test/fixtures/dd/dockg.config.yaml","exitCodes":[0],"stdio":"3 docs, 104 triples"}} */}
 {/* step {"description":"Two builds over unchanged inputs are byte-identical — the determinism claim, checked.","runShell":{"command":"dockg build -c test/fixtures/dd/dockg.config.yaml --out .tmp/dd/a.ttl && dockg build -c test/fixtures/dd/dockg.config.yaml --out .tmp/dd/b.ttl && diff .tmp/dd/a.ttl .tmp/dd/b.ttl","exitCodes":[0]}} */}
 {/* step {"description":"stats reports a broken internal link.","runShell":{"command":"dockg stats -c test/fixtures/dd/dockg.config.yaml","exitCodes":[0],"stdio":"Broken internal links (1)"}} */}
 {/* step {"description":"stats reports per-field coverage, with title at 100%.","runShell":{"command":"dockg stats -c test/fixtures/dd/dockg.config.yaml","exitCodes":[0],"stdio":"title                    3/3  100.0%"}} */}

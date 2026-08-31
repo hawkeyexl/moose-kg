@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { analyzeDoc } from "../../src/core/analyze.js";
 
@@ -478,5 +479,47 @@ describe("analyzeDoc — a route mapping with no configured extensions", () => {
     expect(doc.links).toEqual([
       { raw: "/docs/actions/missing.md", kind: "broken" },
     ]);
+  });
+});
+
+describe("analyzeDoc — content hash (ADR 01036)", () => {
+  /** An independent digest, so the test does not just restate the implementation. */
+  const sha256 = (s: string): string =>
+    createHash("sha256").update(s, "utf8").digest("hex");
+
+  it("is the sha256 of the content as read", () => {
+    const content = "---\ntitle: T\n---\n\n# T\n\nBody.\n";
+    const doc = analyzeDoc(content, "docs/intro.md", ALL);
+    expect(doc.contentHash).toBe(sha256(content));
+    expect(doc.contentHash).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("distinguishes CRLF from LF", () => {
+    // The corpus pins a CRLF fixture on purpose (.gitattributes). A digest that
+    // normalized line endings would call two genuinely different files the
+    // same, which is the one thing a drift signal must not do.
+    const lf = "# T\n\nBody.\n";
+    const crlf = "# T\r\n\r\nBody.\r\n";
+    expect(analyzeDoc(lf, "a.md", ALL).contentHash).not.toBe(
+      analyzeDoc(crlf, "a.md", ALL).contentHash,
+    );
+    expect(analyzeDoc(crlf, "a.md", ALL).contentHash).toBe(sha256(crlf));
+  });
+
+  it("depends on content alone, not on the path", () => {
+    // The join key a consumer needs is "what was in this file", so two paths
+    // holding identical bytes must agree — a rename is not a content change.
+    const content = "# Same\n";
+    const a = analyzeDoc(content, "docs/a.md", ALL).contentHash;
+    // Assert it is a digest before asserting equality: `undefined === undefined`
+    // would make this pass with no implementation at all.
+    expect(a).toMatch(/^[0-9a-f]{64}$/);
+    expect(analyzeDoc(content, "docs/sub/b.md", ALL).contentHash).toBe(a);
+  });
+
+  it("changes when a single byte changes", () => {
+    const a = analyzeDoc("# T\n\nBody.\n", "a.md", ALL).contentHash;
+    const b = analyzeDoc("# T\n\nBody!\n", "a.md", ALL).contentHash;
+    expect(a).not.toBe(b);
   });
 });
