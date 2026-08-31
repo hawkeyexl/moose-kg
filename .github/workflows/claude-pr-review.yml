@@ -117,10 +117,15 @@ jobs:
             Keep feedback concise. Use suggested fixes where possible.
 
             You MUST submit a proper GitHub Pull Request Review (not loose line comments). Flow:
-            1. mcp__github__get_pull_request_diff — load exact changed lines before commenting.
-            2. mcp__github__create_pending_pull_request_review — start a pending review.
-            3. mcp__github__add_pull_request_review_comment_to_pending_review — one call per specific-line issue, targeting a line present in the diff.
-            4. mcp__github__submit_pending_pull_request_review — submit with event = APPROVE, REQUEST_CHANGES, or COMMENT.
+            1. mcp__github__pull_request_read with method "get_diff" — load exact
+               changed lines before commenting.
+            2. mcp__github__pull_request_review_write with method "create" and NO
+               "event" argument — omitting event is what makes it pending rather
+               than immediately submitted.
+            3. mcp__github__add_comment_to_pending_review — one call per
+               specific-line issue, targeting a line present in the diff.
+            4. mcp__github__pull_request_review_write with method
+               "submit_pending" and event = APPROVE, REQUEST_CHANGES, or COMMENT.
 
             The review body is your summary comment. Structure it as:
               - One-line verdict with reasoning.
@@ -130,6 +135,28 @@ jobs:
             Prefer the pending-review flow over create_issue_comment / inline_comment tools — we want a single cohesive review on the PR, not scattered comments.
           claude_args: |
             --model claude-sonnet-5
-            --max-turns 50
+            # 50 was not enough twice, on PRs #30 and #41 — both ran out of turns
+            # during context-gathering on a 100+ file diff and posted nothing, and
+            # both passed on a plain re-run. A review that dies produces no
+            # findings at all, which is the most expensive outcome here. If this
+            # ceiling is reached again the answer is a smaller pull request, not a
+            # larger number.
+            --max-turns 120
             --mcp-config /tmp/mcp-config.json
-            --allowedTools "Bash(git diff:*),Bash(git log:*),Read,Glob,Grep,mcp__github__get_pull_request_diff,mcp__github__create_pending_pull_request_review,mcp__github__add_pull_request_review_comment_to_pending_review,mcp__github__submit_pending_pull_request_review,mcp__github__get_issue_comments"
+            # These are the CONSOLIDATED github-mcp-server tool names. The four
+            # this list used to name — get_pull_request_diff,
+            # create_pending_pull_request_review,
+            # add_pull_request_review_comment_to_pending_review and
+            # submit_pending_pull_request_review — no longer exist upstream, so
+            # every one of them was silently unavailable and the documented
+            # review flow could not run. That is why reviews arrived with every
+            # finding folded into the body and none as inline comments, and why
+            # they kept reporting the review tools as "not authorized".
+            #
+            # Bash stays read-only (git diff/log) on purpose. `pull_request`
+            # fires for forks, so anything broader would run a stranger's code
+            # on a runner holding this repo's token. The reviewer cannot run the
+            # verification loop and should not try — CI runs it on three
+            # platforms, and "confirm CI is green before merging" is the right
+            # thing for a review to say rather than a gap to close here.
+            --allowedTools "Bash(git diff:*),Bash(git log:*),Read,Glob,Grep,mcp__github__pull_request_read,mcp__github__pull_request_review_write,mcp__github__add_comment_to_pending_review"
