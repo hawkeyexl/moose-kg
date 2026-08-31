@@ -1,7 +1,10 @@
 /**
  * Namespace table. Standard vocabularies wherever a term exists; the custom
- * `dockg:` namespace stays minimal (2 classes, 12 properties, 3 role individuals; the
- * vocabulary document at ns/dockg-1.0.0.ttl defines every one). The prefix set
+ * `dockg:` namespace stays minimal, and the newest vocabulary document under
+ * `ns/` defines every term it holds — a bidirectional drift guard in
+ * test/unit/vocabulary.test.ts enforces both directions. Neither the term count
+ * nor the version is written here: both went stale the first time a term was
+ * added, and the guard resolves the file rather than naming it. The prefix set
  * is fixed — every emitted graph carries the same header.
  */
 export const NS = {

@@ -192,3 +192,44 @@ describe("the dockg vocabulary document", () => {
     ).toBe(readFileSync(VOCAB, "utf8"));
   });
 });
+
+describe("no file points at a superseded vocabulary version", () => {
+  /** Every tracked text file, minus the vocabulary documents themselves. */
+  function trackedText(): string[] {
+    const out: string[] = [];
+    const skip = new Set(["node_modules", ".git", "dist", ".tmp", "ns"]);
+    const walk = (dir: string): void => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        if (skip.has(entry.name)) continue;
+        const path = join(dir, entry.name);
+        if (entry.isDirectory()) walk(path);
+        else if (/\.(ts|mjs|md|mdx|json|yaml|yml)$/.test(entry.name))
+          out.push(path);
+      }
+    };
+    walk(root);
+    return out;
+  }
+
+  it("names only the newest one", () => {
+    // The nits this guard exists for: `src/core/vocab.ts` and
+    // `docs/src/content/docs/ns.mdx` both kept naming the 1.0.0 file after
+    // 1.1.0 shipped, and review found two of the four. Nothing failed — a prose
+    // reference to a superseded file is invisible to every other gate, and it
+    // points a reader at a document missing the term they came to look up.
+    //
+    // The `ns/` directory itself is exempt: an older version file may name
+    // itself, and 1.1.0 records 1.0.0 as its owl:priorVersion on purpose.
+    const stale: string[] = [];
+    for (const file of trackedText()) {
+      for (const m of readFileSync(file, "utf8").matchAll(
+        /ns\/(dockg-\d+\.\d+\.\d+\.ttl)/g,
+      )) {
+        if (m[1] !== VOCAB_FILE) {
+          stale.push(`${file.slice(root.length + 1)} → ${m[1]}`);
+        }
+      }
+    }
+    expect(stale, `superseded, should be ${VOCAB_FILE}`).toEqual([]);
+  });
+});
