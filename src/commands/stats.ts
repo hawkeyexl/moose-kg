@@ -10,6 +10,7 @@ import { loadConfig } from "../core/config.js";
 import { compactIri, loadGraph } from "../core/load.js";
 import { NS, RDF_TYPE } from "../core/vocab.js";
 import { COVERAGE_FIELDS, SECTION_COVERAGE_FIELDS } from "../core/coverage.js";
+import { byCodeUnit } from "../core/sort.js";
 
 const { namedNode } = DataFactory;
 
@@ -58,9 +59,42 @@ export interface StatsReport {
    * and a default gate would fail every one of them.
    */
   sectionCoverage: CoverageRow[];
+  /**
+   * Per-language reporting (ADR 01037). The whole-corpus `coverage` table
+   * blends every locale into one number that describes no audience; this says
+   * which audience is under-served and what is still untranslated.
+   *
+   * Reported, not gated — `coverageFindings` stays whole-corpus, per
+   * ADR 01009's rule that reporting on does not imply gating on.
+   */
+  localization: LocalizationReport;
   /** Fields whose document coverage is below their configured threshold. */
   coverageFindings: Array<{ field: string; pct: number; threshold: number }>;
   exitCode: 0 | 1;
+}
+
+export interface LanguageReport {
+  /** BCP-47 tag exactly as the graph carries it. */
+  language: string;
+  /** Documents carrying this tag. */
+  docs: number;
+  /** The same fields as `coverage`, scored over this language's documents. */
+  coverage: CoverageRow[];
+  /**
+   * `dockg:path` of source documents with no translation into this language,
+   * sorted. A *source* is a document carrying no `schema:translationOfWork` —
+   * so a translation is never its own backlog item — and a source already in
+   * this language is excluded. Nothing here is inferred: a page counts as
+   * translated only where the graph carries the edge.
+   */
+  untranslated: string[];
+}
+
+export interface LocalizationReport {
+  /** Documents carrying no `dcterms:language` at all. */
+  unlabelled: number;
+  /** One block per language present, sorted by tag. */
+  languages: LanguageReport[];
 }
 
 function subjectsOfType(store: Store, typeIri: string): string[] {
@@ -170,6 +204,65 @@ export function runStats(opts: StatsOptions = {}): StatsReport {
     SECTION_COVERAGE_FIELDS,
   );
 
+  // --- Localization (ADR 01037) ---------------------------------------------
+  const languageOf = new Map<string, string>();
+  for (const q of store.getQuads(
+    null,
+    namedNode(`${NS.dcterms}language`),
+    null,
+    null,
+  )) {
+    if (docSet.has(q.subject.value))
+      languageOf.set(q.subject.value, q.object.value);
+  }
+
+  const byLanguage = new Map<string, string[]>();
+  for (const d of docIris) {
+    const tag = languageOf.get(d);
+    if (tag === undefined) continue;
+    byLanguage.set(tag, [...(byLanguage.get(tag) ?? []), d]);
+  }
+
+  // A source is a document that is not itself a translation. Translations are
+  // excluded so a German page never appears in the German backlog.
+  const sources = docIris.filter(
+    (d) =>
+      store.countQuads(
+        namedNode(d),
+        namedNode(`${NS.schema}translationOfWork`),
+        null,
+        null,
+      ) === 0,
+  );
+
+  const localization: LocalizationReport = {
+    unlabelled: docIris.length - languageOf.size,
+    languages: [...byLanguage.keys()].sort(byCodeUnit).map((language) => {
+      const docsIn = byLanguage.get(language)!;
+      const untranslated = sources
+        .filter((s) => languageOf.get(s) !== language)
+        .filter(
+          (s) =>
+            !store
+              .getQuads(
+                namedNode(s),
+                namedNode(`${NS.schema}workTranslation`),
+                null,
+                null,
+              )
+              .some((q) => languageOf.get(q.object.value) === language),
+        )
+        .map((s) => pathOf.get(s)!)
+        .sort(byCodeUnit);
+      return {
+        language,
+        docs: docsIn.length,
+        coverage: coverageOver(docsIn, COVERAGE_FIELDS),
+        untranslated,
+      };
+    }),
+  };
+
   // A uniform --coverage-threshold overrides the resolved config map. Bind it
   // to a local first so the null-narrowing survives the .map() closure.
   const uniform = opts.coverageThreshold;
@@ -218,6 +311,7 @@ export function runStats(opts: StatsOptions = {}): StatsReport {
     mostConnected,
     coverage,
     sectionCoverage,
+    localization,
     coverageFindings,
     exitCode: failed ? 1 : 0,
   };
@@ -285,6 +379,26 @@ export function renderStats(
         `  ${field.padEnd(width)}  ${docs}/${report.sections}  ${pct.toFixed(1)}%`,
       );
     }
+  }
+
+  // Omitted entirely on a corpus that declares no language, rather than
+  // printed empty: a block that says nothing on most corpora teaches readers to
+  // skip the report (the failure ADR 01029 recorded for always-zero rows).
+  if (report.localization.languages.length > 0) {
+    const tagWidth = Math.max(
+      ...report.localization.languages.map((l) => l.language.length),
+    );
+    lines.push("", "Localization:");
+    for (const { language, docs, untranslated } of report.localization
+      .languages) {
+      const plural = docs === 1 ? "doc" : "docs";
+      const backlog =
+        untranslated.length === 0
+          ? ""
+          : `  ${untranslated.length} untranslated`;
+      lines.push(`  ${language.padEnd(tagWidth)}  ${docs} ${plural}${backlog}`);
+    }
+    lines.push(`  no language: ${report.localization.unlabelled}`);
   }
   return lines.join("\n");
 }

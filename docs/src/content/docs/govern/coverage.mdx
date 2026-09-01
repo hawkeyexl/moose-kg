@@ -11,7 +11,7 @@ enforces.
 
 ## What "covered" means
 
-Coverage is computed over eleven fields. Before agreeing to a threshold, know exactly what is being
+Coverage is computed over twelve fields. Before agreeing to a threshold, know exactly what is being
 counted:
 
 | Field | A document counts as covered when |
@@ -23,6 +23,7 @@ counted:
 | `modified` | Frontmatter `updated`, `lastmod`, or `modified`, or a git committer time |
 | `subject` | At least one `tags`, `keywords`, or `kg.concepts` value |
 | `label` | `kg.label` |
+| `language` | Frontmatter `lang`/`language`, or a `routes[].language` covering the file |
 | `type` | `kg.type`, or a page `type` that maps to an iiRDS topic type |
 | `applies-to` | At least one product variant |
 | `about-product-lifecycle` | A software lifecycle phase |
@@ -67,29 +68,56 @@ dockg stats
 
 ```
 Coverage (documents):
-  title                    5/5  100.0%
-  description              2/5  40.0%
-  creator                  1/5  20.0%
-  created                  1/5  20.0%
-  modified                 1/5  20.0%
-  subject                  3/5  60.0%
-  label                    1/5  20.0%
-  type                     3/5  60.0%
-  applies-to               2/5  40.0%
-  about-product-lifecycle  1/5  20.0%
-  about-product-aspect     1/5  20.0%
+  title                    8/8  100.0%
+  description              4/8  50.0%
+  creator                  1/8  12.5%
+  created                  1/8  12.5%
+  modified                 1/8  12.5%
+  subject                  3/8  37.5%
+  label                    1/8  12.5%
+  language                 3/8  37.5%
+  type                     3/8  37.5%
+  applies-to               2/8  25.0%
+  about-product-lifecycle  1/8  12.5%
+  about-product-aspect     1/8  12.5%
 
 Coverage (sections, not gated):
-  type                     1/9  11.1%
-  applies-to               1/9  11.1%
-  about-product-lifecycle  0/9  0.0%
-  about-product-aspect     0/9  0.0%
-  subject                  1/9  11.1%
+  type                     1/13  7.7%
+  applies-to               1/13  7.7%
+  about-product-lifecycle  0/13  0.0%
+  about-product-aspect     0/13  0.0%
+  subject                  1/13  7.7%
+
+Localization:
+  de     1 doc  5 untranslated
+  de-AT  1 doc  5 untranslated
+  fr     1 doc  5 untranslated
+  no language: 5
 ```
+
+## The third table: one per language
+
+The document table above blends every locale into one number. On a translated corpus that number
+describes no audience — 100% English and 0% German averages to something that is true of nobody.
+
+The `Localization` block appears whenever the graph carries a `dcterms:language`, and the JSON
+report carries the full per-language coverage tables under `localization.languages[].coverage`:
+
+```sh
+dockg stats -f json | jq '.localization.languages[] | {language, docs, untranslated: (.untranslated | length)}'
+```
+
+`untranslated` is the backlog: **source** documents — those carrying no
+`schema:translationOfWork`, so a translation is never its own backlog item — that have no
+[translation edge](/dockg/model/localization/) into that language. Nothing is inferred; a page
+counts as translated only where the graph carries the edge.
+
+This block is reported and never gated. `--check` and `stats.coverageThreshold` still act on the
+whole-corpus table only.
 
 ## Set thresholds per field
 
-A single number across all eleven fields is almost never what a real obligation looks like —
+A single number across all twelve fields is almost never what a real obligation looks like —
 `title` at 100% and `label` at 40% is a coherent policy that one number cannot express.
 
 ```yaml title="dockg.config.yaml"

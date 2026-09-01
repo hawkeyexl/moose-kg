@@ -297,6 +297,7 @@ describe("parseConfig", () => {
       "creator",
       "description",
       "label",
+      "language",
       "modified",
       "subject",
       "title",
