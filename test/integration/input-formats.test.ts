@@ -41,11 +41,11 @@ function build(fixture: string): {
 
 describe("dockg build over an unsupported input format", () => {
   it("exits 2 and names the format, instead of writing an empty graph", () => {
-    const { status, stderr, outPath } = build("html");
+    const { status, stderr, outPath } = build("asciidoc");
     // 2 is the operational-error code; 1 is reserved for findings.
     expect(status).toBe(2);
     expect(stderr).toContain(
-      'The "html" input format is not yet implemented (headings, links, images and code blocks are not derived yet).',
+      'The "asciidoc" input format is not yet implemented (section, cross-reference and image derivation is not implemented yet).',
     );
     expect(existsSync(outPath), "no graph should be written").toBe(false);
   });
@@ -56,7 +56,7 @@ describe("dockg build over an unsupported input format", () => {
     // The reader's next action is to fix the glob, so the message has to name
     // the file, its extension, and what the alternatives are.
     expect(stderr).toContain(
-      'No input format is registered for docs/notes.txt (".txt") — narrow your inputs globs. Supported: .markdown, .md, .mdx.',
+      'No input format is registered for docs/notes.txt (".txt") — narrow your inputs globs. Supported: .htm, .html, .markdown, .md, .mdx.',
     );
     expect(existsSync(outPath)).toBe(false);
   });

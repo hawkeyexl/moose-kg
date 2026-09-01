@@ -16,7 +16,13 @@ import { DockgError } from "../../types.js";
 import type { DocImage, DocLink } from "../../types.js";
 import { classifyImage, classifyLink } from "./links.js";
 import { SectionBuilder } from "./sections.js";
-import type { AnalyzedBody, AnalyzeContext, DocAnalyzer } from "./types.js";
+import { documentPreamble, sectionOwnText } from "../../runtime/resolve.js";
+import type {
+  AnalyzedBody,
+  AnalyzeContext,
+  DocAnalyzer,
+  DocumentText,
+} from "./types.js";
 
 const processor = unified()
   .use(remarkParse)
@@ -196,18 +202,54 @@ function visit(node: Root | Content, fn: (node: Content) => void): void {
   }
 }
 
+/**
+ * A leading YAML frontmatter block, and the blank lines after it.
+ *
+ * Only a document with *no* sections gets whole-body text, and its body is the
+ * whole file — frontmatter included, unless it is stripped. That block is
+ * machinery, not prose: left in, a query for `label` or `alt-labels` matches
+ * every sectionless document. Section slices start at their heading, so they
+ * never see it.
+ */
+const FRONTMATTER =
+  /^---[ \t]*\r?\n(?:[\s\S]*?\r?\n)?(?:---|\.\.\.)[ \t]*(?:\r?\n|$)(?:\r?\n)*/;
+
+/**
+ * Markdown is its own indexable text, so slicing reuses the *runtime's* line
+ * scanners rather than the mdast tree — index-time and retrieval-time text
+ * cannot drift when both call the same function.
+ *
+ * Sections slice the raw source, not the stripped body: they start at a
+ * heading, so frontmatter is already behind them, and `slice` re-joins on
+ * "\n" so CRLF normalizes there. Only the document-level body needs the
+ * explicit strip and newline normalization.
+ */
+function markdownTextOf(content: string): DocumentText {
+  const body = content.replace(FRONTMATTER, "").replace(/\r\n/g, "\n");
+  return {
+    body,
+    preamble: () => documentPreamble(body),
+    sectionOwnText: (title, level, occurrence) =>
+      sectionOwnText(content, title, level, occurrence),
+  };
+}
+
 export const markdownAnalyzer: DocAnalyzer = {
   name: "markdown",
   extensions: [".md", ".markdown"],
+  mediaType: "text/markdown",
   implemented: true,
   writable: true,
   analyze: (content, ctx) => analyzeMarkdown(content, ctx, false),
+  textOf: markdownTextOf,
 };
 
 export const mdxAnalyzer: DocAnalyzer = {
   name: "mdx",
   extensions: [".mdx"],
+  mediaType: "text/markdown",
   implemented: true,
   writable: true,
   analyze: (content, ctx) => analyzeMarkdown(content, ctx, true),
+  textOf: markdownTextOf,
 };

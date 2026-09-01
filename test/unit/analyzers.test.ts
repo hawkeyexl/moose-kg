@@ -12,7 +12,9 @@ import {
   analyzerForExtension,
   implementedExtensions,
 } from "../../src/core/analyzers/index.js";
+import { DOCUMENT_EXTENSIONS } from "../../src/core/analyzers/extensions.js";
 import { analyzeDoc } from "../../src/core/analyze.js";
+import { byCodeUnit } from "../../src/core/sort.js";
 import { DockgError } from "../../src/types.js";
 
 const NO_PATHS = new Set<string>();
@@ -33,8 +35,6 @@ describe("analyzer registry", () => {
 
   it("registers the roadmap formats as named, unimplemented analyzers", () => {
     const expected: Record<string, string> = {
-      ".html": "html",
-      ".htm": "html",
       ".dita": "dita",
       ".ditamap": "ditamap",
       ".adoc": "asciidoc",
@@ -55,7 +55,27 @@ describe("analyzer registry", () => {
   });
 
   it("reports only implemented extensions as supported", () => {
-    expect(implementedExtensions()).toEqual([".markdown", ".md", ".mdx"]);
+    expect(implementedExtensions()).toEqual([
+      ".htm",
+      ".html",
+      ".markdown",
+      ".md",
+      ".mdx",
+    ]);
+  });
+
+  /**
+   * Link resolution decides what a *document* looks like from its own ordered
+   * list (candidate precedence, not alphabetical), so the two cannot simply be
+   * the same constant. This is what keeps them from drifting: a format that
+   * lands without being added to `DOCUMENT_EXTENSIONS` would resolve its own
+   * internal links as links to static assets (ADR 01033) and report none of
+   * them as broken.
+   */
+  it("resolves links for exactly the extensions it can read", () => {
+    expect([...DOCUMENT_EXTENSIONS].sort(byCodeUnit)).toEqual(
+      implementedExtensions(),
+    );
   });
 
   it("declares every extension exactly once across the registry", () => {
@@ -81,13 +101,12 @@ describe("analyzeDoc dispatch", () => {
   });
 
   it("names the format when an analyzer is registered but unimplemented", () => {
-    expect(() => analyzeDoc("<h1>Hi</h1>", "docs/a.html", NO_PATHS)).toThrow(
-      DockgError,
-    );
+    const rst = ".. _label:\n\nTitle\n=====\n";
+    expect(() => analyzeDoc(rst, "docs/a.rst", NO_PATHS)).toThrow(DockgError);
     // The message must name the format, not merely the file: the reader's next
     // action differs between "dockg cannot read this yet" and "typo in a glob".
-    expect(() => analyzeDoc("<h1>Hi</h1>", "docs/a.html", NO_PATHS)).toThrow(
-      /\bhtml\b.*not yet implemented/i,
+    expect(() => analyzeDoc(rst, "docs/a.rst", NO_PATHS)).toThrow(
+      /\brst\b.*not yet implemented/i,
     );
   });
 

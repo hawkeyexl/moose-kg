@@ -9,6 +9,7 @@ import { parse as parseYaml } from "yaml";
 import { Ajv2020 } from "ajv/dist/2020.js";
 import configSchema from "./config-schema.json" with { type: "json" };
 import { DockgError } from "../types.js";
+import { DOCUMENT_EXTENSIONS } from "./analyzers/extensions.js";
 import { resolveBaseIri } from "./iri.js";
 import { COVERAGE_FIELD_NAMES } from "./coverage.js";
 // Pure data module (no transformers import), so config stays Node-light.
@@ -209,8 +210,12 @@ export const ALL_DERIVE_SOURCES: DeriveSource[] = [
   "provenance",
 ];
 
-/** Default candidates for extensionless link targets (routes AND relative links). */
-export const DEFAULT_LINK_EXTENSIONS = [".md", ".mdx"];
+/**
+ * Default candidates for extensionless link targets (routes AND relative
+ * links) — every extension dockg can actually read, in precedence order. See
+ * `analyzers/extensions.ts` for why that list lives there.
+ */
+export const DEFAULT_LINK_EXTENSIONS: string[] = [...DOCUMENT_EXTENSIONS];
 export const DEFAULT_INDEX_FILES = ["index", "README"];
 
 /** `/docs/` -> `/docs`; `/` or `` -> `` (site root). */

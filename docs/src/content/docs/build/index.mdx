@@ -68,19 +68,19 @@ it should not depend on how someone typed the command.
      ```
    </Aside>
 
-   <Aside type="caution" title="dockg reads Markdown and MDX">
-     `.md`, `.markdown` and `.mdx`. A glob that pulls in anything else fails the build rather
-     than ingesting it — HTML, DITA, AsciiDoc, reStructuredText and generic XML are recognized
-     by name but cannot be read yet:
+   <Aside type="caution" title="dockg reads Markdown, MDX and HTML">
+     `.md`, `.markdown`, `.mdx`, `.html` and `.htm`. A glob that pulls in anything else fails the
+     build rather than ingesting it — DITA, AsciiDoc, reStructuredText and generic XML are
+     recognized by name but cannot be read yet:
 
      ```
-     dockg: The "html" input format is not yet implemented (headings, links, images and code blocks are not derived yet).
+     dockg: The "asciidoc" input format is not yet implemented (section, cross-reference and image derivation is not implemented yet).
      ```
 
      An extension nothing claims tells you what the alternatives are:
 
      ```
-     dockg: No input format is registered for docs/notes.txt (".txt") — narrow your inputs globs. Supported: .markdown, .md, .mdx.
+     dockg: No input format is registered for docs/notes.txt (".txt") — narrow your inputs globs. Supported: .htm, .html, .markdown, .md, .mdx.
      ```
 
      Both exit `2` and write no graph. Refusing is deliberate: parsing an unknown format as
@@ -182,6 +182,26 @@ starting point, not a failing grade.
 
   An attribute whose value is an expression (`href={route}`) is skipped rather than guessed at: its
   value is not knowable without evaluating the module.
+</Aside>
+
+<Aside type="note" title="HTML is read structurally, not as a source format">
+  A published site is often the only copy of a corpus that still exists. dockg reads `.html` and
+  `.htm` the same way it reads Markdown: `h1`–`h6` become sections, `<a href>` and `<area href>`
+  become links, `<img src>` becomes an image, and a `language-*` or `lang-*` class on a `<code>`
+  element becomes a code language. Page metadata comes from `<title>` and `<meta name>`.
+
+  **Section anchors come from ids, not from titles.** A heading's own `id` wins; failing that, the
+  `id` of an enclosing `<section>` or `<article>` — which is where Sphinx puts it. That matters
+  because a link elsewhere in your corpus targets the id, so slugging the title would mint a
+  section IRI nothing points at.
+
+  A heading's own permalink (`<a class="headerlink" href="#install">¶</a>`) is dropped from its
+  text. A link from a heading to itself carries nothing; a link from a heading to anywhere else is
+  kept.
+
+  `href` is read from `<a>` and `<area>` only — not from `<link rel="stylesheet">` or `<base>`,
+  which name resources rather than documents. Reading those would put a broken link on every page
+  in the corpus.
 </Aside>
 
 <Aside type="caution" title="MDX must actually parse">

@@ -17,10 +17,16 @@
  */
 import { DockgError } from "../../types.js";
 import { byCodeUnit } from "../sort.js";
+import { htmlAnalyzer } from "./html.js";
 import { markdownAnalyzer, mdxAnalyzer } from "./markdown.js";
 import type { DocAnalyzer } from "./types.js";
 
-export type { AnalyzedBody, AnalyzeContext, DocAnalyzer } from "./types.js";
+export type {
+  AnalyzedBody,
+  AnalyzeContext,
+  DocAnalyzer,
+  DocumentText,
+} from "./types.js";
 
 /**
  * A registered format whose body parsing is not implemented yet.
@@ -31,14 +37,21 @@ export type { AnalyzedBody, AnalyzeContext, DocAnalyzer } from "./types.js";
 export function createStubAnalyzer(
   name: string,
   extensions: string[],
+  mediaType: string,
   note: string,
 ): DocAnalyzer {
   return {
     name,
     extensions,
+    mediaType,
     implemented: false,
     writable: false,
     analyze() {
+      throw new DockgError(
+        `The "${name}" input format is not yet implemented (${note}).`,
+      );
+    },
+    textOf() {
       throw new DockgError(
         `The "${name}" input format is not yet implemented (${note}).`,
       );
@@ -49,34 +62,35 @@ export function createStubAnalyzer(
 export const ANALYZERS: DocAnalyzer[] = [
   markdownAnalyzer,
   mdxAnalyzer,
-  createStubAnalyzer(
-    "html",
-    [".html", ".htm"],
-    "headings, links, images and code blocks are not derived yet",
-  ),
+  htmlAnalyzer,
   createStubAnalyzer(
     "dita",
     [".dita"],
+    "application/dita+xml",
     "topic, section, xref and image derivation is not implemented yet",
   ),
   createStubAnalyzer(
     "ditamap",
     [".ditamap"],
+    "application/dita+xml",
     "topicref derivation is not implemented yet",
   ),
   createStubAnalyzer(
     "asciidoc",
     [".adoc", ".asciidoc"],
+    "text/asciidoc",
     "section, cross-reference and image derivation is not implemented yet",
   ),
   createStubAnalyzer(
     "rst",
     [".rst"],
+    "text/x-rst",
     "docutils is a Python library with no JavaScript equivalent; a subset parser is planned",
   ),
   createStubAnalyzer(
     "xml",
     [".xml"],
+    "application/xml",
     "generic XML declares no headings, links or images, so dockg has nothing to derive a body from — DITA is supported as its own format",
   ),
 ];

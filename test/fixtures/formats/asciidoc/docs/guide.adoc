@@ -1,0 +1,6 @@
+= Install the SDK
+:type: how-to
+
+== Prerequisites
+
+Node 24 or later. See xref:configuration.adoc[configuration].
