@@ -68,6 +68,26 @@ it should not depend on how someone typed the command.
      ```
    </Aside>
 
+   <Aside type="caution" title="dockg reads Markdown and MDX">
+     `.md`, `.markdown` and `.mdx`. A glob that pulls in anything else fails the build rather
+     than ingesting it — HTML, DITA, AsciiDoc, reStructuredText and generic XML are recognized
+     by name but cannot be read yet:
+
+     ```
+     dockg: The "html" input format is not yet implemented (headings, links, images and code blocks are not derived yet).
+     ```
+
+     An extension nothing claims tells you what the alternatives are:
+
+     ```
+     dockg: No input format is registered for docs/notes.txt (".txt") — narrow your inputs globs. Supported: .markdown, .md, .mdx.
+     ```
+
+     Both exit `2` and write no graph. Refusing is deliberate: parsing an unknown format as
+     Markdown succeeds at everything except finding anything, and a graph that is empty for a
+     parser reason looks exactly like a corpus with no structure.
+   </Aside>
+
 2. **Set a real `baseIri`.** IRIs are the graph's stable identity, and changing the base later
    rewrites every subject in the file.
 

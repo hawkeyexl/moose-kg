@@ -6,9 +6,10 @@
  * recorded as a result, never aborts the run.
  */
 import { readFileSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { extname, resolve } from "node:path";
 
 import { analyzeDoc } from "../core/analyze.js";
+import { analyzerForExtension } from "../core/analyzers/index.js";
 import { loadConfig, type FillField } from "../core/config.js";
 import type { DocModel } from "../types.js";
 import { discoverFiles } from "../core/discover.js";
@@ -205,6 +206,28 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
   if (files.length === 0) {
     throw new DockgError(
       `No input files matched: ${inputs.join(", ")} (cwd: ${cwd})`,
+    );
+  }
+
+  // A format dockg cannot write is refused before any work happens — before
+  // the corpus is analyzed and long before a provider is reached. The writer
+  // re-serializes a YAML frontmatter fence and *creates* one when a file has
+  // none, which on a format that has no frontmatter is a corruption rather
+  // than an edit (ADR 01037); proposing fields that could never be applied is
+  // not worth paying for. Checked over the whole corpus, like `validate`,
+  // because the answer is a property of the inputs, not of one document.
+  const unwritable = files.filter((f) => {
+    const analyzer = analyzerForExtension(extname(f).toLowerCase());
+    return analyzer !== undefined && !analyzer.writable;
+  });
+  if (unwritable.length > 0) {
+    const shown = unwritable.slice(0, 5).join(", ");
+    throw new DockgError(
+      `dockg cannot write metadata into ${
+        analyzerForExtension(extname(unwritable[0]!).toLowerCase())!.name
+      } files: ${shown}${
+        unwritable.length > 5 ? ", …" : ""
+      } — narrow your inputs globs, or add this metadata by hand.`,
     );
   }
 

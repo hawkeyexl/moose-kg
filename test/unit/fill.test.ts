@@ -795,3 +795,36 @@ describe("runFill graph guardrail (fill.validateGraph)", () => {
     ).toBeUndefined();
   });
 });
+
+describe("runFill over a format dockg cannot write", () => {
+  /**
+   * The writer re-serializes a YAML frontmatter fence and *creates* one when a
+   * file has none — which on a format that has no frontmatter is a corruption,
+   * not an edit (ADR 01037). The refusal has to land before any work: before
+   * the corpus is analyzed, and before a provider is reached.
+   */
+  it("refuses up front, names the format and the files, and writes nothing", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "dockg-fill-"));
+    writeFileSync(
+      join(dir, "dockg.config.yaml"),
+      `version: 1
+inputs: ["*.html"]
+`,
+    );
+    const source = `<!doctype html>
+<html><body><h1>A</h1></body></html>
+`;
+    writeFileSync(join(dir, "a.html"), source);
+    // A response is scripted but must never be consumed: an empty `requests`
+    // is what proves the refusal came before the provider was reached.
+    const provider = new MockProvider([{ json: PROPOSAL }]);
+
+    await expect(
+      runFill({ cwd: dir, providerInstance: provider }),
+    ).rejects.toThrow(/cannot write metadata into html files: a\.html/);
+
+    expect(provider.requests).toHaveLength(0);
+    // The file is untouched — the whole point of the gate.
+    expect(readFileSync(join(dir, "a.html"), "utf8")).toBe(source);
+  });
+});
