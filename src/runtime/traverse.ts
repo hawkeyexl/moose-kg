@@ -27,6 +27,12 @@ const DCTERMS_TITLE = `${NS.dcterms}title`;
 const DCTERMS_REFERENCES = `${NS.dcterms}references`;
 const DCTERMS_LANGUAGE = `${NS.dcterms}language`;
 
+/** A section IRI's document, or the IRI itself when it has no fragment. */
+function documentOf(iri: string): string {
+  const hash = iri.indexOf("#");
+  return hash === -1 ? iri : iri.slice(0, hash);
+}
+
 export type Direction = "out" | "in" | "both";
 
 export interface ScopeFilter {
@@ -150,7 +156,16 @@ export function scopeExclusion(
       if (denied) return { node: iri, rule: negative, value: target };
     }
 
-    const claimed = graph.values(iri, positive);
+    // Language is the one dimension a section inherits. Applicability is
+    // explicit-only by ADR 01013 — a section may legitimately scope itself
+    // differently from its document — but a section's *text* is in its
+    // document's language and cannot differ, and the per-locale indexes file it
+    // that way (`partitionByLanguage`). Without this a link with an anchor
+    // reaches a section directly (derive.ts mints section IRIs as
+    // `dcterms:references` targets) and carries English prose past a `de`
+    // filter that excluded the document it belongs to.
+    const subject = positive === DCTERMS_LANGUAGE ? documentOf(iri) : iri;
+    const claimed = graph.values(subject, positive);
     if (claimed.length > 0) {
       const matches = claimed.some(
         (v) => v.kind === kind && v.value === target,

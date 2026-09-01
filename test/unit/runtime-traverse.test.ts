@@ -348,3 +348,52 @@ describe("scope filtering by language", () => {
     expect(hit?.rule).toBe(IIRDS_RELATES_TO_PRODUCT_VARIANT);
   });
 });
+
+/**
+ * A section takes its document's language (review fix). Applicability stays
+ * explicit-only per ADR 01013 — the two rules differ on purpose.
+ */
+describe("scope filtering — sections inherit language, not applicability", () => {
+  const EN = `${BASE}doc/en.md`;
+  const EN_SECTION = `${EN}#setup`;
+  const LANGUAGE = `${NS.dcterms}language`;
+
+  const graph = (): GraphIndex =>
+    GraphIndex.fromQuads([
+      { s: EN, p: RDF_TYPE, o: { kind: "iri", value: `${NS.dockg}Document` } },
+      { s: EN, p: LANGUAGE, o: { kind: "literal", value: "en" } },
+      {
+        s: EN_SECTION,
+        p: RDF_TYPE,
+        o: { kind: "iri", value: `${NS.dockg}Section` },
+      },
+      {
+        s: EN,
+        p: IIRDS_RELATES_TO_PRODUCT_VARIANT,
+        o: { kind: "iri", value: X100 },
+      },
+    ]);
+
+  it("excludes an English section under --lang de", () => {
+    // Reachable directly: derive mints a section IRI as a dcterms:references
+    // target when a link's anchor resolves, so a German page linking
+    // `en.md#setup` reaches this node without passing through its document.
+    const hit = scopeExclusion(graph(), EN_SECTION, { language: "de" });
+    expect(hit).toEqual({ node: EN_SECTION, rule: LANGUAGE, value: "de" });
+  });
+
+  it("keeps that section under --lang en", () => {
+    expect(
+      scopeExclusion(graph(), EN_SECTION, { language: "en" }),
+    ).toBeUndefined();
+  });
+
+  it("does not inherit the document's variant", () => {
+    // ADR 01013: a section gets exactly what its own block declares. The
+    // document applies to X100; the section claims nothing and so applies
+    // broadly, including to X300.
+    expect(
+      scopeExclusion(graph(), EN_SECTION, { variantIri: X300 }),
+    ).toBeUndefined();
+  });
+});
