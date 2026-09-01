@@ -52,9 +52,10 @@ describe("dockg build (integration)", () => {
       readFileSync(golden, "utf8"),
     );
     // must equal the triple count `build` reports for the corpus
-    // (135 + 4 negative-scope triples: notApplicableToVariant + its
-    // ProductVariant node, and a section not-about-product-aspect — ADR 01014)
-    expect(quads.length).toBe(172);
+    // (172 + 48 for the localized tree added in ADR 01037: three documents
+    // with their sections, two translation edges and their inverses, and the
+    // broken translation target on docs/de/regional.md)
+    expect(quads.length).toBe(220);
   });
 
   it("stamps every document with the sha256 of its file (ADR 01036)", () => {
@@ -84,7 +85,7 @@ describe("dockg build (integration)", () => {
       namedNode(`${NS.dockg}Document`),
       null,
     );
-    expect(docs.length).toBe(5);
+    expect(docs.length).toBe(8);
 
     for (const { subject } of docs) {
       const hashes = store.getQuads(
@@ -109,7 +110,7 @@ describe("dockg build (integration)", () => {
   it("reports docs and triples on stdout", () => {
     const out = join(mkdtempSync(join(tmpdir(), "dockg-build-")), "graph.ttl");
     const stdout = build(out);
-    expect(stdout).toMatch(/5 docs, \d+ triples/);
+    expect(stdout).toMatch(/8 docs, \d+ triples/);
   });
 
   it("provenance.git: an ambient GIT_DIR cannot redirect the build", () => {

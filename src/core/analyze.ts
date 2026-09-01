@@ -212,6 +212,33 @@ function targetCandidates(
 }
 
 /**
+ * The language labelling a source path, from the nearest enclosing route
+ * mapping that declares one (ADR 01037).
+ *
+ * "Nearest" is the longest matching `root`, so a `docs/de` mapping beats a
+ * `docs` one for a file under both. A mapping that declares no language is
+ * transparent rather than blocking: `{root: docs, language: en}` plus
+ * `{root: docs/api}` still labels `docs/api/x.md` as English, the way a nested
+ * directory inherits the setting of its parent.
+ */
+export function routeLanguageFor(
+  path: string,
+  routes: readonly RouteMapping[],
+): string | undefined {
+  let best: { root: string; language: string } | undefined;
+  for (const mapping of routes) {
+    if (mapping.language === undefined) continue;
+    const root = mapping.root;
+    const covers = root === "" || path === root || path.startsWith(`${root}/`);
+    if (!covers) continue;
+    if (best === undefined || root.length > best.root.length) {
+      best = { root, language: mapping.language };
+    }
+  }
+  return best?.language;
+}
+
+/**
  * Resolve a root-absolute route (`/docs/actions/find`) to a source file via
  * the configured mappings. Returns the repo path, "broken" when a mapping's
  * basePath matched but no candidate file exists, or null when no mapping
@@ -460,6 +487,8 @@ export function analyzeDoc(
     }
   });
 
+  const routeLanguage = routeLanguageFor(path, routes);
+
   return {
     path,
     frontmatter: meta.data,
@@ -469,6 +498,9 @@ export function analyzeDoc(
     links,
     images,
     codeLanguages: [...codeLanguages].sort(),
+    // Omitted rather than set to undefined, so a doc under no localized route
+    // carries no key at all — `routeLanguage` in JSON output means something.
+    ...(routeLanguage === undefined ? {} : { routeLanguage }),
     // Over the content as read — line endings included, so the digest is
     // byte-faithful and equals `sha256sum <file>` for any valid-UTF-8 file
     // (ADR 01036). The CRLF corpus fixture depends on this not normalizing.

@@ -55,6 +55,7 @@ become real edges.
 | `routes[].basePath` | string | `/` | Normalized: leading `/`, no trailing `/`; `/` becomes site root. |
 | `routes[].extensions` | string[] | `[".md", ".mdx"]` | Must start with a dot. |
 | `routes[].indexFiles` | string[] | `["index", "README"]` | Resolves `/docs/actions/` to a file. |
+| `routes[].language` | string | — | BCP-47 tag labelling every document under `root`. See [localization](/dockg/model/localization/). |
 
 ## `build`
 
@@ -67,7 +68,7 @@ become real edges.
 | Key | Type | Default | Notes |
 |---|---|---|---|
 | `validate.schemas` | string[] | `[]` → bundled `schemas/docmeta-kg-1.0.0-proposal.1.json` | File paths, URLs, or docmeta built-in ids. |
-| `check.shapes` | string[] | `[]` → bundled `shapes/dockg-0.7.ttl` | Overridable with `--shapes`. |
+| `check.shapes` | string[] | `[]` → bundled `shapes/dockg-1.0.0.ttl` | Overridable with `--shapes`. |
 
 Both bundled files ship in the npm package, so any JSON Schema or SHACL tool can be pointed at
 them directly. Published versions are immutable — evolution adds a new version file.

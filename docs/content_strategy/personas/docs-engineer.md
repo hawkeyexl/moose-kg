@@ -32,6 +32,7 @@ content_types:
 journeys:
   - cuj-first-graph
   - cuj-map-site-routes
+  - cuj-localize-a-docset
   - cuj-gate-metadata-in-ci
   - cuj-backfill-metadata
   - cuj-query-the-graph

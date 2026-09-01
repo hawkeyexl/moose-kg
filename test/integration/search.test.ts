@@ -77,8 +77,12 @@ describe("dockg export --format search (integration)", () => {
     const doc = JSON.parse(readFileSync(index, "utf8")) as {
       entries: Array<{ id: string; text?: string }>;
     };
+    // Named by document, not by fragment alone: the localized tree added in
+    // ADR 01037 also has a `## Install`, and a bare `endsWith("#install")`
+    // silently starts asserting about the German page instead.
     const find = (suffix: string) =>
-      doc.entries.find((e) => e.id.endsWith(suffix))?.text ?? "";
+      doc.entries.find((e) => e.id.endsWith(`docs/getting-started.md${suffix}`))
+        ?.text ?? "";
     // getting-started.md has two `## Install` headings.
     expect(find("#install")).toContain("Run the installer");
     expect(find("#install-1")).toContain("duplicate heading");

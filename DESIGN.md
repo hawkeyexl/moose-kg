@@ -642,6 +642,66 @@ find, and reporting it was a finding no author could act on — there is no
 Markdown file they could add
 ([ADR 01033](adrs/01033-links-to-non-document-files.md)).
 
+## Landed outside the phase structure, again — **done**
+
+- **[ADR 01036](adrs/01036-document-content-hash.md)** — breaking. Every document node carries a
+  sha256 of its content, so a consumer pairing the graph with a store it holds separately can
+  answer "has this changed since I indexed it?" without re-reading every file. Proposed in #7 on
+  2026-07-22 and re-taken against the current tree after eleven other changes landed on top of it.
+
+  The predicate is unconditional — intrinsic like `dockg:path`, not gated behind a derive source —
+  because a hash present only sometimes cannot tell "unchanged" from "not stamped". `shapes/
+  dockg-0.7.ttl` therefore requires it, and a graph built by an older dockg fails `check` until
+  rebuilt.
+
+  The runtime does not consume it yet: `ContentResolver` still fetches whatever the host points it
+  at and never compares. Closing that is the natural companion to the staleness refusal
+  `vectors.bin` already has, and it is unscheduled.
+
+## Phase 8e — Localization
+
+**Goal:** a translated corpus is a first-class corpus — every page labelled with its language,
+every translation linked to its source, and retrieval that honors the boundary.
+
+Language was the one axis where dockg had a fact and did nothing with it. `dcterms:language`
+came from a page-level `lang` key, reached the iiRDS package, and was read by nothing else: no
+corpus fixture set it, no golden contained it, and `grep language src/runtime/` returned nothing.
+Meanwhile product variant — structurally the same kind of boundary — had positive edges,
+negative edges, `sh:disjoint` conflicts, and a scope filter that records its firing rule in the
+trace. A German question could be answered out of the English page with a confident citation,
+which is the edge contamination this project exists to prevent, on the axis where a wrong answer
+is most obvious to the reader.
+
+Decided ([ADR 01037](adrs/01037-language-as-a-scope-dimension.md)):
+
+- **Language is declared per tree, not per file.** `routes[]` already maps directories, so it
+  gains an optional `language`; the nearest enclosing route that declares one applies, and a
+  page's own `lang` outranks it. One line per locale is what makes this adoptable on a corpus
+  that is already translated.
+- **The relation is schema.org's**, `schema:translationOfWork` / `schema:workTranslation`, from a
+  page-level `translation-of` key — page-level because docmeta's `kg` block is closed to dockg
+  and cannot gain one. **Both directions are materialized** from the one authored fact: dockg's
+  runtime has an inbound index, and no other consumer does.
+- **A language tag is a partition key.** `dcterms:language` gains a BCP-47 `sh:pattern` in
+  `shapes/dockg-1.0.0.ttl` — the first three-segment version file, MAJOR because `lang: English`
+  validated before and does not now.
+- **No negative-language predicate**, deliberately: a document has one language, `sh:maxCount 1`
+  already says so, and "not in German" is not a claim an author makes. The asymmetry with
+  ADR 01014 is the point.
+- **`language` re-enters coverage**, reversing ADR 01011's drop of it — correct on monolingual
+  evidence, wrong the moment language means something.
+
+Slices: **(1) the graph** — route language, translation edges, shapes 1.0.0, near-miss warnings
+for the three localization keys, corpus permutations, all goldens regenerated; **(2) measurement**
+— per-language coverage tables and the untranslated backlog, so one blended number stops
+describing an audience that does not exist; **(3) per-locale artifacts** — `search.<lang>.json`,
+`vectors.<lang>.bin`, per-language embedding models, and a `localizations.json` manifest a browser
+fetches before it downloads anything large; **(4) runtime + CLI** — `dcterms:language` joins the
+`scopeExclusion` table and `--lang` joins `search` and `traverse`.
+
+Placed before Phase 9 deliberately: `retrieve` should orchestrate over a language-aware runtime
+rather than have one retrofitted underneath it.
+
 ## Phase 9 — `retrieve` + MCP serving
 
 **Goal:** one call from a question to a citation-bearing context bundle, and the

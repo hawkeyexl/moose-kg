@@ -43,8 +43,11 @@ describe("custom SPARQL over the runtime index", { timeout: 60_000 }, () => {
       .sort();
     expect(titles).toEqual([
       "Configuration Reference",
+      "Erste Schritte",
       "Getting Started",
       "Loose Notes",
+      "Premiers pas",
+      "Regionale Hinweise",
       "Upgrading",
       "Windows Notes",
     ]);
@@ -68,11 +71,11 @@ describe("custom SPARQL over the runtime index", { timeout: 60_000 }, () => {
     const graph = corpusIndex();
     const quads = rdfjsQuads(graph);
     // Same triple count the build reports for the corpus.
-    expect(quads.length).toBe(172);
+    expect(quads.length).toBe(220);
     expect(
       new Store(quads as unknown as ConstructorParameters<typeof Store>[0])
         .size,
-    ).toBe(172);
+    ).toBe(220);
   });
 });
 
@@ -86,6 +89,6 @@ describe("matchQuads", () => {
     expect(titles[0]!.subject.termType).toBe("NamedNode");
 
     const docs = matchQuads(graph, null, RDF_TYPE, `${NS.dockg}Document`);
-    expect(docs).toHaveLength(5);
+    expect(docs).toHaveLength(8);
   });
 });
