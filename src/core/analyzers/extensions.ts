@@ -23,4 +23,6 @@ export const DOCUMENT_EXTENSIONS: readonly string[] = [
   ".htm",
   ".dita",
   ".ditamap",
+  ".adoc",
+  ".asciidoc",
 ];

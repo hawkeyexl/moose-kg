@@ -68,19 +68,19 @@ it should not depend on how someone typed the command.
      ```
    </Aside>
 
-   <Aside type="caution" title="dockg reads Markdown, MDX, HTML and DITA">
-     `.md`, `.markdown`, `.mdx`, `.html`, `.htm`, `.dita` and `.ditamap`. A glob that pulls in
-     anything else fails the build rather than ingesting it — AsciiDoc, reStructuredText and
-     generic XML are recognized by name but cannot be read yet:
+   <Aside type="caution" title="Which formats dockg reads">
+     `.md`, `.markdown`, `.mdx`, `.html`, `.htm`, `.dita`, `.ditamap`, `.adoc` and `.asciidoc`. A
+     glob that pulls in anything else fails the build rather than ingesting it —
+     reStructuredText and generic XML are recognized by name but cannot be read yet:
 
      ```
-     dockg: The "asciidoc" input format is not yet implemented (section, cross-reference and image derivation is not implemented yet).
+     dockg: The "rst" input format is not yet implemented (docutils is a Python library with no JavaScript equivalent; a subset parser is planned).
      ```
 
      An extension nothing claims tells you what the alternatives are:
 
      ```
-     dockg: No input format is registered for docs/notes.txt (".txt") — narrow your inputs globs. Supported: .dita, .ditamap, .htm, .html, .markdown, .md, .mdx.
+     dockg: No input format is registered for docs/notes.txt (".txt") — narrow your inputs globs. Supported: .adoc, .asciidoc, .dita, .ditamap, .htm, .html, .markdown, .md, .mdx.
      ```
 
      Both exit `2` and write no graph. Refusing is deliberate: parsing an unknown format as
@@ -225,6 +225,27 @@ starting point, not a failing grade.
 
     If your corpus addresses most of its targets by key, expect the graph to show far fewer edges
     than the corpus has.
+  </Aside>
+</Aside>
+
+<Aside type="note" title="AsciiDoc goes through Asciidoctor">
+  dockg converts each `.adoc` file with Asciidoctor and reads the result. That is not a shortcut:
+  a loaded Asciidoctor document has no inline nodes, so links only exist once conversion has run.
+  Converting also means Asciidoctor — the reference implementation — answers what an `xref` points
+  at and which anchor a section carries, rather than dockg guessing.
+
+  `= Title` becomes a level-1 section, matching a Markdown `# Title`. Anchors are Asciidoctor's
+  own ids: an explicit `[[prereq]]` gives `#prereq`, and a plain `== Verify` gives `#_verify` —
+  underscore included, because that is the anchor a published AsciiDoc site serves.
+
+  Cross-file `xref:configuration.adoc#keys[]` resolves to the **source** file. Asciidoctor
+  normally rewrites that to the `.html` a site would publish; dockg turns that off, or every
+  cross-file xref in your corpus would be reported broken.
+
+  <Aside type="caution" title="include:: is not resolved">
+    Resolving one would make your graph depend on files outside the corpus. dockg runs Asciidoctor
+    in secure mode, so an `include::` contributes nothing — **and is not reported as a broken
+    link**, even though Asciidoctor renders it as one.
   </Aside>
 </Aside>
 

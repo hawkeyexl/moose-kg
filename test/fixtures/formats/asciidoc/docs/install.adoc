@@ -1,0 +1,21 @@
+= Install the SDK
+:type: how-to
+:description: Get the SDK onto a machine.
+
+Everything below assumes a clean machine.
+
+[[prereq]]
+== Prerequisites
+
+Node 24 or later. See xref:configuration.adoc#keys[the keys].
+
+[source,bash]
+----
+npm install sdk
+----
+
+image::images/architecture.png[Architecture]
+
+== Verify
+
+Run link:missing.adoc[the smoke test] and check the output.

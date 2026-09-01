@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "id": "https://example.com/kg/doc/docs/configuration.adoc",
+      "type": "dockg:Document",
+      "title": "Configuration reference",
+      "description": "Every key the SDK reads."
+    },
+    {
+      "id": "https://example.com/kg/doc/docs/configuration.adoc#configuration-reference",
+      "type": "dockg:Section",
+      "title": "Configuration reference",
+      "text": "Configuration reference"
+    },
+    {
+      "id": "https://example.com/kg/doc/docs/configuration.adoc#keys",
+      "type": "dockg:Section",
+      "title": "Keys",
+      "text": "Keys\n\nOne key per line. Set these before you install."
+    },
+    {
+      "id": "https://example.com/kg/doc/docs/install.adoc",
+      "type": "dockg:Document",
+      "title": "Install the SDK",
+      "description": "Get the SDK onto a machine."
+    },
+    {
+      "id": "https://example.com/kg/doc/docs/install.adoc#_verify",
+      "type": "dockg:Section",
+      "title": "Verify",
+      "text": "Verify\n\nRun the smoke test and check the output."
+    },
+    {
+      "id": "https://example.com/kg/doc/docs/install.adoc#install-the-sdk",
+      "type": "dockg:Section",
+      "title": "Install the SDK",
+      "text": "Install the SDK\n\nEverything below assumes a clean machine."
+    },
+    {
+      "id": "https://example.com/kg/doc/docs/install.adoc#prereq",
+      "type": "dockg:Section",
+      "title": "Prerequisites",
+      "text": "Prerequisites\n\nNode 24 or later. See the keys.\nnpm install sdk"
+    }
+  ]
+}

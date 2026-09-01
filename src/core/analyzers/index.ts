@@ -17,6 +17,7 @@
  */
 import { DockgError } from "../../types.js";
 import { byCodeUnit } from "../sort.js";
+import { asciidocAnalyzer } from "./asciidoc.js";
 import { ditaAnalyzer, ditaMapAnalyzer } from "./dita.js";
 import { htmlAnalyzer } from "./html.js";
 import { markdownAnalyzer, mdxAnalyzer } from "./markdown.js";
@@ -66,12 +67,7 @@ export const ANALYZERS: DocAnalyzer[] = [
   htmlAnalyzer,
   ditaAnalyzer,
   ditaMapAnalyzer,
-  createStubAnalyzer(
-    "asciidoc",
-    [".adoc", ".asciidoc"],
-    "text/asciidoc",
-    "section, cross-reference and image derivation is not implemented yet",
-  ),
+  asciidocAnalyzer,
   createStubAnalyzer(
     "rst",
     [".rst"],

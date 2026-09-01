@@ -251,6 +251,8 @@ describe("parseConfig", () => {
           ".htm",
           ".dita",
           ".ditamap",
+          ".adoc",
+          ".asciidoc",
         ],
         indexFiles: ["index", "README"],
       },

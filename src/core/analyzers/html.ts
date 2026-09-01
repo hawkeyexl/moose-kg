@@ -63,20 +63,35 @@ function enclosingHeading(ancestors: readonly Element[]): Element | undefined {
   return undefined;
 }
 
-async function analyzeHtml(
+/** Everything an analyzer derives from a body, minus the page metadata. */
+export type HtmlBody = Omit<AnalyzedBody, "frontmatter" | "frontmatterPresent">;
+
+/**
+ * Derive structure from HTML.
+ *
+ * Exported because AsciiDoc reaches dockg *as* HTML: Asciidoctor is used as an
+ * AsciiDoc-to-HTML front end (ADR 01041), so both formats share one body
+ * extraction rather than two that would drift. Page metadata is the caller's
+ * job, because the two formats carry it in completely different places —
+ * `<meta>` tags versus `:key:` document attributes.
+ */
+export interface HtmlBodyOptions {
+  /**
+   * Drop an anchor before it becomes an edge. Real HTML never needs this;
+   * AsciiDoc does, because Asciidoctor renders an *unresolved* `include::`
+   * directive as `<a class="bare include">` pointing at the include path. That
+   * is not a link the author wrote, and reporting it as a broken one produces
+   * a finding they cannot act on (ADR 01033).
+   */
+  skipLink?: (el: Element) => boolean;
+}
+
+export function analyzeHtmlBody(
   content: string,
   ctx: AnalyzeContext,
-): Promise<AnalyzedBody> {
+  options: HtmlBodyOptions = {},
+): HtmlBody {
   const { path, allPaths, routes } = ctx;
-  const extractor = extractorForExtension(".html");
-  if (!extractor) {
-    // Unreachable with any docmeta that ships an HTML extractor; converted
-    // rather than left to throw a TypeError three frames later.
-    throw new DockgError(
-      `docmeta has no HTML metadata extractor — cannot analyze ${path}.`,
-    );
-  }
-  const meta = extractor.extract(content, path);
 
   const anchors = new HeadingAnchors();
   const builder = new SectionBuilder();
@@ -106,7 +121,7 @@ async function analyzeHtml(
       const heading = enclosingHeading(ancestors);
       const permalink =
         heading !== undefined && isSelfPermalink(el, anchorOf.get(heading));
-      if (href !== undefined && !permalink) {
+      if (href !== undefined && !permalink && options.skipLink?.(el) !== true) {
         const link = classifyLink(path, href, allPaths, routes);
         if (link) links.push(link);
       }
@@ -122,13 +137,31 @@ async function analyzeHtml(
   });
 
   return {
-    frontmatter: meta.data,
-    frontmatterPresent: meta.present,
     firstH1,
     sections: builder.build(),
     links,
     images,
     codeLanguages: [...codeLanguages].sort(),
+  };
+}
+
+async function analyzeHtml(
+  content: string,
+  ctx: AnalyzeContext,
+): Promise<AnalyzedBody> {
+  const extractor = extractorForExtension(".html");
+  if (!extractor) {
+    // Unreachable with any docmeta that ships an HTML extractor; converted
+    // rather than left to throw a TypeError three frames later.
+    throw new DockgError(
+      `docmeta has no HTML metadata extractor — cannot analyze ${ctx.path}.`,
+    );
+  }
+  const meta = extractor.extract(content, ctx.path);
+  return {
+    frontmatter: meta.data,
+    frontmatterPresent: meta.present,
+    ...analyzeHtmlBody(content, ctx),
   };
 }
 

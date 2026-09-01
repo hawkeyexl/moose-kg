@@ -1,0 +1,6 @@
+version: 1
+baseIri: https://example.com/kg/
+inputs:
+  - "docs/**/*.rst"
+provenance:
+  git: false
