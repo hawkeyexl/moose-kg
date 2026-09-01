@@ -13,10 +13,12 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { loadConfig } from "../core/config.js";
 import { compactIri } from "../core/load.js";
+import { type SearchIndexDoc } from "../core/search-index.js";
 import {
-  SEARCH_INDEX_FILENAME,
-  type SearchIndexDoc,
-} from "../core/search-index.js";
+  LOCALIZATIONS_FILENAME,
+  parseLocalizations,
+  type LocalizationEntry,
+} from "../core/localizations.js";
 import { VectorIndexError } from "../core/vector-index.js";
 import { DockgError } from "../types.js";
 import { findEntry } from "../runtime/entry.js";
@@ -38,8 +40,14 @@ export interface SearchOptions {
   config?: string;
   /** Graph .ttl path (default: config `out`) — locates the sibling index. */
   graph?: string;
-  /** Search index path (default: `search.json` beside the graph). */
+  /** Directory holding the indexes and manifest (default: beside the graph). */
   index?: string;
+  /**
+   * Which localization to search (ADR 01038). Optional when the corpus has one;
+   * required when it has more, because picking for the user is how a query gets
+   * answered out of the wrong language.
+   */
+  lang?: string;
   query: string;
   limit?: number;
   /** Vector sidecar path (default: config `embed.out` when it exists). */
@@ -111,17 +119,65 @@ function loadSearchIndex(indexPath: string): {
   };
 }
 
+/**
+ * Pick the localization to search from the manifest (ADR 01038).
+ *
+ * With one language the choice is unambiguous and made silently. With more, an
+ * unspecified `--lang` is a **refusal**, not a default: answering a German
+ * question out of the English index is the failure the fan-out exists to
+ * prevent, and guessing would hide it behind a confident result.
+ */
+function resolveLocalization(
+  indexDir: string,
+  lang: string | undefined,
+): LocalizationEntry {
+  const manifestPath = join(indexDir, LOCALIZATIONS_FILENAME);
+  if (!existsSync(manifestPath)) {
+    throw new DockgError(
+      `Localization manifest not found: ${manifestPath} — run \`dockg export --format search\` first.`,
+    );
+  }
+  const manifest = parseLocalizations(readFileSync(manifestPath, "utf8"));
+  if (!manifest) {
+    throw new DockgError(
+      `Not a dockg localization manifest: ${manifestPath} — re-run \`dockg export --format search\`.`,
+    );
+  }
+  const available = manifest.languages.map((l) => l.language);
+  if (lang !== undefined) {
+    const hit = manifest.languages.find((l) => l.language === lang);
+    if (!hit) {
+      throw new DockgError(
+        `No index for language "${lang}" — this corpus has ${available.join(", ") || "none"}.`,
+      );
+    }
+    return hit;
+  }
+  const only = manifest.languages[0];
+  if (!only) {
+    throw new DockgError(
+      `The localization manifest lists no languages: ${manifestPath} — re-run \`dockg export --format search\`.`,
+    );
+  }
+  if (manifest.languages.length > 1) {
+    throw new DockgError(
+      `This corpus has more than one localization (${available.join(", ")}) — pass --lang to choose one.`,
+    );
+  }
+  return only;
+}
+
 export async function runSearch(opts: SearchOptions): Promise<SearchReport> {
   const cwd = opts.cwd ?? process.cwd();
   const config = loadConfig(opts.config, cwd);
   const graphPath = resolve(cwd, opts.graph ?? config.out);
-  const indexPath = opts.index
-    ? resolve(cwd, opts.index)
-    : join(dirname(graphPath), SEARCH_INDEX_FILENAME);
+  const indexDir = opts.index ? resolve(cwd, opts.index) : dirname(graphPath);
+  const localization = resolveLocalization(indexDir, opts.lang);
+  const indexPath = join(indexDir, localization.search.path);
 
   if (!existsSync(indexPath)) {
     throw new DockgError(
-      `Search index not found: ${indexPath} — run \`dockg export --format search\` first.`,
+      `Search index not found: ${indexPath} — the manifest names it; re-run \`dockg export --format search\`.`,
     );
   }
 
@@ -148,11 +204,20 @@ export async function runSearch(opts: SearchOptions): Promise<SearchReport> {
     opts.mode === "vector" ||
     opts.mode === "hybrid" ||
     (explicitVectors !== undefined && opts.mode !== "lexical");
+  // Default to the sidecar the manifest records for *this* language, so the
+  // pair can never be crossed. An entry with no `vectors` block simply has no
+  // sidecar yet, and the leg stays unavailable.
   const vectorsPath = explicitVectors
     ? resolve(cwd, explicitVectors)
-    : resolve(cwd, config.embed.out);
+    : localization.vectors
+      ? resolve(cwd, config.embed.out, localization.vectors.path)
+      : undefined;
   let vectors: VectorIndex | undefined;
-  if (opts.mode !== "lexical" && existsSync(vectorsPath)) {
+  if (
+    opts.mode !== "lexical" &&
+    vectorsPath !== undefined &&
+    existsSync(vectorsPath)
+  ) {
     try {
       vectors = createVectorIndex(readFileSync(vectorsPath));
     } catch (e) {
@@ -183,8 +248,12 @@ export async function runSearch(opts: SearchOptions): Promise<SearchReport> {
       vectors = undefined;
     }
   } else if (wantsVector) {
+    // Named by the manifest when there is one to name, and by the language
+    // otherwise: "no sidecar for de" is actionable, an undefined path is not.
+    const named =
+      vectorsPath ?? `no sidecar recorded for "${localization.language}"`;
     throw new DockgError(
-      `Vector index not found: ${vectorsPath} — run \`dockg embed\` first, or use \`--mode lexical\`.`,
+      `Vector index not found: ${named} — run \`dockg embed\` first, or use \`--mode lexical\`.`,
     );
   }
 

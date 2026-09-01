@@ -106,8 +106,22 @@ export {
   encodeVectorIndex,
   normalize,
   VectorIndexError,
-  VECTOR_INDEX_FILENAME,
   type VectorIndexDoc,
   type VectorIndexHeader,
 } from "../core/vector-index.js";
 export type { SearchEntry, SearchIndexDoc } from "../core/search-index.js";
+// The localization manifest (ADR 01038) — how a browser learns which locales
+// exist before fetching any of them. Platform-neutral, like everything else
+// here: no `node:` imports, no dependencies.
+export {
+  emitLocalizations,
+  LOCALIZATIONS_FILENAME,
+  parseLocalizations,
+  searchIndexFilename,
+  UNDETERMINED,
+  vectorIndexFilename,
+  type LocalizationEntry,
+  type LocalizationsDoc,
+  type SearchArtifact,
+  type VectorArtifact,
+} from "../core/localizations.js";

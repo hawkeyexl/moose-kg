@@ -28,11 +28,16 @@ import { GraphIndex, findEntry, traverse, assemble } from "@hawkeyexl/dockg/runt
 
 | Export | Purpose |
 |---|---|
-| `createLexicalIndex` | Build the lexical index from `search.json` |
+| `parseLocalizations` | Read `localizations.json` — which languages exist, and their artifacts |
+| `searchIndexFilename`, `vectorIndexFilename`, `LOCALIZATIONS_FILENAME`, `UNDETERMINED` | The per-locale naming rules |
+| `createLexicalIndex` | Build the lexical index from one `search.<lang>.json` |
 | `createVectorIndex`, `decodeVectorIndex`, `encodeVectorIndex` | The vector sidecar |
 | `findEntry` | Rank nodes for a query across the available legs |
 | `rrfMerge` | Reciprocal-rank fusion of the lexical and vector rankings |
 | `searchIndexDigest` | The corpus digest that makes a stale sidecar detectable |
+
+Fetch the manifest first, then load only the localization you need — see
+[localization](/dockg/model/localization/).
 
 ```ts
 interface EntryRankings {

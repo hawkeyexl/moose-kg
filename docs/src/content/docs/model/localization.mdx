@@ -137,13 +137,41 @@ pages of the same corpus do not under-specify the locale, they invent three of t
   an assertion in the graph.
 </Aside>
 
-## What this does not do yet
+## Retrieval follows the label
 
-The label exists in the graph; the retrieval side does not consume it yet. `search.json` and
-`vectors.bin` are still one flat index per corpus, so a query in one language can rank a page in
-another, and the default embedding model is English-only. Per-locale artifacts and a
-language-scoped traversal are the next step —
-see [serve retrieval](/dockg/retrieve/runtime/) for where they will attach.
+The artifacts fan out per locale, so nothing has to rank across the boundary you just declared:
+
+| Artifact | One per |
+|---|---|
+| `kg/search.<lang>.json` | language, `und` for documents declaring none |
+| `kg/vectors.<lang>.bin` | language, embedded with that language's model |
+| `kg/localizations.json` | corpus — the manifest naming them all |
+
+```sh
+dockg search installieren --lang de
+```
+
+On a corpus with one language `--lang` is optional. With more, omitting it **exits 2 and names
+what is available** rather than picking for you — answering out of the wrong language is the
+failure the fan-out exists to prevent.
+
+Set a per-language embedding model where the default does not cover the language:
+
+```yaml title="dockg.config.yaml"
+embed:
+  byLanguage:
+    de:
+      model: onnx-community/multilingual-e5-small
+```
+
+Without it, German text embedded under an English-only model returns confident, meaningless
+vectors and fails nothing — see [embedding models](/dockg/reference/embed-models/).
+
+<Aside type="note" title="No locale fallback">
+  `de-AT` does not fall back to `de`, and a query for one does not search the other. Fallback is
+  an inference about how locales relate, and dockg does not infer. A corpus that wants them
+  searched together labels them the same.
+</Aside>
 
 {/* Doc-detective blocks. `stdio` is the only output field the runShell schema
     accepts — `stdout`/`stderr` are silently dropped (scripts/check-doc-tests.mjs

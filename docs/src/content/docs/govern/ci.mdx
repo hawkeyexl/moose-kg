@@ -112,8 +112,9 @@ dockg build --out /tmp/fresh.ttl && diff kg/graph.ttl /tmp/fresh.ttl
 **Do not commit it.** Build it in CI and in your deploy pipeline. Less review signal, no chance of
 staleness, no merge conflicts on a generated file.
 
-Do **not** commit `kg/vectors.bin` either way — it is a binary that requires a model download to
-regenerate, and it is gitignored by default for that reason.
+Do **not** commit `kg/vectors.<lang>.bin` either way — they are binaries that require a model
+download to regenerate, and they are gitignored by default for that reason. The manifest
+(`kg/localizations.json`) is text and can be committed with the indexes.
 
 ## Verify the gate actually gates
 

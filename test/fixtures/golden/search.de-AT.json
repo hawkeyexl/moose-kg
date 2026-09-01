@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "id": "https://example.com/kg/doc/docs/de/regional.md",
+      "type": "dockg:Document",
+      "title": "Regionale Hinweise"
+    },
+    {
+      "id": "https://example.com/kg/doc/docs/de/regional.md#regionale-hinweise",
+      "type": "dockg:Section",
+      "title": "Regionale Hinweise",
+      "text": "# Regionale Hinweise\n\nDie Seite überschreibt die Sprache der Route (`de`) mit `de-AT`: der\nSeitenschlüssel gewinnt. Ihr `translation-of` zeigt auf eine Datei, die es\nnicht gibt, und wird deshalb zu `dockg:brokenLink` statt zu einer Kante."
+    }
+  ]
+}

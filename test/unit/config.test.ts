@@ -53,7 +53,10 @@ describe("parseConfig", () => {
     // Local embeddings default to granite, configurable (ADR 01020).
     expect(c.embed.model).toContain("granite-embedding-small-english-r2");
     expect(c.embed.dtype).toBe("q8");
-    expect(c.embed.out).toBe("kg/vectors.bin");
+    // A directory since the per-locale fan-out (ADR 01038): one sidecar per
+    // language lands in it, named by its tag.
+    expect(c.embed.out).toBe("kg");
+    expect(c.embed.byLanguage).toEqual({});
     expect(c.embed.cacheDir).toBe(".dockg/embed-cache");
     // iiRDS export defaults: version 1.3, no title/creator (ADR 01017).
     expect(c.export.iirds).toEqual({
@@ -67,15 +70,39 @@ describe("parseConfig", () => {
     // `model` is an open string, not an enum: the documented table is the
     // tested set, not the permitted set, so a newer model needs no release.
     const c = parseConfig(
-      "version: 1\nembed:\n  model: some/brand-new-model\n  dtype: fp32\n  out: v/x.bin\n  cacheDir: .c\n",
+      "version: 1\nembed:\n  model: some/brand-new-model\n  dtype: fp32\n  out: v\n  cacheDir: .c\n  byLanguage:\n    de:\n      model: some/german-model\n",
       "/tmp/dockg.config.yaml",
     );
     expect(c.embed).toEqual({
       model: "some/brand-new-model",
       dtype: "fp32",
-      out: "v/x.bin",
+      out: "v",
       cacheDir: ".c",
+      byLanguage: { de: { model: "some/german-model" } },
     });
+  });
+
+  it("rejects a byLanguage key that is not a language tag", () => {
+    // patternProperties plus additionalProperties: false — a language-keyed map
+    // still fails loudly on a key nobody meant, like every other config object.
+    expect(() =>
+      parseConfig(
+        "version: 1\nembed:\n  byLanguage:\n    German:\n      model: x\n",
+        "/tmp/dockg.config.yaml",
+      ),
+    ).toThrow(/byLanguage/);
+  });
+
+  it("rejects an unknown key inside a byLanguage entry", () => {
+    expect(
+      () =>
+        parseConfig(
+          "version: 1\nembed:\n  byLanguage:\n    de:\n      bogus: 1\n",
+          "/tmp/dockg.config.yaml",
+        ),
+      // The path, which is what Ajv names here — and the part that locates the
+      // mistake: `de` is a legal key, `bogus` inside it is not.
+    ).toThrow(/\/embed\/byLanguage\/de/);
   });
 
   it("rejects unknown embed keys", () => {

@@ -23,7 +23,12 @@ not dockg's, and a figure with no source here is a figure nothing can keep hones
 embed:
   model: onnx-community/granite-embedding-small-english-r2-ONNX
   dtype: q8
-  out: kg/vectors.bin
+  # A directory: one sidecar per language lands in it.
+  out: kg
+  # Per-language overrides, for a corpus the default model does not cover.
+  byLanguage:
+    de:
+      model: onnx-community/multilingual-e5-small
 ```
 
 <Aside type="caution" title="The truncation trap">

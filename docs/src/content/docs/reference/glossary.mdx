@@ -143,5 +143,6 @@ in git.
 
 ## Vector sidecar
 
-`kg/vectors.bin` — the optional embedding artifact beside the graph and search index. Refused rather
-than used when its model, dtype, dimensions, or corpus digest disagree with the index.
+`kg/vectors.<lang>.bin` — the optional embedding artifact beside the graph and that language's
+search index, one per localization. Refused rather than used when its model, dtype, dimensions,
+language, or corpus digest disagree with the index.

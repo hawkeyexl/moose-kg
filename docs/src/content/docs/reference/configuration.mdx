@@ -135,7 +135,8 @@ Section coverage is reported but never gated, so it has no threshold key. See
 |---|---|---|---|
 | `embed.model` | string | `onnx-community/granite-embedding-small-english-r2-ONNX` | Any hub repo id; `mock` for offline. |
 | `embed.dtype` | string | `q8` | Weight quantization. |
-| `embed.out` | string | `kg/vectors.bin` | Gitignored by default — it is a rebuildable binary. |
+| `embed.out` | string | `kg` | **Directory** for the sidecars: one `vectors.<lang>.bin` per language. Gitignored by default — they are rebuildable binaries. |
+| `embed.byLanguage` | map | `{}` | BCP-47 tag → `{model, dtype}`, overriding the defaults for that language. See [localization](/dockg/model/localization/). |
 | `embed.cacheDir` | string | `.dockg/embed-cache` | Keyed on text, model, and dtype. |
 
 Embedding runs locally: no API, no key, no spend, and no corpus text leaves the machine. See

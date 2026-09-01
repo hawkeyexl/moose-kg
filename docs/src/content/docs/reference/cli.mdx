@@ -251,14 +251,19 @@ Rank graph nodes for a text query (needs `export --format search`).
 |---|---|
 | `-c, --config <path>` | Path to `dockg.config.yaml` |
 | `-g, --graph <path>` | Graph `.ttl` path (default: config `out`) |
-| `-i, --index <path>` | Search index path (default: `search.json` beside the graph) |
+| `-i, --index <dir>` | Directory holding the indexes and manifest (default: beside the graph) |
+| `--lang <tag>` | Which localization to search (required when the corpus has more than one) |
 | `--limit <n>` | Maximum results (default 10) |
-| `--vectors <path>` | Vector sidecar path (default: config `embed.out`) |
+| `--vectors <path>` | Vector sidecar path (default: from the manifest) |
 | `--mode <mode>` | Which legs to run: lexical \| vector \| hybrid (default: hybrid when vectors exist) |
 | `-f, --format <format>` | Output format: pretty \| json (default: `"pretty"`) |
 
 A missing embedder degrades to lexical — unless `--mode vector` or `--mode hybrid` was requested
 explicitly, which errors instead.
+
+Retrieval artifacts are per locale ([localization](/dockg/model/localization/)). On a corpus with
+one language `--lang` is optional; with more, omitting it exits `2` and names what is available,
+rather than picking a language for you.
 
 A stale sidecar follows the same rule. Ask for the vector leg — an explicit `--mode vector`,
 `--mode hybrid`, or an explicit `--vectors` path — and a stale sidecar is an error, because you
@@ -306,12 +311,16 @@ Compute local embeddings for the search index (needs @huggingface/transformers).
 |---|---|
 | `-c, --config <path>` | Path to `dockg.config.yaml` |
 | `-g, --graph <path>` | Graph `.ttl` path (default: config `out`) |
-| `-i, --index <path>` | Search index path (default: `search.json` beside the graph) |
-| `-o, --out <path>` | Vector sidecar path (default: config `embed.out`) |
+| `-i, --index <dir>` | Directory holding the indexes and manifest (default: beside the graph) |
+| `-o, --out <dir>` | Directory for the sidecars (default: the index directory) |
 | `--model <id>` | Embedding model id (any id; `mock` for offline runs) |
 | `--dtype <dtype>` | Weight quantization (default q8) |
 | `--no-cache` | Ignore the vector cache |
 | `-f, --format <format>` | Output format: pretty \| json (default: `"pretty"`) |
+
+One sidecar per language in the manifest, each embedded with that language's model
+(`embed.byLanguage`) — see [localization](/dockg/model/localization/). `--model` overrides all of
+them.
 
 Local-only by contract: no API, no key, no spend, and no corpus text leaves the machine.
 `@huggingface/transformers` is an optional peer dependency, so `embed` exits `2` with an install
@@ -329,6 +338,9 @@ Reserialize the built graph into a consumer format (jsonld file, iirds package, 
 | `-g, --graph <path>` | Graph `.ttl` path (default: config `out`) |
 | `-f, --format <format>` | Export format: jsonld \| iirds \| search (default: `"jsonld"`) |
 | `-o, --out <path>` | Output path (default: the graph path with the format's extension) |
+
+For `--format search` the output is a **directory**, not a file: one `search.<lang>.json` per
+language plus `localizations.json`.
 
 <Aside type="caution" title="`-f` means something different here">
   On `export`, `-f/--format` selects the **export format**. On every other command it selects how

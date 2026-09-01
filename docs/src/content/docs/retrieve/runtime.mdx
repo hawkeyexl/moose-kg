@@ -42,7 +42,15 @@ Four stages, each of which you can inspect:
 
 ```ts
 const graph = new GraphIndex(await (await fetch("/kg/graph.ttl")).text());
-const lexical = createLexicalIndex(await (await fetch("/kg/search.json")).json());
+// One index per language (ADR 01038). Fetch the manifest first to learn which
+// localizations exist, then load only the one you want.
+const manifest = parseLocalizations(
+  await (await fetch("/kg/localizations.json")).text(),
+);
+const de = manifest.languages.find((l) => l.language === "de");
+const lexical = createLexicalIndex(
+  await (await fetch(`/kg/${de.search.path}`)).json(),
+);
 
 const entry = findEntry(lexical, "reset the interlock", { limit: 5 });
 

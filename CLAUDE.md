@@ -196,11 +196,15 @@ key, CLI flag, output shape) also needs:
   case for case). A negative that passes for the wrong reason is a silent hole, so assert *which*
   key the rejection names, not merely that one happened.
 
-Changing the corpus fixture invalidates **six** byte-exact goldens under `test/fixtures/golden/` —
-`graph.ttl`, `graph.jsonld`, `metadata.rdf`, `search.json`, `traverse.json`, `vectors.bin` — plus
-the doc/triple counts asserted across `build`, `validate`, `query-stats` and `runtime-sparql`. All
-six are regenerable from the built CLI (`vectors.bin` via `dockg embed --model mock --no-cache`, so
-the optional `@huggingface/transformers` peer is not needed). Note `dockg stats --check` exits `1`
+Changing the corpus fixture invalidates every byte-exact golden under `test/fixtures/golden/` —
+`graph.ttl`, `graph.jsonld`, `metadata.rdf`, `traverse.json`, `localizations.json`, and one
+`search.<lang>.json` plus one `vectors.<lang>.bin` **per language in the corpus** (ADR 01038) —
+plus the doc/triple counts asserted across `build`, `validate`, `query-stats` and
+`runtime-sparql`. All are regenerable from the built CLI: `export --format search` writes the
+indexes and the manifest into a directory, then `dockg embed --model mock --no-cache` writes the
+sidecars and fills in the manifest's `vectors` blocks, so the optional
+`@huggingface/transformers` peer is not needed. Adding a *language* to the fixture therefore adds
+two goldens, not one. Note `dockg stats --check` exits `1`
 on this fixture by design: it carries a deliberate broken link and a broken section ref.
 
 ## Documentation impact (required)
