@@ -658,7 +658,7 @@ Markdown file they could add
   at and never compares. Closing that is the natural companion to the staleness refusal
   `vectors.bin` already has, and it is unscheduled.
 
-## Phase 8e — Localization
+## Phase 8e — Localization — **done**
 
 **Goal:** a translated corpus is a first-class corpus — every page labelled with its language,
 every translation linked to its source, and retrieval that honors the boundary.
@@ -715,6 +715,25 @@ manifest, and the per-language models above; **(4) runtime + CLI** — `dcterms:
 
 Placed before Phase 9 deliberately: `retrieve` should orchestrate over a language-aware runtime
 rather than have one retrofitted underneath it.
+
+Delivered across four slices: `routes[].language` with the frontmatter override and the
+`translation-of` key; `shapes/dockg-1.0.0.ttl` (the first three-segment version file) with the
+BCP-47 pattern and the two schema.org predicates on the closed Document shape; the three
+localization keys added to ADR 01028's near-miss surface, which had never covered `lang`;
+per-language coverage tables and the untranslated backlog; the per-locale artifacts with their
+manifest and per-language models; and `dcterms:language` in the `scopeExclusion` table with
+`--lang` on `search` and `traverse`. The corpus fixture gained `docs/de/` and `docs/fr/` trees
+covering every permutation, and the golden inventory grew from six files to eleven.
+
+Two things found while building it, both recorded where they belong rather than here: the
+`und` bucket means a corpus that has adopted the label only partway still indexes cleanly, and
+`stats`'s orphan metric counts translations as orphans — correctly, since it is defined over
+`dcterms:references` and a translation edge is not one.
+
+Out of scope and worth naming: **language-tagged literals**. `dcterms:language` says what
+language a document is in; it does not make `dcterms:title` a `"Erste Schritte"@de`. That is a
+question about what the graph *says* rather than what it is scoped to, and it would touch the
+emitter, the goldens, and every consumer's literal handling at once.
 
 ## Phase 9 — `retrieve` + MCP serving
 
