@@ -17,8 +17,8 @@ function html(body: string, head = ""): string {
 }
 
 describe("HTML sections", () => {
-  it("derives levels, order and parents from h1–h6", () => {
-    const doc = analyzeDoc(
+  it("derives levels, order and parents from h1–h6", async () => {
+    const doc = await analyzeDoc(
       html(`
         <h1>Install</h1>
         <h2>Prerequisites</h2>
@@ -60,8 +60,8 @@ describe("HTML sections", () => {
     ]);
   });
 
-  it("prefers the heading's own id over a slugged title", () => {
-    const doc = analyzeDoc(
+  it("prefers the heading's own id over a slugged title", async () => {
+    const doc = await analyzeDoc(
       html(`<h2 id="install-the-sdk">Install the SDK, quickly</h2>`),
       "docs/a.html",
       NO_PATHS,
@@ -72,8 +72,8 @@ describe("HTML sections", () => {
     });
   });
 
-  it("falls back to an enclosing section's id (the Sphinx shape)", () => {
-    const doc = analyzeDoc(
+  it("falls back to an enclosing section's id (the Sphinx shape)", async () => {
+    const doc = await analyzeDoc(
       html(`
         <section id="install-the-sdk">
           <h1>Install the SDK</h1>
@@ -92,8 +92,8 @@ describe("HTML sections", () => {
     ]);
   });
 
-  it("slugs the title when nothing carries an id", () => {
-    const doc = analyzeDoc(
+  it("slugs the title when nothing carries an id", async () => {
+    const doc = await analyzeDoc(
       html(`<h1>Install the SDK</h1>`),
       "docs/a.html",
       NO_PATHS,
@@ -101,8 +101,8 @@ describe("HTML sections", () => {
     expect(doc.sections[0]!.slug).toBe("install-the-sdk");
   });
 
-  it("disambiguates repeated ids and titles alike", () => {
-    const doc = analyzeDoc(
+  it("disambiguates repeated ids and titles alike", async () => {
+    const doc = await analyzeDoc(
       html(`<h2 id="x">One</h2><h2 id="x">Two</h2><h2>One</h2>`),
       "docs/a.html",
       NO_PATHS,
@@ -110,8 +110,8 @@ describe("HTML sections", () => {
     expect(doc.sections.map((s) => s.slug)).toEqual(["x", "x-1", "one"]);
   });
 
-  it("excludes a heading's own permalink from its text", () => {
-    const doc = analyzeDoc(
+  it("excludes a heading's own permalink from its text", async () => {
+    const doc = await analyzeDoc(
       html(
         `<h1 id="install">Install<a class="headerlink" href="#install">¶</a></h1>`,
       ),
@@ -122,8 +122,8 @@ describe("HTML sections", () => {
     expect(doc.firstH1).toBe("Install");
   });
 
-  it("keeps a real link inside a heading as part of the text", () => {
-    const doc = analyzeDoc(
+  it("keeps a real link inside a heading as part of the text", async () => {
+    const doc = await analyzeDoc(
       html(`<h1 id="a">See <a href="./b.html">the guide</a></h1>`),
       "docs/a.html",
       NO_PATHS,
@@ -131,8 +131,8 @@ describe("HTML sections", () => {
     expect(doc.sections[0]!.title).toBe("See the guide");
   });
 
-  it("collapses whitespace in heading text", () => {
-    const doc = analyzeDoc(
+  it("collapses whitespace in heading text", async () => {
+    const doc = await analyzeDoc(
       html(`<h1>\n  Install   the\n  SDK\n</h1>`),
       "docs/a.html",
       NO_PATHS,
@@ -142,8 +142,8 @@ describe("HTML sections", () => {
 });
 
 describe("HTML links", () => {
-  it("reads hyperlink elements and resolves them against the corpus", () => {
-    const doc = analyzeDoc(
+  it("reads hyperlink elements and resolves them against the corpus", async () => {
+    const doc = await analyzeDoc(
       html(
         `<a href="./b.html">b</a>
          <a href="./missing.html">gone</a>
@@ -164,8 +164,8 @@ describe("HTML links", () => {
     ]);
   });
 
-  it("reads an area's href, since it is a hyperlink element too", () => {
-    const doc = analyzeDoc(
+  it("reads an area's href, since it is a hyperlink element too", async () => {
+    const doc = await analyzeDoc(
       html(`<map><area href="./b.html" /></map>`),
       "docs/a.html",
       new Set(["docs/a.html", "docs/b.html"]),
@@ -173,8 +173,8 @@ describe("HTML links", () => {
     expect(doc.links).toHaveLength(1);
   });
 
-  it("ignores href on head elements, which reference resources not documents", () => {
-    const doc = analyzeDoc(
+  it("ignores href on head elements, which reference resources not documents", async () => {
+    const doc = await analyzeDoc(
       html(
         `<p>text</p>`,
         `<base href="/docs/" /><link rel="stylesheet" href="./theme.css" /><link rel="canonical" href="./b.html" />`,
@@ -185,8 +185,8 @@ describe("HTML links", () => {
     expect(doc.links).toEqual([]);
   });
 
-  it("carries an anchor through", () => {
-    const doc = analyzeDoc(
+  it("carries an anchor through", async () => {
+    const doc = await analyzeDoc(
       html(`<a href="./b.html#install">b</a>`),
       "docs/a.html",
       new Set(["docs/a.html", "docs/b.html"]),
@@ -200,8 +200,8 @@ describe("HTML links", () => {
 });
 
 describe("HTML images and code", () => {
-  it("reads img src, and nothing else that carries src", () => {
-    const doc = analyzeDoc(
+  it("reads img src, and nothing else that carries src", async () => {
+    const doc = await analyzeDoc(
       html(
         `<img src="./logo.png" />
          <iframe src="https://video.example/x"></iframe>
@@ -215,8 +215,8 @@ describe("HTML images and code", () => {
     ]);
   });
 
-  it("reads an external image as external", () => {
-    const doc = analyzeDoc(
+  it("reads an external image as external", async () => {
+    const doc = await analyzeDoc(
       html(`<img src="https://cdn.example/logo.png" />`),
       "docs/a.html",
       NO_PATHS,
@@ -224,8 +224,8 @@ describe("HTML images and code", () => {
     expect(doc.images[0]).toMatchObject({ external: true });
   });
 
-  it("reads code languages from language- and lang- classes", () => {
-    const doc = analyzeDoc(
+  it("reads code languages from language- and lang- classes", async () => {
+    const doc = await analyzeDoc(
       html(
         `<pre><code class="language-ts">x</code></pre>
          <pre><code class="lang-bash">y</code></pre>
@@ -240,8 +240,8 @@ describe("HTML images and code", () => {
 });
 
 describe("HTML metadata", () => {
-  it("reads title and meta tags through docmeta's extractor", () => {
-    const doc = analyzeDoc(
+  it("reads title and meta tags through docmeta's extractor", async () => {
+    const doc = await analyzeDoc(
       html(
         `<h1>Heading</h1>`,
         `<title>Install the SDK</title><meta name="type" content="how-to" />`,
@@ -256,8 +256,8 @@ describe("HTML metadata", () => {
     });
   });
 
-  it("recovers from malformed markup rather than throwing", () => {
-    const doc = analyzeDoc(
+  it("recovers from malformed markup rather than throwing", async () => {
+    const doc = await analyzeDoc(
       `<html><body><h1>Open<p>Unclosed<a href="./b.html">x</body>`,
       "docs/a.html",
       new Set(["docs/a.html", "docs/b.html"]),

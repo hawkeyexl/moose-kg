@@ -89,7 +89,10 @@ function metadataOf(
   return { data, present: meta.present };
 }
 
-function analyzeTopic(content: string, ctx: AnalyzeContext): AnalyzedBody {
+async function analyzeTopic(
+  content: string,
+  ctx: AnalyzeContext,
+): Promise<AnalyzedBody> {
   const { path, allPaths, routes } = ctx;
   const root = parseXml(content, path);
   const meta = metadataOf(content, path, root);
@@ -167,7 +170,10 @@ function analyzeTopic(content: string, ctx: AnalyzeContext): AnalyzedBody {
   };
 }
 
-function analyzeMap(content: string, ctx: AnalyzeContext): AnalyzedBody {
+async function analyzeMap(
+  content: string,
+  ctx: AnalyzeContext,
+): Promise<AnalyzedBody> {
   const { path, allPaths, routes } = ctx;
   const root = parseXml(content, path);
   const meta = metadataOf(content, path, root);

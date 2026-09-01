@@ -117,18 +117,18 @@ function runIirds(
  * same thing the iiRDS projection does for renditions — because the graph
  * deliberately carries no prose (ADR 01008/01019).
  */
-function runSearchIndex(
+async function runSearchIndex(
   cwd: string,
   graphPath: string,
   out?: string,
-): ExportResult {
+): Promise<ExportResult> {
   const store = loadGraph(graphPath);
   const graph = GraphIndex.fromQuads(
     storeToQuads(store),
     Object.fromEntries(PREFIXES),
   );
   const warnings: string[] = [];
-  const index = buildSearchIndex(graph, cwd, { warnings });
+  const index = await buildSearchIndex(graph, cwd, { warnings });
 
   // Sibling of the graph, named for what it is: `graph.json` next to
   // `graph.jsonld` would be a trap.

@@ -134,7 +134,7 @@ function render(blocks: Block[]): string {
     .join("\n\n");
 }
 
-export function htmlTextOf(content: string): DocumentText {
+export async function htmlTextOf(content: string): Promise<DocumentText> {
   const blocks = blocksOf(content);
   return {
     body: render(blocks),

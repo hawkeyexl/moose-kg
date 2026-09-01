@@ -35,25 +35,25 @@ const TOPIC = `<?xml version="1.0"?>
 `;
 
 describe("DITA section text", () => {
-  it("keeps the prose either side of an inline element", () => {
-    expect(textOf(TOPIC).sectionOwnText("Prerequisites", 2, 0)).toBe(
+  it("keeps the prose either side of an inline element", async () => {
+    expect((await textOf(TOPIC)).sectionOwnText("Prerequisites", 2, 0)).toBe(
       "Prerequisites\n\nNode 24 or later. See the keys first.\nnpm install sdk",
     );
   });
 
-  it("gives the root topic its own prose, not its subsections'", () => {
-    const text = textOf(TOPIC).sectionOwnText("Install the SDK", 1, 0);
+  it("gives the root topic its own prose, not its subsections'", async () => {
+    const text = (await textOf(TOPIC)).sectionOwnText("Install the SDK", 1, 0);
     expect(text).toBe(
       "Install the SDK\n\nGet the SDK onto a machine.\nEverything below assumes a clean machine.",
     );
     expect(text).not.toContain("Node 24");
   });
 
-  it("finds every section the analyzer minted a node for", () => {
+  it("finds every section the analyzer minted a node for", async () => {
     // The binding contract: the index looks a slice up by the title the
     // analyzer wrote, so every section must resolve.
-    const doc = analyzeDoc(TOPIC, "docs/install.dita", NO_PATHS);
-    const text = textOf(TOPIC);
+    const doc = await analyzeDoc(TOPIC, "docs/install.dita", NO_PATHS);
+    const text = await textOf(TOPIC);
     for (const section of doc.sections) {
       expect(
         text.sectionOwnText(section.title, section.level, 0),
@@ -62,24 +62,26 @@ describe("DITA section text", () => {
     }
   });
 
-  it("omits prolog metadata and index keys", () => {
-    const body = textOf(TOPIC).body;
+  it("omits prolog metadata and index keys", async () => {
+    const body = (await textOf(TOPIC)).body;
     expect(body).not.toContain("how-to");
-    const indexed = textOf(
-      `<topic id="a"><title>A</title><body><p>Real<indexterm>hidden</indexterm></p></body></topic>`,
+    const indexed = (
+      await textOf(
+        `<topic id="a"><title>A</title><body><p>Real<indexterm>hidden</indexterm></p></body></topic>`,
+      )
     ).body;
     expect(indexed).not.toContain("hidden");
     expect(indexed).toContain("Real");
   });
 
-  it("recovers prose, never markup", () => {
-    expect(textOf(TOPIC).body).not.toMatch(/[<>]/);
+  it("recovers prose, never markup", async () => {
+    expect((await textOf(TOPIC)).body).not.toMatch(/[<>]/);
   });
 
-  it("separates block elements it has never seen", () => {
+  it("separates block elements it has never seen", async () => {
     // The inline set is the closed one, so an unfamiliar element ends its line
     // rather than running two sentences together.
-    const text = textOf(
+    const text = await textOf(
       `<topic id="a"><title>A</title><body>
          <customBlock>First.</customBlock><customBlock>Second.</customBlock>
        </body></topic>`,

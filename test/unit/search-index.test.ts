@@ -73,10 +73,13 @@ const SOURCES: Record<string, string> = {
 };
 const readDoc = (path: string): string | undefined => SOURCES[path];
 
-function build(
+async function build(
   overrides: Partial<Parameters<typeof buildSearchIndex>[2]> = {},
 ) {
-  return buildSearchIndex(fixture(), "/nowhere", { readDoc, ...overrides });
+  return await buildSearchIndex(fixture(), "/nowhere", {
+    readDoc,
+    ...overrides,
+  });
 }
 
 function byId(entries: SearchEntry[], id: string): SearchEntry | undefined {
@@ -84,34 +87,34 @@ function byId(entries: SearchEntry[], id: string): SearchEntry | undefined {
 }
 
 describe("buildSearchIndex", () => {
-  it("emits an entry per indexable node type with its compacted type", () => {
-    const { entries } = build();
+  it("emits an entry per indexable node type with its compacted type", async () => {
+    const { entries } = await build();
     expect(byId(entries, DOC)?.type).toBe("dockg:Document");
     expect(byId(entries, SEC_INSTALL)?.type).toBe("dockg:Section");
     expect(byId(entries, CONCEPT)?.type).toBe("skos:Concept");
   });
 
-  it("gives a section its own body slice", () => {
-    const section = byId(build().entries, SEC_INSTALL);
+  it("gives a section its own body slice", async () => {
+    const section = byId((await build()).entries, SEC_INSTALL);
     expect(section?.text).toContain("Run the installer");
     expect(section?.text).toContain(".dockg/cache");
     // The slice stops at the next same-level heading.
     expect(section?.text).not.toContain("Other things");
   });
 
-  it("withholds body text from a document that has sections", () => {
-    const doc = byId(build().entries, DOC);
+  it("withholds body text from a document that has sections", async () => {
+    const doc = byId((await build()).entries, DOC);
     // Otherwise the document shadows every section inside it (granularity rule).
     expect(doc?.text).toBeUndefined();
     expect(doc?.title).toBe("A Document");
     expect(doc?.description).toBe("About installing.");
   });
 
-  it("gives a document with sections the prose before its first heading", () => {
+  it("gives a document with sections the prose before its first heading", async () => {
     // Preamble text belongs to no section, so without this it is indexed
     // nowhere and cannot be found at all.
     const withPreamble = "Orientation prose.\n\n# A\n\n## Install\n\nSteps.\n";
-    const index = buildSearchIndex(fixture(), "/nowhere", {
+    const index = await buildSearchIndex(fixture(), "/nowhere", {
       readDoc: (p) => (p === "docs/a.md" ? withPreamble : SOURCES[p]),
     });
     const doc = byId(index.entries, DOC);
@@ -120,18 +123,18 @@ describe("buildSearchIndex", () => {
     expect(doc?.text).not.toContain("Steps.");
   });
 
-  it("leaves a document with sections textless when it has no preamble", () => {
+  it("leaves a document with sections textless when it has no preamble", async () => {
     // Every corpus document opens with an H1, so this is the common case.
-    expect(byId(build().entries, DOC)?.text).toBeUndefined();
+    expect(byId((await build()).entries, DOC)?.text).toBeUndefined();
   });
 
-  it("gives body text to a document that has no sections", () => {
-    const loose = byId(build().entries, LOOSE);
+  it("gives body text to a document that has no sections", async () => {
+    const loose = byId((await build()).entries, LOOSE);
     expect(loose?.text).toContain("marmalade");
   });
 
-  it("strips frontmatter from a document's body text", () => {
-    const loose = byId(build().entries, LOOSE);
+  it("strips frontmatter from a document's body text", async () => {
+    const loose = byId((await build()).entries, LOOSE);
     // Frontmatter is machinery, not prose: indexed, a query for `alt-labels`
     // would match every sectionless document. Asserted on a token that can
     // only come from frontmatter — `label` alone also matches ordinary prose,
@@ -141,27 +144,27 @@ describe("buildSearchIndex", () => {
     expect(loose?.text?.startsWith("No headings")).toBe(true);
   });
 
-  it("dedupes labels case-insensitively and sorts them", () => {
-    const concept = byId(build().entries, CONCEPT);
+  it("dedupes labels case-insensitively and sorts them", async () => {
+    const concept = byId((await build()).entries, CONCEPT);
     // "Configuration" and "configuration" collapse to one.
     expect(concept?.labels).toBe("Configuration config settings");
     expect(concept?.title).toBe("Configuration");
   });
 
-  it("sorts entries by id", () => {
-    const ids = build().entries.map((e) => e.id);
+  it("sorts entries by id", async () => {
+    const ids = (await build()).entries.map((e) => e.id);
     expect(ids).toEqual([...ids].sort());
   });
 
-  it("omits absent fields rather than emitting undefined", () => {
-    const concept = byId(build().entries, CONCEPT)!;
+  it("omits absent fields rather than emitting undefined", async () => {
+    const concept = byId((await build()).entries, CONCEPT)!;
     expect("text" in concept).toBe(false);
     expect("description" in concept).toBe(false);
   });
 
-  it("warns and indexes without text when a source file is missing", () => {
+  it("warns and indexes without text when a source file is missing", async () => {
     const warnings: string[] = [];
-    const index = buildSearchIndex(fixture(), "/nowhere", {
+    const index = await buildSearchIndex(fixture(), "/nowhere", {
       readDoc: () => undefined,
       warnings,
     });
@@ -171,12 +174,12 @@ describe("buildSearchIndex", () => {
     expect(byId(index.entries, SEC_INSTALL)?.title).toBe("Install");
   });
 
-  it("is byte-identical across two builds", () => {
-    expect(emitSearchIndex(build())).toBe(emitSearchIndex(build()));
+  it("is byte-identical across two builds", async () => {
+    expect(emitSearchIndex(await build())).toBe(emitSearchIndex(await build()));
   });
 
-  it("ends with exactly one trailing newline and is valid JSON", () => {
-    const out = emitSearchIndex(build());
+  it("ends with exactly one trailing newline and is valid JSON", async () => {
+    const out = emitSearchIndex(await build());
     expect(out.endsWith("}\n")).toBe(true);
     expect(out.endsWith("\n\n")).toBe(false);
     expect(() => JSON.parse(out)).not.toThrow();

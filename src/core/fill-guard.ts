@@ -97,13 +97,13 @@ export class FillGuard {
   ) {}
 
   /** Read and analyze the whole corpus once, up front. */
-  static create(
+  static async create(
     files: string[],
     cwd: string,
     config: DockgConfig,
     shapesPaths: string[],
     force: boolean,
-  ): FillGuard {
+  ): Promise<FillGuard> {
     const sources = config.build.derive.filter((s) =>
       GUARD_SOURCES.includes(s),
     );
@@ -118,7 +118,7 @@ export class FillGuard {
     for (const path of files) {
       guard.models.set(
         path,
-        analyzeDoc(
+        await analyzeDoc(
           readFileSync(resolve(cwd, path), "utf8"),
           path,
           guard.allPaths,
@@ -230,7 +230,7 @@ export class FillGuard {
       const applied = applyKgFields(content, path, current, {
         force: this.force,
       });
-      const model = analyzeDoc(applied.content, path, this.allPaths, {
+      const model = await analyzeDoc(applied.content, path, this.allPaths, {
         routes: this.routes,
       });
       const findings = await validateGraph(
@@ -272,10 +272,10 @@ export class FillGuard {
   }
 
   /** Fold an accepted (written or would-be-written) doc into guard state. */
-  commit(path: string, content: string): void {
+  async commit(path: string, content: string): Promise<void> {
     this.models.set(
       path,
-      analyzeDoc(content, path, this.allPaths, { routes: this.routes }),
+      await analyzeDoc(content, path, this.allPaths, { routes: this.routes }),
     );
     this.baselineKeys = null;
   }

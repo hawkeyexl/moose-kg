@@ -35,12 +35,12 @@ export interface AnalyzeOptions {
  * for a parser reason is indistinguishable from a corpus that genuinely has
  * no structure.
  */
-export function analyzeDoc(
+export async function analyzeDoc(
   content: string,
   relPath: string,
   allPaths: ReadonlySet<string>,
   options: AnalyzeOptions = {},
-): DocModel {
+): Promise<DocModel> {
   const path = normalizeDocPath(relPath);
   const ext = extname(path).toLowerCase();
   const analyzer = analyzerForExtension(ext);
@@ -51,7 +51,7 @@ export function analyzeDoc(
       } — narrow your inputs globs. Supported: ${implementedExtensions().join(", ")}.`,
     );
   }
-  const body = analyzer.analyze(content, {
+  const body = await analyzer.analyze(content, {
     path,
     allPaths,
     routes: options.routes ?? [],

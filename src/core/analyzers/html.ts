@@ -63,7 +63,10 @@ function enclosingHeading(ancestors: readonly Element[]): Element | undefined {
   return undefined;
 }
 
-function analyzeHtml(content: string, ctx: AnalyzeContext): AnalyzedBody {
+async function analyzeHtml(
+  content: string,
+  ctx: AnalyzeContext,
+): Promise<AnalyzedBody> {
   const { path, allPaths, routes } = ctx;
   const extractor = extractorForExtension(".html");
   if (!extractor) {

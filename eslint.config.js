@@ -64,5 +64,30 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // Two type-aware rules, enabled for one specific reason (ADR 01040): the
+    // analyzer pipeline is async, and the failure mode of an async pipeline is
+    // a forgotten `await`. TypeScript catches most of them — a `Promise` where
+    // a `DocModel` was expected is a type error — but it says nothing about a
+    // bare statement call like `guard.commit(path, content);`, which silently
+    // does its work after the caller has moved on. That exact line was written
+    // during the conversion and only caught by hand.
+    //
+    // Type-aware linting is slower and needs a program, so it is scoped to
+    // these two rules rather than switching the whole config to
+    // `recommendedTypeChecked` — the bar here is carried by types, tests and
+    // the determinism gate, and lint exists to catch what those miss.
+    files: ["src/**/*.ts", "test/**/*.ts"],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      "@typescript-eslint/no-floating-promises": "error",
+      "@typescript-eslint/no-misused-promises": "error",
+    },
+  },
   prettier,
 );

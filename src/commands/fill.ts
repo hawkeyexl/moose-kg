@@ -330,7 +330,7 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
   ];
   const guard =
     !opts.noValidateGraph && config.fill.validateGraph
-      ? FillGuard.create(
+      ? await FillGuard.create(
           guardFiles,
           cwd,
           config,
@@ -431,8 +431,8 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
     // checking outside the cache-miss branch — but a sections-off run that hits
     // the cache should not pay for a full markdown parse it never reads.
     let docModel: DocModel | undefined;
-    const doc = (): DocModel =>
-      (docModel ??= analyzeDoc(content, path, allPaths, {
+    const doc = async (): Promise<DocModel> =>
+      (docModel ??= await analyzeDoc(content, path, allPaths, {
         routes: config.routes,
       }));
 
@@ -448,7 +448,7 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
       const run = await completeValidatedJSON<Record<string, unknown>>({
         provider: getProvider(),
         system: SYSTEM_PROMPT,
-        user: buildUserPrompt(doc(), content, missing, {
+        user: buildUserPrompt(await doc(), content, missing, {
           sections: withSections,
         }),
         schema: proposalSchema(missing, { sections: sectionFields }),
@@ -483,7 +483,7 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
     // fields (ADR 01032).
     const unknownSlugs: string[] = [];
     if (withSections) {
-      const realSlugs = new Set(doc().sections.map((s) => s.slug));
+      const realSlugs = new Set((await doc()).sections.map((s) => s.slug));
       for (const entry of Array.isArray(proposal["sections"])
         ? (proposal["sections"] as Array<Record<string, unknown>>)
         : []) {
@@ -668,7 +668,7 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
     if (!opts.dryRun) writeFileSync(absPath, applied.content, "utf8");
     // Fold the accepted result into the guard even on --dry-run, so the dry
     // run predicts exactly what a real run would accept and reject.
-    guard?.commit(path, applied.content);
+    await guard?.commit(path, applied.content);
     return {
       path,
       status: opts.dryRun ? "proposed" : "filled",

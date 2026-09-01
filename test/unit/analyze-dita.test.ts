@@ -42,8 +42,8 @@ const CORPUS = new Set([
 ]);
 
 describe("DITA topics", () => {
-  it("makes the root topic a level-1 section and nests by depth", () => {
-    const doc = analyzeDoc(TOPIC, "docs/install.dita", CORPUS);
+  it("makes the root topic a level-1 section and nests by depth", async () => {
+    const doc = await analyzeDoc(TOPIC, "docs/install.dita", CORPUS);
     expect(doc.sections).toEqual([
       {
         slug: "install",
@@ -69,8 +69,8 @@ describe("DITA topics", () => {
     ]);
   });
 
-  it("nests a subtopic one level below its parent", () => {
-    const doc = analyzeDoc(
+  it("nests a subtopic one level below its parent", async () => {
+    const doc = await analyzeDoc(
       `<topic id="a"><title>A</title><body/>
          <topic id="b"><title>B</title><body>
            <section id="c"><title>C</title></section>
@@ -86,8 +86,8 @@ describe("DITA topics", () => {
     ]);
   });
 
-  it("supplies title and description the derive layer can read", () => {
-    const doc = analyzeDoc(TOPIC, "docs/install.dita", CORPUS);
+  it("supplies title and description the derive layer can read", async () => {
+    const doc = await analyzeDoc(TOPIC, "docs/install.dita", CORPUS);
     expect(doc.firstH1).toBe("Install the SDK");
     expect(doc.frontmatter.title).toBe("Install the SDK");
     expect(doc.frontmatter.description).toBe("Get the SDK onto a machine.");
@@ -95,8 +95,8 @@ describe("DITA topics", () => {
     expect(doc.frontmatter.type).toBe("how-to");
   });
 
-  it("resolves an xref, taking the element id as the anchor", () => {
-    const doc = analyzeDoc(TOPIC, "docs/install.dita", CORPUS);
+  it("resolves an xref, taking the element id as the anchor", async () => {
+    const doc = await analyzeDoc(TOPIC, "docs/install.dita", CORPUS);
     expect(doc.links).toEqual([
       {
         raw: "configuration.dita#configuration/keys",
@@ -114,8 +114,8 @@ describe("DITA topics", () => {
     ]);
   });
 
-  it("takes a bare topic-id fragment as the anchor", () => {
-    const doc = analyzeDoc(
+  it("takes a bare topic-id fragment as the anchor", async () => {
+    const doc = await analyzeDoc(
       `<topic id="a"><title>A</title><body>
          <p><xref href="configuration.dita#configuration">c</xref></p>
        </body></topic>`,
@@ -125,8 +125,8 @@ describe("DITA topics", () => {
     expect(doc.links[0]).toMatchObject({ anchor: "configuration" });
   });
 
-  it("reads images and code languages", () => {
-    const doc = analyzeDoc(TOPIC, "docs/install.dita", CORPUS);
+  it("reads images and code languages", async () => {
+    const doc = await analyzeDoc(TOPIC, "docs/install.dita", CORPUS);
     expect(doc.images).toEqual([
       {
         raw: "images/architecture.png",
@@ -137,10 +137,10 @@ describe("DITA topics", () => {
     expect(doc.codeLanguages).toEqual(["bash"]);
   });
 
-  it("recognizes specialized elements by @class", () => {
+  it("recognizes specialized elements by @class", async () => {
     // A specialization renames the element but keeps the class ancestry, which
     // is exactly how a DITA processor identifies it.
-    const doc = analyzeDoc(
+    const doc = await analyzeDoc(
       `<myTopic class="- topic/topic " id="a">
          <myTitle class="- topic/title ">A</myTitle>
          <myBody class="- topic/body ">
@@ -157,8 +157,8 @@ describe("DITA topics", () => {
     expect(doc.links).toHaveLength(1);
   });
 
-  it("derives nothing from a keyref, rather than guessing its target", () => {
-    const doc = analyzeDoc(
+  it("derives nothing from a keyref, rather than guessing its target", async () => {
+    const doc = await analyzeDoc(
       `<topic id="a"><title>A</title><body>
          <p><xref keyref="config">c</xref></p>
        </body></topic>`,
@@ -168,8 +168,8 @@ describe("DITA topics", () => {
     expect(doc.links).toEqual([]);
   });
 
-  it("slugs the title when a section carries no id", () => {
-    const doc = analyzeDoc(
+  it("slugs the title when a section carries no id", async () => {
+    const doc = await analyzeDoc(
       `<topic id="a"><title>A</title><body>
          <section><title>No Id Here</title></section>
        </body></topic>`,
@@ -179,10 +179,10 @@ describe("DITA topics", () => {
     expect(doc.sections[1]!.slug).toBe("no-id-here");
   });
 
-  it("fails with an operational error on malformed XML", () => {
-    expect(() =>
+  it("fails with an operational error on malformed XML", async () => {
+    await expect(
       analyzeDoc(`<topic id="a"><title>A</title>`, "docs/a.dita", NO_PATHS),
-    ).toThrow(/docs\/a\.dita/);
+    ).rejects.toThrow(/docs\/a\.dita/);
   });
 });
 
@@ -202,8 +202,8 @@ const MAP = `<?xml version="1.0" encoding="UTF-8"?>
 `;
 
 describe("DITA maps", () => {
-  it("derives links with no sections — a map has no prose", () => {
-    const doc = analyzeDoc(MAP, "docs/sdk.ditamap", CORPUS);
+  it("derives links with no sections — a map has no prose", async () => {
+    const doc = await analyzeDoc(MAP, "docs/sdk.ditamap", CORPUS);
     expect(doc.sections).toEqual([]);
     expect(doc.links.map((l) => l.raw)).toEqual([
       "install.dita",
@@ -214,8 +214,8 @@ describe("DITA maps", () => {
     ]);
   });
 
-  it("takes the map's title, so it is not an untitled node", () => {
-    const doc = analyzeDoc(MAP, "docs/sdk.ditamap", CORPUS);
+  it("takes the map's title, so it is not an untitled node", async () => {
+    const doc = await analyzeDoc(MAP, "docs/sdk.ditamap", CORPUS);
     expect(doc.frontmatter.title).toBe("SDK documentation");
   });
 });

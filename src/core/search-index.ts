@@ -89,7 +89,10 @@ function joinLabels(values: string[]): string | undefined {
  * Doing it here would mean indexing `<div class="md-content">` alongside the
  * prose for every non-Markdown format.
  */
-function textOf(path: string, source: string): DocumentText | undefined {
+async function textOf(
+  path: string,
+  source: string,
+): Promise<DocumentText | undefined> {
   return analyzerForExtension(extname(path).toLowerCase())?.textOf(source);
 }
 
@@ -107,11 +110,11 @@ function entry(
   return out;
 }
 
-export function buildSearchIndex(
+export async function buildSearchIndex(
   graph: GraphIndex,
   cwd: string,
   options: SearchIndexOptions = {},
-): SearchIndexDoc {
+): Promise<SearchIndexDoc> {
   const warnings = options.warnings ?? [];
   const readDoc =
     options.readDoc ??
@@ -151,7 +154,7 @@ export function buildSearchIndex(
     const docText =
       path === undefined || source === undefined
         ? undefined
-        : textOf(path, source);
+        : await textOf(path, source);
     textOfDoc.set(doc, docText);
 
     // Granularity rule: a section owns its slice, so a document with sections

@@ -72,11 +72,11 @@ export interface DocAnalyzer {
    * means propose-only.
    */
   writable: boolean;
-  analyze(content: string, ctx: AnalyzeContext): AnalyzedBody;
+  analyze(content: string, ctx: AnalyzeContext): Promise<AnalyzedBody>;
   /**
    * Recover indexable prose from the source. Required of every implemented
    * analyzer: a format that can be built but not sliced would emit a lexical
    * index full of its own markup, which is worse than no index at all.
    */
-  textOf(content: string): DocumentText;
+  textOf(content: string): Promise<DocumentText>;
 }

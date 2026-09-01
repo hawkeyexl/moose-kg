@@ -80,11 +80,11 @@ function jsxAttributeValue(
   return undefined;
 }
 
-function analyzeMarkdown(
+async function analyzeMarkdown(
   content: string,
   ctx: AnalyzeContext,
   isMdx: boolean,
-): AnalyzedBody {
+): Promise<AnalyzedBody> {
   const { path, allPaths, routes } = ctx;
   const meta = extractFrontmatter(content, "markdown");
   let tree: Root;
@@ -224,7 +224,7 @@ const FRONTMATTER =
  * "\n" so CRLF normalizes there. Only the document-level body needs the
  * explicit strip and newline normalization.
  */
-function markdownTextOf(content: string): DocumentText {
+async function markdownTextOf(content: string): Promise<DocumentText> {
   const body = content.replace(FRONTMATTER, "").replace(/\r\n/g, "\n");
   return {
     body,
