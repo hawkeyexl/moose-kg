@@ -22,6 +22,7 @@ import {
 } from "../core/search-index.js";
 import {
   emitLocalizations,
+  isLanguageTag,
   LOCALIZATIONS_FILENAME,
   searchIndexFilename,
   type LocalizationEntry,
@@ -162,6 +163,18 @@ function runSearchIndex(
 
   const languages: LocalizationEntry[] = [];
   for (const [language, doc] of byLanguage) {
+    // The tag becomes a filename, and `export` does not run SHACL — so a
+    // `dcterms:language` literal reaches this line exactly as the corpus wrote
+    // it. Unchecked, `lang: ../escaped` would put a path segment into
+    // `writeFileSync` and crash with a raw stack trace (exit 1) instead of the
+    // operational error this is (exit 2).
+    if (!isLanguageTag(language)) {
+      throw new DockgError(
+        `Cannot write an index for language "${language}": not a BCP-47 tag. ` +
+          `Fix the \`lang\`/\`language\` frontmatter, or the route's \`language\`, ` +
+          `and rebuild — \`dockg check\` reports which document carries it.`,
+      );
+    }
     const filename = searchIndexFilename(language);
     const serialized = emitSearchIndex(doc);
     writeFileSync(join(outDir, filename), serialized, "utf8");

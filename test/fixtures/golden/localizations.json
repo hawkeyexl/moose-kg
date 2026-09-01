@@ -6,15 +6,15 @@
       "documents": 1,
       "search": {
         "path": "search.de.json",
-        "entries": 3,
-        "digest": "sha256:fd76ee1f2f1d541e9278739be8ef621674818a2cca4d75f86c2681af93a3278d"
+        "entries": 9,
+        "digest": "sha256:1ae93b2381b38ebbf072b2dadc11ad53feba62db6ae1a777470c74427c245240"
       },
       "vectors": {
         "path": "vectors.de.bin",
         "model": "mock",
         "dtype": "q8",
         "dims": 8,
-        "count": 3
+        "count": 9
       }
     },
     {
@@ -22,15 +22,15 @@
       "documents": 1,
       "search": {
         "path": "search.de-AT.json",
-        "entries": 2,
-        "digest": "sha256:caaaab57667b8e178d488ed7efe191199463614238fe2d2221d9f7cb37e828f3"
+        "entries": 8,
+        "digest": "sha256:fde8b47c8be485a49bdcaf228e8e07a8da28b40c7b2d71e5475a20d7770874c9"
       },
       "vectors": {
         "path": "vectors.de-AT.bin",
         "model": "mock",
         "dtype": "q8",
         "dims": 8,
-        "count": 2
+        "count": 8
       }
     },
     {
@@ -38,15 +38,15 @@
       "documents": 1,
       "search": {
         "path": "search.fr.json",
-        "entries": 2,
-        "digest": "sha256:512b3fadfacb8d49e669dec2a39ff52838ee3d0f9932fa1889a6aee992fe08d7"
+        "entries": 8,
+        "digest": "sha256:d029407172c08dc35afaba90908670f07d03d4046c19975e269e6cc2273ad3b1"
       },
       "vectors": {
         "path": "vectors.fr.bin",
         "model": "mock",
         "dtype": "q8",
         "dims": 8,
-        "count": 2
+        "count": 8
       }
     },
     {

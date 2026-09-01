@@ -98,25 +98,38 @@ describe("dockg export --format search (integration)", () => {
     );
   });
 
-  it("partitions every entry into exactly one language", () => {
+  it("files each document exactly once, and every concept everywhere", () => {
     const { dir, manifest } = buildIndexed();
     const doc = JSON.parse(readFileSync(manifest, "utf8")) as {
       languages: Array<{ language: string; search: { path: string } }>;
     };
-    const ids = new Set<string>();
-    let total = 0;
-    for (const { search: s } of doc.languages) {
-      const entries = (
+    const buckets = doc.languages.map(({ language, search: s }) => ({
+      language,
+      entries: (
         JSON.parse(readFileSync(join(dir, s.path), "utf8")) as {
-          entries: Array<{ id: string }>;
+          entries: Array<{ id: string; type: string }>;
         }
-      ).entries;
-      total += entries.length;
-      for (const e of entries) ids.add(e.id);
-    }
-    // No entry is duplicated across buckets, and none is dropped.
-    expect(ids.size).toBe(total);
-    expect(total).toBe(27);
+      ).entries,
+    }));
+
+    // Documents and sections belong to one locale each: nothing duplicated,
+    // nothing dropped.
+    const owned = buckets.flatMap((b) =>
+      b.entries.filter((e) => e.type !== "skos:Concept").map((e) => e.id),
+    );
+    expect(new Set(owned).size).toBe(owned.length);
+    expect(owned.length).toBe(21);
+
+    // Concepts are shared vocabulary, not documents in a language, so every
+    // index carries all of them — otherwise `--lang de` could never return one.
+    const concepts = buckets.map((b) =>
+      b.entries
+        .filter((e) => e.type === "skos:Concept")
+        .map((e) => e.id)
+        .sort(),
+    );
+    for (const set of concepts) expect(set).toEqual(concepts[0]);
+    expect(concepts[0]).toHaveLength(6);
   });
 
   it("is byte-identical across two exports (determinism gate)", () => {
@@ -329,5 +342,87 @@ describe("dockg search (integration)", () => {
     );
     expect(status).toBe(2);
     expect(stdout).toContain("export --format search");
+  });
+});
+
+/**
+ * Regressions from the review of ADR 01038's implementation. Each of these was
+ * a silent wrong answer or a raw stack trace before the fix.
+ */
+describe("dockg search — artifact resolution (review fixes)", () => {
+  it("finds the sidecar the manifest names, wherever the indexes live", () => {
+    // The manifest's `vectors.path` is relative to the manifest. Resolving it
+    // against `config.embed.out` instead made the vector leg vanish silently
+    // for any layout where the two differ — a lexical answer to a hybrid
+    // question, with exit 0.
+    const { graph, dir } = buildIndexed();
+    execFileSync(
+      process.execPath,
+      [cli, "embed", "-g", graph, "--model", "mock", "--no-cache"],
+      { encoding: "utf8", cwd: corpus },
+    );
+    const out = search([
+      "search",
+      "configuration",
+      "-g",
+      graph,
+      "-i",
+      dir,
+      "--lang",
+      "und",
+      "--mode",
+      "hybrid",
+      "-f",
+      "json",
+    ]);
+    expect(out.results.length).toBeGreaterThan(0);
+    expect(out.trace.entry.length).toBeGreaterThan(0);
+  });
+
+  it("exits 2 on a manifest entry that is missing its search block", () => {
+    // A truncated or hand-edited manifest used to crash at
+    // `localization.search.path` with a Node stack trace and exit 1.
+    const { graph } = buildIndexed();
+    const bad = mkdtempSync(join(tmpdir(), "dockg-search-manifest-"));
+    writeFileSync(
+      join(bad, "localizations.json"),
+      JSON.stringify({
+        version: 1,
+        languages: [{ language: "de", documents: 1 }],
+      }),
+      "utf8",
+    );
+    const { status, stdout } = run(
+      ["search", "anything", "-g", graph, "-i", bad],
+      corpus,
+    );
+    expect(status).toBe(2);
+    expect(stdout).toContain("Not a dockg localization manifest");
+  });
+
+  it("refuses a language tag it cannot safely turn into a filename", () => {
+    // `export` does not run SHACL, so the BCP-47 pattern in the shapes never
+    // sees this graph. Unchecked, `lang: ../escaped` reached writeFileSync as
+    // a path segment and crashed with exit 1.
+    const dir = mkdtempSync(join(tmpdir(), "dockg-search-badlang-"));
+    writeFileSync(
+      join(dir, "dockg.config.yaml"),
+      'version: 1\nbaseIri: https://example.com/kg/\ninputs: ["*.md"]\nprovenance:\n  git: false\n',
+    );
+    writeFileSync(
+      join(dir, "a.md"),
+      "---\ntitle: Evil\nlang: ../escaped\n---\n\n# Evil\n",
+    );
+    execFileSync(process.execPath, [cli, "build", "--out", "g.ttl"], {
+      encoding: "utf8",
+      cwd: dir,
+    });
+    const { status, stdout } = run(
+      ["export", "-f", "search", "-g", "g.ttl", "-o", "kg"],
+      dir,
+    );
+    expect(status).toBe(2);
+    expect(stdout).toContain("not a BCP-47 tag");
+    expect(stdout).not.toContain("ENOENT");
   });
 });

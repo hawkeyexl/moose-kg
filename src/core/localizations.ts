@@ -28,6 +28,26 @@ export const LOCALIZATIONS_FILENAME = "localizations.json";
  */
 export const UNDETERMINED = "und";
 
+/**
+ * BCP-47's common shape: language(2-3) + optional script(4) + optional
+ * region(2 alpha or 3 digit) + variants. Accepts de, de-DE, zh-Hans,
+ * zh-Hans-CN, pt-BR and und; rejects English and de_DE.
+ *
+ * The same grammar appears in `config-schema.json` (for `routes[].language` and
+ * `embed.byLanguage`) and in `shapes/dockg-1.0.0.ttl` (for `dcterms:language`).
+ * This copy exists because a tag also becomes a **filename**, and the shapes
+ * only run under `dockg check` — an unvalidated literal from the graph would
+ * otherwise reach `writeFileSync` as a path segment. `test/unit/schema-sync.test.ts`
+ * pins all three to each other.
+ */
+export const LANGUAGE_TAG =
+  /^[A-Za-z]{2,3}(-[A-Za-z]{4})?(-([A-Za-z]{2}|[0-9]{3}))?(-([A-Za-z0-9]{5,8}|[0-9][A-Za-z0-9]{3}))*$/;
+
+/** Whether a string is usable as a language tag — and so as a filename segment. */
+export function isLanguageTag(value: string): boolean {
+  return LANGUAGE_TAG.test(value);
+}
+
 /** Where one language's lexical index lives, and what it holds. */
 export interface SearchArtifact {
   /** Filename, relative to the manifest. */
@@ -85,7 +105,14 @@ export function emitLocalizations(doc: LocalizationsDoc): string {
   return `${JSON.stringify({ version: doc.version, languages }, null, 2)}\n`;
 }
 
-/** Parse and shape-check a manifest. Returns undefined for anything else. */
+/**
+ * Parse and shape-check a manifest. Returns undefined for anything else.
+ *
+ * Every entry is checked, not just the envelope: callers reach straight for
+ * `entry.search.path`, and a truncated or hand-edited file would otherwise
+ * dereference `undefined` and surface as a raw TypeError with exit 1 rather
+ * than the operational error (exit 2) an unreadable artifact owes.
+ */
 export function parseLocalizations(text: string): LocalizationsDoc | undefined {
   let parsed: unknown;
   try {
@@ -96,6 +123,23 @@ export function parseLocalizations(text: string): LocalizationsDoc | undefined {
   const doc = parsed as LocalizationsDoc | null;
   if (!doc || doc.version !== 1 || !Array.isArray(doc.languages)) {
     return undefined;
+  }
+  for (const entry of doc.languages) {
+    if (
+      !entry ||
+      typeof entry.language !== "string" ||
+      typeof entry.documents !== "number" ||
+      !entry.search ||
+      typeof entry.search.path !== "string" ||
+      typeof entry.search.digest !== "string"
+    ) {
+      return undefined;
+    }
+    // A path from the manifest is joined onto a directory, so it is checked
+    // like any other untrusted path segment.
+    if (entry.vectors && typeof entry.vectors.path !== "string") {
+      return undefined;
+    }
   }
   return doc;
 }

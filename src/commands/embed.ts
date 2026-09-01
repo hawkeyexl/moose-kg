@@ -16,7 +16,7 @@
  */
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import { loadConfig } from "../core/config.js";
 import { type SearchEntry, type SearchIndexDoc } from "../core/search-index.js";
 import {
@@ -264,6 +264,11 @@ export async function runEmbed(opts: EmbedOptions = {}): Promise<EmbedReport> {
 
     const filename = vectorIndexFilename(entry.language);
     const outPath = join(outDir, filename);
+    // What the manifest records is relative to the manifest, not to wherever
+    // `-o` happened to point — so a sidecar written outside the index
+    // directory is still findable from the file that names it. Forward slashes
+    // because this is a JSON artifact a browser resolves against a URL.
+    const manifestRelative = relative(indexDir, outPath).split(sep).join("/");
     writeFileSync(
       outPath,
       encodeVectorIndex(vectors, {
@@ -287,7 +292,7 @@ export async function runEmbed(opts: EmbedOptions = {}): Promise<EmbedReport> {
     updated.push({
       ...entry,
       vectors: {
-        path: filename,
+        path: manifestRelative,
         model: identity.model,
         dtype: identity.dtype,
         dims,

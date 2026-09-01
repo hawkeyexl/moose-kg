@@ -207,10 +207,15 @@ export async function runSearch(opts: SearchOptions): Promise<SearchReport> {
   // Default to the sidecar the manifest records for *this* language, so the
   // pair can never be crossed. An entry with no `vectors` block simply has no
   // sidecar yet, and the leg stays unavailable.
+  //
+  // Resolved against the manifest's own directory, because that is what
+  // `vectors.path` is relative to. Resolving it against `config.embed.out`
+  // instead made the vector leg silently vanish for any layout where the two
+  // differ — a lexical answer to a question that asked for both.
   const vectorsPath = explicitVectors
     ? resolve(cwd, explicitVectors)
     : localization.vectors
-      ? resolve(cwd, config.embed.out, localization.vectors.path)
+      ? resolve(indexDir, localization.vectors.path)
       : undefined;
   let vectors: VectorIndex | undefined;
   if (

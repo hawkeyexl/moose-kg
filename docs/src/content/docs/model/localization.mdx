@@ -147,6 +147,10 @@ The artifacts fan out per locale, so nothing has to rank across the boundary you
 | `kg/vectors.<lang>.bin` | language, embedded with that language's model |
 | `kg/localizations.json` | corpus — the manifest naming them all |
 
+Concepts are the exception: they are shared vocabulary rather than documents in a language, so
+**every** index carries all of them. A `--lang de` search can still reach the concepts your German
+pages point at, and a corpus whose documents all declare a language grows no `und` index at all.
+
 ```sh
 dockg search installieren --lang de
 ```
@@ -167,6 +171,35 @@ embed:
 Without it, German text embedded under an English-only model returns confident, meaningless
 vectors and fails nothing — see [embedding models](/dockg/reference/embed-models/).
 
+## Reach a page's translations when it changes
+
+The impact question a localization owner actually has — *what needs re-translating?* — is a
+traversal over the edge you just declared:
+
+```console
+$ dockg traverse <the-english-page> --impact --predicates schema:translationOfWork
+  …/docs/de/getting-started.md — Erste Schritte
+  …/docs/fr/getting-started.md — Premiers pas
+
+2 nodes, 2 hops, 0 excluded
+```
+
+`--lang` scopes it, and the trace names the rule that excluded anything:
+
+```console
+$ dockg traverse <the-english-page> --impact --predicates schema:translationOfWork --lang fr
+  …/docs/fr/getting-started.md — Premiers pas
+
+excluded by scope:
+  …/docs/de/getting-started.md — dcterms:language fr
+
+1 node, 2 hops, 1 excluded
+```
+
+A node that declares **no** language is kept, not excluded — unscoped content applies broadly,
+exactly as it does for [variants](/dockg/model/variants/). A language filter never silently
+empties a corpus that has not adopted the label.
+
 <Aside type="note" title="No locale fallback">
   `de-AT` does not fall back to `de`, and a query for one does not search the other. Fallback is
   an inference about how locales relate, and dockg does not infer. A corpus that wants them
@@ -185,4 +218,6 @@ vectors and fails nothing — see [embedding models](/dockg/reference/embed-mode
 {/* step {"description":"The source carries the inverse edge, so its translations are one lookup.","runShell":{"command":"dockg query -g .tmp/dd/l10n.ttl -p schema:workTranslation","exitCodes":[0],"stdio":"l10n/en/install.md> schema:workTranslation"}} */}
 {/* step {"description":"A graph whose language is a name rather than a tag builds.","runShell":{"command":"dockg build -c test/fixtures/dd/l10n-invalid.config.yaml","exitCodes":[0]}} */}
 {/* step {"description":"check rejects it, naming dcterms:language, and exits 1.","runShell":{"command":"dockg check -c test/fixtures/dd/l10n-invalid.config.yaml","exitCodes":[1],"stdio":"dcterms:language"}} */}
+{/* step {"description":"impact over the translation edge reaches every localization of a source.","runShell":{"command":"dockg traverse https://example.com/dd/doc/test/fixtures/dd/l10n/en/install.md -c test/fixtures/dd/l10n.config.yaml --impact --predicates schema:translationOfWork","exitCodes":[0],"stdio":"l10n/de/install.md"}} */}
+{/* step {"description":"--lang scopes the walk, and the trace names the rule that excluded a node.","runShell":{"command":"dockg traverse https://example.com/dd/doc/test/fixtures/dd/l10n/en/install.md -c test/fixtures/dd/l10n.config.yaml --impact --predicates schema:translationOfWork --lang fr","exitCodes":[0],"stdio":"dcterms:language fr"}} */}
 {/* test end */}

@@ -66,13 +66,28 @@ in **`und`** — BCP-47's tag for undetermined, so it is a real tag that sorts, 
 file like any other, rather than a dockg invention consumers have to learn.
 
 Sections take their document's language. That is containment, not inference: a section is part of
-exactly one document and has no language of its own. Every entry lands in exactly one index and
-none is dropped, which the partition test asserts by counting.
+exactly one document and has no language of its own. Every document and section lands in exactly
+one index and none is dropped, which the partition test asserts by counting.
+
+**Concepts are the exception, and belong to every locale.** A `skos:Concept` is shared vocabulary
+minted from labels across the corpus, not a document written in some language, so each language's
+index carries all of them. Filing them under `und` instead — the first implementation — had two
+visible costs, both caught in review: `--lang de` could never return a concept, and a corpus whose
+every document declared a language still grew a **phantom `und` localization** holding nothing but
+concepts, which then made `dockg search` demand `--lang` on what is, to its author, a
+single-language corpus. Replication is also free at build time: the vector cache is keyed on
+text + model + dtype, so a concept is embedded once however many locales carry it.
 
 Option 2 was rejected because it solves the ranking problem and none of the others: the browser
 still downloads every locale, and one model still has to serve every language. Option 3 was
 rejected because data-dependent filenames make every consuming script conditional on a fact it
 cannot know in advance.
+
+A language tag becomes a **filename**, so `export` refuses one that is not a BCP-47 tag rather
+than passing it to `writeFileSync`. The shapes already constrain `dcterms:language`, but only
+`dockg check` runs them — `export` reads whatever the graph says, and an unvalidated literal is a
+path segment. The grammar therefore lives in three places (config schema, shapes, and
+`LANGUAGE_TAG` in `localizations.ts`), pinned to each other by a drift guard.
 
 **Discovery: option A.** `kg/localizations.json` lists each language with its document count, its
 index's path/entry-count/digest, and — once `dockg embed` has run — its sidecar's path, model,
@@ -141,6 +156,14 @@ runtime invariant 4 (ADR 01018) applied at the entry point.
 - `test/unit/vector-index.test.ts`: the language round-trips, and a version-1 sidecar is refused.
 - `test/unit/config.test.ts`: `byLanguage` parses, a non-tag key is rejected, and an unknown key
   inside an entry is rejected by path.
+- `test/unit/localizations.test.ts`: the manifest ladder — what `parseLocalizations` accepts, and
+  ten shapes it must refuse rather than hand on, including the entry-without-a-`search`-block that
+  otherwise reaches a caller as a raw TypeError; plus the tag grammar's positives and the
+  filename-unsafe negatives (`../escaped`, `a/b`).
+- `test/unit/search-index.test.ts`: a concept lands in every bucket, and a corpus whose documents
+  all declare a language grows no `und` bucket at all.
+- `test/unit/schema-sync.test.ts`: the BCP-47 pattern is identical in the config schema, the
+  bundled shapes, and `LANGUAGE_TAG` — verified to fail when any one of them is edited.
 
 ## Pros and Cons of the Options
 

@@ -239,8 +239,15 @@ export function emitSearchIndex(doc: SearchIndexDoc): string {
  * A document's language is the `dcterms:language` it carries; a **section takes
  * its document's**, which is containment rather than inference — a section is
  * part of exactly one document and has no language of its own. A document
- * declaring none lands in the `und` bucket, so every entry is in exactly one
- * index and nothing is silently dropped.
+ * declaring none lands in the `und` bucket.
+ *
+ * **Concepts belong to every locale.** A `skos:Concept` is shared vocabulary
+ * minted from labels across the corpus, not a document in some language, so it
+ * is replicated into each language's index rather than filed under `und`. Doing
+ * otherwise had two visible costs: `--lang de` could never return a concept,
+ * and a corpus whose every document declared a language still grew a phantom
+ * `und` localization holding only concepts — which then made `dockg search`
+ * demand `--lang` on what is, to its author, a single-language corpus.
  *
  * Entry order inside each index is preserved, so each one is sorted for the
  * same reason the whole index was.
@@ -249,18 +256,39 @@ export function partitionByLanguage(
   graph: GraphIndex,
   index: SearchIndexDoc,
 ): Map<string, SearchIndexDoc> {
-  const languageOf = (iri: string): string => {
-    const hash = iri.indexOf("#");
-    const doc = hash === -1 ? iri : iri.slice(0, hash);
+  const documentType = compactIri(DOCKG_DOCUMENT);
+  const sectionType = compactIri(DOCKG_SECTION);
+
+  /** The language of an entry, or undefined when it belongs to every locale. */
+  const languageOf = (entry: SearchEntry): string | undefined => {
+    if (entry.type !== documentType && entry.type !== sectionType) {
+      return undefined;
+    }
+    const hash = entry.id.indexOf("#");
+    const doc = hash === -1 ? entry.id : entry.id.slice(0, hash);
     return graph.literal(doc, DCTERMS_LANGUAGE) ?? UNDETERMINED;
   };
 
   const out = new Map<string, SearchIndexDoc>();
+  const shared: SearchEntry[] = [];
   for (const entry of index.entries) {
-    const language = languageOf(entry.id);
+    const language = languageOf(entry);
+    if (language === undefined) {
+      shared.push(entry);
+      continue;
+    }
     const bucket = out.get(language);
     if (bucket) bucket.entries.push(entry);
     else out.set(language, { version: 1, entries: [entry] });
+  }
+
+  // A corpus of nothing but concepts still needs somewhere to put them.
+  if (out.size === 0 && shared.length > 0) {
+    out.set(UNDETERMINED, { version: 1, entries: [] });
+  }
+  for (const bucket of out.values()) {
+    bucket.entries.push(...shared);
+    bucket.entries.sort((a, b) => byCodeUnit(a.id, b.id));
   }
   return out;
 }

@@ -165,14 +165,18 @@ describe("dockg embed (integration)", () => {
       cached: number;
     };
     expect(first.embedded).toBeGreaterThan(0);
-    expect(first.cached).toBe(0);
+    // Not zero: concepts are shared vocabulary and appear in every language's
+    // index (ADR 01038), and the cache is keyed on text+model+dtype — so the
+    // first run already serves each concept's repeats from cache rather than
+    // embedding the same string once per locale. Replication is free.
+    const firstTotal = first.embedded + first.cached;
 
     const second = JSON.parse(run(args, corpus).stdout) as {
       embedded: number;
       cached: number;
     };
     expect(second.embedded).toBe(0);
-    expect(second.cached).toBe(first.embedded);
+    expect(second.cached).toBe(firstTotal);
   });
 
   it("reports the model and dimensions it used", () => {
