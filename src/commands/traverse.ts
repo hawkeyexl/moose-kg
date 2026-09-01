@@ -46,6 +46,8 @@ export interface TraverseOptions {
   variant?: string;
   /** Scope filter: a software subject. */
   subject?: string;
+  /** Scope filter: a BCP-47 language tag, matched exactly (ADR 01037). */
+  lang?: string;
   limit?: number;
   cwd?: string;
 }
@@ -95,6 +97,7 @@ export function runTraverse(opts: TraverseOptions): TraverseReport {
         predicates,
         variant: opts.variant,
         subject: opts.subject,
+        language: opts.lang,
         limit: opts.limit,
       })
     : traverse(graph, {
@@ -104,6 +107,7 @@ export function runTraverse(opts: TraverseOptions): TraverseReport {
         direction,
         variant: opts.variant,
         subject: opts.subject,
+        language: opts.lang,
         limit: opts.limit,
       });
 

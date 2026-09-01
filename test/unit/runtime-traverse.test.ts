@@ -261,3 +261,90 @@ describe("trace completeness (the explainability contract)", () => {
     ]);
   });
 });
+
+/**
+ * Language as a scope dimension (ADR 01037).
+ *
+ * Same table as variants and subjects, one difference: the value is a literal
+ * and there is no negative predicate, because a document has one language and
+ * "not in German" is not a claim anybody makes.
+ */
+describe("scope filtering by language", () => {
+  const DE = `${BASE}doc/de.md`;
+  const EN = `${BASE}doc/en.md`;
+  const NONE = `${BASE}doc/none.md`;
+  const LANGUAGE = `${NS.dcterms}language`;
+
+  const localized = (): GraphIndex =>
+    GraphIndex.fromQuads([
+      { s: DE, p: RDF_TYPE, o: { kind: "iri", value: `${NS.dockg}Document` } },
+      { s: DE, p: LANGUAGE, o: { kind: "literal", value: "de" } },
+      { s: DE, p: REFERENCES, o: { kind: "iri", value: EN } },
+      { s: EN, p: RDF_TYPE, o: { kind: "iri", value: `${NS.dockg}Document` } },
+      { s: EN, p: LANGUAGE, o: { kind: "literal", value: "en" } },
+      { s: EN, p: REFERENCES, o: { kind: "iri", value: NONE } },
+      {
+        s: NONE,
+        p: RDF_TYPE,
+        o: { kind: "iri", value: `${NS.dockg}Document` },
+      },
+    ]);
+
+  it("keeps a node in the requested language", () => {
+    expect(scopeExclusion(localized(), DE, { language: "de" })).toBeUndefined();
+  });
+
+  it("excludes a node that declares a different language", () => {
+    const hit = scopeExclusion(localized(), EN, { language: "de" });
+    expect(hit).toEqual({ node: EN, rule: LANGUAGE, value: "de" });
+  });
+
+  it("keeps a node that declares no language at all", () => {
+    // Consistent with variants: an unscoped node applies broadly, and absence
+    // means unknown rather than excluded (ADR 01014).
+    expect(
+      scopeExclusion(localized(), NONE, { language: "de" }),
+    ).toBeUndefined();
+  });
+
+  it("matches the tag exactly — de-AT is not de", () => {
+    const graph = GraphIndex.fromQuads([
+      { s: DE, p: RDF_TYPE, o: { kind: "iri", value: `${NS.dockg}Document` } },
+      { s: DE, p: LANGUAGE, o: { kind: "literal", value: "de-AT" } },
+    ]);
+    expect(scopeExclusion(graph, DE, { language: "de" })?.rule).toBe(LANGUAGE);
+  });
+
+  it("stops a traversal at the language boundary, and records why", () => {
+    const result = traverse(localized(), {
+      seeds: [DE],
+      depth: 3,
+      language: "de",
+    });
+    expect(result.nodes.map((n) => n.iri)).toEqual([DE]);
+    expect(result.trace.exclusions).toContainEqual({
+      node: EN,
+      rule: LANGUAGE,
+      value: "de",
+    });
+  });
+
+  it("composes with a variant filter rather than replacing it", () => {
+    const graph = GraphIndex.fromQuads([
+      { s: A, p: RDF_TYPE, o: { kind: "iri", value: `${NS.dockg}Document` } },
+      { s: A, p: LANGUAGE, o: { kind: "literal", value: "de" } },
+      {
+        s: A,
+        p: IIRDS_RELATES_TO_PRODUCT_VARIANT,
+        o: { kind: "iri", value: X300 },
+      },
+    ]);
+    // Right language, wrong variant: still excluded, and the trace names the
+    // variant predicate rather than the language one.
+    const hit = scopeExclusion(graph, A, {
+      language: "de",
+      variantIri: X100,
+    });
+    expect(hit?.rule).toBe(IIRDS_RELATES_TO_PRODUCT_VARIANT);
+  });
+});

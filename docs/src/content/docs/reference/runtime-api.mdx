@@ -61,6 +61,7 @@ interface TraverseOptions {
   limit?: number;
   variant?: string;           // IRI, dcterms:title, or slug
   subject?: string;           // IRI or a kg.about-product-aspect value
+  language?: string;          // BCP-47 tag, matched exactly — no fallback
   includeTypeEdges?: boolean; // default false — see below
   trace?: QueryTrace;
 }
@@ -74,6 +75,12 @@ interface TraverseOptions {
 | `reachedNodes` | Every node the trace records as reached |
 | `resolveVariant`, `resolveSubject` | Resolve a filter input to its IRI |
 | `scopeExclusion` | Why a node was excluded, if it was |
+
+All three scope dimensions compose, and each follows the same rule: a node that
+declares a **different** value is excluded and the trace names the predicate that fired; a node
+that declares **nothing** is kept, because unscoped content applies broadly. `language` alone has
+no negative predicate — a document has one language, so there is nothing for a `dockg:not*` term
+to say. See [localization](/dockg/model/localization/).
 
 <Aside type="caution" title="`includeTypeEdges` almost always stays false">
   Every document shares `dockg:Document`, so following `rdf:type` makes every document reachable

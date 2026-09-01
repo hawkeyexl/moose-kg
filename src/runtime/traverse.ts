@@ -25,6 +25,7 @@ import { createTrace, type QueryTrace, type ScopeExclusion } from "./trace.js";
 
 const DCTERMS_TITLE = `${NS.dcterms}title`;
 const DCTERMS_REFERENCES = `${NS.dcterms}references`;
+const DCTERMS_LANGUAGE = `${NS.dcterms}language`;
 
 export type Direction = "out" | "in" | "both";
 
@@ -33,6 +34,12 @@ export interface ScopeFilter {
   variant?: string;
   /** Software subject: an IRI or a `kg.about-product-aspect` value (e.g. "architecture"). */
   subject?: string;
+  /**
+   * BCP-47 tag (ADR 01037). Matched exactly against `dcterms:language`, with no
+   * fallback: `de-AT` is not `de`, because relatedness between locales is an
+   * inference and this runtime does not infer.
+   */
+  language?: string;
 }
 
 export interface TraverseOptions extends ScopeFilter {
@@ -115,27 +122,38 @@ export function resolveSubject(
 export function scopeExclusion(
   graph: GraphIndex,
   iri: string,
-  scope: { variantIri?: string; subjectIri?: string },
+  scope: { variantIri?: string; subjectIri?: string; language?: string },
 ): ScopeExclusion | undefined {
-  const checks: Array<[string | undefined, string, string]> = [
+  // [target, positive predicate, negative predicate, object kind]. Language
+  // joins the same table with two differences, both deliberate: its objects are
+  // literals, and it has **no negative predicate** — a document has one
+  // language (`sh:maxCount 1`), so "not in German" is not a claim an author
+  // makes and there is nothing for a `dockg:not*` term to express (ADR 01037).
+  const checks: Array<
+    [string | undefined, string, string | undefined, "iri" | "literal"]
+  > = [
     [
       scope.variantIri,
       IIRDS_RELATES_TO_PRODUCT_VARIANT,
       DOCKG_NOT_APPLICABLE_TO_VARIANT,
+      "iri",
     ],
-    [scope.subjectIri, IIRDS_HAS_SUBJECT, DOCKG_NOT_SOFTWARE_SUBJECT],
+    [scope.subjectIri, IIRDS_HAS_SUBJECT, DOCKG_NOT_SOFTWARE_SUBJECT, "iri"],
+    [scope.language, DCTERMS_LANGUAGE, undefined, "literal"],
   ];
-  for (const [target, positive, negative] of checks) {
+  for (const [target, positive, negative, kind] of checks) {
     if (!target) continue;
-    const denied = graph
-      .values(iri, negative)
-      .some((v) => v.kind === "iri" && v.value === target);
-    if (denied) return { node: iri, rule: negative, value: target };
+    if (negative !== undefined) {
+      const denied = graph
+        .values(iri, negative)
+        .some((v) => v.kind === kind && v.value === target);
+      if (denied) return { node: iri, rule: negative, value: target };
+    }
 
     const claimed = graph.values(iri, positive);
     if (claimed.length > 0) {
       const matches = claimed.some(
-        (v) => v.kind === "iri" && v.value === target,
+        (v) => v.kind === kind && v.value === target,
       );
       if (!matches) return { node: iri, rule: positive, value: target };
     }
@@ -162,7 +180,9 @@ export function traverse(
   const subjectIri = options.subject
     ? resolveSubject(graph, options.subject)
     : undefined;
-  const scope = { variantIri, subjectIri };
+  // Language needs no resolution step: the filter value and the graph value are
+  // both BCP-47 tags, matched exactly.
+  const scope = { variantIri, subjectIri, language: options.language };
 
   const excluded = new Set<string>();
   const keep = (iri: string): boolean => {
