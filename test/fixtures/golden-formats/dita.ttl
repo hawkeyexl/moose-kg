@@ -1,0 +1,79 @@
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix dockg: <https://hawkeyexl.github.io/dockg/ns#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix iirds: <http://iirds.tekom.de/iirds#> .
+@prefix iirdsSft: <http://iirds.tekom.de/iirds/domain/software#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix schema: <https://schema.org/> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<https://example.com/kg/activity/build> a prov:Activity ;
+  prov:qualifiedAssociation <https://example.com/kg/activity/build.assoc.dockg> ;
+  prov:used <https://example.com/kg/doc/docs/configuration.dita>, <https://example.com/kg/doc/docs/install.dita>, <https://example.com/kg/doc/docs/sdk.ditamap> ;
+  prov:wasAssociatedWith <https://example.com/kg/agent/software/dockg> .
+
+<https://example.com/kg/activity/build.assoc.dockg> a prov:Association ;
+  prov:agent <https://example.com/kg/agent/software/dockg> ;
+  prov:hadRole dockg:toolRole .
+
+<https://example.com/kg/agent/software/dockg> a prov:SoftwareAgent ;
+  foaf:name "dockg" ;
+  dockg:version "0.1.0" .
+
+<https://example.com/kg/doc/docs/configuration.dita> a prov:Entity, dockg:Document ;
+  dcterms:description "Every key the SDK reads." ;
+  dcterms:hasPart <https://example.com/kg/doc/docs/configuration.dita#configuration> ;
+  dcterms:references <https://example.com/kg/doc/docs/install.dita#prereq> ;
+  dcterms:title "Configuration reference" ;
+  dockg:contentHash "fb0e829198aad3fc40141522f9c6ea17704305f0b5c58176d3f465c1343bc1ea" ;
+  dockg:path "docs/configuration.dita" .
+
+<https://example.com/kg/doc/docs/configuration.dita#configuration> a dockg:Section ;
+  dcterms:hasPart <https://example.com/kg/doc/docs/configuration.dita#keys> ;
+  dcterms:title "Configuration reference" ;
+  dockg:level 1 ;
+  dockg:order 1 .
+
+<https://example.com/kg/doc/docs/configuration.dita#keys> a dockg:Section ;
+  dcterms:title "Keys" ;
+  dockg:level 2 ;
+  dockg:order 1 .
+
+<https://example.com/kg/doc/docs/install.dita> a prov:Entity, dockg:Document ;
+  iirds:has-topic-type iirds:GenericTask ;
+  dcterms:description "Get the SDK onto a machine." ;
+  dcterms:hasPart <https://example.com/kg/doc/docs/install.dita#install> ;
+  dcterms:references <https://example.com/kg/doc/docs/configuration.dita#keys> ;
+  dcterms:title "Install the SDK" ;
+  dockg:brokenLink "missing.dita" ;
+  dockg:codeLanguage "bash" ;
+  dockg:contentHash "06c85a22856d880eca2c577b2ad146e0e06cc0cbd290cb29b8190e46af51a14d" ;
+  dockg:path "docs/install.dita" ;
+  schema:image <https://example.com/kg/file/docs/images/architecture.png> .
+
+<https://example.com/kg/doc/docs/install.dita#install> a dockg:Section ;
+  dcterms:hasPart <https://example.com/kg/doc/docs/install.dita#prereq>, <https://example.com/kg/doc/docs/install.dita#verify> ;
+  dcterms:title "Install the SDK" ;
+  dockg:level 1 ;
+  dockg:order 1 .
+
+<https://example.com/kg/doc/docs/install.dita#prereq> a dockg:Section ;
+  dcterms:title "Prerequisites" ;
+  dockg:level 2 ;
+  dockg:order 1 .
+
+<https://example.com/kg/doc/docs/install.dita#verify> a dockg:Section ;
+  dcterms:title "Verify" ;
+  dockg:level 2 ;
+  dockg:order 2 .
+
+<https://example.com/kg/doc/docs/sdk.ditamap> a prov:Entity, dockg:Document ;
+  dcterms:references <https://example.com/kg/doc/docs/configuration.dita>, <https://example.com/kg/doc/docs/install.dita> ;
+  dcterms:title "SDK documentation" ;
+  dockg:contentHash "279cae0a186e3ad2a43e94680a522c3787f33b330c166f15fa46249d0941ba3c" ;
+  dockg:path "docs/sdk.ditamap" .
+
+<https://example.com/kg/graph> a prov:Entity ;
+  prov:wasGeneratedBy <https://example.com/kg/activity/build> .

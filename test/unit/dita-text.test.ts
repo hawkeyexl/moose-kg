@@ -1,0 +1,89 @@
+/**
+ * DITA → indexable text (ADR 01039).
+ *
+ * The regression this file opens with: prose lives in text nodes on *either
+ * side* of an inline element, so an element-only walk indexes the link text and
+ * throws the sentence around it away. Nothing about the build fails when that
+ * happens — the graph is right and the search results are quietly wrong.
+ */
+import { describe, expect, it } from "vitest";
+import { analyzeDoc } from "../../src/core/analyze.js";
+import { analyzerForExtension } from "../../src/core/analyzers/index.js";
+
+const NO_PATHS = new Set<string>();
+
+function textOf(
+  content: string,
+): ReturnType<NonNullable<ReturnType<typeof analyzerForExtension>>["textOf"]> {
+  return analyzerForExtension(".dita")!.textOf(content);
+}
+
+const TOPIC = `<?xml version="1.0"?>
+<task id="install">
+  <title>Install the SDK</title>
+  <shortdesc>Get the SDK onto a machine.</shortdesc>
+  <prolog><metadata><othermeta name="type" content="how-to"/></metadata></prolog>
+  <taskbody>
+    <context><p>Everything below assumes a clean machine.</p></context>
+    <section id="prereq">
+      <title>Prerequisites</title>
+      <p>Node 24 or later. See <xref href="configuration.dita">the keys</xref> first.</p>
+      <codeblock outputclass="language-bash">npm install sdk</codeblock>
+    </section>
+  </taskbody>
+</task>
+`;
+
+describe("DITA section text", () => {
+  it("keeps the prose either side of an inline element", () => {
+    expect(textOf(TOPIC).sectionOwnText("Prerequisites", 2, 0)).toBe(
+      "Prerequisites\n\nNode 24 or later. See the keys first.\nnpm install sdk",
+    );
+  });
+
+  it("gives the root topic its own prose, not its subsections'", () => {
+    const text = textOf(TOPIC).sectionOwnText("Install the SDK", 1, 0);
+    expect(text).toBe(
+      "Install the SDK\n\nGet the SDK onto a machine.\nEverything below assumes a clean machine.",
+    );
+    expect(text).not.toContain("Node 24");
+  });
+
+  it("finds every section the analyzer minted a node for", () => {
+    // The binding contract: the index looks a slice up by the title the
+    // analyzer wrote, so every section must resolve.
+    const doc = analyzeDoc(TOPIC, "docs/install.dita", NO_PATHS);
+    const text = textOf(TOPIC);
+    for (const section of doc.sections) {
+      expect(
+        text.sectionOwnText(section.title, section.level, 0),
+        section.slug,
+      ).toBeDefined();
+    }
+  });
+
+  it("omits prolog metadata and index keys", () => {
+    const body = textOf(TOPIC).body;
+    expect(body).not.toContain("how-to");
+    const indexed = textOf(
+      `<topic id="a"><title>A</title><body><p>Real<indexterm>hidden</indexterm></p></body></topic>`,
+    ).body;
+    expect(indexed).not.toContain("hidden");
+    expect(indexed).toContain("Real");
+  });
+
+  it("recovers prose, never markup", () => {
+    expect(textOf(TOPIC).body).not.toMatch(/[<>]/);
+  });
+
+  it("separates block elements it has never seen", () => {
+    // The inline set is the closed one, so an unfamiliar element ends its line
+    // rather than running two sentences together.
+    const text = textOf(
+      `<topic id="a"><title>A</title><body>
+         <customBlock>First.</customBlock><customBlock>Second.</customBlock>
+       </body></topic>`,
+    );
+    expect(text.sectionOwnText("A", 1, 0)).toBe("A\n\nFirst.\nSecond.");
+  });
+});

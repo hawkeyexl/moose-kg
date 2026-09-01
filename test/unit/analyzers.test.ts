@@ -35,8 +35,6 @@ describe("analyzer registry", () => {
 
   it("registers the roadmap formats as named, unimplemented analyzers", () => {
     const expected: Record<string, string> = {
-      ".dita": "dita",
-      ".ditamap": "ditamap",
       ".adoc": "asciidoc",
       ".asciidoc": "asciidoc",
       ".rst": "rst",
@@ -56,6 +54,8 @@ describe("analyzer registry", () => {
 
   it("reports only implemented extensions as supported", () => {
     expect(implementedExtensions()).toEqual([
+      ".dita",
+      ".ditamap",
       ".htm",
       ".html",
       ".markdown",

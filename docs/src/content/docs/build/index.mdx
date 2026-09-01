@@ -68,10 +68,10 @@ it should not depend on how someone typed the command.
      ```
    </Aside>
 
-   <Aside type="caution" title="dockg reads Markdown, MDX and HTML">
-     `.md`, `.markdown`, `.mdx`, `.html` and `.htm`. A glob that pulls in anything else fails the
-     build rather than ingesting it — DITA, AsciiDoc, reStructuredText and generic XML are
-     recognized by name but cannot be read yet:
+   <Aside type="caution" title="dockg reads Markdown, MDX, HTML and DITA">
+     `.md`, `.markdown`, `.mdx`, `.html`, `.htm`, `.dita` and `.ditamap`. A glob that pulls in
+     anything else fails the build rather than ingesting it — AsciiDoc, reStructuredText and
+     generic XML are recognized by name but cannot be read yet:
 
      ```
      dockg: The "asciidoc" input format is not yet implemented (section, cross-reference and image derivation is not implemented yet).
@@ -80,7 +80,7 @@ it should not depend on how someone typed the command.
      An extension nothing claims tells you what the alternatives are:
 
      ```
-     dockg: No input format is registered for docs/notes.txt (".txt") — narrow your inputs globs. Supported: .htm, .html, .markdown, .md, .mdx.
+     dockg: No input format is registered for docs/notes.txt (".txt") — narrow your inputs globs. Supported: .dita, .ditamap, .htm, .html, .markdown, .md, .mdx.
      ```
 
      Both exit `2` and write no graph. Refusing is deliberate: parsing an unknown format as
@@ -202,6 +202,30 @@ starting point, not a failing grade.
   `href` is read from `<a>` and `<area>` only — not from `<link rel="stylesheet">` or `<base>`,
   which name resources rather than documents. Reading those would put a broken link on every page
   in the corpus.
+</Aside>
+
+<Aside type="note" title="DITA: topics carry structure, maps carry the graph">
+  A `.dita` topic nests by depth rather than by heading level — the root topic is level 1, a
+  `<section>` or a subtopic inside it is level 2 — because DITA has no `h1`–`h6`. Section anchors
+  come from `@id`, and an `<xref href="config.dita#config/keys">` resolves to the section node
+  dockg minted for `<section id="keys">`.
+
+  A `.ditamap` contributes **references and no sections**: its `<topicref>`s are the corpus's
+  navigation graph, and it has no prose of its own to divide into sections. Page metadata comes
+  from `<othermeta>` and `<shortdesc>`.
+
+  Elements are recognized by their `@class` ancestry, so a specialized document set works — a
+  renamed `<mySection class="- topic/section ">` is still a section. Tag names are the fallback
+  for hand-written DITA that omits `@class`.
+
+  <Aside type="caution" title="Keys and content references are not resolved">
+    `@keyref`, `@conkeyref` and `@conref` are indirections that only a map can resolve, and dockg
+    reads one file at a time. A `<topicref keyref="glossary"/>` therefore derives **no edge** —
+    and no broken-link finding either, since that would blame you for a limitation of dockg's.
+
+    If your corpus addresses most of its targets by key, expect the graph to show far fewer edges
+    than the corpus has.
+  </Aside>
 </Aside>
 
 <Aside type="caution" title="MDX must actually parse">

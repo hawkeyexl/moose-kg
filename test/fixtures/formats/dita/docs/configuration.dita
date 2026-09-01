@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<reference id="configuration" xml:lang="en">
+  <title>Configuration reference</title>
+  <shortdesc>Every key the SDK reads.</shortdesc>
+  <refbody>
+    <section id="keys">
+      <title>Keys</title>
+      <p>One key per line. Set these before you <xref href="install.dita#install/prereq">install</xref>.</p>
+    </section>
+  </refbody>
+</reference>

@@ -17,6 +17,7 @@
  */
 import { DockgError } from "../../types.js";
 import { byCodeUnit } from "../sort.js";
+import { ditaAnalyzer, ditaMapAnalyzer } from "./dita.js";
 import { htmlAnalyzer } from "./html.js";
 import { markdownAnalyzer, mdxAnalyzer } from "./markdown.js";
 import type { DocAnalyzer } from "./types.js";
@@ -63,18 +64,8 @@ export const ANALYZERS: DocAnalyzer[] = [
   markdownAnalyzer,
   mdxAnalyzer,
   htmlAnalyzer,
-  createStubAnalyzer(
-    "dita",
-    [".dita"],
-    "application/dita+xml",
-    "topic, section, xref and image derivation is not implemented yet",
-  ),
-  createStubAnalyzer(
-    "ditamap",
-    [".ditamap"],
-    "application/dita+xml",
-    "topicref derivation is not implemented yet",
-  ),
+  ditaAnalyzer,
+  ditaMapAnalyzer,
   createStubAnalyzer(
     "asciidoc",
     [".adoc", ".asciidoc"],

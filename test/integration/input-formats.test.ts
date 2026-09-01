@@ -56,7 +56,7 @@ describe("dockg build over an unsupported input format", () => {
     // The reader's next action is to fix the glob, so the message has to name
     // the file, its extension, and what the alternatives are.
     expect(stderr).toContain(
-      'No input format is registered for docs/notes.txt (".txt") — narrow your inputs globs. Supported: .htm, .html, .markdown, .md, .mdx.',
+      'No input format is registered for docs/notes.txt (".txt") — narrow your inputs globs. Supported: .dita, .ditamap, .htm, .html, .markdown, .md, .mdx.',
     );
     expect(existsSync(outPath)).toBe(false);
   });

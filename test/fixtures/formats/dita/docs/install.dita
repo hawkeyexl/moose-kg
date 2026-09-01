@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<task id="install" xml:lang="en">
+  <title>Install the SDK</title>
+  <shortdesc>Get the SDK onto a machine.</shortdesc>
+  <prolog>
+    <metadata>
+      <othermeta name="type" content="how-to"/>
+    </metadata>
+  </prolog>
+  <taskbody>
+    <context>
+      <p>Everything below assumes a clean machine.</p>
+    </context>
+    <section id="prereq">
+      <title>Prerequisites</title>
+      <p>Node 24 or later. See <xref href="configuration.dita#configuration/keys">the keys</xref>.</p>
+      <codeblock outputclass="language-bash">npm install sdk</codeblock>
+      <image href="images/architecture.png" alt="Architecture"/>
+    </section>
+    <section>
+      <title>Verify</title>
+      <p>Run <xref href="missing.dita">the smoke test</xref> and check the output.</p>
+    </section>
+  </taskbody>
+</task>

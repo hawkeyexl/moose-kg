@@ -21,4 +21,6 @@ export const DOCUMENT_EXTENSIONS: readonly string[] = [
   ".mdx",
   ".html",
   ".htm",
+  ".dita",
+  ".ditamap",
 ];
