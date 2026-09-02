@@ -113,15 +113,16 @@ describe("parseLocalizations", () => {
       "a vectors path that escapes",
       '{"version":1,"languages":[{"language":"de","documents":1,"search":{"path":"search.de.json","entries":1,"digest":"x"},"vectors":{"path":"a/../../x.bin","model":"m","dtype":"q8","dims":8,"count":1}}]}',
     ],
-    // A run of leading `..` is not the single level `embed -o` produces. Left
-    // uncapped, `search --mode vector` would read whatever this names.
+    // However far a path climbs, the filename is the bound: it can only ever
+    // name this language's own artifact. (A climb on its own is legal —
+    // `embed -o` records one — and has its own accepting cases below.)
     [
-      "a vectors path climbing more than one level",
+      "a vectors path climbing to something that is not this sidecar",
       '{"version":1,"languages":[{"language":"de","documents":1,"search":{"path":"search.de.json","entries":1,"digest":"x"},"vectors":{"path":"../../../../../../etc/passwd","model":"m","dtype":"q8","dims":8,"count":1}}]}',
     ],
     [
-      "a search path climbing more than one level",
-      '{"version":1,"languages":[{"language":"de","documents":1,"search":{"path":"../../../../search.de.json","entries":1,"digest":"x"}}]}',
+      "a search path climbing to something that is not this index",
+      '{"version":1,"languages":[{"language":"de","documents":1,"search":{"path":"../../../../etc/passwd","entries":1,"digest":"x"}}]}',
     ],
     // `vectors.path` gets the same filename constraint `search.path` does, so
     // a sidecar cannot be pointed at some other file in a reachable directory.
@@ -189,5 +190,43 @@ describe("artifact filenames", () => {
   it("names one file per language, per kind", () => {
     expect(searchIndexFilename("de-AT")).toBe("search.de-AT.json");
     expect(vectorIndexFilename("und")).toBe("vectors.und.bin");
+  });
+});
+
+describe("manifest paths — what embed -o can legitimately record", () => {
+  const withVectors = (path: string) =>
+    JSON.stringify({
+      version: 1,
+      languages: [
+        {
+          ...entry("de"),
+          vectors: { path, model: "m", dtype: "q8", dims: 8, count: 1 },
+        },
+      ],
+    });
+
+  // `embed -o` records a manifest-relative path, and a deploy directory can sit
+  // any number of levels from the index directory. Capping the climb rejected
+  // manifests dockg itself had just written.
+  it.each([
+    "vectors.de.bin",
+    "../vecs/vectors.de.bin",
+    "../../deploy/vecs/vectors.de.bin",
+    "../../../../a/b/c/vectors.de.bin",
+  ])("accepts %s, which embed -o can produce", (path) => {
+    expect(
+      parseLocalizations(withVectors(path))?.languages[0]?.vectors?.path,
+    ).toBe(path);
+  });
+
+  // The filename is the bound that matters: however far up a path climbs, it
+  // can only ever name this language's own artifact.
+  it.each([
+    "../../../../etc/passwd",
+    "../../secrets.env",
+    "a/../../vectors.de.bin",
+    "vectors.fr.bin",
+  ])("still refuses %s", (path) => {
+    expect(parseLocalizations(withVectors(path))).toBeUndefined();
   });
 });

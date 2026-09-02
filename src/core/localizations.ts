@@ -168,11 +168,18 @@ export function parseLocalizations(text: string): LocalizationsDoc | undefined {
  * through frontmatter. A hand-edited `"path": "../../etc/passwd"` would
  * otherwise be joined and read by `embed` and `search`.
  *
- * Rejects anything with a directory traversal segment, an absolute path, or a
- * Windows drive letter. A `../` prefix is *not* rejected outright — `embed -o`
- * legitimately records one when the sidecars are written outside the index
- * directory — but each segment is checked, so `..` cannot appear after a
- * normal segment and no segment may be `.` or empty.
+ * Rejects an absolute path, a Windows drive letter, a backslash, and any `.`
+ * or empty segment. `..` is allowed **only as a prefix**, so `a/../../x` — an
+ * escape wearing a normal first segment — is refused while `../vecs/x.bin`,
+ * the layout `embed -o` produces, is not.
+ *
+ * How far up a leading run may climb is deliberately *not* capped. It was,
+ * briefly, and the cap rejected manifests `embed -o` itself writes: a sidecar
+ * directory two levels from the index directory produced an artifact set dockg
+ * could not read back. The bound that matters is `ownsFilename` — a crafted
+ * manifest can only ever name a file already called `search.<lang>.json` or
+ * `vectors.<lang>.bin`, which is a long way from arbitrary-file read, and no
+ * number of `..` segments widens it.
  */
 function isSafeRelativePath(path: string): boolean {
   if (path === "" || path.startsWith("/") || /^[A-Za-z]:/.test(path)) {
@@ -181,15 +188,10 @@ function isSafeRelativePath(path: string): boolean {
   if (path.includes("\\")) return false;
   const segments = path.split("/");
   let leading = true;
-  let ascents = 0;
   for (const segment of segments) {
     if (segment === "" || segment === ".") return false;
     if (segment === "..") {
-      // Only as a prefix, and only once: `../vecs/x.bin` is the layout
-      // `embed -o` produces, while `../../../../etc/passwd` is an escape that
-      // happens to lead with the same segment. An unbounded run of leading
-      // `..` would have re-opened exactly the hole this closes.
-      if (!leading || ++ascents > 1) return false;
+      if (!leading) return false;
       continue;
     }
     leading = false;
