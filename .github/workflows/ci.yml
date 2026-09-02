@@ -165,7 +165,12 @@ jobs:
           # A hardcoded list would keep passing while comparing one locale
           # fewer than the build actually produces — the retrieval artifacts
           # fan out per language now (ADR 01038).
-          reference=$(find . -maxdepth 1 -type d -name 'artifacts-*' | sort | head -1)
+          # Read into an array rather than piping to `head -1`: under
+          # `set -o pipefail`, head closing the pipe can kill sort with SIGPIPE
+          # and fail the whole step for a reason that has nothing to do with
+          # the artifacts. Process substitution has no pipeline status at all.
+          mapfile -t dirs < <(find . -maxdepth 1 -type d -name 'artifacts-*' | sort)
+          reference=${dirs[0]}
           files=$(cd "$reference" && ls -1 | sort)
           echo "comparing files:"
           echo "$files"
