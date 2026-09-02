@@ -89,7 +89,7 @@ jobs:
       # Emit every artifact whose bytes are supposed to be platform-independent,
       # for the cross-platform job below to compare across runners.
       #
-      # All six byte-exact goldens CLAUDE.md names are represented here.
+      # Every byte-exact golden CLAUDE.md names is represented here.
       # `metadata.rdf` is covered transitively: it is `META-INF/metadata.rdf`
       # inside package.iirds, whose zip entry timestamps are pinned to a fixed
       # epoch (src/core/zip.ts), so byte-identical archives imply a
@@ -101,7 +101,10 @@ jobs:
           cli() { node ../../../dist/cli.js "$@"; }
           cli build --out "$RUNNER_TEMP/artifacts/graph.ttl"
           cli export -f jsonld -g "$RUNNER_TEMP/artifacts/graph.ttl" -o "$RUNNER_TEMP/artifacts/graph.jsonld"
-          cli export -f search -g "$RUNNER_TEMP/artifacts/graph.ttl" -o "$RUNNER_TEMP/artifacts/search.json"
+          # `-o` is a directory here: the retrieval artifacts fan out per
+          # locale (ADR 01038), so this writes one search.<lang>.json per
+          # language plus localizations.json.
+          cli export -f search -g "$RUNNER_TEMP/artifacts/graph.ttl" -o "$RUNNER_TEMP/artifacts"
           cli export -f iirds  -g "$RUNNER_TEMP/artifacts/graph.ttl" -o "$RUNNER_TEMP/artifacts/package.iirds"
           # A traversal trace is where a locale-sensitive sort or a path -> IRI
           # difference would surface, and it surfaces nowhere else — the same
@@ -114,10 +117,11 @@ jobs:
           # @huggingface/transformers peer is not needed. Float layout in the
           # sidecar is exactly the kind of thing that could differ by platform.
           #
-          # Must stay after the search export: `embed` reads search.json from
-          # beside the graph, and without it exits 2 rather than emitting.
+          # Must stay after the search export: `embed` reads the localization
+          # manifest that export wrote, and without it exits 2 rather than
+          # emitting. One sidecar per language, so `-o` is a directory too.
           cli embed -g "$RUNNER_TEMP/artifacts/graph.ttl" --model mock --no-cache \
-            -o "$RUNNER_TEMP/artifacts/vectors.bin"
+            -i "$RUNNER_TEMP/artifacts" -o "$RUNNER_TEMP/artifacts"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -156,8 +160,22 @@ jobs:
           fi
           echo "comparing $platforms platforms"
 
+          # Discovered from one platform's output rather than hardcoded, so a
+          # language added to the corpus fixture joins this gate automatically.
+          # A hardcoded list would keep passing while comparing one locale
+          # fewer than the build actually produces — the retrieval artifacts
+          # fan out per language now (ADR 01038).
+          reference=$(find . -maxdepth 1 -type d -name 'artifacts-*' | sort | head -1)
+          files=$(cd "$reference" && ls -1 | sort)
+          echo "comparing files:"
+          echo "$files"
+          if [ "$(echo "$files" | wc -l)" -lt 6 ]; then
+            echo "::error::fewer artifacts than the emit step should produce — nothing meaningful to compare"
+            exit 1
+          fi
+
           status=0
-          for file in graph.ttl graph.jsonld search.json package.iirds traverse.json vectors.bin; do
+          for file in $files; do
             echo "--- $file"
             # One digest per platform. More than one distinct value means the
             # emitters disagree by platform, which the determinism contract

@@ -330,7 +330,9 @@ export function renderEmbed(
   if (lines.length === 0) lines.push("  (no languages in the manifest)");
   const n = report.languages.length;
   return [
-    `Wrote ${n} sidecar${n === 1 ? "" : "s"} beside ${report.manifestPath}`,
+    // Not "beside": `-o` may put the sidecars in a different directory from
+    // the manifest, and each line below names the path it actually wrote.
+    `Wrote ${n} sidecar${n === 1 ? "" : "s"}, recorded in ${report.manifestPath}`,
     ...lines,
     `  ${report.embedded} embedded, ${report.cached} from cache`,
   ].join("\n");
