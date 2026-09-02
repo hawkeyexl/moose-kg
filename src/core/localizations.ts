@@ -128,18 +128,71 @@ export function parseLocalizations(text: string): LocalizationsDoc | undefined {
     if (
       !entry ||
       typeof entry.language !== "string" ||
+      !isLanguageTag(entry.language) ||
       typeof entry.documents !== "number" ||
       !entry.search ||
       typeof entry.search.path !== "string" ||
-      typeof entry.search.digest !== "string"
+      typeof entry.search.entries !== "number" ||
+      typeof entry.search.digest !== "string" ||
+      !ownsFilename(entry.language, entry.search.path)
     ) {
       return undefined;
     }
-    // A path from the manifest is joined onto a directory, so it is checked
-    // like any other untrusted path segment.
-    if (entry.vectors && typeof entry.vectors.path !== "string") {
-      return undefined;
+    if (entry.vectors !== undefined) {
+      const v = entry.vectors;
+      if (
+        typeof v.path !== "string" ||
+        typeof v.model !== "string" ||
+        typeof v.dtype !== "string" ||
+        typeof v.dims !== "number" ||
+        typeof v.count !== "number" ||
+        !isSafeRelativePath(v.path)
+      ) {
+        return undefined;
+      }
     }
   }
   return doc;
+}
+
+/**
+ * A path from the manifest is joined onto a directory and opened, so it is
+ * checked like any other untrusted path segment.
+ *
+ * `export` refuses to *write* a filename it built from a bad language tag; this
+ * is the same hole on the read side, reached through a manifest instead of
+ * through frontmatter. A hand-edited `"path": "../../etc/passwd"` would
+ * otherwise be joined and read by `embed` and `search`.
+ *
+ * Rejects anything with a directory traversal segment, an absolute path, or a
+ * Windows drive letter. A `../` prefix is *not* rejected outright — `embed -o`
+ * legitimately records one when the sidecars are written outside the index
+ * directory — but each segment is checked, so `..` cannot appear after a
+ * normal segment and no segment may be `.` or empty.
+ */
+function isSafeRelativePath(path: string): boolean {
+  if (path === "" || path.startsWith("/") || /^[A-Za-z]:/.test(path)) {
+    return false;
+  }
+  if (path.includes("\\")) return false;
+  const segments = path.split("/");
+  let leading = true;
+  for (const segment of segments) {
+    if (segment === "" || segment === ".") return false;
+    if (segment === "..") {
+      // Only as a prefix: `../vecs/x.bin` is a real layout, `a/../../x` is an
+      // escape wearing a normal first segment.
+      if (!leading) return false;
+      continue;
+    }
+    leading = false;
+  }
+  return true;
+}
+
+/** The last segment must be the filename this language's artifact would get. */
+function ownsFilename(language: string, path: string): boolean {
+  if (!isSafeRelativePath(path)) return false;
+  const name = path.slice(path.lastIndexOf("/") + 1);
+  return name === searchIndexFilename(language);
 }

@@ -35,8 +35,11 @@ npm install @huggingface/transformers
 
    **One index per language** ([localization](/dockg/model/localization/)): `search.<lang>.json`
    for each language the corpus declares, `search.und.json` for documents that declare none, and
-   `localizations.json` naming them all. A monolingual corpus gets `search.und.json` and a
-   one-entry manifest.
+   `localizations.json` naming them all.
+
+   `und` tracks what the documents *say*, not how many languages there are: a corpus that labels
+   everything `en` gets `search.en.json` and a one-entry manifest, while a corpus that labels
+   nothing gets `search.und.json`. Both are monolingual as far as `--lang` is concerned.
 
 2. **Compute vectors.**
 

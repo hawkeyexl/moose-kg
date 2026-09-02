@@ -82,6 +82,37 @@ describe("parseLocalizations", () => {
       '{"version":1,"languages":[{"language":"de","documents":1,"search":{"path":"a","entries":1,"digest":"x"},"vectors":{"path":null}}]}',
     ],
     ["a null entry", '{"version":1,"languages":[null]}'],
+    // The read side of the filename hole `export` closes on the write side: a
+    // manifest path is joined onto a directory and opened, so it is checked
+    // like any other untrusted path segment.
+    [
+      "a language that is not a tag",
+      '{"version":1,"languages":[{"language":"../escaped","documents":1,"search":{"path":"search.json","entries":1,"digest":"x"}}]}',
+    ],
+    [
+      "a search path that escapes the index directory",
+      '{"version":1,"languages":[{"language":"de","documents":1,"search":{"path":"a/../../etc/passwd","entries":1,"digest":"x"}}]}',
+    ],
+    [
+      "a search path that is absolute",
+      '{"version":1,"languages":[{"language":"de","documents":1,"search":{"path":"/etc/passwd","entries":1,"digest":"x"}}]}',
+    ],
+    [
+      "a search path naming another language's file",
+      '{"version":1,"languages":[{"language":"de","documents":1,"search":{"path":"search.fr.json","entries":1,"digest":"x"}}]}',
+    ],
+    [
+      "a search block with no entries count",
+      '{"version":1,"languages":[{"language":"de","documents":1,"search":{"path":"search.de.json","digest":"x"}}]}',
+    ],
+    [
+      "a vectors block missing its model",
+      '{"version":1,"languages":[{"language":"de","documents":1,"search":{"path":"search.de.json","entries":1,"digest":"x"},"vectors":{"path":"vectors.de.bin","dtype":"q8","dims":8,"count":1}}]}',
+    ],
+    [
+      "a vectors path that escapes",
+      '{"version":1,"languages":[{"language":"de","documents":1,"search":{"path":"search.de.json","entries":1,"digest":"x"},"vectors":{"path":"a/../../x.bin","model":"m","dtype":"q8","dims":8,"count":1}}]}',
+    ],
   ];
 
   for (const [name, text] of rejected) {
@@ -89,6 +120,29 @@ describe("parseLocalizations", () => {
       expect(parseLocalizations(text)).toBeUndefined();
     });
   }
+
+  it("accepts a sidecar written outside the index directory", () => {
+    // `embed -o` records a manifest-relative path, so a leading `../` is a
+    // real layout rather than an escape — each segment is checked instead.
+    const doc = parseLocalizations(
+      JSON.stringify({
+        version: 1,
+        languages: [
+          {
+            ...entry("de"),
+            vectors: {
+              path: "../vecs/vectors.de.bin",
+              model: "m",
+              dtype: "q8",
+              dims: 8,
+              count: 1,
+            },
+          },
+        ],
+      }),
+    );
+    expect(doc?.languages[0]?.vectors?.path).toBe("../vecs/vectors.de.bin");
+  });
 
   it("accepts an entry with no vectors block, which just means unembedded", () => {
     const doc = parseLocalizations(
