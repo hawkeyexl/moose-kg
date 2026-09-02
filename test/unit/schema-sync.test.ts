@@ -369,3 +369,62 @@ describe("SECTION_FIELD_NAMES ↔ COVERAGE_FIELDS", () => {
     }
   });
 });
+
+/**
+ * Drift guard: the docs state the measured-field count in prose, and three
+ * pages said "eleven" for a release after the list grew to twelve. A number
+ * spelled out in four places is a number that goes stale, so pin it.
+ */
+describe("documented coverage field count ↔ COVERAGE_FIELDS", () => {
+  const WORDS = [
+    "zero",
+    "one",
+    "two",
+    "three",
+    "four",
+    "five",
+    "six",
+    "seven",
+    "eight",
+    "nine",
+    "ten",
+    "eleven",
+    "twelve",
+    "thirteen",
+    "fourteen",
+  ];
+  const docsRoot = join(
+    dirname(fileURLToPath(import.meta.url)),
+    "..",
+    "..",
+    "docs",
+    "src",
+    "content",
+    "docs",
+  );
+  const pages = [
+    join("govern", "coverage.mdx"),
+    join("reference", "configuration.mdx"),
+    join("reference", "glossary.mdx"),
+    join("reference", "library-api.mdx"),
+  ];
+
+  it("no page names a count other than the measured one", () => {
+    const correct = WORDS[COVERAGE_FIELDS.length];
+    expect(correct, "extend WORDS if the field list grew").toBeDefined();
+    const wrong = WORDS.filter((w) => w !== correct && w !== "one");
+
+    for (const page of pages) {
+      const text = readFileSync(join(docsRoot, page), "utf8");
+      for (const word of wrong) {
+        // Only where the number is qualifying "fields": `eleven commands` on
+        // the CLI page is a different (correct) count.
+        const stale = new RegExp(`\\b${word}\\b[^.\\n]{0,40}\\bfields\\b`, "i");
+        expect(
+          stale.test(text),
+          `${page} says "${word} … fields" but ${correct} are measured`,
+        ).toBe(false);
+      }
+    }
+  });
+});

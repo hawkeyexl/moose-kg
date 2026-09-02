@@ -276,6 +276,14 @@ describe("dockg stats — metadata coverage", () => {
       { field: "modified", predicate: "dcterms:modified", docs: 1, pct: 12.5 },
       { field: "subject", predicate: "dcterms:subject", docs: 3, pct: 37.5 },
       { field: "label", predicate: "foaf:primaryTopic", docs: 1, pct: 12.5 },
+      // Restored by ADR 01037 after ADR 01011 dropped it: only the localized
+      // tree carries a language, because the English route declares none.
+      {
+        field: "language",
+        predicate: "dcterms:language",
+        docs: 3,
+        pct: 37.5,
+      },
       // The iiRDS typing from Phases 2-4, which coverage did not measure until
       // ADR 01029. The two negative predicates are excluded on purpose: an
       // absent negative means "unknown", not "missing".
@@ -448,5 +456,106 @@ describe("dockg stats — metadata coverage", () => {
     // creator is a git author, also 100%; description was never provided.
     expect(pctOf("creator")).toBe(100);
     expect(pctOf("description")).toBe(0);
+  });
+});
+
+/**
+ * Per-language reporting (ADR 01037). The whole-corpus table blends every
+ * locale into one number that describes no audience; these say which audience
+ * is actually under-served, and what is still untranslated.
+ */
+describe("dockg stats — localization", () => {
+  type Localization = {
+    unlabelled: number;
+    languages: Array<{
+      language: string;
+      docs: number;
+      coverage: Array<{ field: string; docs: number; pct: number }>;
+      untranslated: string[];
+    }>;
+  };
+
+  const localization = (): Localization =>
+    (
+      JSON.parse(run(["stats", "-f", "json", "-g", graph]).stdout) as {
+        localization: Localization;
+      }
+    ).localization;
+
+  it("measures language as a coverage field", () => {
+    const { stdout } = run(["stats", "-f", "json", "-g", graph]);
+    const { coverage } = JSON.parse(stdout) as {
+      coverage: Array<{ field: string; predicate: string; docs: number }>;
+    };
+    // Three of eight corpus docs are localized; the English tree's route
+    // declares no language, so they carry none.
+    expect(coverage).toContainEqual({
+      field: "language",
+      predicate: "dcterms:language",
+      docs: 3,
+      pct: 37.5,
+    });
+  });
+
+  it("reports one block per language, sorted, with the unlabelled count", () => {
+    const l = localization();
+    expect(l.languages.map((x) => x.language)).toEqual(["de", "de-AT", "fr"]);
+    expect(l.languages.map((x) => x.docs)).toEqual([1, 1, 1]);
+    expect(l.unlabelled).toBe(5);
+  });
+
+  it("scores each language against its own documents, not the corpus", () => {
+    const l = localization();
+    const de = l.languages.find((x) => x.language === "de")!;
+    const deAt = l.languages.find((x) => x.language === "de-AT")!;
+    const pct = (block: (typeof l.languages)[number], field: string) =>
+      block.coverage.find((c) => c.field === field)!.pct;
+    // The German page carries a description; the Austrian one does not. The
+    // blended corpus number (50%) says neither.
+    expect(pct(de, "description")).toBe(100);
+    expect(pct(deAt, "description")).toBe(0);
+    // Both are titled, and both are fully labelled by construction.
+    expect(pct(de, "title")).toBe(100);
+    expect(pct(de, "language")).toBe(100);
+  });
+
+  it("lists sources with no translation into a language", () => {
+    const l = localization();
+    const de = l.languages.find((x) => x.language === "de")!;
+    // getting-started.md has a German translation, so it is not in the list;
+    // every other source document is.
+    expect(de.untranslated).not.toContain("docs/getting-started.md");
+    expect(de.untranslated).toContain("docs/configuration.md");
+    expect(de.untranslated).toContain("docs/harvest.md");
+    // A translation is never its own backlog item: docs/de/getting-started.md
+    // carries schema:translationOfWork, so it is not a source.
+    expect(de.untranslated).not.toContain("docs/de/getting-started.md");
+    expect(de.untranslated).toEqual([...de.untranslated].sort());
+  });
+
+  it("renders a localization block in pretty output", () => {
+    const { stdout } = run(["stats", "-g", graph]);
+    expect(stdout).toContain("Localization:");
+    expect(stdout).toMatch(/de {2,}1 doc/);
+    expect(stdout).toContain("no language: 5");
+  });
+
+  it("omits the block entirely for a corpus with no languages", () => {
+    // ADR 01029's lesson: a section that cannot say anything on most corpora
+    // teaches readers to skip the whole report.
+    const dir = mkdtempSync(join(tmpdir(), "dockg-l10n-"));
+    writeFileSync(
+      join(dir, "dockg.config.yaml"),
+      'version: 1\ninputs: ["*.md"]\nprovenance:\n  git: false\n',
+    );
+    writeFileSync(join(dir, "a.md"), "---\ntitle: A\n---\n\n# A\n");
+    const opts = { encoding: "utf8" as const, cwd: dir };
+    execFileSync(process.execPath, [cli, "build", "--out", "g.ttl"], opts);
+    const stdout = execFileSync(
+      process.execPath,
+      [cli, "stats", "-g", "g.ttl"],
+      opts,
+    );
+    expect(stdout).not.toContain("Localization:");
   });
 });

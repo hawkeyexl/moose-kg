@@ -181,6 +181,11 @@
                   "minimum": 0,
                   "maximum": 100
                 },
+                "language": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                },
                 "type": {
                   "type": "number",
                   "minimum": 0,
