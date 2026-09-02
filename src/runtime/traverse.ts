@@ -226,8 +226,16 @@ export function traverse(
     if (!alreadySeeded.has(seed)) {
       trace.entry.push({ iri: seed, score: 1, via: "explicit" });
     }
-    if (!keep(seed)) continue;
-    nodes.push({ iri: seed, depth: 0 });
+    // A seed always expands, even when the scope filter excludes it. The
+    // filter governs what the walk *reaches*, not where the caller chose to
+    // start — and the canonical query is exactly this shape: from an English
+    // page, `--impact --lang de` asks what German content a change here
+    // affects. Gating the seed made that return nothing at all, because the
+    // seed excluded itself before the frontier was ever populated.
+    //
+    // It is still kept out of the results and recorded in the trace, so the
+    // answer honors the filter even though the walk started outside it.
+    if (keep(seed)) nodes.push({ iri: seed, depth: 0 });
     frontier.push(seed);
   }
 

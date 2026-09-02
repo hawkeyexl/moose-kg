@@ -397,3 +397,74 @@ describe("scope filtering — sections inherit language, not applicability", () 
     ).toBeUndefined();
   });
 });
+
+/**
+ * A seed always expands, even when the scope filter excludes it (review fix).
+ *
+ * The canonical localization query has exactly this shape — from an English
+ * page, "what German content does a change here affect?" — and gating the seed
+ * made it return nothing, because the seed excluded itself before the frontier
+ * was ever populated.
+ */
+describe("scope filtering — the seed is a starting point, not a result", () => {
+  const EN = `${BASE}doc/en.md`;
+  const DE = `${BASE}doc/de.md`;
+  const LANGUAGE = `${NS.dcterms}language`;
+  const WORK_TRANSLATION = `${NS.schema}workTranslation`;
+
+  const graph = (): GraphIndex =>
+    GraphIndex.fromQuads([
+      { s: EN, p: RDF_TYPE, o: { kind: "iri", value: `${NS.dockg}Document` } },
+      { s: EN, p: LANGUAGE, o: { kind: "literal", value: "en" } },
+      { s: EN, p: WORK_TRANSLATION, o: { kind: "iri", value: DE } },
+      { s: DE, p: RDF_TYPE, o: { kind: "iri", value: `${NS.dockg}Document` } },
+      { s: DE, p: LANGUAGE, o: { kind: "literal", value: "de" } },
+    ]);
+
+  it("reaches a differently-languaged translation from a labeled source", () => {
+    const result = traverse(graph(), {
+      seeds: [EN],
+      depth: 2,
+      predicates: [WORK_TRANSLATION],
+      language: "de",
+    });
+    expect(result.nodes.map((n) => n.iri)).toEqual([DE]);
+  });
+
+  it("keeps the excluded seed out of the results, and names it in the trace", () => {
+    const result = traverse(graph(), {
+      seeds: [EN],
+      depth: 2,
+      predicates: [WORK_TRANSLATION],
+      language: "de",
+    });
+    expect(result.nodes.map((n) => n.iri)).not.toContain(EN);
+    expect(result.trace.exclusions).toContainEqual({
+      node: EN,
+      rule: LANGUAGE,
+      value: "de",
+    });
+  });
+
+  it("does the same through impact()", () => {
+    // impact() drops the seed from its results anyway, so the observable
+    // failure was simply an empty answer.
+    const result = impact(graph(), DE, {
+      predicates: [WORK_TRANSLATION],
+      language: "de",
+    });
+    expect(result.nodes.map((n) => n.iri)).toEqual([EN].filter(() => false));
+    const reverse = impact(graph(), DE, { predicates: [WORK_TRANSLATION] });
+    expect(reverse.nodes.map((n) => n.iri)).toEqual([EN]);
+  });
+
+  it("still returns a seed the filter accepts", () => {
+    const result = traverse(graph(), {
+      seeds: [EN],
+      depth: 1,
+      predicates: [WORK_TRANSLATION],
+      language: "en",
+    });
+    expect(result.nodes.map((n) => n.iri)).toContain(EN);
+  });
+});

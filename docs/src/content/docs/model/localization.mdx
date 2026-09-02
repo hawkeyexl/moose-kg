@@ -200,6 +200,11 @@ A node that declares **no** language is kept, not excluded — unscoped content 
 exactly as it does for [variants](/dockg/model/variants/). A language filter never silently
 empties a corpus that has not adopted the label.
 
+**The page you start from is a starting point, not a result.** Ask this from a source that *is*
+labelled — `--lang de` from an English page — and the walk still reaches the German translation;
+the English page is simply excluded from the answer and named in the trace. The filter governs
+what the walk reaches, not where you chose to begin.
+
 <Aside type="note" title="No locale fallback">
   `de-AT` does not fall back to `de`, and a query for one does not search the other. Fallback is
   an inference about how locales relate, and dockg does not infer. A corpus that wants them
@@ -219,5 +224,6 @@ empties a corpus that has not adopted the label.
 {/* step {"description":"A graph whose language is a name rather than a tag builds.","runShell":{"command":"dockg build -c test/fixtures/dd/l10n-invalid.config.yaml","exitCodes":[0]}} */}
 {/* step {"description":"check rejects it, naming dcterms:language, and exits 1.","runShell":{"command":"dockg check -c test/fixtures/dd/l10n-invalid.config.yaml","exitCodes":[1],"stdio":"dcterms:language"}} */}
 {/* step {"description":"impact over the translation edge reaches every localization of a source.","runShell":{"command":"dockg traverse https://example.com/dd/doc/test/fixtures/dd/l10n/en/install.md -c test/fixtures/dd/l10n.config.yaml --impact --predicates schema:translationOfWork","exitCodes":[0],"stdio":"l10n/de/install.md"}} */}
-{/* step {"description":"--lang scopes the walk, and the trace names the rule that excluded a node.","runShell":{"command":"dockg traverse https://example.com/dd/doc/test/fixtures/dd/l10n/en/install.md -c test/fixtures/dd/l10n.config.yaml --impact --predicates schema:translationOfWork --lang fr","exitCodes":[0],"stdio":"dcterms:language fr"}} */}
+{/* step {"description":"--lang de from a labelled English source still reaches the German translation — the seed is excluded from the answer, not from the walk.","runShell":{"command":"dockg traverse https://example.com/dd/doc/test/fixtures/dd/l10n/en/install.md -c test/fixtures/dd/l10n.config.yaml --impact --predicates schema:translationOfWork --lang de","exitCodes":[0],"stdio":"l10n/de/install.md — Installieren"}} */}
+{/* step {"description":"A reached node the filter excludes is named in the trace, not merely counted.","runShell":{"command":"dockg traverse https://example.com/dd/doc/test/fixtures/dd/l10n/en/install.md -c test/fixtures/dd/l10n.config.yaml --impact --predicates schema:translationOfWork --lang fr","exitCodes":[0],"stdio":"l10n/de/install.md — dcterms:language fr"}} */}
 {/* test end */}
