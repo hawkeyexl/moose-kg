@@ -61,6 +61,7 @@ interface TraverseOptions {
   limit?: number;
   variant?: string;           // IRI, dcterms:title, or slug
   subject?: string;           // IRI or a kg.about-product-aspect value
+  language?: string;          // BCP-47 tag, matched exactly — no fallback
   includeTypeEdges?: boolean; // default false — see below
   trace?: QueryTrace;
 }
@@ -74,6 +75,26 @@ interface TraverseOptions {
 | `reachedNodes` | Every node the trace records as reached |
 | `resolveVariant`, `resolveSubject` | Resolve a filter input to its IRI |
 | `scopeExclusion` | Why a node was excluded, if it was |
+
+All three scope dimensions compose. Each node is checked in two ways, and the trace names which
+one fired:
+
+| The node… | Result | `rule` in the trace |
+|---|---|---|
+| explicitly denies the target (`dockg:notApplicableToVariant`, `dockg:notSoftwareSubject`) | excluded | the `dockg:not*` predicate |
+| declares a set that omits the target | excluded | the positive predicate |
+| declares nothing | **kept** — unscoped content applies broadly | — |
+
+The explicit-negative check is what distinguishes "this does not apply here" from "this says
+nothing", which is why `trace.exclusions` names the predicate rather than just the node
+(ADR 01014). `language` has no negative predicate — a document has one language, so there is
+nothing for a `dockg:not*` term to say — and a section takes its document's language, though not
+its applicability. See [localization](/dockg/model/localization/).
+
+**Seeds are exempt.** The filter governs what a walk *reaches*, not where it starts: a seed always
+expands, and is merely kept out of the results (and recorded in `exclusions`) if it fails the
+filter. Otherwise `impact(enPage, { language: "de" })` — what German content does a change here
+affect — would return nothing at all.
 
 <Aside type="caution" title="`includeTypeEdges` almost always stays false">
   Every document shares `dockg:Document`, so following `rdf:type` makes every document reachable

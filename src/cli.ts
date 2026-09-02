@@ -377,6 +377,7 @@ program
     "Scope filter: product variant IRI, title, or slug",
   )
   .option("--subject <subject>", "Scope filter: software subject")
+  .option("--lang <tag>", "Scope filter: BCP-47 language tag, matched exactly")
   .option("--limit <n>", "Stop after this many nodes", countOption("--limit"))
   .option("-f, --format <format>", "Output format: pretty | json", "pretty")
   .action(
@@ -391,6 +392,7 @@ program
         impact?: boolean;
         variant?: string;
         subject?: string;
+        lang?: string;
         limit?: number;
         format: string;
       },
