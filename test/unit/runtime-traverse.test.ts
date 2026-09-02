@@ -468,3 +468,59 @@ describe("scope filtering — the seed is a starting point, not a result", () =>
     expect(result.nodes.map((n) => n.iri)).toContain(EN);
   });
 });
+
+/**
+ * `impact()` compensates for the seed occupying a slot in the walker's limit.
+ * Since the seed-gating fix it may not occupy one, so the slack has to be
+ * trimmed rather than assumed spent (review finding).
+ */
+describe("impact — limit means affected nodes, seed excluded or not", () => {
+  const EN = `${BASE}doc/en.md`;
+  const TRANSLATIONS = ["de1", "de2", "de3"].map((s) => `${BASE}doc/${s}.md`);
+  const LANGUAGE = `${NS.dcterms}language`;
+  const TRANSLATION_OF = `${NS.schema}translationOfWork`;
+
+  const graph = (): GraphIndex =>
+    GraphIndex.fromQuads([
+      { s: EN, p: RDF_TYPE, o: { kind: "iri", value: `${NS.dockg}Document` } },
+      { s: EN, p: LANGUAGE, o: { kind: "literal", value: "en" } },
+      ...TRANSLATIONS.flatMap((t) => [
+        {
+          s: t,
+          p: RDF_TYPE,
+          o: { kind: "iri" as const, value: `${NS.dockg}Document` },
+        },
+        { s: t, p: LANGUAGE, o: { kind: "literal" as const, value: "de" } },
+        { s: t, p: TRANSLATION_OF, o: { kind: "iri" as const, value: EN } },
+      ]),
+    ]);
+
+  it("honors the limit when the filter excludes the seed", () => {
+    // The seed is `en`, the filter is `de`, so the seed never lands in `nodes`
+    // and the +1 slack goes unspent — three came back for a limit of two.
+    const result = impact(graph(), EN, {
+      predicates: [TRANSLATION_OF],
+      language: "de",
+      limit: 2,
+    });
+    expect(result.nodes).toHaveLength(2);
+  });
+
+  it("honors the limit when the seed passes the filter", () => {
+    const result = impact(graph(), EN, {
+      predicates: [TRANSLATION_OF],
+      limit: 2,
+    });
+    expect(result.nodes).toHaveLength(2);
+  });
+
+  it("returns everything affected when no limit is given", () => {
+    const result = impact(graph(), EN, {
+      predicates: [TRANSLATION_OF],
+      language: "de",
+    });
+    expect(result.nodes.map((n) => n.iri).sort()).toEqual(
+      [...TRANSLATIONS].sort(),
+    );
+  });
+});
