@@ -134,7 +134,7 @@ export function parseLocalizations(text: string): LocalizationsDoc | undefined {
       typeof entry.search.path !== "string" ||
       typeof entry.search.entries !== "number" ||
       typeof entry.search.digest !== "string" ||
-      !ownsFilename(entry.language, entry.search.path)
+      !ownsFilename(entry.search.path, searchIndexFilename(entry.language))
     ) {
       return undefined;
     }
@@ -146,7 +146,11 @@ export function parseLocalizations(text: string): LocalizationsDoc | undefined {
         typeof v.dtype !== "string" ||
         typeof v.dims !== "number" ||
         typeof v.count !== "number" ||
-        !isSafeRelativePath(v.path)
+        // Same constraint `search.path` gets: the last segment must be the
+        // filename this language's sidecar would be given. Without it,
+        // `isSafeRelativePath` alone leaves `vectors.path` far more reachable
+        // than `search.path` — and `search --mode vector` opens it.
+        !ownsFilename(v.path, vectorIndexFilename(entry.language))
       ) {
         return undefined;
       }
@@ -177,12 +181,15 @@ function isSafeRelativePath(path: string): boolean {
   if (path.includes("\\")) return false;
   const segments = path.split("/");
   let leading = true;
+  let ascents = 0;
   for (const segment of segments) {
     if (segment === "" || segment === ".") return false;
     if (segment === "..") {
-      // Only as a prefix: `../vecs/x.bin` is a real layout, `a/../../x` is an
-      // escape wearing a normal first segment.
-      if (!leading) return false;
+      // Only as a prefix, and only once: `../vecs/x.bin` is the layout
+      // `embed -o` produces, while `../../../../etc/passwd` is an escape that
+      // happens to lead with the same segment. An unbounded run of leading
+      // `..` would have re-opened exactly the hole this closes.
+      if (!leading || ++ascents > 1) return false;
       continue;
     }
     leading = false;
@@ -190,9 +197,15 @@ function isSafeRelativePath(path: string): boolean {
   return true;
 }
 
-/** The last segment must be the filename this language's artifact would get. */
-function ownsFilename(language: string, path: string): boolean {
+/**
+ * The path is relative-safe *and* its last segment is the filename this
+ * language's artifact would be given.
+ *
+ * The filename check is the constraint that actually narrows what a crafted
+ * manifest can reach: `isSafeRelativePath` bounds the directory it can point
+ * into, this bounds the file.
+ */
+function ownsFilename(path: string, expected: string): boolean {
   if (!isSafeRelativePath(path)) return false;
-  const name = path.slice(path.lastIndexOf("/") + 1);
-  return name === searchIndexFilename(language);
+  return path.slice(path.lastIndexOf("/") + 1) === expected;
 }

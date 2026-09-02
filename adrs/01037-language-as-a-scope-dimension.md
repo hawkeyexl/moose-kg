@@ -195,8 +195,12 @@ probably meant, on the warnings channel, without failing the build.
   shapes makes `check` fail on the corpus, proving the closed shape is doing work.
 - The corpus fixture gains a `docs/de/` route carrying every permutation above; all goldens
   regenerate with the diff read line by line, and `dockg check` stays green on the clean corpus.
-- `test/unit/schema-sync.test.ts`: the coverage↔config-schema drift guard covers the new
-  `language` field, and the bundled-defaults guard follows `shapes/dockg-1.0.0.ttl`.
+- `test/unit/config.test.ts`: `routes[].language` round-trips, is absent as a key when unset, and
+  is rejected at the config layer for `English`, `de_DE`, `d` and `de-` — the BCP-47 pattern
+  enforced where a bad tag is cheapest to catch, before it reaches the graph.
+- `test/unit/schema-sync.test.ts`: the bundled-defaults guard follows `shapes/dockg-1.0.0.ttl`.
+  The coverage↔config-schema drift guard covering `language` lands with the measurement slice,
+  not this one — `COVERAGE_FIELDS` is untouched here.
 
 ## Pros and Cons of the Options
 

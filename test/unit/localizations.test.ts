@@ -113,6 +113,26 @@ describe("parseLocalizations", () => {
       "a vectors path that escapes",
       '{"version":1,"languages":[{"language":"de","documents":1,"search":{"path":"search.de.json","entries":1,"digest":"x"},"vectors":{"path":"a/../../x.bin","model":"m","dtype":"q8","dims":8,"count":1}}]}',
     ],
+    // A run of leading `..` is not the single level `embed -o` produces. Left
+    // uncapped, `search --mode vector` would read whatever this names.
+    [
+      "a vectors path climbing more than one level",
+      '{"version":1,"languages":[{"language":"de","documents":1,"search":{"path":"search.de.json","entries":1,"digest":"x"},"vectors":{"path":"../../../../../../etc/passwd","model":"m","dtype":"q8","dims":8,"count":1}}]}',
+    ],
+    [
+      "a search path climbing more than one level",
+      '{"version":1,"languages":[{"language":"de","documents":1,"search":{"path":"../../../../search.de.json","entries":1,"digest":"x"}}]}',
+    ],
+    // `vectors.path` gets the same filename constraint `search.path` does, so
+    // a sidecar cannot be pointed at some other file in a reachable directory.
+    [
+      "a vectors path naming another language's sidecar",
+      '{"version":1,"languages":[{"language":"de","documents":1,"search":{"path":"search.de.json","entries":1,"digest":"x"},"vectors":{"path":"vectors.fr.bin","model":"m","dtype":"q8","dims":8,"count":1}}]}',
+    ],
+    [
+      "a vectors path naming an arbitrary file next door",
+      '{"version":1,"languages":[{"language":"de","documents":1,"search":{"path":"search.de.json","entries":1,"digest":"x"},"vectors":{"path":"../secrets.env","model":"m","dtype":"q8","dims":8,"count":1}}]}',
+    ],
   ];
 
   for (const [name, text] of rejected) {
