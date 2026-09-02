@@ -7,7 +7,12 @@ import {
   VectorMismatchError,
 } from "../../src/runtime/vector.js";
 
-const META = { model: "test/model", dtype: "q8", source: "sha256:corpus-v1" };
+const META = {
+  model: "test/model",
+  dtype: "q8",
+  source: "sha256:corpus-v1",
+  language: "en",
+};
 
 /**
  * Three orthogonal-ish vectors so expected rankings are obvious by hand:

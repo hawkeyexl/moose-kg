@@ -146,12 +146,25 @@ export {
 } from "./embed/index.js";
 export {
   buildSearchIndex,
+  documentsByLanguage,
   emitSearchIndex,
-  SEARCH_INDEX_FILENAME,
+  partitionByLanguage,
   type SearchEntry,
   type SearchIndexDoc,
   type SearchIndexOptions,
 } from "./core/search-index.js";
+export {
+  emitLocalizations,
+  LOCALIZATIONS_FILENAME,
+  parseLocalizations,
+  searchIndexFilename,
+  UNDETERMINED,
+  vectorIndexFilename,
+  type LocalizationEntry,
+  type LocalizationsDoc,
+  type SearchArtifact,
+  type VectorArtifact,
+} from "./core/localizations.js";
 export {
   runFill,
   type FillOptions,

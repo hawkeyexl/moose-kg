@@ -210,7 +210,7 @@ describe("findEntry with a vector leg", () => {
           { id: A, vector: Float32Array.from([1, 0]) },
           { id: B, vector: Float32Array.from([0, 1]) },
         ],
-        { model: "mock", dtype: "q8", source: "sha256:x" },
+        { model: "mock", dtype: "q8", source: "sha256:x", language: "en" },
       ),
     );
 

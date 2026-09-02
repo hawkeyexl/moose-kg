@@ -5,6 +5,7 @@
  * whole-graph JSON-LD file; `iirds` projects the graph into a conformant,
  * deterministic unrestricted iiRDS package (`.iirds` ZIP) — see ADR 01017.
  */
+import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { DockgError } from "../types.js";
@@ -15,9 +16,17 @@ import { projectPackage } from "../core/iirds-package.js";
 import { loadGraph, storeToQuads } from "../core/load.js";
 import {
   buildSearchIndex,
+  documentsByLanguage,
   emitSearchIndex,
-  SEARCH_INDEX_FILENAME,
+  partitionByLanguage,
 } from "../core/search-index.js";
+import {
+  emitLocalizations,
+  isLanguageTag,
+  LOCALIZATIONS_FILENAME,
+  searchIndexFilename,
+  type LocalizationEntry,
+} from "../core/localizations.js";
 import { byCodeUnit } from "../core/sort.js";
 import { PREFIXES } from "../core/vocab.js";
 import { GraphIndex } from "../runtime/graph.js";
@@ -113,9 +122,23 @@ function runIirds(
 }
 
 /**
- * The lexical search artifact. Reads each document's source from disk — the
+ * The same digest `dockg embed` records as a sidecar's `source` and the runtime
+ * recomputes in a browser: SHA-256 over the index file's exact bytes. Computed
+ * here from the string about to be written, so the manifest cannot disagree
+ * with the file it describes.
+ */
+function searchIndexDigest(raw: string): string {
+  return `sha256:${createHash("sha256").update(raw, "utf8").digest("hex")}`;
+}
+
+/**
+ * The lexical search artifacts. Reads each document's source from disk — the
  * same thing the iiRDS projection does for renditions — because the graph
  * deliberately carries no prose (ADR 01008/01019).
+ *
+ * Fans out per language and writes a manifest beside them (ADR 01038). The
+ * fan-out is unconditional, including for a monolingual corpus: one rule beats
+ * a filename that changes shape the day someone adds a translation.
  */
 function runSearchIndex(
   cwd: string,
@@ -129,15 +152,55 @@ function runSearchIndex(
   );
   const warnings: string[] = [];
   const index = buildSearchIndex(graph, cwd, { warnings });
+  const byLanguage = partitionByLanguage(graph, index);
+  const docCounts = documentsByLanguage(graph);
 
-  // Sibling of the graph, named for what it is: `graph.json` next to
-  // `graph.jsonld` would be a trap.
-  const outPath = out
-    ? resolve(cwd, out)
-    : join(dirname(graphPath), SEARCH_INDEX_FILENAME);
-  mkdirSync(dirname(outPath), { recursive: true });
-  writeFileSync(outPath, emitSearchIndex(index), "utf8");
-  return { outPath, format: "search", nodes: index.entries.length, warnings };
+  // Siblings of the graph, named for what they are: `graph.json` next to
+  // `graph.jsonld` would be a trap. `--out` names the directory here, not a
+  // file, because there is more than one.
+  const outDir = out ? resolve(cwd, out) : dirname(graphPath);
+  mkdirSync(outDir, { recursive: true });
+
+  const languages: LocalizationEntry[] = [];
+  for (const [language, doc] of byLanguage) {
+    // The tag becomes a filename, and `export` does not run SHACL — so a
+    // `dcterms:language` literal reaches this line exactly as the corpus wrote
+    // it. Unchecked, `lang: ../escaped` would put a path segment into
+    // `writeFileSync` and crash with a raw stack trace (exit 1) instead of the
+    // operational error this is (exit 2).
+    if (!isLanguageTag(language)) {
+      throw new DockgError(
+        `Cannot write an index for language "${language}": not a BCP-47 tag. ` +
+          `Fix the \`lang\`/\`language\` frontmatter, or the route's \`language\`, ` +
+          `and rebuild — \`dockg check\` reports which document carries it.`,
+      );
+    }
+    const filename = searchIndexFilename(language);
+    const serialized = emitSearchIndex(doc);
+    writeFileSync(join(outDir, filename), serialized, "utf8");
+    languages.push({
+      language,
+      documents: docCounts.get(language) ?? 0,
+      search: {
+        path: filename,
+        entries: doc.entries.length,
+        digest: searchIndexDigest(serialized),
+      },
+    });
+  }
+
+  const manifestPath = join(outDir, LOCALIZATIONS_FILENAME);
+  writeFileSync(
+    manifestPath,
+    emitLocalizations({ version: 1, languages }),
+    "utf8",
+  );
+  return {
+    outPath: manifestPath,
+    format: "search",
+    nodes: index.entries.length,
+    warnings,
+  };
 }
 
 const FORMATS: ExportFormat[] = ["jsonld", "iirds", "search"];

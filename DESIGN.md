@@ -691,13 +691,27 @@ Decided ([ADR 01037](adrs/01037-language-as-a-scope-dimension.md)):
 - **`language` re-enters coverage**, reversing ADR 01011's drop of it — correct on monolingual
   evidence, wrong the moment language means something.
 
+And, for the artifacts ([ADR 01038](adrs/01038-per-locale-retrieval-artifacts.md)):
+
+- **Retrieval artifacts fan out per locale, unconditionally** — `search.<lang>.json` and
+  `vectors.<lang>.bin`, with `und` for documents that declare none. One flat index ranks across
+  the boundary it exists to respect, and makes the browser fetch every locale to search one.
+- **A manifest, `localizations.json`**, is how a consumer finds them: one small file naming every
+  localization, its document count, and its artifacts with their digests. It is also `embed`'s
+  work list, and a digest mismatch is refused rather than embedded.
+- **`embed.byLanguage`** overrides the model per language — the knob that makes the fan-out worth
+  having, since German under an English-only model returns confident, meaningless vectors and
+  fails nothing. The vector header learns `language` and the format goes to 2.
+- **`search --lang` refuses rather than guesses** on a multi-locale corpus, naming what exists.
+- **No locale fallback.** `de-AT` does not fall back to `de`; relatedness is an inference, and
+  this project does not infer.
+
 Slices: **(1) the graph** — route language, translation edges, shapes 1.0.0, near-miss warnings
 for the three localization keys, corpus permutations, all goldens regenerated; **(2) measurement**
 — per-language coverage tables and the untranslated backlog, so one blended number stops
-describing an audience that does not exist; **(3) per-locale artifacts** — `search.<lang>.json`,
-`vectors.<lang>.bin`, per-language embedding models, and a `localizations.json` manifest a browser
-fetches before it downloads anything large; **(4) runtime + CLI** — `dcterms:language` joins the
-`scopeExclusion` table and `--lang` joins `search` and `traverse`.
+describing an audience that does not exist; **(3) per-locale artifacts** — the fan-out, the
+manifest, and the per-language models above; **(4) runtime + CLI** — `dcterms:language` joins the
+`scopeExclusion` table and `--lang` joins `traverse`.
 
 Placed before Phase 9 deliberately: `retrieve` should orchestrate over a language-aware runtime
 rather than have one retrofitted underneath it.

@@ -6,7 +6,12 @@ import {
   VectorIndexError,
 } from "../../src/core/vector-index.js";
 
-const META = { model: "test/model", dtype: "q8", source: "sha256:abc" };
+const META = {
+  model: "test/model",
+  dtype: "q8",
+  source: "sha256:abc",
+  language: "en",
+};
 
 const ENTRIES = [
   { id: "urn:b", vector: Float32Array.from([0, 3, 4]) },
@@ -136,5 +141,27 @@ describe("decodeVectorIndex rejects malformed input", () => {
     bytes[12] = 0x7b; // '{' with the rest intact → unparseable
     bytes[13] = 0x7b;
     expect(() => decodeVectorIndex(bytes)).toThrow(VectorIndexError);
+  });
+});
+
+describe("format version 2 (ADR 01038)", () => {
+  it("round-trips the language the sidecar covers", () => {
+    const bytes = encodeVectorIndex(
+      [{ id: "a", vector: Float32Array.from([1, 0]) }],
+      { ...META, language: "de-AT" },
+    );
+    expect(decodeVectorIndex(bytes).header.language).toBe("de-AT");
+  });
+
+  it("refuses a version-1 sidecar rather than misreading its header", () => {
+    // Language is not optional in v2: a v1 file decoded as v2 would report
+    // `undefined` for the one field that says which locale it covers, and a
+    // host would pair it with whatever index it happened to fetch.
+    const bytes = encodeVectorIndex(
+      [{ id: "a", vector: Float32Array.from([1, 0]) }],
+      META,
+    );
+    new DataView(bytes.buffer, bytes.byteOffset).setUint32(4, 1, true);
+    expect(() => decodeVectorIndex(bytes)).toThrow(/version 1/);
   });
 });

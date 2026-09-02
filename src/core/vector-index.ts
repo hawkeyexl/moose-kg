@@ -1,6 +1,6 @@
 /**
- * The vector sidecar (ADR 01020) — `kg/vectors.bin`, embeddings for the same
- * text the lexical index covers.
+ * The vector sidecar (ADR 01020) — `kg/vectors.<lang>.bin`, embeddings for the
+ * same text that language's lexical index covers (ADR 01038).
  *
  * Layout, fixed and little-endian throughout:
  *
@@ -26,10 +26,12 @@
  */
 import { byCodeUnit } from "./sort.js";
 
-export const VECTOR_INDEX_FILENAME = "vectors.bin";
 /** "DKGV" — dockg vectors. */
 const MAGIC = 0x44_4b_47_56;
-const FORMAT_VERSION = 1;
+// 2 since ADR 01038: the header names the language its vectors cover, so a
+// consumer cannot pair a sidecar with the wrong locale's index. A version-1
+// file is refused by `decodeVectorIndex` rather than read as if it had one.
+const FORMAT_VERSION = 2;
 const HEADER_OFFSET = 12;
 
 export interface VectorIndexHeader {
@@ -43,8 +45,14 @@ export interface VectorIndexHeader {
   count: number;
   /** Node IRIs, sorted, in payload order. */
   ids: string[];
-  /** Digest of the `search.json` these were built from (staleness detection). */
+  /** Digest of the `search.<lang>.json` these were built from (staleness detection). */
   source: string;
+  /**
+   * BCP-47 tag of the index these cover, or `und` (ADR 01038). Recorded so a
+   * host that fetched the wrong pair is refused rather than ranked against a
+   * model that never saw the language.
+   */
+  language: string;
 }
 
 export interface VectorIndexDoc {
@@ -81,7 +89,7 @@ export function normalize(vector: Float32Array): Float32Array {
  */
 export function encodeVectorIndex(
   entries: Array<{ id: string; vector: Float32Array }>,
-  meta: { model: string; dtype: string; source: string },
+  meta: { model: string; dtype: string; source: string; language: string },
 ): Uint8Array {
   const sorted = [...entries].sort((a, b) => byCodeUnit(a.id, b.id));
   const dims = sorted[0]?.vector.length ?? 0;
@@ -100,6 +108,7 @@ export function encodeVectorIndex(
     count: sorted.length,
     ids: sorted.map((e) => e.id),
     source: meta.source,
+    language: meta.language,
   };
   const headerBytes = new TextEncoder().encode(JSON.stringify(header));
 
