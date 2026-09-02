@@ -220,7 +220,12 @@ export function runStats(opts: StatsOptions = {}): StatsReport {
   for (const d of docIris) {
     const tag = languageOf.get(d);
     if (tag === undefined) continue;
-    byLanguage.set(tag, [...(byLanguage.get(tag) ?? []), d]);
+    // Push into the existing array rather than rebuilding it: spreading copies
+    // the whole bucket per document, which is quadratic in a corpus where one
+    // language holds most of the pages.
+    const bucket = byLanguage.get(tag);
+    if (bucket) bucket.push(d);
+    else byLanguage.set(tag, [d]);
   }
 
   // A source is a document that is not itself a translation. Translations are
@@ -235,23 +240,31 @@ export function runStats(opts: StatsOptions = {}): StatsReport {
       ) === 0,
   );
 
+  // Which languages each source already has a translation into, from one scan
+  // over the inverse edges. Asking the store per source per language instead
+  // scales with #sources × #languages, and every one of those lookups walks
+  // the same quads this single pass already visited.
+  const translatedInto = new Map<string, Set<string>>();
+  for (const q of store.getQuads(
+    null,
+    namedNode(`${NS.schema}workTranslation`),
+    null,
+    null,
+  )) {
+    const target = languageOf.get(q.object.value);
+    if (target === undefined) continue;
+    const known = translatedInto.get(q.subject.value);
+    if (known) known.add(target);
+    else translatedInto.set(q.subject.value, new Set([target]));
+  }
+
   const localization: LocalizationReport = {
     unlabelled: docIris.length - languageOf.size,
     languages: [...byLanguage.keys()].sort(byCodeUnit).map((language) => {
       const docsIn = byLanguage.get(language)!;
       const untranslated = sources
         .filter((s) => languageOf.get(s) !== language)
-        .filter(
-          (s) =>
-            !store
-              .getQuads(
-                namedNode(s),
-                namedNode(`${NS.schema}workTranslation`),
-                null,
-                null,
-              )
-              .some((q) => languageOf.get(q.object.value) === language),
-        )
+        .filter((s) => !translatedInto.get(s)?.has(language))
         .map((s) => pathOf.get(s)!)
         .sort(byCodeUnit);
       return {
