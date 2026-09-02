@@ -18,7 +18,8 @@ own, and it is validated against a published JSON Schema.
 
 Read by the `frontmatter` derive source. Aliases are listed in precedence order — the first one
 present wins. **None of these are schema-validated**, so a misspelling is silently ignored rather
-than reported.
+than reported — though the ones dockg reads get a
+[near-miss warning](/dockg/fix/) naming the key you probably meant.
 
 | Frontmatter key | Aliases | Emits |
 |---|---|---|
@@ -27,7 +28,8 @@ than reported.
 | `author` | `authors` | `dcterms:creator` plus a `prov:wasAttributedTo` person node |
 | `date` | `created` | `dcterms:created` (xsd:date) and `prov:generatedAtTime` |
 | `updated` | `lastmod`, `modified` | `dcterms:modified` |
-| `lang` | `language` | `dcterms:language` |
+| `lang` | `language` | `dcterms:language`; a route's `language` supplies it when the page does not. See [localization](/dockg/model/localization/). |
+| `translation-of` | | `schema:translationOfWork` on this page and `schema:workTranslation` back from the source |
 | `tags` | `keywords` | `dcterms:subject`, minting a `skos:Concept` per value |
 | `generated-by` | | `prov:wasGeneratedBy` a generation activity |
 

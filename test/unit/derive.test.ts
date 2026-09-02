@@ -3,7 +3,7 @@ import { analyzeDoc } from "../../src/core/analyze.js";
 import { deriveGraph } from "../../src/core/derive.js";
 import { NS, ROLE } from "../../src/core/vocab.js";
 import type { Quad, Term } from "../../src/core/derive.js";
-import type { DeriveSource } from "../../src/core/config.js";
+import type { DeriveSource, RouteMapping } from "../../src/core/config.js";
 import type { GitHistory } from "../../src/core/git.js";
 
 const BASE = "https://example.com/kg/";
@@ -1077,5 +1077,135 @@ describe("deriveGraph — images, code, derive toggles", () => {
       (q) => q.s === DOC && q.p === `${NS.dcterms}references`,
     );
     expect(refs).toHaveLength(1);
+  });
+});
+
+describe("deriveGraph — localization (ADR 01037)", () => {
+  const EN_DOC = `${BASE}doc/docs/a.md`;
+  const DE_DOC = `${BASE}doc/docs/de/a.md`;
+  const FR_DOC = `${BASE}doc/docs/fr/a.md`;
+
+  const route = (
+    root: string,
+    basePath: string,
+    language?: string,
+  ): RouteMapping => ({
+    basePath,
+    root,
+    extensions: [".md"],
+    indexFiles: ["index"],
+    ...(language === undefined ? {} : { language }),
+  });
+
+  /** Like `graph()`, but the docs are analyzed against route mappings. */
+  function localized(
+    files: Record<string, string>,
+    routes: RouteMapping[],
+  ): Quad[] {
+    const paths = new Set(Object.keys(files));
+    const models = Object.entries(files).map(([path, content]) =>
+      analyzeDoc(content, path, paths, { routes }),
+    );
+    return deriveGraph(models, {
+      baseIri: BASE,
+      derive: ALL_SOURCES,
+      toolVersion: "0.0.0-test",
+    });
+  }
+
+  const LOCALE_ROUTES = [route("docs/de", "/de", "de"), route("docs", "")];
+
+  it("labels a document with the language of its enclosing route", () => {
+    const g = localized(
+      { "docs/de/a.md": "# A\n", "docs/a.md": "# A\n" },
+      LOCALE_ROUTES,
+    );
+    expect(has(g, DE_DOC, `${NS.dcterms}language`, lit("de"))).toBe(true);
+  });
+
+  it("derives no language when no route and no page declares one", () => {
+    const g = localized({ "docs/a.md": "# A\n" }, LOCALE_ROUTES);
+    expect(
+      g.some((q) => q.s === EN_DOC && q.p === `${NS.dcterms}language`),
+    ).toBe(false);
+  });
+
+  it("lets page frontmatter override the route language", () => {
+    const g = localized(
+      { "docs/de/a.md": "---\nlang: de-AT\n---\n\n# A\n" },
+      LOCALE_ROUTES,
+    );
+    expect(has(g, DE_DOC, `${NS.dcterms}language`, lit("de-AT"))).toBe(true);
+    expect(has(g, DE_DOC, `${NS.dcterms}language`, lit("de"))).toBe(false);
+  });
+
+  it("inherits the nearest enclosing route that declares a language", () => {
+    const g = localized({ "docs/api/a.md": "# A\n" }, [
+      route("docs/api", "/api"),
+      route("docs", "", "en"),
+    ]);
+    expect(
+      has(g, `${BASE}doc/docs/api/a.md`, `${NS.dcterms}language`, lit("en")),
+    ).toBe(true);
+  });
+
+  it("links a translation to its source in both directions", () => {
+    const g = localized(
+      {
+        "docs/a.md": "# A\n",
+        "docs/de/a.md": "---\ntranslation-of: ../a.md\n---\n\n# A\n",
+      },
+      LOCALE_ROUTES,
+    );
+    expect(has(g, DE_DOC, `${NS.schema}translationOfWork`, iri(EN_DOC))).toBe(
+      true,
+    );
+    expect(has(g, EN_DOC, `${NS.schema}workTranslation`, iri(DE_DOC))).toBe(
+      true,
+    );
+  });
+
+  it("lists every translation on the source document", () => {
+    const g = localized(
+      {
+        "docs/a.md": "# A\n",
+        "docs/de/a.md": "---\ntranslation-of: docs/a.md\n---\n\n# A\n",
+        "docs/fr/a.md": "---\ntranslation-of: docs/a.md\n---\n\n# A\n",
+      },
+      [
+        route("docs/de", "/de", "de"),
+        route("docs/fr", "/fr", "fr"),
+        route("docs", ""),
+      ],
+    );
+    const translations = g
+      .filter((q) => q.s === EN_DOC && q.p === `${NS.schema}workTranslation`)
+      .map((q) => q.o.value);
+    expect(translations.sort()).toEqual([DE_DOC, FR_DOC].sort());
+  });
+
+  it("records an unresolvable translation-of as a broken link", () => {
+    const g = localized(
+      { "docs/de/a.md": "---\ntranslation-of: ../missing.md\n---\n\n# A\n" },
+      LOCALE_ROUTES,
+    );
+    expect(has(g, DE_DOC, `${NS.dockg}brokenLink`, lit("../missing.md"))).toBe(
+      true,
+    );
+    expect(
+      g.some((q) => q.s === DE_DOC && q.p === `${NS.schema}translationOfWork`),
+    ).toBe(false);
+  });
+
+  it("emits no inverse for a translation-of naming a URL outside the corpus", () => {
+    const url = "https://example.org/en/a";
+    const g = localized(
+      { "docs/de/a.md": `---\ntranslation-of: ${url}\n---\n\n# A\n` },
+      LOCALE_ROUTES,
+    );
+    expect(has(g, DE_DOC, `${NS.schema}translationOfWork`, iri(url))).toBe(
+      true,
+    );
+    expect(g.some((q) => q.s === url)).toBe(false);
   });
 });

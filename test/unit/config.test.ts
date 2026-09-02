@@ -246,6 +246,44 @@ describe("parseConfig", () => {
     ]);
   });
 
+  it("parses a route language and leaves the key absent when unset", () => {
+    // ADR 01037: a route may label every document under its root. Absent, the
+    // key is not present at all, so `routeLanguage` on a DocModel means
+    // something rather than being an undefined nobody set.
+    const c = parseConfig(
+      "version: 1\nroutes:\n  - root: docs/de\n    basePath: /de\n    language: de-AT\n  - root: docs\n",
+      "/tmp/dockg.config.yaml",
+    );
+    expect(c.routes[0]?.language).toBe("de-AT");
+    expect(c.routes[1]).not.toHaveProperty("language");
+  });
+
+  it.each(["English", "de_DE", "d", "de-"])(
+    "rejects the route language %s at the config layer",
+    (language) => {
+      // The BCP-47 pattern is enforced in three places (config schema, shapes,
+      // LANGUAGE_TAG). This is the config one: a bad tag must fail at load,
+      // long before it reaches the graph or becomes a filename.
+      expect(() =>
+        parseConfig(
+          `version: 1\nroutes:\n  - root: docs\n    language: ${language}\n`,
+          "/tmp/dockg.config.yaml",
+        ),
+      ).toThrow(/routes/);
+    },
+  );
+
+  it.each(["de", "en", "de-DE", "pt-BR", "zh-Hans", "zh-Hans-CN", "und"])(
+    "accepts the route language %s",
+    (language) => {
+      const c = parseConfig(
+        `version: 1\nroutes:\n  - root: docs\n    language: ${language}\n`,
+        "/tmp/dockg.config.yaml",
+      );
+      expect(c.routes[0]?.language).toBe(language);
+    },
+  );
+
   it("defaults routes to an empty list and requires root per mapping", () => {
     expect(parseConfig("version: 1\n", "/tmp/c.yaml").routes).toEqual([]);
     expect(() =>

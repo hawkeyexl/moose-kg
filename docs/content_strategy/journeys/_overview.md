@@ -9,6 +9,7 @@ journeys:
   - cuj-model-concepts
   - cuj-scope-by-variant
   - cuj-section-granularity
+  - cuj-localize-a-docset
   - cuj-serve-retrieval
   - cuj-export-to-consumer
   - cuj-audit-provenance
@@ -19,7 +20,7 @@ anchors:
   - cuj-fix-failing-check
 ---
 
-The thirteen end-to-end outcomes dockg's documentation must let someone reach, and which persona
+The fourteen end-to-end outcomes dockg's documentation must let someone reach, and which persona
 reaches each.
 
 ## What a CUJ is here
@@ -44,6 +45,7 @@ Rows are personas, columns are journeys. `●` primary, `○` secondary particip
 | [`cuj-model-concepts`](model-concepts.md) | | ● | | | |
 | [`cuj-scope-by-variant`](scope-by-variant.md) | | ● | | | |
 | [`cuj-section-granularity`](section-granularity.md) | | ● | | | |
+| [`cuj-localize-a-docset`](localize-a-docset.md) | ○ | ● | | | |
 | [`cuj-serve-retrieval`](serve-retrieval.md) | | | ● | | |
 | [`cuj-export-to-consumer`](export-to-consumer.md) | | ○ | ● | | |
 | [`cuj-audit-provenance`](audit-provenance.md) | ○ | | | ● | |
@@ -69,12 +71,14 @@ a CI log does not have.
 
 ## The specify-and-implement pattern
 
-Three journeys have two personas because one specifies and another executes:
+Four journeys have two personas because one specifies and another executes:
 
 - [`cuj-audit-provenance`](audit-provenance.md) and [`cuj-prove-coverage`](prove-coverage.md) —
   Renata states the obligation, Priya wires the gate.
 - [`cuj-backfill-metadata`](backfill-metadata.md) — Priya runs `fill`, Ines decides whether the
   proposals are acceptable against the governed vocabulary.
+- [`cuj-localize-a-docset`](localize-a-docset.md) — Ines settles the locale model, Priya declares
+  it once per route rather than once per file.
 
 Pages serving these journeys have to work for both readers at once: the requirement stated so it
 can be forwarded, and the mechanism stated so it can be implemented. In practice that means

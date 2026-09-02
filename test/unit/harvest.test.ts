@@ -53,6 +53,18 @@ describe("harvestWarnings", () => {
       // meanings. On its own `types` reads as a typo for `type`, and warning is
       // the intended behavior — not an accident of the threshold.
       ["plural of a short key", { types: ["a"] }, "type"],
+      // The localization keys (ADR 01037). `lang` predates the harvest rule
+      // and was never covered by ADR 01028's near-miss surface, so a typo in
+      // the one fact a localized corpus depends on was silent.
+      ["dropped letter", { languge: "de" }, "language"],
+      ["uppercase language", { Lang: "de" }, "lang"],
+      [
+        "snake_case translation",
+        { translation_of: "../a.md" },
+        "translation-of",
+      ],
+      ["camelCase translation", { translationOf: "../a.md" }, "translation-of"],
+      ["doubled letter", { "translation-off": "../a.md" }, "translation-of"],
     ];
 
     for (const [name, fm, expected] of cases) {

@@ -132,7 +132,7 @@ describe("dockg stats", () => {
   it("reports counts, orphans, and broken links", () => {
     const { stdout, status } = run(["stats", "-g", graph]);
     expect(status).toBe(0);
-    expect(stdout).toMatch(/Documents: {2}5/);
+    expect(stdout).toMatch(/Documents: {2}8/);
     expect(stdout).toContain("docs/no-frontmatter.md -> missing.md");
   });
 
@@ -147,13 +147,23 @@ describe("dockg stats", () => {
       brokenSectionRefs: Array<{ doc: string; slug: string }>;
       mostConnected: Array<{ doc: string; degree: number }>;
     };
-    expect(report.docs).toBe(5);
-    expect(report.sections).toBe(9);
+    expect(report.docs).toBe(8);
+    expect(report.sections).toBe(13);
     expect(report.concepts).toBe(6);
     // no-frontmatter.md only references an external URL and missing.md;
     // external counts as an outgoing reference, so it is not an orphan.
-    expect(report.orphans).toEqual([]);
+    // The localized pages are: an orphan here means no in/out
+    // `dcterms:references`, and a translation edge is not one — the metric is
+    // about the link graph, and it says exactly what it always said.
+    expect(report.orphans).toEqual([
+      "docs/de/getting-started.md",
+      "docs/de/regional.md",
+      "docs/fr/getting-started.md",
+    ]);
+    // Two deliberate broken targets: a body link, and the translation-of on
+    // docs/de/regional.md that names a file the corpus does not have.
     expect(report.brokenLinks).toEqual([
+      { doc: "docs/de/regional.md", target: "../missing.md" },
       { doc: "docs/no-frontmatter.md", target: "missing.md" },
     ]);
     // getting-started.md carries a kg.sections key naming no heading.
@@ -246,65 +256,69 @@ describe("dockg stats — metadata coverage", () => {
         pct: number;
       }>;
     };
-    // 5 docs: only getting-started.md carries creator/dates; it and
-    // harvest.md carry a description; configuration.md alone has a kg.label.
-    // Order is the report order.
+    // 8 docs: only getting-started.md carries creator/dates; it, harvest.md
+    // and the two translated pages with descriptions carry a description;
+    // configuration.md alone has a kg.label. Order is the report order.
+    //
+    // This is the blended number ADR 01037 calls out: the three localized docs
+    // pull every English-only field down without saying which audience is
+    // under-served. Per-language tables are the answer, and land next.
     expect(report.coverage).toEqual([
-      { field: "title", predicate: "dcterms:title", docs: 5, pct: 100 },
+      { field: "title", predicate: "dcterms:title", docs: 8, pct: 100 },
       {
         field: "description",
         predicate: "dcterms:description",
-        docs: 2,
-        pct: 40,
+        docs: 4,
+        pct: 50,
       },
-      { field: "creator", predicate: "dcterms:creator", docs: 1, pct: 20 },
-      { field: "created", predicate: "dcterms:created", docs: 1, pct: 20 },
-      { field: "modified", predicate: "dcterms:modified", docs: 1, pct: 20 },
-      { field: "subject", predicate: "dcterms:subject", docs: 3, pct: 60 },
-      { field: "label", predicate: "foaf:primaryTopic", docs: 1, pct: 20 },
+      { field: "creator", predicate: "dcterms:creator", docs: 1, pct: 12.5 },
+      { field: "created", predicate: "dcterms:created", docs: 1, pct: 12.5 },
+      { field: "modified", predicate: "dcterms:modified", docs: 1, pct: 12.5 },
+      { field: "subject", predicate: "dcterms:subject", docs: 3, pct: 37.5 },
+      { field: "label", predicate: "foaf:primaryTopic", docs: 1, pct: 12.5 },
       // The iiRDS typing from Phases 2-4, which coverage did not measure until
       // ADR 01029. The two negative predicates are excluded on purpose: an
       // absent negative means "unknown", not "missing".
-      { field: "type", predicate: "iirds:has-topic-type", docs: 3, pct: 60 },
+      { field: "type", predicate: "iirds:has-topic-type", docs: 3, pct: 37.5 },
       {
         field: "applies-to",
         predicate: "iirds:relates-to-product-variant",
         docs: 2,
-        pct: 40,
+        pct: 25,
       },
       {
         field: "about-product-lifecycle",
         predicate: "iirds:relates-to-product-lifecycle-phase",
         docs: 1,
-        pct: 20,
+        pct: 12.5,
       },
       {
         field: "about-product-aspect",
         predicate: "iirds:has-subject",
         docs: 1,
-        pct: 20,
+        pct: 12.5,
       },
     ]);
   });
 
-  it("reports section coverage over the corpus's nine sections", () => {
+  it("reports section coverage over the corpus's thirteen sections", () => {
     const { stdout, status } = run(["stats", "-f", "json", "-g", graph]);
     expect(status).toBe(0);
     const report = JSON.parse(stdout) as {
       sections: number;
       sectionCoverage: Array<{ field: string; docs: number; pct: number }>;
     };
-    expect(report.sections).toBe(9);
+    expect(report.sections).toBe(13);
     // Sections are explicit-only (ADR 01013), so one section carrying a block
     // is the whole of it. That number is the point: it says how far the corpus
     // is from the granularity the graph already models.
     expect(report.sectionCoverage).toEqual([
-      { field: "type", predicate: "iirds:has-topic-type", docs: 1, pct: 11.1 },
+      { field: "type", predicate: "iirds:has-topic-type", docs: 1, pct: 7.7 },
       {
         field: "applies-to",
         predicate: "iirds:relates-to-product-variant",
         docs: 1,
-        pct: 11.1,
+        pct: 7.7,
       },
       {
         field: "about-product-lifecycle",
@@ -318,7 +332,7 @@ describe("dockg stats — metadata coverage", () => {
         docs: 0,
         pct: 0,
       },
-      { field: "subject", predicate: "dcterms:subject", docs: 1, pct: 11.1 },
+      { field: "subject", predicate: "dcterms:subject", docs: 1, pct: 7.7 },
     ]);
   });
 
@@ -326,10 +340,10 @@ describe("dockg stats — metadata coverage", () => {
     const { stdout } = run(["stats", "-g", graph]);
     expect(stdout).toContain("Coverage (documents):");
     expect(stdout).toContain("Coverage (sections, not gated):");
-    expect(stdout).toMatch(/title\s+5\/5\s+100\.0%/);
-    expect(stdout).toMatch(/label\s+1\/5\s+20\.0%/);
-    expect(stdout).toMatch(/type\s+3\/5\s+60\.0%/);
-    expect(stdout).toMatch(/type\s+1\/9\s+11\.1%/);
+    expect(stdout).toMatch(/title\s+8\/8\s+100\.0%/);
+    expect(stdout).toMatch(/label\s+1\/8\s+12\.5%/);
+    expect(stdout).toMatch(/type\s+3\/8\s+37\.5%/);
+    expect(stdout).toMatch(/type\s+1\/13\s+7\.7%/);
   });
 
   it("never gates on section coverage, however low it is", () => {

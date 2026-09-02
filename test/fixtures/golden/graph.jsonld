@@ -23,6 +23,15 @@
           "@id": "https://example.com/kg/doc/docs/configuration.md"
         },
         {
+          "@id": "https://example.com/kg/doc/docs/de/getting-started.md"
+        },
+        {
+          "@id": "https://example.com/kg/doc/docs/de/regional.md"
+        },
+        {
+          "@id": "https://example.com/kg/doc/docs/fr/getting-started.md"
+        },
+        {
           "@id": "https://example.com/kg/doc/docs/getting-started.md"
         },
         {
@@ -230,6 +239,112 @@
       }
     },
     {
+      "@id": "https://example.com/kg/doc/docs/de/getting-started.md",
+      "@type": [
+        "dockg:Document",
+        "prov:Entity"
+      ],
+      "dcterms:description": "Installieren und den ersten Graphen bauen.",
+      "dcterms:hasPart": {
+        "@id": "https://example.com/kg/doc/docs/de/getting-started.md#erste-schritte"
+      },
+      "dcterms:language": "de",
+      "dcterms:title": "Erste Schritte",
+      "dockg:contentHash": "ca7491427d71996b92cbbb13bff2e3af9bb5129547f2d20682fa160910138882",
+      "dockg:path": "docs/de/getting-started.md",
+      "schema:translationOfWork": {
+        "@id": "https://example.com/kg/doc/docs/getting-started.md"
+      }
+    },
+    {
+      "@id": "https://example.com/kg/doc/docs/de/getting-started.md#erste-schritte",
+      "@type": "dockg:Section",
+      "dcterms:hasPart": {
+        "@id": "https://example.com/kg/doc/docs/de/getting-started.md#install"
+      },
+      "dcterms:title": "Erste Schritte",
+      "dockg:level": {
+        "@value": "1",
+        "@type": "xsd:integer"
+      },
+      "dockg:order": {
+        "@value": "1",
+        "@type": "xsd:integer"
+      }
+    },
+    {
+      "@id": "https://example.com/kg/doc/docs/de/getting-started.md#install",
+      "@type": "dockg:Section",
+      "dcterms:title": "Install",
+      "dockg:level": {
+        "@value": "2",
+        "@type": "xsd:integer"
+      },
+      "dockg:order": {
+        "@value": "1",
+        "@type": "xsd:integer"
+      }
+    },
+    {
+      "@id": "https://example.com/kg/doc/docs/de/regional.md",
+      "@type": [
+        "dockg:Document",
+        "prov:Entity"
+      ],
+      "dcterms:hasPart": {
+        "@id": "https://example.com/kg/doc/docs/de/regional.md#regionale-hinweise"
+      },
+      "dcterms:language": "de-AT",
+      "dcterms:title": "Regionale Hinweise",
+      "dockg:brokenLink": "../missing.md",
+      "dockg:contentHash": "7d6d58187c3af0e2de0f61ea68d30ce5d282ee89240b9f3135747055bed50626",
+      "dockg:path": "docs/de/regional.md"
+    },
+    {
+      "@id": "https://example.com/kg/doc/docs/de/regional.md#regionale-hinweise",
+      "@type": "dockg:Section",
+      "dcterms:title": "Regionale Hinweise",
+      "dockg:level": {
+        "@value": "1",
+        "@type": "xsd:integer"
+      },
+      "dockg:order": {
+        "@value": "1",
+        "@type": "xsd:integer"
+      }
+    },
+    {
+      "@id": "https://example.com/kg/doc/docs/fr/getting-started.md",
+      "@type": [
+        "dockg:Document",
+        "prov:Entity"
+      ],
+      "dcterms:description": "Installer et construire le premier graphe.",
+      "dcterms:hasPart": {
+        "@id": "https://example.com/kg/doc/docs/fr/getting-started.md#premiers-pas"
+      },
+      "dcterms:language": "fr",
+      "dcterms:title": "Premiers pas",
+      "dockg:contentHash": "d32594ff753ed0821c0bb855d0c7007aa52d1b5f4dce1393566bd46ae8255743",
+      "dockg:path": "docs/fr/getting-started.md",
+      "schema:translationOfWork": {
+        "@id": "https://example.com/kg/doc/docs/getting-started.md"
+      }
+    },
+    {
+      "@id": "https://example.com/kg/doc/docs/fr/getting-started.md#premiers-pas",
+      "@type": "dockg:Section",
+      "dcterms:title": "Premiers pas",
+      "dockg:level": {
+        "@value": "1",
+        "@type": "xsd:integer"
+      },
+      "dockg:order": {
+        "@value": "1",
+        "@type": "xsd:integer"
+      }
+    },
+    {
       "@id": "https://example.com/kg/doc/docs/getting-started.md",
       "@type": [
         "dockg:Document",
@@ -287,7 +402,15 @@
       "dockg:path": "docs/getting-started.md",
       "schema:image": {
         "@id": "https://example.com/kg/file/docs/img/arch.png"
-      }
+      },
+      "schema:workTranslation": [
+        {
+          "@id": "https://example.com/kg/doc/docs/de/getting-started.md"
+        },
+        {
+          "@id": "https://example.com/kg/doc/docs/fr/getting-started.md"
+        }
+      ]
     },
     {
       "@id": "https://example.com/kg/doc/docs/getting-started.md#getting-started",

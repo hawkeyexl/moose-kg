@@ -451,3 +451,81 @@ describe("Document content hash (ADR 01036)", () => {
     expect(await validateGraph(build(conformingTriples()), SHAPES)).toEqual([]);
   });
 });
+
+/**
+ * The localization contract (ADR 01037). Both halves, and the negatives assert
+ * *which* path was named — a rejection for the wrong reason is a silent hole.
+ */
+describe("shapes 1.0.0 — localization", () => {
+  const D = doc("docs/de/a.md");
+
+  const withLanguage = (tag: string) => {
+    const triples = conformingTriples();
+    triples.push([D, RDF_TYPE, `${NS.dockg}Document`]);
+    triples.push([D, `${NS.dockg}path`, { lit: "docs/de/a.md" }]);
+    triples.push([D, `${NS.dockg}contentHash`, { lit: HASH }]);
+    triples.push([D, `${NS.dcterms}language`, { lit: tag }]);
+    return build(triples);
+  };
+
+  it.each(["de", "en", "de-DE", "pt-BR", "zh-Hans", "zh-Hans-CN", "und"])(
+    "accepts the BCP-47 tag %s",
+    async (tag) => {
+      expect(await validateGraph(withLanguage(tag), SHAPES)).toEqual([]);
+    },
+  );
+
+  it.each(["English", "de_DE", "d", "deutsch-language", "de-"])(
+    "rejects %s, naming dcterms:language",
+    async (tag) => {
+      const findings = await validateGraph(withLanguage(tag), SHAPES);
+      expect(
+        findings.map((f) => f.path ?? ""),
+        `expected "${tag}" to be rejected`,
+      ).toContain(`${NS.dcterms}language`);
+    },
+  );
+
+  it("rejects a second language on one document", async () => {
+    const triples = conformingTriples();
+    triples.push([doc("docs/a.md"), `${NS.dcterms}language`, { lit: "en" }]);
+    triples.push([doc("docs/a.md"), `${NS.dcterms}language`, { lit: "de" }]);
+    const findings = await validateGraph(build(triples), SHAPES);
+    expect(findings.map((f) => f.path ?? "")).toContain(
+      `${NS.dcterms}language`,
+    );
+  });
+
+  it("accepts the two translation directions between corpus documents", async () => {
+    const triples = conformingTriples();
+    triples.push([D, RDF_TYPE, `${NS.dockg}Document`]);
+    triples.push([D, `${NS.dockg}path`, { lit: "docs/de/a.md" }]);
+    triples.push([D, `${NS.dockg}contentHash`, { lit: HASH }]);
+    triples.push([D, `${NS.schema}translationOfWork`, doc("docs/a.md")]);
+    triples.push([doc("docs/a.md"), `${NS.schema}workTranslation`, D]);
+    expect(await validateGraph(build(triples), SHAPES)).toEqual([]);
+  });
+
+  it("accepts a translation source outside the corpus", async () => {
+    const triples = conformingTriples();
+    triples.push([
+      doc("docs/a.md"),
+      `${NS.schema}translationOfWork`,
+      "https://example.org/en/a",
+    ]);
+    expect(await validateGraph(build(triples), SHAPES)).toEqual([]);
+  });
+
+  it("rejects a workTranslation pointing at a non-Document", async () => {
+    const triples = conformingTriples();
+    triples.push([
+      doc("docs/a.md"),
+      `${NS.schema}workTranslation`,
+      concept("setup"),
+    ]);
+    const findings = await validateGraph(build(triples), SHAPES);
+    expect(findings.map((f) => f.path ?? "")).toContain(
+      `${NS.schema}workTranslation`,
+    );
+  });
+});

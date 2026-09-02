@@ -23,12 +23,23 @@ import { PAGE_TYPE_TO_TOPIC_TYPE } from "./iirds.js";
 import { byCodeUnit } from "./sort.js";
 import type { DocModel } from "../types.js";
 
-/** The page-level keys `resolveKg` harvests, in the spelling it expects. */
+/**
+ * The page-level keys dockg reads, in the spelling it expects.
+ *
+ * Five are `resolveKg`'s harvest inputs (ADR 01024). The localization three
+ * are read straight by the emitter — `lang`/`language` into `dcterms:language`,
+ * `translation-of` into the schema.org translation pair (ADR 01037) — and are
+ * listed here for the same reason: a typo in any of them derives nothing while
+ * looking exactly like a declared fact.
+ */
 export const HARVESTED_KEYS: readonly string[] = [
   "applies-to",
   "concepts",
+  "lang",
+  "language",
   "not-applicable-to",
   "supersedes",
+  "translation-of",
   "type",
 ];
 

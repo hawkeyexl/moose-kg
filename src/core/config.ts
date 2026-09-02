@@ -99,6 +99,13 @@ export interface RouteMapping {
   extensions: string[];
   /** Basenames to try for directory routes (`/docs/actions/`). */
   indexFiles: string[];
+  /**
+   * BCP-47 tag labelling every document under `root` (ADR 01037). A page's own
+   * `lang`/`language` frontmatter wins; absent that, the nearest enclosing
+   * route that declares one applies. Omitted, the route says nothing about
+   * language.
+   */
+  language?: string;
 }
 
 export interface DockgConfig {
@@ -284,6 +291,7 @@ export function parseConfig(text: string, configPath: string): DockgConfig {
         .replace(/\/+$/, ""),
       extensions: m.extensions ?? [...DEFAULT_LINK_EXTENSIONS],
       indexFiles: m.indexFiles ?? [...DEFAULT_INDEX_FILES],
+      ...(m.language === undefined ? {} : { language: String(m.language) }),
     })),
     build: {
       derive: r.build?.derive ?? [...ALL_DERIVE_SOURCES],

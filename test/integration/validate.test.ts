@@ -28,7 +28,7 @@ describe("dockg validate", () => {
       join(root, "test", "fixtures", "corpus"),
     );
     expect(status).toBe(0);
-    expect(stdout).toContain("5 files checked");
+    expect(stdout).toContain("8 files checked");
   });
 
   it("takes kg.revision-of as a list or a bare string, and rejects an empty list", () => {

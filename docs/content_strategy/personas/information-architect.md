@@ -34,6 +34,7 @@ journeys:
   - cuj-model-concepts
   - cuj-scope-by-variant
   - cuj-section-granularity
+  - cuj-localize-a-docset
   - cuj-backfill-metadata
   - cuj-export-to-consumer
   - cuj-query-the-graph

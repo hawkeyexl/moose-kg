@@ -129,6 +129,7 @@ none is flagged in [`ia-gap-analysis.md`](ia-gap-analysis.md).
 | `concepts-skos.mdx` | `cuj-model-concepts` | | `label` and its four dependents; how concept IRIs converge; why two spellings is a warning, not a violation. |
 | `variants.mdx` | `cuj-scope-by-variant` | | The four iiRDS typing keys with their published IRIs shown; negative scope; the disjointness check. |
 | `sections.mdx` | `cuj-section-granularity` | | The slug-keyed map; **nothing is inherited**; `brokenSectionRef` as the reason it is safe to rely on. |
+| `localization.mdx` | `cuj-localize-a-docset` | | `routes[].language` and the page override; `translation-of` and the schema.org pair it emits; why the BCP-47 pattern is a hard error. |
 
 ### Govern it in CI (`govern/`)
 

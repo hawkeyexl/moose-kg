@@ -61,6 +61,47 @@
       "text": "## Options"
     },
     {
+      "id": "https://example.com/kg/doc/docs/de/getting-started.md",
+      "type": "dockg:Document",
+      "title": "Erste Schritte",
+      "description": "Installieren und den ersten Graphen bauen."
+    },
+    {
+      "id": "https://example.com/kg/doc/docs/de/getting-started.md#erste-schritte",
+      "type": "dockg:Section",
+      "title": "Erste Schritte",
+      "text": "# Erste Schritte\n\nDiese Seite deklariert keine Sprache. Sie erbt `de` von der Route, die\n`docs/de` bedient (ADR 01037), und verweist über `translation-of` auf das\nenglische Original."
+    },
+    {
+      "id": "https://example.com/kg/doc/docs/de/getting-started.md#install",
+      "type": "dockg:Section",
+      "title": "Install",
+      "text": "## Install\n\nEin Abschnitt, dessen Slug im englischen Original ebenfalls vorkommt."
+    },
+    {
+      "id": "https://example.com/kg/doc/docs/de/regional.md",
+      "type": "dockg:Document",
+      "title": "Regionale Hinweise"
+    },
+    {
+      "id": "https://example.com/kg/doc/docs/de/regional.md#regionale-hinweise",
+      "type": "dockg:Section",
+      "title": "Regionale Hinweise",
+      "text": "# Regionale Hinweise\n\nDie Seite überschreibt die Sprache der Route (`de`) mit `de-AT`: der\nSeitenschlüssel gewinnt. Ihr `translation-of` zeigt auf eine Datei, die es\nnicht gibt, und wird deshalb zu `dockg:brokenLink` statt zu einer Kante."
+    },
+    {
+      "id": "https://example.com/kg/doc/docs/fr/getting-started.md",
+      "type": "dockg:Document",
+      "title": "Premiers pas",
+      "description": "Installer et construire le premier graphe."
+    },
+    {
+      "id": "https://example.com/kg/doc/docs/fr/getting-started.md#premiers-pas",
+      "type": "dockg:Section",
+      "title": "Premiers pas",
+      "text": "# Premiers pas\n\nDeuxième traduction de la même source, déclarée par un chemin relatif au\ndépôt plutôt qu'au document. La source porte donc deux arêtes\n`schema:workTranslation`."
+    },
+    {
       "id": "https://example.com/kg/doc/docs/getting-started.md",
       "type": "dockg:Document",
       "title": "Getting Started",
