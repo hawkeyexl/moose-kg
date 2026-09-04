@@ -11,6 +11,12 @@ name: Vale
 # which a diff-scoped filter reads as untouched.
 #
 # test/fixtures/ is exempt in .vale.ini, not here: its bytes are the test.
+#
+# The reporter has to suit the event. github-pr-review posts inline review
+# comments and needs a pull request to hang them on, which the push and
+# workflow_dispatch triggers do not have. Those report through github-check,
+# which reviewdog documents as working for a commit as well as a pull request.
+# fail_on_error is what makes the gate bite, either way.
 on:
   push:
     branches: [main]
@@ -26,6 +32,7 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  checks: write
 
 jobs:
   vale:
@@ -35,7 +42,7 @@ jobs:
       - uses: vale-cli/vale-action@v3
         with:
           version: 3.20.0
-          reporter: github-pr-review
+          reporter: ${{ github.event_name == 'pull_request' && 'github-pr-review' || 'github-check' }}
           filter_mode: nofilter
           fail_on_error: true
         env:

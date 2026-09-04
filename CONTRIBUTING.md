@@ -46,8 +46,11 @@ past the limit counts. `test/fixtures/` is exempt, because its bytes are the tes
 Run it locally the way CI does:
 
 ```bash
-vale sync && vale .
+vale sync && vale --glob='!.tmp/**' .
 ```
+
+CI reads a fresh checkout, which has no `.tmp/`. Your tree does, and Vale walks that directory even
+though git ignores it. The glob keeps a scratch file from failing a run that CI would pass.
 
 **Build before test.** The integration suite executes `dist/cli.js`, not `src/`.
 

@@ -115,8 +115,9 @@ used for its Phase 10 evaluation component, so that is now the "eval suite".
 
 ### Confirmation
 
-- `vale sync && vale .` reports **0 errors, 0 warnings and 0 suggestions in 164 files**, which is
-  what the gate runs.
+- `vale sync && vale .` reports **0 errors, 0 warnings and 0 suggestions in 163 files**, which is
+  what the gate runs. That count is a clean checkout, matching CI. A working tree carrying scratch
+  output under `.tmp/` reports more files, because Vale walks that directory and git does not.
 - The three docs gates still pass. `docs:check-strategy` reports the same 31 files, 25 ids, 5
   personas, 14 CUJs and 35/38 planned routes. `docs:check-cli` and `docs:check-links` are
   unchanged, because no command surface and no `/dockg/…` target moved.
