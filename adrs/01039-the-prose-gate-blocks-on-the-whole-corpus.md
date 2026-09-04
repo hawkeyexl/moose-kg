@@ -97,6 +97,17 @@ second-largest category free to return, and Vale's own exit code agrees: a warni
 precedence over `fail_on_error`, and needs reviewdog 0.21.0, which is the action's default.
 `fail_on_error` stays behind it as a floor.
 
+### The rules are pinned, because the gate blocks on them
+
+`Packages` pointed at `releases/latest/download/Moose.zip`. That was survivable while the gate only
+annotated added lines. It is not now. A blocking gate reading the whole corpus turns any upstream
+release into a build failure on unrelated work. There is also nothing to roll back to, because
+`vale sync` re-resolves `latest` on every run. The package cut six releases in its first day.
+
+So `Packages` names a tag. Everything else in this gate is already pinned, including the Vale
+binary at `3.20.0`, and the rules deserve the same treatment. Bumping becomes a change someone
+reads the rule diff for, rather than a surprise on somebody else's pull request.
+
 ### What the gate does not read
 
 Two more things sit outside it, and neither is an exemption anyone wrote. Vale skips YAML
@@ -137,8 +148,14 @@ used for its Phase 10 evaluation component, so that is now the "eval suite".
 
 ### Confirmation
 
-- `fail_level: any` is what makes a warning block. Checked by planting a `Voices.ColonReveal`
-  violation, which Vale reports as a warning and exits `0` on.
+- The severity gap is measured rather than inferred. A planted `Voices.ColonReveal` violation is
+  reported as a warning and Vale exits `0`, which is the behavior `fail_level: any` exists to
+  override. What that shows is the gap, not the fix. Confirming the fix means watching the job go
+  red, and the corpus has no warning to make that happen. The evidence for `fail_level` itself is
+  the action's documented contract. It takes precedence over `fail_on_error`, and needs reviewdog
+  0.21.0, which is the action's default.
+- The style package is pinned to `v0.3.3`. Its styles are byte-identical to what `latest`
+  resolved to when this landed, so the pin changed no rule.
 - `vale sync && vale .` reports **0 errors, 0 warnings and 0 suggestions in 163 files**, which is
   what the gate runs. That count is a clean checkout, matching CI. A working tree carrying scratch
   output under `.tmp/` reports more files, because Vale walks that directory and git does not.
