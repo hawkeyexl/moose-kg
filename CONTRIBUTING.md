@@ -6,11 +6,17 @@
 npm install
 ```
 
-Requires Node.js 24+. Husky installs the git hooks on `npm install`.
+Requires Node.js 24+ and npm 11.6.3 or newer. Husky installs the git hooks on `npm install`.
 
-Use `npm install`, not `npm ci`. The committed lock is generated on Windows and omits the
-Linux-side optional dependencies of rolldown's wasm binding. A strict lock check cannot pass on
-both platforms.
+`npm ci` works too, and CI uses it. The npm floor is the load-bearing half. Versions up to 11.6.2
+write a lockfile that drops the top-level entries for optional platform packages. A strict install
+then rejects it. Both floors are enforced rather than advisory. [package.json](package.json)
+declares them under `engines`, and [.npmrc](.npmrc) sets `engine-strict=true`, so a violation
+fails the install instead of surfacing later as a red build.
+
+Do not read the npm floor as implied by the Node one. Node 24.11.0 satisfies `>=24` while bundling
+npm 11.6.1, which sits below the floor. Run `npm -v` to check, and `npm install -g npm@^11.6.3` to
+fix it.
 
 ## Quality gates
 
