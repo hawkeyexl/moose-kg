@@ -84,6 +84,15 @@ Detective's testIds, shell commands and `stdio` assertions, which must match the
 byte. They render to nothing, so no reader loses anything. `[formats] mdx = md` gives Vale the
 right parser for everything around them.
 
+### What the gate does not read
+
+Two more things sit outside it, and neither is an exemption anyone wrote. Vale skips YAML
+frontmatter and fenced code blocks, so an em dash survives in both. The corpus still holds 88 of
+them. Some are descriptive frontmatter values in the content strategy, and the rest are captured
+command output in the docs site. The output ones must stay byte for byte
+([ADR 01035](01035-executing-documented-command-output.md)). So the accurate claim is that every
+alert is cleared, not that the character is gone from every file.
+
 ### The remediation itself
 
 Two list shapes recurred often enough across the ADR set to rewrite mechanically. Both are

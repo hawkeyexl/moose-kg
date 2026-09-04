@@ -20,6 +20,12 @@ name: Vale
 on:
   push:
     branches: [main]
+    paths:
+      - "**.md"
+      - "**.mdx"
+      - "**.txt"
+      - ".vale.ini"
+      - ".github/workflows/vale.yml"
   pull_request:
     paths:
       - "**.md"
