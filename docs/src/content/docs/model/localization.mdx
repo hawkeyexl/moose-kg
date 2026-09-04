@@ -6,13 +6,13 @@ description: Label every page in a translated corpus with its language, link eac
 import { Aside, Steps } from '@astrojs/starlight/components';
 
 A translated docset reaches dockg as Markdown that happens to live in different directories.
-Two facts are obvious to anyone reading the paths and invisible to every consumer: which
-language a page is in, and which page it was translated from.
+Two facts are obvious to anyone reading the paths and invisible to every consumer. Those are
+which language a page is in, and which page it was translated from.
 
 ## Read this first
 
 [Open-world semantics](/dockg/concepts/open-world/). Language is a scope boundary of the same
-kind as [product variant](/dockg/model/variants/) — and the same rule governs it. A page that
+kind as [product variant](/dockg/model/variants/), and the same rule governs it. A page that
 declares no language is **unknown**, not "English by default". Nothing infers a locale from a
 path unless you tell dockg what the path means.
 
@@ -31,7 +31,7 @@ routes:
     language: de
 ```
 
-That is one line per locale rather than one key per file, which is what makes this adoptable on
+That is one line per locale rather than one key per file. That is what makes this adoptable on
 a corpus that already has a thousand translated pages.
 
 A page's own `lang` (or `language`) frontmatter still wins, for the page in the wrong tree and
@@ -44,7 +44,7 @@ lang: de-AT
 ---
 ```
 
-Where routes nest, the **nearest enclosing route that declares a language** applies — so a
+Where routes nest, the **nearest enclosing route that declares a language** applies. So a
 `docs/api` route that declares none still inherits `en` from the `docs` route above it, the way
 a nested directory inherits its parent's setting.
 
@@ -61,8 +61,8 @@ $ dockg query -g kg/graph.ttl -p dcterms:language
 
 ## Link a translation to its source
 
-`translation-of` is a page-level key naming the source document — doc-relative, repo-relative,
-or a URL:
+`translation-of` is a page-level key naming the source document. The value is doc-relative,
+repo-relative, or a URL:
 
 ```md title="docs/de/install.md"
 ---
@@ -78,7 +78,7 @@ dockg emits **both directions** of the schema.org translation pair from that one
 | `schema:translationOfWork` | the translation | the work this was translated from |
 | `schema:workTranslation` | the source | a translation of this work |
 
-The inverse is materialized rather than left to inference, so "every localization of this page"
+The inverse is materialized rather than left to inference. So "every localization of this page"
 is a single lookup for a consumer with no reasoner and no reverse index:
 
 ```console
@@ -94,8 +94,8 @@ by [`stats`](/dockg/build/) and gated by `stats --check`, rather than a silently
 
 <Aside type="note" title="Why not a `kg` key">
   The `kg` block is docmeta's vocabulary, vendored byte-for-byte and closed to additions, so
-  dockg cannot put a key inside it. `translation-of` therefore lives at page level — the same
-  altitude `lang` has always occupied, and the same one the
+  dockg cannot put a key inside it. `translation-of` therefore lives at page level. That is the
+  same altitude `lang` has always occupied, and the same one the
   [harvest rule](/dockg/reference/frontmatter/) reads.
 </Aside>
 
@@ -125,15 +125,15 @@ by [`stats`](/dockg/build/) and gated by `stats --check`, rather than a silently
 
 </Steps>
 
-This is deliberately a hard error. Every consumer of the label groups on it — scope filtering,
-per-language coverage, per-locale retrieval artifacts — so `German`, `de`, and `Deutsch` on three
-pages of the same corpus do not under-specify the locale, they invent three of them.
+This is deliberately a hard error. Every consumer of the label groups on it, from scope
+filtering to per-language coverage to per-locale retrieval artifacts. So `German`, `de`, and
+`Deutsch` on three pages of one corpus do not under-specify the locale. They invent three.
 
 <Aside type="caution" title="There is no negative-language predicate">
   Variants have `not-applicable-to` because "this page does not cover the SP-C40" is a claim a
-  reviewer makes. "This page is not in German" is not — a document has exactly one language, and
+  reviewer makes. "This page is not in German" is not. A document has exactly one language, and
   the shapes already say so with `sh:maxCount 1`. If you are reaching for a negative here, the
-  fact you want is probably an untranslated page, which is an absence in the corpus rather than
+  fact you want is probably an untranslated page. That is an absence in the corpus rather than
   an assertion in the graph.
 </Aside>
 
@@ -145,18 +145,18 @@ The artifacts fan out per locale, so nothing has to rank across the boundary you
 |---|---|
 | `kg/search.<lang>.json` | language, `und` for documents declaring none |
 | `kg/vectors.<lang>.bin` | language, embedded with that language's model |
-| `kg/localizations.json` | corpus — the manifest naming them all |
+| `kg/localizations.json` | corpus, the manifest naming them all |
 
-Concepts are the exception: they are shared vocabulary rather than documents in a language, so
-**every** index carries all of them. A `--lang de` search can still reach the concepts your German
-pages point at, and a corpus whose documents all declare a language grows no `und` index at all.
+Concepts are the exception. They are shared vocabulary rather than documents in a language, so
+**every** index carries all of them. A `--lang de` search can still reach the concepts your
+German pages point at. A corpus whose documents all declare a language grows no `und` index.
 
 ```sh
 dockg search installieren --lang de
 ```
 
 On a corpus with one language `--lang` is optional. With more, omitting it **exits 2 and names
-what is available** rather than picking for you — answering out of the wrong language is the
+what is available** rather than picking for you. Answering out of the wrong language is the
 failure the fan-out exists to prevent.
 
 Set a per-language embedding model where the default does not cover the language:
@@ -169,11 +169,11 @@ embed:
 ```
 
 Without it, German text embedded under an English-only model returns confident, meaningless
-vectors and fails nothing — see [embedding models](/dockg/reference/embed-models/).
+vectors and fails nothing. See [embedding models](/dockg/reference/embed-models/).
 
 ## Reach a page's translations when it changes
 
-The impact question a localization owner actually has — *what needs re-translating?* — is a
+The impact question a localization owner actually has, *what needs re-translating?*, is a
 traversal over the edge you just declared:
 
 ```console
@@ -196,14 +196,14 @@ excluded by scope:
 1 node, 2 hops, 1 excluded
 ```
 
-A node that declares **no** language is kept, not excluded — unscoped content applies broadly,
+A node that declares **no** language is kept, not excluded. Unscoped content applies broadly,
 exactly as it does for [variants](/dockg/model/variants/). A language filter never silently
 empties a corpus that has not adopted the label.
 
 **The page you start from is a starting point, not a result.** Ask this from a source that *is*
-labelled — `--lang de` from an English page — and the walk still reaches the German translation;
-the English page is simply excluded from the answer and named in the trace. The filter governs
-what the walk reaches, not where you chose to begin.
+labelled, say `--lang de` from an English page, and the walk still reaches the German
+translation. The English page is simply excluded from the answer and named in the trace. The
+filter governs what the walk reaches, not where you chose to begin.
 
 <Aside type="note" title="No locale fallback">
   `de-AT` does not fall back to `de`, and a query for one does not search the other. Fallback is

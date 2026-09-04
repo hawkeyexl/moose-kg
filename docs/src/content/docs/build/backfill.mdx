@@ -1,48 +1,48 @@
 ---
 title: Backfill metadata
-description: dockg fill proposes kg fields and a human accepts them — how to run it safely on a large unannotated corpus with a cost cap, review what it wrote through the provenance block, and ratchet a coverage threshold behind it.
+description: dockg fill proposes kg fields and a human accepts them. How to run it safely on a large unannotated corpus with a cost cap, review what it wrote through the provenance block, and ratchet a coverage threshold behind it.
 ---
 
 import { Aside, CardGrid, LinkCard, Steps } from '@astrojs/starlight/components';
 
 Your coverage numbers are low, the corpus is large, and nobody is going to annotate the backlog by
-hand. That is the normal starting condition, not a failure — nobody adopts a metadata tool before
+hand. That is the normal starting condition, not a failure. Nobody adopts a metadata tool before
 they have too much documentation.
 
 `dockg fill` proposes `kg` fields with a language model. **It proposes; you accept.** Everything
-about how it behaves follows from that, and reading it as "annotate my corpus automatically" will
-get you a large revert and an audit problem.
+about how it behaves follows from that. Reading it as "annotate my corpus automatically" will get
+you a large revert and an audit problem.
 
 ## Before you start
 
-You need a working `dockg build`, a baseline `dockg stats` reading, and credentials for a provider
-— `fill` is the only part of dockg that touches the network or spends money. Nothing else here
-does.
+You need a working `dockg build`, a baseline `dockg stats` reading, and credentials for a
+provider. `fill` is the only part of dockg that touches the network or spends money. Nothing else
+here does.
 
 ## Three safety mechanisms you should know about first
 
 **A confidence gate.** Every proposed field carries a model-assigned confidence. Anything below
 `fill.minConfidence` (default `0.7`) is dropped and reported. A field with *no* score is also
-dropped — no score, no write.
+dropped. No score, no write.
 
 A score that is not a number between 0 and 1 counts as no score. Small local models get this
-wrong in two ways: a string where a number was asked for, and a percentage — `90.5` — where a
-fraction was. Neither is trusted, and neither costs the rest of the proposal: the field goes
+wrong in two ways. One is a string where a number was asked for. The other is a percentage such
+as `90.5` where a fraction was. Neither is trusted, and neither costs the rest of the proposal. The field goes
 unscored and appears in the low-confidence report, while every other field the model got right is
 still written.
 
-**A graph guardrail.** Proposals are simulated against the SHACL shapes before being written, so a
+**A graph guardrail.** Proposals are simulated against the SHACL shapes before being written. A
 proposal that would create a `broader` cycle, conflict with an existing `related` edge, introduce
 a second spelling of an existing concept, or contradict an `applies-to` is rejected. The guardrail
-sees your whole corpus, not just the files in this run, and accepted proposals accumulate within
-the run — so two documents cannot jointly form a cycle.
+sees your whole corpus, not just the files in this run. Accepted proposals accumulate within the
+run, so two documents cannot jointly form a cycle.
 
 **A cost cap.** `fill.maxCostUsd` defaults to `5`. Past it, remaining documents are skipped with a
 `skipped-budget` status rather than silently costing more.
 
-The cap needs a price to work against. dockg knows prices for a fixed set of models; for anything
-else — a local model, a `claude-cli` run, a model newer than the table — spend cannot be totalled,
-so the cap **cannot be applied**. dockg says so rather than pretending:
+The cap needs a price to work against. dockg knows prices for a fixed set of models. For anything
+else, spend cannot be totalled, so the cap **cannot be applied**. That covers a local model, a
+`claude-cli` run, and any model newer than the table. dockg says so rather than pretending:
 
 ```
 dockg: Cost cap of 5 USD cannot be enforced: no price is known for model
@@ -55,9 +55,9 @@ unmeasurable are different facts. Set `fill.pricing` to make the cap real.
 
 ## Spending nothing at all
 
-The three mechanisms above bound what a run writes and what it costs. If the budget is zero rather
-than small, `fill.provider: llama-cpp` runs a model in-process — no key, no network, no spend, and
-no document text leaves the machine. It needs an explicit `fill.model` (a curated alias, an `hf:`
+The three mechanisms above bound what a run writes and what it costs. If the budget is zero
+rather than small, `fill.provider: llama-cpp` runs a model in-process. No key, no network, no
+spend, and no document text leaves the machine. It needs an explicit `fill.model` (a curated alias, an `hf:`
 URI, or a `.gguf` path); selectors like `auto` resolve against the machine and are not supported.
 
 This is a trade, not a free win. Expect to lean harder on the confidence gate: a small local model
@@ -65,9 +65,9 @@ proposes more and knows less, so review what it writes.
 
 <Aside type="caution" title="Exit 0 does not mean everything was written">
   Low-confidence drops and guardrail rejections are **routine operation**, and the run still exits
-  `0`. Only a per-document `error` status exits `1`. This is deliberate — an orchestrating script
-  must not read a normal run as a failure — but it means you have to read the report rather than
-  the exit code.
+  `0`. Only a per-document `error` status exits `1`. That is deliberate, so an orchestrating
+  script does not read a normal run as a failure. It does mean you have to read the report rather
+  than the exit code.
 </Aside>
 
 ## Run it
@@ -86,7 +86,7 @@ proposes more and knows less, so review what it writes.
 2. **Judge the proposals against your vocabulary, not against plausibility.**
 
    This is the step people skip. A model proposing `label: Rate limiting` when your governed
-   term is `Request throttling` is confidently, plausibly wrong — and once written it converges on
+   term is `Request throttling` is confidently, plausibly wrong. Once written it converges on
    a concept IRI that will need cleaning up. If you maintain a controlled vocabulary, this is the
    point at which someone who owns it should look.
 
@@ -100,8 +100,8 @@ proposes more and knows less, so review what it writes.
    ```
 
    Restricting `fill.fields` is usually better than raising confidence alone. Applicability fields
-   in particular — `applies-to`, `not-applicable-to`, `not-about-product-aspect` — require explicit textual
-   evidence and are the ones you least want guessed.
+   in particular, meaning `applies-to`, `not-applicable-to`, and `not-about-product-aspect`,
+   require explicit textual evidence and are the ones you least want guessed.
 
 4. **Write, on a subset first.**
 
@@ -153,8 +153,8 @@ formed a cycle can be admitted later once the corpus changes, without re-asking 
 
 ## What you have now
 
-A measurably better-annotated corpus, a record of exactly which fields a machine proposed and how
-confident it was, and a review queue that shrinks as humans work through it.
+A measurably better-annotated corpus. A record of exactly which fields a machine proposed and how
+confident it was. And a review queue that shrinks as humans work through it.
 
 ## Where to go next
 

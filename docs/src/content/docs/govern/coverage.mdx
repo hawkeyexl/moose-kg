@@ -1,6 +1,6 @@
 ---
 title: Prove coverage
-description: Turn a coverage obligation into a build failure with per-field thresholds — what counts as covered for each field, why the first threshold should sit below your goal, and the empty-graph trap that makes a gate pass without checking anything.
+description: Turn a coverage obligation into a build failure with per-field thresholds. What counts as covered for each field, why the first threshold should sit below your goal, and the empty-graph trap that makes a gate pass without checking anything.
 ---
 
 import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
@@ -30,19 +30,19 @@ counted:
 | `about-product-aspect` | A software subject |
 
 Note that `created` and `modified` depend on `provenance.git`. Turning git derivation off drops
-both numbers for any document without explicit frontmatter dates — the corpus did not change, the
+both numbers for any document without explicit frontmatter dates. The corpus did not change, the
 measurement did.
 
 <Aside type="note" title="Two things are deliberately not counted">
   **Negative scope.** `not-applicable-to` and `not-about-product-aspect` are absent from almost
-  every document, and that absence is correct: under
+  every document, and that absence is correct. Under
   [open-world semantics](/dockg/concepts/open-world/) it means *unknown*, not *missing*. Counting it
   as a gap would leave every healthy corpus near zero on two rows and teach you to skip the table.
 
   **`label` on sections.** A section has no primary topic to name, so it cannot be missing one.
 </Aside>
 
-## The second table: sections
+## The second table, over sections
 
 `stats` reports a second block over `dockg:Section` nodes, and it is usually the more uncomfortable
 number:
@@ -52,10 +52,10 @@ Coverage (sections, not gated):
   type                     1/9  11.1%
 ```
 
-Section metadata is **explicit-only** — a section gets exactly what its own `kg.sections` block
-declares and nothing from its document — so this starts at zero on any corpus that has not adopted
-it. That is the [granularity](/dockg/concepts/granularity/) question made numeric: the graph already
-models sections, and this says whether your metadata does.
+Section metadata is **explicit-only.** A section gets exactly what its own `kg.sections` block
+declares, and nothing from its document. So this starts at zero on any corpus that has not
+adopted it. That is the [granularity](/dockg/concepts/granularity/) question made numeric. The graph
+already models sections, and this says whether your metadata does.
 
 It is reported, never gated. A default gate on it would fail every corpus on day one, which is the
 opposite of useful.
@@ -95,10 +95,10 @@ Localization:
   no language: 5
 ```
 
-## The third table: one per language
+## The third table, one per language
 
 The document table above blends every locale into one number. On a translated corpus that number
-describes no audience — 100% English and 0% German averages to something that is true of nobody.
+describes no audience. 100% English and 0% German averages to something true of nobody.
 
 The `Localization` block appears whenever the graph carries a `dcterms:language`, and the JSON
 report carries the full per-language coverage tables under `localization.languages[].coverage`:
@@ -107,17 +107,17 @@ report carries the full per-language coverage tables under `localization.languag
 dockg stats -f json | jq '.localization.languages[] | {language, docs, untranslated: (.untranslated | length)}'
 ```
 
-`untranslated` is the backlog: **source** documents — those carrying no
-`schema:translationOfWork`, so a translation is never its own backlog item — that have no
-[translation edge](/dockg/model/localization/) into that language. Nothing is inferred; a page
-counts as translated only where the graph carries the edge.
+`untranslated` is the backlog. It counts **source** documents with no
+[translation edge](/dockg/model/localization/) into that language. A source document is one
+carrying no `schema:translationOfWork`, so a translation is never its own backlog item. Nothing is
+inferred; a page counts as translated only where the graph carries the edge.
 
 This block is reported and never gated. `--check` and `stats.coverageThreshold` still act on the
 whole-corpus table only.
 
 ## Set thresholds per field
 
-A single number across all twelve fields is almost never what a real obligation looks like —
+A single number across all twelve fields is almost never what a real obligation looks like.
 `title` at 100% and `label` at 40% is a coherent policy that one number cannot express.
 
 ```yaml title="dockg.config.yaml"
@@ -128,15 +128,15 @@ stats:
     label: 40
 ```
 
-Unlisted fields are not gated. The per-field map is **config-only**; the
+Unlisted fields are not gated. The per-field map is **config-only**. The
 `--coverage-threshold` flag can only apply one number to every field, which is useful for a quick
 check and not for encoding a policy.
 
 <Aside type="tip" title="The first threshold's job is to hold the line">
   Set it just below current coverage, not at your goal. A gate pinned at the eventual target is red
   from day one, and a permanently red gate teaches the team to ignore it. Pinned just under today's
-  number, it fails only on regression — and you raise it in the same pull request that improves the
-  backlog.
+  number, it fails only on regression, and you raise it in the same pull request that improves
+  the backlog.
 </Aside>
 
 ## Gate on it
@@ -150,7 +150,7 @@ dockg stats --check
 Exits `1` when any threshold is breached, or when there are broken internal links or broken
 section refs. Exits `0` otherwise.
 
-Gating compares the raw ratio, not the rounded display value — so a field showing `70.0%` can
+Gating compares the raw ratio, not the rounded display value. So a field showing `70.0%` can
 still fail a threshold of 70 if it is actually 69.96%.
 
 <Aside type="caution" title="An empty graph is vacuously 100% covered">

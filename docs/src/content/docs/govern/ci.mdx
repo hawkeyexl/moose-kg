@@ -7,13 +7,13 @@ import { Aside, CardGrid, LinkCard, Steps, Tabs, TabItem } from '@astrojs/starli
 
 Nothing you have built so far fails when the numbers get worse. This page fixes that.
 
-By the end you will have a pull request that goes red on a metadata regression, and a failure
-message a contributor who has never heard of dockg can act on.
+By the end you will have a pull request that goes red on a metadata regression. The failure
+message will be one a contributor who has never heard of dockg can act on.
 
 ## Before you start
 
 You need a committed `dockg.config.yaml`, a `dockg build` that succeeds locally, and a current
-`dockg stats` reading — you will set your first threshold just below it.
+`dockg stats` reading, because you will set your first threshold just below it.
 
 ## Set a threshold that holds the line
 
@@ -21,8 +21,8 @@ This is the most important decision on the page, and the least obvious.
 
 **Set the threshold just below your current coverage, not at your goal.** A gate pinned at the
 number you eventually want is red from day one, and a permanently red gate teaches everyone to
-ignore it. A gate pinned just below where you are today fails only on regression — which is
-exactly what you want on day one — and can be ratcheted up as the backlog shrinks.
+ignore it. A gate pinned just below where you are today fails only on regression, which is
+exactly what you want on day one. Ratchet it up as the backlog shrinks.
 
 ```yaml title="dockg.config.yaml"
 stats:
@@ -93,8 +93,8 @@ stats:
 <Aside type="caution" title="Order matters, and so does fail-fast">
   `check` and `stats` read the built graph, so `build` has to run first. Each step exits non-zero
   on findings and the job stops there, which means a `validate` failure hides whatever `check`
-  would have said. That is usually what you want — fix the frontmatter, then look again — but it
-  is worth knowing when a contributor asks why the error changed after their fix.
+  would have said. That is usually what you want, since you fix the frontmatter and then look
+  again. It is worth knowing when a contributor asks why the error changed after their fix.
 </Aside>
 
 ## Should the graph be committed?
@@ -112,7 +112,7 @@ dockg build --out /tmp/fresh.ttl && diff kg/graph.ttl /tmp/fresh.ttl
 **Do not commit it.** Build it in CI and in your deploy pipeline. Less review signal, no chance of
 staleness, no merge conflicts on a generated file.
 
-Do **not** commit `kg/vectors.<lang>.bin` either way — they are binaries that require a model
+Do **not** commit `kg/vectors.<lang>.bin` either way. They are binaries that require a model
 download to regenerate, and they are gitignored by default for that reason. The manifest
 (`kg/localizations.json`) is text and can be committed with the indexes.
 
@@ -133,14 +133,14 @@ download to regenerate, and they are gitignored by default for that reason. The 
    Exit `1`, job red.
 
 3. **Confirm the failure names the file.** If it does not, every future failure becomes a question
-   for whoever owns the pipeline — and a gate that generates support load gets removed.
+   for whoever owns the pipeline, and a gate that generates support load gets removed.
 
 </Steps>
 
 ## Point failures at the fix page
 
-Your contributors will hit this gate with no context. Link them somewhere useful — in the job
-summary, in a PR comment, or in your contributing guide:
+Your contributors will hit this gate with no context. Link them somewhere useful, whether in the
+job summary, in a PR comment, or in your contributing guide:
 
 ```yaml title=".github/workflows/dockg.yml"
       - name: Gate on links and coverage

@@ -1,18 +1,19 @@
 ---
 title: Emitted vocabulary
-description: Every namespace, class, and predicate a dockg graph contains — the deliberately minimal dockg namespace, the standard terms it prefers wherever one exists, and the iiRDS terms that appear only inside an exported package.
+description: Every namespace, class, and predicate a dockg graph contains, from the deliberately minimal dockg namespace to the standard terms it prefers wherever one exists, and the iiRDS terms that appear only inside an exported package.
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 
-dockg emits standard vocabulary wherever a standard term exists, and mints its own only where none does.
-That is a deliberate constraint: a graph full of bespoke predicates is a graph nobody else can read.
+dockg emits standard vocabulary wherever a standard term exists. It mints its own only where none
+does. That is a deliberate constraint. A graph full of bespoke predicates is a graph nobody else
+can read.
 
 <Aside type="tip" title="The dockg namespace resolves">
   Fetch [`https://hawkeyexl.github.io/dockg/ns`](/dockg/ns/) and you get a machine-readable RDFS
-  document defining every term below — label, comment, and non-entailing domain and range. The
-  Turtle is at [`/dockg/ns.ttl`](/dockg/ns.ttl), and it ships in the npm package under `ns/` so an
-  offline consumer can load it by path.
+  document. It defines every term below, with a label, a comment, and non-entailing domain and
+  range. The Turtle is at [`/dockg/ns.ttl`](/dockg/ns.ttl). It ships in the npm package under
+  `ns/`, so an offline consumer can load it by path.
 
   It says what each term **means**. What a *valid* dockg graph looks like is a separate question,
   answered by the [SHACL shapes](/dockg/reference/shapes/). RDFS defines; SHACL constrains.
@@ -43,7 +44,7 @@ Every emitted graph carries the same header, sorted by prefix.
 ## The `dockg` namespace
 
 Two classes and a small set of properties. Everything here exists because no standard term covers
-it — if you find yourself wanting to add one, check for a dcterms, SKOS, PROV-O, or schema.org term
+it. If you find yourself wanting to add one, check for a dcterms, SKOS, PROV-O, or schema.org term
 first.
 
 ### Classes
@@ -57,7 +58,7 @@ first.
 
 | Term | Meaning |
 |---|---|
-| `dockg:path` | Repo-relative source path — the join key from graph back to file |
+| `dockg:path` | Repo-relative source path, the join key from graph back to file |
 | `dockg:level` | Heading level, 1–6 |
 | `dockg:order` | 1-based position among sibling headings |
 | `dockg:codeLanguage` | Language of a fenced code block |
@@ -82,30 +83,30 @@ Objects of `prov:hadRole` on qualified attribution and association nodes.
 
 ## Standard terms emitted
 
-**Dublin Core** — `dcterms:title`, `description`, `creator`, `created`, `modified`, `language`,
+**Dublin Core.** `dcterms:title`, `description`, `creator`, `created`, `modified`, `language`,
 `subject`, `references`, `hasPart`.
 
-**SKOS** — classes `skos:Concept`, `skos:ConceptScheme`; properties `skos:prefLabel`, `altLabel`,
+**SKOS.** Classes `skos:Concept`, `skos:ConceptScheme`; properties `skos:prefLabel`, `altLabel`,
 `broader`, `narrower`, `related`, `inScheme`.
 
-**PROV-O** — classes `prov:Entity`, `Activity`, `Attribution`, `Association`, plus `prov:Person`,
+**PROV-O.** Classes `prov:Entity`, `Activity`, `Attribution`, `Association`, plus `prov:Person`,
 `prov:Organization`, `prov:SoftwareAgent` as agent types; properties `prov:wasAttributedTo`,
 `wasGeneratedBy`, `wasDerivedFrom`, `wasRevisionOf`, `wasAssociatedWith`, `generatedAtTime`,
 `endedAtTime`, `used`, `generated`, `agent`, `hadRole`, `qualifiedAttribution`,
 `qualifiedAssociation`.
 
-**schema.org** — `schema:image`; `schema:translationOfWork` and `schema:workTranslation`, the
+**schema.org.** `schema:image`; `schema:translationOfWork` and `schema:workTranslation`, the
 two directions dockg emits from one `translation-of` key (see
 [localization](/dockg/model/localization/)).
 
-**FOAF** — `foaf:name`, `foaf:primaryTopic`.
+**FOAF.** `foaf:name` and `foaf:primaryTopic`.
 
-**iiRDS Core** — `iirds:has-topic-type`, `relates-to-product-variant`,
+**iiRDS Core.** `iirds:has-topic-type`, `relates-to-product-variant`,
 `relates-to-product-lifecycle-phase`, `has-subject`; class `iirds:ProductVariant`; topic-type
 individuals `iirds:GenericTask`, `GenericConcept`, `GenericReference`, `GenericLearning`,
 `GenericTroubleshooting`, `GenericForm`.
 
-**iiRDS Software domain** — `iirdsSft:Administration`, `Customization`, `Update`, `Deployment`,
+**iiRDS Software domain.** `iirdsSft:Administration`, `Customization`, `Update`, `Deployment`,
 `Integration`, `Deinstallation`, `Architecture`, `Interface`, `SystemRequirement`.
 
 ## Package-only terms
@@ -120,7 +121,7 @@ have, this is why.
 `http://www.w3.org/2006/vcard/ns#`.
 
 <Aside type="note" title="iiRDS is referenced, never vendored">
-  iiRDS is CC BY-ND. dockg only references published IRIs — the ones in `src/core/iirds.ts` are
+  iiRDS is CC BY-ND. dockg only references published IRIs. The ones in `src/core/iirds.ts` are
   verified against the consortium's published models, and the vocabulary is never copied,
   re-serialized, or modified. Tools that copy it into their own namespace create a redistribution
   obligation their users inherit.

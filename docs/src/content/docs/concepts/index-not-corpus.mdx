@@ -1,6 +1,6 @@
 ---
 title: An index, not a corpus
-description: Your prose never enters the graph, and that is the design rather than a limitation — dockg indexes documentation so you can route, filter, audit, and attribute, then read the files themselves.
+description: Your prose never enters the graph, and that is the design rather than a limitation. dockg indexes documentation so you can route, filter, audit, and attribute, then read the files themselves.
 ---
 
 import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
@@ -13,8 +13,8 @@ This is the decision the rest of the tool follows from, so it is worth the few m
 ## What is in there instead
 
 Every document becomes a node with a `dockg:path` pointing at the file. Every heading becomes a
-section node whose IRI is the document's IRI plus the heading's slug — which means it addresses
-an exact span on disk:
+section node whose IRI is the document's IRI plus the heading's slug. That addresses an exact
+span on disk:
 
 ```turtle
 <https://example.com/kg/doc/docs/configuration.md#inputs>
@@ -26,20 +26,20 @@ an exact span on disk:
 
 The text under that heading is not here. The address of it is.
 
-## The working pattern: route, then read
+## The working pattern is route, then read
 
 This inverts how retrieval usually works. Rather than searching text and hoping the match is
-relevant, you use the graph to narrow to the right nodes by type, product variant, subject, or
-relationship — and *then* open the files those nodes name.
+relevant, you narrow to the right nodes with the graph. Filter by type, product variant, subject,
+or relationship. *Then* open the files those nodes name.
 
-The narrowing step is deterministic. A topic either carries `applies-to: SP-X100` or it does not;
-there is no similarity threshold to tune and no chance a passage from a different product scores
+The narrowing step is deterministic. A topic either carries `applies-to: SP-X100` or it does not.
+There is no similarity threshold to tune, and no chance a passage from a different product scores
 close enough to slip through.
 
 <Aside type="note" title="Why not just embed everything?">
   Vector search is good at "what is this about" and bad at "which product does this belong to."
   Two passages describing the same procedure for two different machines are almost identical in
-  embedding space, so a ranker cannot reliably separate them — the wrong chunk genuinely is
+  embedding space, so a ranker cannot reliably separate them. The wrong chunk genuinely is
   similar. A typed edge separates them every time, with no ranking involved.
 
   dockg is not a replacement for that ranker. It is the boundary you put in front of it.
@@ -54,8 +54,8 @@ not a search.
 inbound edges, so moving or deleting a page has a knowable blast radius.
 
 **Attribution and audit become derivable.** Who wrote a document, when, what it was derived from,
-and which model proposed which field are all recorded as typed assertions rather than assembled
-by hand from git history.
+and which model proposed which field are all typed assertions. Nothing is assembled by hand from
+git history.
 
 **The graph stays small and diffable.** Metadata for a corpus is orders of magnitude smaller than
 the corpus. `graph.ttl` lives in git, and a pull request shows exactly which assertions changed.
@@ -64,13 +64,13 @@ the corpus. `graph.ttl` lives in git, and a pull request shows exactly which ass
 
 A fact that exists only in prose does not exist for anything reading the graph.
 
-If a page says "this procedure does not apply to the compact model" in a sentence and nothing in
-its frontmatter says so, then a variant-scoped query will not know. The sentence is invisible.
-The gap is silent, and it is silent in the dangerous direction — you get a plausible answer
+Suppose a page says "this procedure does not apply to the compact model" in a sentence, and
+nothing in its frontmatter says so. A variant-scoped query will not know. The sentence is
+invisible. The gap is silent, and silent in the dangerous direction. You get a plausible answer
 rather than an error.
 
-The mitigation is measurement rather than vigilance: `dockg stats` reports metadata coverage per
-field, which turns "how much of what we know is actually machine-readable?" into a number you can
+The mitigation is measurement rather than vigilance. `dockg stats` reports metadata coverage per
+field. That turns "how much of what we know is actually machine-readable?" into a number you can
 watch and gate on.
 
 ```

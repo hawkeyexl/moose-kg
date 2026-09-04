@@ -1,21 +1,21 @@
 ---
 title: Map your site's routes
-description: If your docs link by published URL rather than file path, dockg cannot resolve those links until you tell it how routes map back to source files — and the broken links that remain afterwards are the ones worth fixing.
+description: If your docs link by published URL rather than file path, dockg cannot resolve those links until you tell it how routes map back to source files. The broken links that remain afterwards are the ones worth fixing.
 ---
 
 import { Aside, CardGrid, LinkCard, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
 
-You ran `dockg stats` and got a long list of broken internal links that are not broken — they
+You ran `dockg stats` and got a long list of broken internal links that are not broken. They
 work fine on your published site. Your corpus links by route, and dockg resolved those links
 against the filesystem.
 
-By the end of this page those links will be real graph edges, and the broken-link list will
+By the end of this page those links will be real graph edges. The broken-link list will then
 contain only links that are actually broken.
 
 ## Before you start
 
 You need a `graph.ttl` and a broken-link list from [`dockg stats`](/dockg/build/). Keep the
-current count — you will compare against it.
+current count, because you will compare against it.
 
 ## Why this is not automatic
 
@@ -23,13 +23,13 @@ A page writes `[find](/docs/actions/find)`. Your site generator publishes that c
 it knows `/docs/actions/find` is served from `src/content/docs/actions/find.mdx`. That mapping
 lives in the generator's config, in a convention, or in both.
 
-dockg does not read your generator's config — it would need one adapter per generator, and they
+dockg does not read your generator's config. It would need one adapter per generator, and they
 change. It takes the mapping from you instead, once.
 
 ## Configure the mapping
 
-A route entry answers two questions: what URL prefix the site serves, and which repo directory
-serves it.
+A route entry answers two questions. What URL prefix does the site serve, and which repo
+directory serves it?
 
 <Tabs>
   <TabItem label="Astro / Starlight">
@@ -83,7 +83,7 @@ routes:
 
 <Aside type="note" title="Route mappings are config-only">
   There is no CLI flag. Routes define what the corpus *means*, so a graph built with different
-  route rules is a different graph — it should not vary with how someone typed the command.
+  route rules is a different graph. It should not vary with how someone typed the command.
 </Aside>
 
 ## Verify by delta
@@ -112,20 +112,21 @@ routes:
 ## The remaining broken links are the point
 
 This is the outcome worth caring about. Before mapping, the broken-link list was noise you had to
-ignore. After mapping, everything left in it is a link that genuinely resolves to nothing —
-usually a page that was moved or deleted without its inbound links being updated.
+ignore. After mapping, everything left in it is a link that genuinely resolves to nothing. That
+is usually a page moved or deleted without its inbound links being updated.
 
 That list is now small enough to act on, and stable enough to
 [gate on in CI](/dockg/govern/ci/).
 
 Links to files that are not documents are not in it. Your `extensions` list says what a document
-looks like in this corpus, so a target carrying some other explicit extension — a downloadable
-archive, a linked PDF, an OpenAPI `.yaml`, dockg's own [`/dockg/ns.ttl`](/dockg/ns.ttl) — is read
-as a static asset your site serves, not as a document dockg failed to find. There is no Markdown
-file you could add to fix such a finding, so dockg does not raise one.
+looks like in this corpus. A target carrying some other explicit extension is read as a static
+asset your site serves, not as a document dockg failed to find. That covers a downloadable
+archive, a linked PDF, an OpenAPI `.yaml`, and dockg's own
+[`/dockg/ns.ttl`](/dockg/ns.ttl). There is no Markdown file you could add to fix such a finding,
+so dockg does not raise one.
 
 The check that matters is unchanged. `/docs/actions/missing` and `/docs/actions/missing/` are
-still broken, and so is `/docs/actions/missing.mdx` — you wrote a document target and it does not
+still broken, and so is `/docs/actions/missing.mdx`. You wrote a document target and it does not
 resolve. Only a non-document extension is skipped.
 
 <Aside type="note" title="Route mapping applies to component links too">
@@ -136,8 +137,8 @@ resolve. Only a non-document extension is skipped.
 
 ## What you have now
 
-Site-style links resolved to real `dcterms:references` edges, impact analysis that reflects how
-your documentation actually cross-references itself, and a broken-link count that means something.
+Site-style links now resolve to real `dcterms:references` edges. Impact analysis reflects how
+your documentation actually cross-references itself, and the broken-link count means something.
 
 ## Where to go next
 

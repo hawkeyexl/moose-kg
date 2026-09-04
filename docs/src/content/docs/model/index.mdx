@@ -1,6 +1,6 @@
 ---
 title: Model your metadata
-description: How dockg maps frontmatter onto SKOS concepts, iiRDS topic types, and product-variant applicability — a mapping onto vocabulary you already have rather than an introduction to it.
+description: How dockg maps frontmatter onto SKOS concepts, iiRDS topic types, and product-variant applicability. A mapping onto vocabulary you already have rather than an introduction to it.
 ---
 
 import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
@@ -21,7 +21,7 @@ and getting it enforced. It assumes you know SKOS and does not explain it.
 
 <Aside type="note" title="dockg references iiRDS; it does not vendor it">
   Topic types, lifecycle phases, and subjects are bound to IRIs published by the iiRDS consortium.
-  dockg never copies, re-serializes, or modifies the vocabulary — the IRIs in the source are
+  dockg never copies, re-serializes, or modifies the vocabulary. The IRIs in the source are
   verified against the published models. iiRDS is CC BY-ND, and referencing rather than
   redistributing is what keeps that obligation off your users.
 </Aside>
@@ -31,7 +31,7 @@ and getting it enforced. It assumes you know SKOS and does not explain it.
 - **A concept scheme you did not declare.** Concepts are minted from the labels your documents
   use, converging on slugified labels. dockg will not invent a hierarchy for you.
 - **Inference.** No transitive closure is materialized. `broader` chains are checked for cycles
-  but not expanded — what you assert is what the graph contains.
+  but not expanded, so what you assert is what the graph contains.
 - **Anything about your prose.** See [an index, not a corpus](/dockg/concepts/index-not-corpus/).
 
 ## Read this first if you are scoping by product

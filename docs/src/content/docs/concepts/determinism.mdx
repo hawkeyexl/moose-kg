@@ -1,12 +1,12 @@
 ---
 title: Determinism
-description: Two builds over unchanged inputs produce byte-identical output — which is what makes a dockg graph reviewable in a pull request and admissible as audit evidence rather than an anecdote.
+description: Two builds over unchanged inputs produce byte-identical output. That is what makes a dockg graph reviewable in a pull request and admissible as audit evidence rather than an anecdote.
 ---
 
 import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-Run `dockg build` twice over the same inputs and you get the same bytes. Not equivalent graphs —
-the same file.
+Run `dockg build` twice over the same inputs and you get the same bytes. Not equivalent graphs.
+The same file.
 
 That property is load-bearing rather than tidy, and it constrains the implementation everywhere.
 
@@ -31,22 +31,22 @@ GitHub-style heading slug. The same file produces the same IRI on Windows and Li
 next year.
 
 **No blank nodes, ever.** Blank-node identifiers are assigned per-parse, so a graph containing
-them cannot be byte-stable — and its diffs are unreadable. Every node dockg emits, including
+them cannot be byte-stable, and its diffs are unreadable. Every node dockg emits, including
 provenance and attribution nodes, gets a deterministic IRI derived from what it describes.
 
 **No wall clock.** Dates come from frontmatter first, then git committer times. Nothing calls
 `Date.now()`. A build at noon and a build at midnight agree.
 
 <Aside type="note" title="Sorting without a separator">
-  Ordering compares field by field rather than joining fields into one string, because a joining
-  separator would need to be a character that cannot appear in the data — and the usual choice,
-  a NUL byte, makes git classify the file as binary and drop it out of diffs entirely.
+  Ordering compares field by field rather than joining fields into one string. A joining
+  separator would need to be a character that cannot appear in the data. The usual choice, a NUL
+  byte, makes git classify the file as binary and drop it out of diffs entirely.
 </Aside>
 
 ## Why it matters, per reader
 
 **If you review pull requests:** `kg/graph.ttl` is a normal reviewable file. A change to a page's
-frontmatter shows up as a handful of changed lines rather than a whole-file rewrite, so metadata
+frontmatter shows up as a handful of changed lines rather than a whole-file rewrite. Metadata
 changes get reviewed like code changes.
 
 **If you cache or ship artifacts:** the graph, the JSON-LD export, and the iiRDS package are all
@@ -66,10 +66,10 @@ regenerated in front of the person asking, from inputs they can see.
 
 **Git provenance degrades rather than fails.** With the default `provenance.git: auto`, a build
 in a directory that is not a git repo warns on stderr and continues without git-derived dates.
-The build still exits 0 — a degraded build is a successful one. Set `provenance.git: true` to
-make git a hard requirement, or `false` to skip the subprocess entirely.
+The build still exits 0, because a degraded build is a successful one. Set `provenance.git: true`
+to make git a hard requirement, or `false` to skip the subprocess entirely.
 
-The consequence worth knowing: two builds of the same corpus, one with git available and one
+One consequence is worth knowing. Two builds of the same corpus, one with git available and one
 without, are *not* byte-identical. Determinism holds for a fixed set of inputs, and git history
 is an input.
 

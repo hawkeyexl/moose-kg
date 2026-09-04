@@ -1,6 +1,6 @@
 ---
 title: Open-world semantics
-description: A missing value in dockg means unknown, not excluded — so a query that treats absence as exclusion returns a set that is wrong in the dangerous direction, and dockg gives you explicit negative predicates to say the stronger thing.
+description: A missing value in dockg means unknown, not excluded. A query that treats absence as exclusion returns a set that is wrong in the dangerous direction, so dockg gives you explicit negative predicates to say the stronger thing.
 ---
 
 import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
@@ -17,11 +17,11 @@ every topic that applies to SP-X100.* You get results. They are plausible. The c
 reasonable. Nothing errors.
 
 Now the topic that carries a critical interlock warning, and that nobody ever tagged, is missing
-from that set — because it was never asserted to apply to anything.
+from that set. It was never asserted to apply to anything.
 
 Invert the query and it gets worse. *Give me every topic that does not apply to SP-X100*, written
-as "topics with no matching `applies-to`", returns every untagged topic in the corpus — including
-the ones that do apply and were simply never annotated.
+as "topics with no matching `applies-to`", returns every untagged topic in the corpus. That
+includes the ones that do apply and were simply never annotated.
 
 Both queries are silently wrong, in opposite directions, with no error to notice.
 
@@ -63,13 +63,13 @@ to look for the explicit exclusion; anything else is inferring from a gap.
 
 Asserting both directions for the same variant is a defect a human reviewer misses and an auditor
 finds. `dockg check` catches it every build, via SHACL disjointness between `applies-to` and
-`not-applicable-to`, and it is a violation rather than a warning — so it exits 1 and fails your
+`not-applicable-to`. It is a violation rather than a warning, so it exits 1 and fails your
 gate.
 
 ## Unresolvable filters fail loudly
 
 The same hazard shows up at query time. Filtering a traversal by a variant that does not exist in
-the graph could reasonably return an empty set — and an empty set is indistinguishable from
+the graph could reasonably return an empty set. An empty set is indistinguishable from
 "nothing matched", which is exactly the wrong answer for a filter meant to *exclude* something.
 
 So dockg refuses instead:
@@ -89,8 +89,8 @@ Exit 2. A typo in a scope filter is an operational error, not a result.
 Because the negative predicate is an assertion, it carries the same obligation as any other. Tag
 what you actually know:
 
-- **Do** assert non-applicability where it is a real, reviewed fact — safety, regulatory, and
-  interlock content especially.
+- **Do** assert non-applicability where it is a real, reviewed fact, especially safety,
+  regulatory, and interlock content.
 - **Do not** backfill `not-applicable-to` across a corpus for tidiness. You will be asserting things
   nobody checked, and the graph cannot tell a reviewed assertion from a bulk one.
 - **Do** measure the gap instead. Low `applies-to` coverage is a number, and

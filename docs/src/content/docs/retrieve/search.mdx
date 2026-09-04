@@ -30,14 +30,14 @@ npm install @huggingface/transformers
    Wrote 20 nodes to kg/localizations.json
    ```
 
-   The indexes live beside the graph rather than inside it. Prose belongs in neither — an index
+   The indexes live beside the graph rather than inside it. Prose belongs in neither. An index
    holds the short, searchable strings a node already carries (titles, labels), not document text.
 
    **One index per language** ([localization](/dockg/model/localization/)): `search.<lang>.json`
    for each language the corpus declares, `search.und.json` for documents that declare none, and
    `localizations.json` naming them all.
 
-   `und` tracks what the documents *say*, not how many languages there are: a corpus that labels
+   `und` tracks what the documents *say*, not how many languages there are. A corpus that labels
    everything `en` gets `search.en.json` and a one-entry manifest, while a corpus that labels
    nothing gets `search.und.json`. Both are monolingual as far as `--lang` is concerned.
 
@@ -89,14 +89,14 @@ No API, no key, no spend, and **no corpus text leaves the machine**. That is a p
 much as a technical one, and it is worth having quotable.
 
 Node and the browser **rank the same, though they do not compute the same floats**.
-transformers.js uses a native ONNX runtime in Node and WASM in the browser, and it accepts
+transformers.js uses a native ONNX runtime in Node and WASM in the browser. It accepts
 *different* `device` values on each, so there is no way to force one backend everywhere. Measured
-on the default model, a query embedded in Node and the same query embedded in Chrome agree to
+on the default model, a query embedded in Node and the same query in Chrome agree to
 **cosine 0.999914**.
 
-What dockg guarantees — and gates in CI against the real model in a real browser — is **decisive
-ordering**: any two results clearly separated in score keep their relative order on both platforms.
-Results within the noise of each other may swap, and in practice sometimes do, so do not treat the
+What dockg guarantees is **decisive ordering**, gated in CI against the real model in a real
+browser. Any two results clearly separated in score keep their relative order on both platforms.
+Results within the noise of each other may swap, and in practice sometimes do. Do not treat the
 tail of a result list as stable across platforms. dockg pins what is pinnable: single-threaded on
 the WASM side, `q8` weights, one text per call.
 
@@ -108,7 +108,7 @@ the WASM side, `q8` weights, one text per call.
 | `lexical` | Lexical only | Always available; no sidecar needed |
 | `vector` | Vector only | Diagnosing the vector leg in isolation |
 
-A missing embedder **degrades to lexical** — unless you asked for `vector` or `hybrid` explicitly,
+A missing embedder **degrades to lexical**, unless you asked for `vector` or `hybrid` explicitly,
 in which case it errors. Silent degradation is fine when you did not express a preference and wrong
 when you did.
 
@@ -138,13 +138,13 @@ Exit `2` in both cases.
   ```
 
   Skipping the last step gives you a refusal at query time rather than bad results, which is the
-  intended failure — but it will fail your pipeline, so wire the three together.
+  intended failure. It will still fail your pipeline, so wire the three together.
 </Aside>
 
 ## Do not commit the sidecar
 
 `kg/vectors.*.bin` is gitignored by default. They are binaries, they are derived, and
-regenerating them requires a model download — so they belong in your deploy pipeline rather than
+regenerating them requires a model download. They belong in your deploy pipeline rather than
 your repository. The graph, the indexes and the manifest are text and can reasonably be
 committed.
 

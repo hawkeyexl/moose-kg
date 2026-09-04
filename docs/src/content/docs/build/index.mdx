@@ -11,7 +11,7 @@ interpret what comes back.
 
 ## Before you start
 
-You should have run `dockg build` once — see [Get started](/dockg/get-started/) — and have a
+You should have run `dockg build` once, per [Get started](/dockg/get-started/), and have a
 `graph.ttl` to look at.
 
 ## The seven derive sources
@@ -47,7 +47,7 @@ it should not depend on how someone typed the command.
 
 <Steps>
 
-1. **Set your inputs.** With no config file dockg ingests `**/*.md` — which includes
+1. **Set your inputs.** With no config file dockg ingests `**/*.md`, which includes
    `README.md`, `CHANGELOG.md`, and any Markdown in `test/`. That is rarely what you want past
    the first run.
 
@@ -137,14 +137,14 @@ Coverage (sections, not gated):
   subject                  1/9  11.1%
 ```
 
-**Most connected** are your hub documents — the ones whose removal or rename hurts most.
+**Most connected** are your hub documents, the ones whose removal or rename hurts most.
 
 **Orphan docs** have no inbound or outbound `dcterms:references`. A genuine orphan is usually
 either unreachable content or a page everybody links to from a nav config that dockg cannot see.
 
-**Broken internal links** point at files that do not exist. If your corpus links by published site
-route rather than file path, expect many of these and see below — they are a configuration gap,
-not a corpus defect.
+**Broken internal links** point at files that do not exist. If your corpus links by published
+site route rather than file path, expect many of these and see below. They are a configuration
+gap, not a corpus defect.
 
 **Broken section refs** are `kg.sections` keys matching no heading, almost always a renamed
 heading.
@@ -153,7 +153,7 @@ heading.
 starting point, not a failing grade.
 
 <Aside type="note" title="MDX components are read too">
-  In an `.mdx` file, a JSX element's `href` becomes a link — on any element, since that is HTML's
+  In an `.mdx` file, a JSX element's `href` becomes a link on any element, since that is HTML's
   hyperlink attribute wherever it appears. So `<LinkCard href="…" />` produces the same edge a
   Markdown link would.
 

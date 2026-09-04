@@ -1,6 +1,6 @@
 ---
 title: Scope by product variant
-description: Type topics against published iiRDS vocabularies and scope them by product variant — including saying explicitly what a topic does not cover, and proving a scoped traversal excludes what it should.
+description: Type topics against published iiRDS vocabularies and scope them by product variant, including saying explicitly what a topic does not cover, and proving a scoped traversal excludes what it should.
 ---
 
 import { Aside, CardGrid, LinkCard, Steps } from '@astrojs/starlight/components';
@@ -36,7 +36,7 @@ never vendors, re-serializes, or modifies the vocabulary.
 `iirds:relates-to-product-variant`.
 
 <Aside type="note" title="iiRDS is CC BY-ND, and that shapes the implementation">
-  dockg only references published IRIs — the ones in the source are byte-verified against the
+  dockg only references published IRIs. The ones in the source are byte-verified against the
   consortium's published models. Nothing is copied into dockg's namespace, so no redistribution
   obligation reaches your users. Worth having quotable if a standards or legal reviewer asks.
 </Aside>
@@ -55,12 +55,12 @@ kg:
 ---
 ```
 
-`not-applicable-to` emits `dockg:notApplicableToVariant`; `not-about-product-aspect` does the same for
-subjects. These are the only predicates dockg mints in its own namespace for scoping, and they
-exist because the standard has no way to state the negative.
+`not-applicable-to` emits `dockg:notApplicableToVariant`, and `not-about-product-aspect` does the
+same for subjects. These are the only predicates dockg mints in its own namespace for scoping.
+They exist because the standard has no way to state the negative.
 
-**Use them where the exclusion is a reviewed fact** — safety, regulatory, and interlock content
-especially. **Do not backfill them across a corpus for tidiness**: the graph cannot distinguish a
+**Use them where the exclusion is a reviewed fact**, especially safety, regulatory, and interlock
+content. **Do not backfill them across a corpus for tidiness.** The graph cannot distinguish a
 reviewed assertion from a bulk one, and you will be asserting things nobody checked.
 
 ## Prove the scope, including what it excluded
@@ -78,7 +78,7 @@ reviewed assertion from a bulk one, and you will be asserting things nobody chec
 2. **Read the exclusions in the trace, not just the results.**
 
    The whole point of a scope filter is what it removed. A traversal that returns plausible
-   results while silently dropping nothing is indistinguishable from an unfiltered one — check
+   results while silently dropping nothing is indistinguishable from an unfiltered one. Check
    that the exclusions list is non-empty when you expect it to be.
 
 3. **Confirm a bad filter fails rather than returning nothing.**
@@ -99,7 +99,7 @@ reviewed assertion from a bulk one, and you will be asserting things nobody chec
 ## Contradictions fail the build
 
 Asserting the same variant on both `applies-to` and `not-applicable-to` is caught by SHACL
-disjointness, as a **violation** — exit `1`.
+disjointness, as a **violation** that exits `1`.
 
 ```
 violation: … dockg:notApplicableToVariant — applies-to and not-applicable-to share a value
@@ -110,7 +110,7 @@ This is the defect a human reviewer does not catch and an auditor does.
 ## Document-level scope is a lie on long pages
 
 If a page covers three variants, no document-level `applies-to` is true for all of it. Push the
-metadata down to the heading that owns the text — see
+metadata down to the heading that owns the text. See
 [section-level metadata](/dockg/model/sections/).
 
 ## Where to go next
