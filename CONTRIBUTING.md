@@ -8,14 +8,14 @@ npm install
 
 Requires Node.js 24+. Husky installs the git hooks on `npm install`.
 
-Use `npm install`, not `npm ci`: the committed lock is generated on Windows and omits the
-Linux-side optional dependencies of rolldown's wasm binding, so a strict lock check cannot pass
-on both platforms.
+Use `npm install`, not `npm ci`. The committed lock is generated on Windows and omits the
+Linux-side optional dependencies of rolldown's wasm binding. A strict lock check cannot pass on
+both platforms.
 
 ## Quality gates
 
-Checks are layered by cost — fast ones on commit, the full loop on push, and everything again in
-CI, which is the authoritative gate.
+Checks are layered by cost. Fast ones run on commit, the full loop on push, and everything again
+in CI, which is the authoritative gate.
 
 | Script | What it checks |
 |---|---|
@@ -31,7 +31,7 @@ CI, which is the authoritative gate.
 | `pre-push` | `typecheck`, `build`, `test` |
 | `commit-msg` | commitlint |
 
-**Build before test** — the integration suite executes `dist/cli.js`, not `src/`.
+**Build before test.** The integration suite executes `dist/cli.js`, not `src/`.
 
 Prettier deliberately ignores `test/fixtures/` and `schemas/`: the corpus and golden graph are
 byte-exact regression baselines, and published frontmatter schemas are immutable once released.
@@ -51,7 +51,7 @@ npm run docs:build    # production build into docs/dist
 
 Before writing or changing a page, read
 [`docs/content_strategy/README.md`](docs/content_strategy/README.md). The set is organized by
-what a reader is trying to accomplish, not by document type, and pages are written against a
+what a reader is trying to accomplish, not by document type. Every page is written against a
 named persona and journey.
 
 | Gate | Command | Enforces |
@@ -61,30 +61,31 @@ named persona and journey.
 | Internal links | `npm run docs:check-links` | Every `/dockg/…` link resolves to a built page |
 
 The docs workflow additionally builds a graph from the documentation site itself and holds it to
-`dockg check` and `dockg stats --check` — the same gates the docs recommend to readers.
+`dockg check` and `dockg stats --check`, the same gates the docs recommend to readers.
 
-**When you change the CLI surface** — add, rename, or remove a command, argument, flag, or
-default — update [`docs/src/content/docs/reference/cli.mdx`](docs/src/content/docs/reference/cli.mdx)
-in the same change. The drift check enforces it.
+**When you change the CLI surface**, meaning you add, rename, or remove a command, argument,
+flag, or default, update
+[`docs/src/content/docs/reference/cli.mdx`](docs/src/content/docs/reference/cli.mdx) in the same
+change. The drift check enforces it.
 
 **Command output on a page is executed by CI.** Capture it by running the built binary against a
-committed fixture under [`test/fixtures/`](test/fixtures), never from memory — determinism means
-what you capture is what every reader sees. Seven pages then assert that output through Doc
-Detective:
+committed fixture under [`test/fixtures/`](test/fixtures), never from memory. Determinism means
+what you capture is what every reader sees. Pages then assert that output through Doc
+Detective, which reports how many:
 
 ```bash
 npm link && npm link @hawkeyexl/dockg && npm run docs:test
 ```
 
 Output is asserted with `stdio`, which matches stdout or stderr. `stdout` and `stderr` are **not**
-schema properties, and a step using them is silently dropped rather than failed —
-`scripts/check-doc-tests.mjs` runs after the suite and fails on both a step that never ran and a
+schema properties, and a step using them is silently dropped rather than failed. So
+`scripts/check-doc-tests.mjs` runs after the suite. It fails on both a step that never ran and a
 step that ran but did not pass.
 
 ## Commit messages
 
 [Conventional Commits](https://www.conventionalcommits.org/), enforced by the `commit-msg` hook
-and re-checked across the whole PR range in CI — hooks are bypassable, and semantic-release
+and re-checked across the whole PR range in CI. Hooks are bypassable, and semantic-release
 derives every version bump from these messages. Subjects must be lower-case:
 `feat: prov-o support`, not `feat: PROV-O support`.
 

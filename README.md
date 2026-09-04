@@ -2,11 +2,11 @@
 
 **Deterministic knowledge graphs derived from documentation you already wrote.**
 
-`dockg` reads your docs — Markdown first — and derives an RDF knowledge graph from what is
-already there: frontmatter fields, heading structure, links between pages, tags, images, and code
-blocks. There is no authoring step and no second system of record. The build is **deterministic**
-— stable IRIs, sorted serialization, byte-identical rebuilds — so the emitted `.ttl` diffs cleanly
-in git and lives next to the docs it describes.
+`dockg` reads your docs, Markdown first, and derives an RDF knowledge graph from what is
+already there. It draws on frontmatter fields, heading structure, links between pages, tags,
+images, and code blocks. There is no authoring step and no second system of record. The build is
+**deterministic**: stable IRIs, sorted serialization, byte-identical rebuilds. So the emitted
+`.ttl` diffs cleanly in git and lives next to the docs it describes.
 
 It pairs with [docmeta](https://github.com/hawkeyexl/docmeta), which powers `dockg validate`, and
 follows the same CLI conventions as [docevals](https://github.com/hawkeyexl/docevals).
