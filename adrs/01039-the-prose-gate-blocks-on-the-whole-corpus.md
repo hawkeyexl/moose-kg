@@ -108,14 +108,33 @@ So `Packages` names a tag. Everything else in this gate is already pinned, inclu
 binary at `3.20.0`, and the rules deserve the same treatment. Bumping becomes a change someone
 reads the rule diff for, rather than a surprise on somebody else's pull request.
 
-### What the gate does not read
+### What the gate does and does not read
 
-Two more things sit outside it, and neither is an exemption anyone wrote. Vale skips YAML
-frontmatter and fenced code blocks, so an em dash survives in both. The corpus still holds 88 of
-them. Some are descriptive frontmatter values in the content strategy, and the rest are captured
-command output in the docs site. The output ones must stay byte for byte
-([ADR 01035](01035-executing-documented-command-output.md)). So the accurate claim is that every
-alert is cleared, not that the character is gone from every file.
+Vale's reach here is narrower than the file list suggests, and none of it is an exemption anyone
+wrote. It reads body prose, headings, tables, lists, and **top-level scalar frontmatter values**.
+It does not read nested frontmatter, fenced code blocks, or the JSX and expression containers in
+MDX.
+
+Frontmatter is worth stating precisely, because it is easy to assume it is skipped whole. It is
+not. A `title` or `description` value is linted like any other text, by every rule that extends
+`existence`. So are the other thirty-one top-level scalar keys in this corpus, `status` and `date`
+and `id` among them. Vale offers no way to choose which keys it reads. `BlockIgnores` does not
+reach frontmatter at all. That was measured rather than assumed. A literal `^summary:` ignore
+produces output byte-identical to no ignore.
+
+One rule does not reach frontmatter. `Direct.Length` extends `Std.Readability.SentenceLength`,
+whose `scope: sentence` a frontmatter value never satisfies, so a forty-word `description` passes.
+Every existence rule still applies to it.
+
+Vale also parses that frontmatter as YAML, and fails the whole file with `E201` when it does not
+parse. The prose gate is therefore a frontmatter syntax check as well, which nothing else in this
+repo was doing.
+
+The corpus still holds 88 em dashes, and **none** of them are anywhere Vale reads. Twenty-seven
+are nested frontmatter values in the content strategy. Forty-nine are captured command output in
+fenced blocks. The last twelve are MDX JSX attributes or Doc Detective blocks. The output ones must
+stay byte for byte ([ADR 01035](01035-executing-documented-command-output.md)). So the accurate
+claim is that every alert is cleared, not that the character is gone from every file.
 
 ### The remediation itself
 

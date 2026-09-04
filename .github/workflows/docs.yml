@@ -31,6 +31,13 @@ jobs:
           node-version: 24
           cache: npm
 
+      # Same engine floor as ci.yml: engines.npm is >=11.6.3 with engine-strict,
+      # so a runner image below it fails `npm ci` with EBADENGINE and nothing in
+      # the log says why. The floor does not ride on the Node floor, because Node
+      # 24.11.0 satisfies >=24 and bundles npm 11.6.1 (ADR 01040).
+      - name: Enforce the npm engines floor
+        run: npm install -g npm@^11.6.3
+
       - run: npm ci
       - run: npm run build
 
