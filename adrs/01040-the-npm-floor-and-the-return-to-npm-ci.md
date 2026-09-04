@@ -97,6 +97,12 @@ stands.
 - Neutral. `docs/package-lock.json` stays on `npm install`, because that lock has not been
   verified against a strict install the way the root one was. See
   [docs.yml](../.github/workflows/docs.yml).
+- Bad. The explicit pin is on four of the six jobs, not all six. `docs.yml`'s `validate` and
+  `release.yml`'s `release` rely on whatever npm the runner image ships. That is fine while the
+  Node 24 image stays above the floor, and it is the same assumption this ADR argues against
+  making. Should the image regress, those two go red with only `EBADENGINE` to go on, and the
+  release job is the worse place to learn that. Closing the gap is four lines of YAML and belongs
+  in a change that owns the release path, rather than in the one that noticed.
 
 ### Confirmation
 
@@ -107,7 +113,12 @@ stands.
   others are `inline-tests` in [doc-detective.yml](../.github/workflows/doc-detective.yml),
   `validate` in [docs.yml](../.github/workflows/docs.yml), and `release` in
   [release.yml](../.github/workflows/release.yml).
-- CI's Node 24.19.0 bundles npm 11.17.0, above the floor, and each job pins the floor anyway.
+- Four of those six pin the floor explicitly, with `npm install -g npm@^11.6.3` ahead of the
+  install. They are the three in `ci.yml` and `inline-tests` in `doc-detective.yml`. The
+  `validate` job in `docs.yml` and the `release` job in `release.yml` go straight from
+  `setup-node` into `npm ci` with no pin. See the consequence below.
+- CI's Node 24.19.0 bundles npm 11.17.0, which is above the floor, so the two unpinned jobs pass
+  today.
 
 ## Pros and Cons of the Options
 
