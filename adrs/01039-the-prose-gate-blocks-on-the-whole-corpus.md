@@ -84,6 +84,19 @@ Detective's testIds, shell commands and `stdio` assertions, which must match the
 byte. They render to nothing, so no reader loses anything. `[formats] mdx = md` gives Vale the
 right parser for everything around them.
 
+### Severity, and why `fail_on_error` was not enough
+
+`MinAlertLevel` is `suggestion`, so Vale reports everything. Failing on everything is a separate
+setting. `fail_on_error` is documented as exiting non-zero "when errors are found", and one
+enabled rule is not an error. `Voices.ColonReveal` is `level: warning`, alone among the fourteen
+rules in Voices, Direct and Moose.
+
+That rule was 453 of the 2,265 alerts. Blocking on `fail_on_error` alone would have left the
+second-largest category free to return, and Vale's own exit code agrees: a warning-only run exits
+`0`. So the workflow sets `fail_level: any`, which fails on a finding at any severity. It takes
+precedence over `fail_on_error`, and needs reviewdog 0.21.0, which is the action's default.
+`fail_on_error` stays behind it as a floor.
+
 ### What the gate does not read
 
 Two more things sit outside it, and neither is an exemption anyone wrote. Vale skips YAML
@@ -124,6 +137,8 @@ used for its Phase 10 evaluation component, so that is now the "eval suite".
 
 ### Confirmation
 
+- `fail_level: any` is what makes a warning block. Checked by planting a `Voices.ColonReveal`
+  violation, which Vale reports as a warning and exits `0` on.
 - `vale sync && vale .` reports **0 errors, 0 warnings and 0 suggestions in 163 files**, which is
   what the gate runs. That count is a clean checkout, matching CI. A working tree carrying scratch
   output under `.tmp/` reports more files, because Vale walks that directory and git does not.

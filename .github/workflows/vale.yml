@@ -12,6 +12,16 @@ name: Vale
 #
 # test/fixtures/ is exempt in .vale.ini, not here: its bytes are the test.
 #
+# fail_level is the gate, not fail_on_error. The latter is documented as failing
+# "when errors are found", and Voices.ColonReveal is the one enabled rule that
+# is level: warning rather than error. It was 453 of the 2,265 alerts this
+# corpus started with, so leaving it unblocking would have left the largest
+# category free to come back. `any` fails on a finding at any severity, which is
+# what MinAlertLevel = suggestion means to report. It takes precedence over
+# fail_on_error and needs reviewdog 0.21.0, which is the action's own default.
+# fail_on_error stays as the floor, so a downgraded reviewdog still blocks on
+# errors rather than on nothing.
+#
 # The reporter has to suit the event. github-pr-review posts inline review
 # comments and needs a pull request to hang them on, which the push and
 # workflow_dispatch triggers do not have. Those report through github-check,
@@ -50,6 +60,7 @@ jobs:
           version: 3.20.0
           reporter: ${{ github.event_name == 'pull_request' && 'github-pr-review' || 'github-check' }}
           filter_mode: nofilter
+          fail_level: any
           fail_on_error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
