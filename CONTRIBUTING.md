@@ -31,6 +31,18 @@ in CI, which is the authoritative gate.
 | `pre-push` | `typecheck`, `build`, `test` |
 | `commit-msg` | commitlint |
 
+Prose has a gate of its own, and it is CI-only. [Vale](https://vale.sh) holds every Markdown and
+text file to the [Moose house voice](https://github.com/hawkeyexl/moose-vale), which forbids em
+dashes, sentences past 25 words, and the "Label: explanation" opener. It **fails the build**. It
+also reads the whole corpus rather than only the lines a pull request adds, so moving a sentence
+past the limit counts. `test/fixtures/` is exempt, because its bytes are the test.
+
+Run it locally the way CI does:
+
+```bash
+vale sync && vale .
+```
+
 **Build before test.** The integration suite executes `dist/cli.js`, not `src/`.
 
 Prettier deliberately ignores `test/fixtures/` and `schemas/`: the corpus and golden graph are

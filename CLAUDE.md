@@ -372,6 +372,8 @@ the repo's `CLAUDE_CODE_OAUTH_TOKEN` secret.
   the join is what proves they match each other
 - [.github/workflows/docs.yml](.github/workflows/docs.yml), the strategy invariants, CLI drift,
   page frontmatter, the graph gate over dockg's own docs, then the Pages deploy
+- [.github/workflows/vale.yml](.github/workflows/vale.yml), the prose gate. It is blocking and
+  reads the whole corpus, not only a pull request's added lines
 - [scripts/](scripts), holding `check-content-strategy.mjs`, `check-cli-reference.mjs`,
   `check-docs-links.mjs`, `check-publishable.mjs`
 - [dockg.docs.yaml](dockg.docs.yaml), dockg pointed at its own documentation. Not named
