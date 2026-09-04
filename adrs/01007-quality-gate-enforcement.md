@@ -2,9 +2,18 @@
 status: accepted
 date: 2026-07-21
 decision-makers: [hawkeyexl, Claude]
+superseded-by: 01040 (one consequence, "engine-strict applies to dependencies too", only)
 ---
 
 # Enforce the quality standards mechanically, in hooks and CI
+
+> **One consequence is superseded by
+> [ADR 01040](01040-the-npm-floor-and-the-return-to-npm-ci.md).** The claim that
+> CI and release use `npm install` rather than `npm ci` was true when written and
+> is not now. Both use `npm ci`, so a transitive package with an excluding
+> engines range can no longer arrive without a lockfile change. The bullet below
+> is struck through in place rather than deleted, so the record shows what was
+> believed. Every other section of this ADR stands.
 
 ## Context and Problem Statement
 
@@ -82,8 +91,9 @@ binding at install time rather than advisory.
   instead of a failed push.
 - Bad. `engine-strict` applies to dependencies too, so a transitive package
   declaring an engines range that excludes Node 24 will hard-fail `npm
-  install`. Since CI and release both use `npm install` rather than `npm ci`,
-  that can appear without any change to this repo.
+  install`. ~~Since CI and release both use `npm install` rather than `npm
+  ci`, that can appear without any change to this repo.~~ Per the note above,
+  both use `npm ci`, so reaching this needs a lockfile change.
 - Neutral. Three more devDependency trees (ESLint, Prettier, lint-staged).
 
 ### Confirmation

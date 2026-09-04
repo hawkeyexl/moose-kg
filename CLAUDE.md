@@ -36,8 +36,10 @@ entries on Linux, macOS and Windows alike; 11.6.3 keeps them on all three.
 
 That floor is enforced, not advisory. `engines.npm` is `>=11.6.3` and [.npmrc](.npmrc) sets
 `engine-strict=true`. A too-old npm fails at install with `EBADENGINE` instead of quietly
-writing a lockfile CI will reject. Do not assume the Node floor covers it. Node 24.11.0 satisfies
-`>=24` and bundles npm **11.6.1**. Above the floor, regenerate the lock normally.
+writing a lockfile CI will reject. The reasoning is in
+[ADR 01040](adrs/01040-the-npm-floor-and-the-return-to-npm-ci.md). Do not assume the Node floor
+covers it. Node 24.11.0 satisfies `>=24` and bundles npm **11.6.1**. Above the floor, regenerate
+the lock normally.
 
 Still worth doing after any dependency change: **read the lockfile diff**. A change that adds
 packages you cannot name, or removes any, is worth stopping for.

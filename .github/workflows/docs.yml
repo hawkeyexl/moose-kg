@@ -73,7 +73,7 @@ jobs:
       # The docs site is its own npm project, so the published dockg package never
       # carries a docs toolchain. Still `npm install` where the root job uses
       # `npm ci`: the root lock was verified against a strict install when that
-      # switch was made (ADR 01023) and docs/package-lock.json was not, so this
+      # switch was made (ADR 01040) and docs/package-lock.json was not, so this
       # one stays loose until someone checks it the same way.
       - run: npm install
         working-directory: docs

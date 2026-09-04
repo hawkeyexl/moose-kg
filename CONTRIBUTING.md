@@ -18,6 +18,9 @@ Do not read the npm floor as implied by the Node one. Node 24.11.0 satisfies `>=
 npm 11.6.1, which sits below the floor. Run `npm -v` to check, and `npm install -g npm@^11.6.3` to
 fix it.
 
+[ADR 01040](adrs/01040-the-npm-floor-and-the-return-to-npm-ci.md) has the reasoning, including why
+the older "the lock is platform-skewed" guidance was wrong.
+
 ## Quality gates
 
 Checks are layered by cost. Fast ones run on commit, the full loop on push, and everything again
