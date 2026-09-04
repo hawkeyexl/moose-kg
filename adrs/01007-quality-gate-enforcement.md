@@ -8,20 +8,20 @@ decision-makers: [hawkeyexl, Claude]
 
 ## Context and Problem Statement
 
-CLAUDE.md declares the repo's standards — Conventional Commits with a
-lower-case subject, the `typecheck && build && test` verification loop, Node
->= 24 — but almost none of them were actually enforced. Only the commit-msg
-hook existed, and a git hook is advisory by construction: `--no-verify`, the
+CLAUDE.md declares the repo's standards. Those are Conventional Commits with a
+lower-case subject, the `typecheck && build && test` verification loop, and
+Node >= 24. Almost none of them were actually enforced. Only the commit-msg
+hook existed, and a git hook is advisory by construction. `--no-verify`, the
 GitHub web editor, or simply a clone that never ran `npm install` all bypass
 it silently.
 
 The commit-message gap is the sharpest one. semantic-release derives every
-version bump from commit messages, so a malformed message does not merely look
-untidy — it mis-versions a published release, and nothing downstream notices.
+version bump from commit messages. A malformed message does not merely look
+untidy. It mis-versions a published release, and nothing downstream notices.
 
 Separately, the repo had no linter or formatter at all, so style and a class of
-latent defects were governed by reviewer attention alone. Two such defects were
-sitting on `main` when the linter was first run: an unused import in
+latent defects were governed by reviewer attention alone. Two such defects sat
+on `main` when the linter was first run. One was an unused import in
 `test/unit/git.test.ts` marking a missing assertion, and three literal NUL
 bytes in `src/commands/query.ts` that made git classify a source file as
 binary.
@@ -30,16 +30,16 @@ binary.
 
 - A standard that is documented but unenforced is a standard that erodes.
 - Enforcement must not be bypassable by accident; CI is the only binding gate.
-- Determinism is the product contract — no gate may perturb emitted bytes.
+- Determinism is the product contract, so no gate may perturb emitted bytes.
 - Fast feedback locally; the authoritative check in CI.
 - Keep the toolchain small and conventional.
 
 ## Considered Options
 
 1. Leave enforcement to review discipline and the existing commit-msg hook.
-2. Hooks only — add pre-commit/pre-push, no CI changes.
-3. CI only — drop hooks, gate everything in GitHub Actions.
-4. Layered: fast hooks locally, CI as the authoritative backstop (chosen).
+2. Hooks only, adding pre-commit and pre-push with no CI changes.
+3. CI only, dropping hooks and gating everything in GitHub Actions.
+4. Layered, with fast hooks locally and CI as the authoritative backstop (chosen).
 
 ## Decision Outcome
 
@@ -51,14 +51,14 @@ Chosen option 4. Enforcement is layered by cost:
   is clean on disk but was staged dirty, committing unformatted content.
 - **pre-push** (full loop): `typecheck && build && test`, `build` before `test`
   because the integration suite executes `dist/cli.js`, not `src/`.
-- **CI** re-runs all of the above and adds a commitlint check across the PR's
+- **CI** re-runs all of the above. It adds a commitlint check across the PR's
   commit range, so a bypassed hook fails the PR instead of reaching `main`.
 
-ESLint (flat config, `typescript-eslint` recommended) and Prettier are adopted,
-with `eslint-config-prettier` so lint never argues with formatting. Prettier's
-ignore list is the load-bearing part: `test/fixtures/` and `schemas/` are
-excluded because the corpus feeds the determinism gate, the golden graph is the
-byte-exact regression baseline, and published frontmatter schemas are immutable
+ESLint (flat config, `typescript-eslint` recommended) and Prettier are adopted.
+`eslint-config-prettier` keeps lint from arguing with formatting. Prettier's
+ignore list is the load-bearing part. `test/fixtures/` and `schemas/` are
+excluded because the corpus feeds the determinism gate and the golden graph is
+the byte-exact regression baseline. Published frontmatter schemas are immutable
 once released. Markdown is excluded because the prose is hand-wrapped and
 CHANGELOG.md is generated.
 
@@ -72,39 +72,39 @@ binding at install time rather than advisory.
 
 ### Consequences
 
-- Good: the documented standards are now the enforced standards. Commit
-  messages — which drive versioning — are validated somewhere unbypassable.
-- Good: the linter immediately surfaced two real defects already on `main`.
-- Bad: a one-time reformat across the codebase, which inflates `git blame` for
+- Good. The documented standards are now the enforced standards. Commit
+  messages drive versioning, and are now validated somewhere unbypassable.
+- Good. The linter immediately surfaced two real defects already on `main`.
+- Bad. A one-time reformat across the codebase, which inflates `git blame` for
   that commit.
-- Bad: pre-push runs the full suite, adding roughly a minute to each push;
+- Bad. Pre-push runs the full suite, adding roughly a minute to each push.
   `--no-verify` remains available for emergencies, at the cost of a failed PR
   instead of a failed push.
-- Bad: `engine-strict` applies to dependencies too, so a transitive package
+- Bad. `engine-strict` applies to dependencies too, so a transitive package
   declaring an engines range that excludes Node 24 will hard-fail `npm
   install`. Since CI and release both use `npm install` rather than `npm ci`,
   that can appear without any change to this repo.
-- Neutral: three more devDependency trees (ESLint, Prettier, lint-staged).
+- Neutral. Three more devDependency trees (ESLint, Prettier, lint-staged).
 
 ### Confirmation
 
 The reformat was verified behavior-neutral against the product contract, not
-merely the test suite: the full suite passes, the double-build byte comparison
+merely the test suite. The full suite passes, the double-build byte comparison
 passes, and output still matches the golden graph (version-normalized).
 `test/fixtures/` and `schemas/` were confirmed untouched by Prettier. Hook
 wiring was confirmed by an actual rejected commit. `feat: PROV-O support` is
 rejected and `feat: prov-o support` accepted, matching the rule CLAUDE.md
-documents. The `.gitattributes` exemptions were verified in a scratch repo: a
+documents. The `.gitattributes` exemptions were verified in a scratch repo. A
 CRLF file at the exempted path kept its CRLF bytes while an ordinary source
 file was normalized to LF.
 
 ## Pros and Cons of the Options
 
-- **Review discipline** — zero tooling cost, but it had already failed: two
+- **Review discipline.** Zero tooling cost, but it had already failed: two
   defects reached `main` that a linter catches in one run.
-- **Hooks only** — fast, but hooks are advisory; the one standard whose
+- **Hooks only.** Fast, but hooks are advisory; the one standard whose
   violation is silently expensive (commit messages) would stay unguarded.
-- **CI only** — unbypassable, but pushes a two-character formatting mistake
+- **CI only.** Unbypassable, but pushes a two-character formatting mistake
   through a full remote cycle before telling you.
-- **Layered** (chosen) — duplicates each check in two places, which is the
-  point: the local copy is for speed, the CI copy is for authority.
+- **Layered** (chosen). Duplicates each check in two places, which is the
+  point. The local copy is for speed, the CI copy is for authority.
