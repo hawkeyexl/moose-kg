@@ -45,21 +45,21 @@ The corpus is large, almost none of it is annotated, and nobody is going to fix 
 ## The journey
 
 This is the [brownfield lens](../audiences/brownfield-corpora.md) journey, shared by Priya and
-Ines — one runs it, the other decides whether the proposals are acceptable. It is also the most
+Ines. One runs it, the other decides whether the proposals are acceptable. It is also the most
 likely real-world entry state, because nobody adopts a knowledge-graph tool before they have too
 much documentation.
 
 It starts with a bad number. The first coverage report over an unannotated corpus is
-embarrassing, and **if the docset has implied that healthy means near 100%, that number reads as
-failure and the reader stops.** The journey's first job is to set the expectation that a low
-starting number is normal and that the number is a baseline, not a grade.
+embarrassing. **If the docset has implied that healthy means near 100%, that number reads as
+failure and the reader stops.** The journey's first job is to set the expectation. A low
+starting number is normal, and the number is a baseline rather than a grade.
 
 ## What they need to reach, in order
 
 1. **Permission to have a bad number**, and a route from the coverage table into this journey.
-2. **The correct mental model of `fill`: it proposes, a human accepts.** Everything about the
-   design says so — proposals below the confidence threshold are dropped and the run still exits
-   0, proposals that would corrupt the graph are rejected by the SHACL guardrail, and every
+2. **The correct mental model of `fill`. It proposes, a human accepts.** Everything about the
+   design says so. Proposals below the confidence threshold are dropped and the run still exits
+   0. Proposals that would corrupt the graph are rejected by the SHACL guardrail, and every
    written field is recorded with its confidence. Describing `fill` as "annotate your corpus
    automatically" would be a misrepresentation and would create exactly the audit problem
    [`persona-compliance-owner`](../personas/compliance-owner.md) is trying to avoid.
@@ -78,14 +78,14 @@ starting number is normal and that the number is a baseline, not a grade.
   `fill.maxCostUsd` of 5 exists for this reason, and a demonstration that omits budget is setting
   up a surprise.
 - **Exit 0 does not mean everything was written.** Low-confidence drops and guardrail rejections
-  are routine operation and leave the exit code at 0 by deliberate design, so an orchestrating
+  are routine operation. They leave the exit code at 0 by deliberate design, so an orchestrating
   script does not treat a normal run as a failure. A reader who assumes exit 0 means full
   coverage will not check, and will be wrong.
-- **The ratchet is the point.** One large fill run is not the goal; a threshold that goes up
+- **The ratchet is the point.** One large fill run is not the goal. A threshold that goes up
   quarterly is.
 
 ## Where it goes next
 
-[`cuj-gate-metadata-in-ci`](gate-metadata-in-ci.md) to enforce the new line, and — for Ines —
+[`cuj-gate-metadata-in-ci`](gate-metadata-in-ci.md) to enforce the new line. For Ines, also
 [`cuj-model-concepts`](model-concepts.md), since machine-proposed concepts still have to fit a
 governed vocabulary.

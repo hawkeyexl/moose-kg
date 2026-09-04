@@ -48,45 +48,44 @@ Renata answers the authorship question without a manual audit.
 
 ## The journey
 
-Renata does not run this — [`persona-docs-engineer`](../personas/docs-engineer.md) does, at
-Renata's request. That shapes every page in the journey: **success criteria are artifacts to
+Renata does not run this. [`persona-docs-engineer`](../personas/docs-engineer.md) does, at
+Renata's request. That shapes every page in the journey. **Success criteria are artifacts to
 receive, not commands to run,** and the pages must be handable to an engineer without
 translation. Showing the resulting report and naming the command that produced it serves both
-readers; showing only the command serves neither.
+readers. Showing only the command serves neither.
 
 ## What they need to reach, in order
 
-1. **An obligation-to-mechanism map.** Renata thinks in requirements — *authorship must be
-   attributable*, *machine-generated content must be identifiable* — and needs each one bound to
+1. **An obligation-to-mechanism map.** Renata thinks in requirements, such as *authorship must be
+   attributable* and *machine-generated content must be identifiable*. Each one needs binding to
    something dockg actually produces. This table is the page that gets forwarded.
 2. **Why determinism makes this evidence.** For everyone else, byte-identical rebuilds keep diffs
    clean. Here it is the difference between a submittable report and an anecdote: a report that
    changes between runs over unchanged inputs cannot be used. This connection is not obvious from
    outside and should be stated rather than implied.
 3. **What is derived without asking, and what git adds.** Frontmatter authorship and dates come
-   free; committer history is a tri-state setting that can be required, attempted, or refused. A
+   free. Committer history is a tri-state setting that can be required, attempted, or refused. A
    compliance reader specifically needs to know that "attempted" degrades with a warning and
-   still exits 0 — because a degraded build that looks successful is an evidence gap.
+   still exits 0. A degraded build that looks successful is an evidence gap.
 4. **Qualified attribution, and why it is not just a name field.** Attribution and association
    are separate nodes carrying roles, so the graph distinguishes the person who authored, the
    tool that generated, and the model that proposed. That distinction is the answer to the
-   AI-authorship question, and it is the reason the modeling is more elaborate than a `creator`
-   string.
+   AI-authorship question, and the reason the modeling beats a `creator` string.
 5. **The `kg.provenance` block as a review queue.** Each entry names the model, the fields it
-   proposed, and the per-field confidence — and humans delete entries as they clear them, so the
+   proposed, and the per-field confidence. Humans delete entries as they clear them, so the
    block empties as review progresses. This is the single most useful thing to tell this reader
-   about AI-assisted authoring: it reframes it from an audit liability into a tracked queue.
+   about AI-assisted authoring. It reframes it from an audit liability into a tracked queue.
 
 ## What the evidence does not prove
 
 Worth an explicit section, because overclaiming here is worse than underclaiming. dockg records
-what the files and git history assert. It does not verify that the named author wrote the text,
-and a `kg.provenance` entry that a human deleted without actually reviewing is indistinguishable
+what the files and git history assert. It does not verify that the named author wrote the text.
+A `kg.provenance` entry a human deleted without actually reviewing is indistinguishable
 from one that was reviewed properly. The mechanism supports an audit; it does not replace one.
 
 Stating this plainly protects the reader and the tool.
 
 ## Where it goes next
 
-[`cuj-prove-coverage`](prove-coverage.md) — attribution and completeness are usually asked for in
-the same conversation.
+[`cuj-prove-coverage`](prove-coverage.md), since attribution and completeness are usually asked
+for in the same conversation.

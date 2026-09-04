@@ -43,24 +43,24 @@ Ines gets the vocabulary out of the spreadsheet and into the files, with enforce
 ## The journey
 
 The vocabulary already exists and is not in question. What is in question is whether the
-documentation agrees with it — and today nothing checks, so it does not.
+documentation agrees with it. Today nothing checks, so it does not.
 
 The reader is an expert in the semantics and a novice at the mechanics, which inverts the usual
-page design. **This journey must not teach SKOS.** It must show the mapping: which frontmatter
+page design. **This journey must not teach SKOS.** It must show the mapping. Which frontmatter
 key becomes which triple, what dockg does when two labels slugify to the same concept, and which
 rules are enforced at which severity. A page that explains what `skos:broader` means wastes their
-time; one that gets it subtly wrong loses their trust permanently.
+time. One that gets it subtly wrong loses their trust permanently.
 
 ## What they need to reach, in order
 
 1. **The mapping table.** `label` establishes the concept this document is primarily about;
    `alt-labels`, `broader`, `narrower`, and `related` describe it. This is the whole surface, and
-   it is small — say so, because they are braced for more.
+   it is small. Say so, because they are braced for more.
 2. **The dependency rule.** The four relationship fields require `label`, enforced in the
    schema and again in `fill`'s proposal gate. Without it there is no subject for the
    relationship to hang from.
 3. **How concept IRIs converge.** Concepts are minted from slugified labels, so two spellings of
-   the same term become the *same node* — which is usually what they want and occasionally a
+   the same term become the *same node*. That is usually what they want and occasionally a
    surprise. dockg reports the double-spelling case as a **warning, not a violation**, because
    convergence is a designed feature rather than a defect. That severity choice is worth
    explaining rather than just documenting.
@@ -75,12 +75,12 @@ time; one that gets it subtly wrong loses their trust permanently.
 ## Design notes
 
 - Cycle detection and transitive SKOS checks run in TypeScript because core SHACL cannot express
-  them. Worth a sentence: it explains why the checks exist despite not appearing in the shapes
-  file, and this reader is precisely the one who would go looking.
+  them. That is worth a sentence. It explains why the checks exist despite not appearing in the
+  shapes file, and this reader is precisely the one who would go looking.
 - Every finding maps back to the responsible document, which is what makes the output actionable
   for a person who did not write the offending page.
 
 ## Where it goes next
 
-[`cuj-scope-by-variant`](scope-by-variant.md) — concepts answer *what this is about*,
-applicability answers *what it applies to*, and the second is where the expensive mistakes live.
+[`cuj-scope-by-variant`](scope-by-variant.md). Concepts answer *what this is about* and
+applicability answers *what it applies to*. The second is where the expensive mistakes live.

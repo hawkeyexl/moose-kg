@@ -45,19 +45,19 @@ Ines makes applicability explicit, including the part that has to be said out lo
 
 This is the journey the whole taxonomy exists to serve, and the one where the expensive mistakes
 live. An interlock, a safety caution, or a regulatory statement scoped to the wrong variant is
-not a metadata problem; it is the reason the metadata program is funded.
+not a metadata problem. It is why the metadata program is funded.
 
 Two things make it hard, and both are semantic rather than mechanical.
 
 ## The open-world problem, which comes first
 
 **Absence of `applies-to` means unknown, not "does not apply."** A query that treats untagged
-topics as excluded will silently return a set that is wrong in the dangerous direction, and it
-will look right — the results are plausible, the count is reasonable, and nothing errors.
+topics as excluded silently returns a set that is wrong in the dangerous direction. It will also
+look right. The results are plausible, the count is reasonable, and nothing errors.
 
 This is why the journey's first step is a concepts page rather than a modeling page. A reader who
 starts writing `applies-to` values without this framing will build a scoping scheme that fails
-exactly when it matters. The mitigation is dockg's negative predicates: when the stronger claim
+exactly when it matters. The mitigation is dockg's negative predicates. When the stronger claim
 is true, say it explicitly with `not-applicable-to`, and query the negative edge rather than
 inferring from silence.
 
@@ -65,24 +65,24 @@ inferring from silence.
 
 Ines will judge the tool by whether its vocabularies are real. dockg's `type`,
 `about-product-lifecycle`, and `about-product-aspect` are closed sets bound to **published iiRDS
-IRIs** — referenced, never vendored or re-serialized. Showing the emitted IRI beside the
+IRIs**, referenced and never vendored or re-serialized. Showing the emitted IRI beside the
 frontmatter value is the credibility moment for this reader, and it is cheap to do.
 
 ## What they need to reach, in order
 
 1. Open-world semantics, before any modeling advice.
 2. The four typing keys, their permitted values, and the exact IRI each emits.
-3. The negative predicates, and the rule that they are for explicit exclusion — not for
+3. The negative predicates, and the rule that they are for explicit exclusion. Not for
    tidiness, and not as a default.
 4. A scoped traversal that proves the set, including a demonstration of what was excluded and
    why. Verifying only what came back misses the failure this journey exists to prevent.
-5. The contradiction check: a node carrying both `applies-to: X` and `not-applicable-to: X` is a
-   violation via SHACL disjointness. This is the defect a human reviewer does not catch and an
-   auditor does.
+5. The contradiction check. A node carrying both `applies-to: X` and `not-applicable-to: X` is a
+   violation via SHACL disjointness. This is the defect a human reviewer misses and an
+   auditor finds.
 
 ## Design note
 
-`traverse` fails loudly on an unknown variant rather than returning an empty set, because an
+`traverse` fails loudly on an unknown variant rather than returning an empty set. An
 unresolvable filter would silently return exactly what it was meant to exclude. That is the same
 open-world hazard in a different place, and pointing at the connection makes both easier to
 remember.

@@ -47,9 +47,9 @@ someone else wrote.
 ## Who they are
 
 Renata is accountable for a documentation set that is a regulated deliverable. Periodically
-someone external asks questions the team cannot answer quickly: who authored this procedure,
-when was it last reviewed, what was it derived from, does every product variant have coverage
-for this class of topic. Today the answers come from git history, a spreadsheet, and a meeting.
+someone external asks questions the team cannot answer quickly. Who authored this procedure? When
+was it last reviewed, and what was it derived from? Does every product variant have coverage for
+this class of topic? Today the answers come from git history, a spreadsheet, and a meeting.
 
 Two things have made this worse recently. The corpus grew past the point where manual coverage
 tracking is honest, and AI-assisted authoring arrived without a record of what it touched.
@@ -60,23 +60,23 @@ tracking is honest, and AI-assisted authoring arrived without a record of what i
 authority to make coverage an obligation on other teams.
 
 **Do not bring:** CLI fluency. Renata does not open a terminal. They consume reports, JSON
-someone else pipes to them, and CI results — and they specify gates that
+someone else pipes to them, and CI results. They specify gates that
 [`persona-docs-engineer`](docs-engineer.md) implements.
 
 **This changes how their pages must be written.** Every journey Renata has ends with someone
 else running something. Their success criteria are artifacts to receive, not commands to run,
 and their pages need to be handable to an engineer. A page that assumes this reader will run
-`dockg query` has misjudged them; a page that shows the resulting report and names the command
+`dockg query` has misjudged them. A page that shows the resulting report and names the command
 that produced it has not.
 
 ## Why determinism is their headline, not a footnote
 
 For every other persona, byte-identical rebuilds are a convenience that keeps diffs clean. For
 Renata it is what makes the output **evidence**. A report that changes between runs over
-unchanged inputs cannot be submitted; one that does not can be regenerated in front of an
+unchanged inputs cannot be submitted. One that does not can be regenerated in front of an
 auditor with the inputs on screen.
 
-This connection is not obvious from outside — a documentation tool caring about reproducibility
+This connection is not obvious from outside. A documentation tool caring about reproducibility
 looks like engineering fastidiousness until you are the one being audited. Pages for this
 persona should make it explicit.
 
@@ -84,7 +84,7 @@ persona should make it explicit.
 
 The most useful thing to tell Renata about `dockg fill` is not that it annotates a corpus. It is
 that everything it writes is recorded in `kg.provenance` with the model that proposed it and the
-confidence it had — and that **humans delete entries as they review them**. The block is the
+confidence it had. And that **humans delete entries as they review them**. The block is the
 outstanding-review list. That reframing turns AI-assisted authoring from an audit liability into
 a tracked queue, which is exactly the answer they need.
 
