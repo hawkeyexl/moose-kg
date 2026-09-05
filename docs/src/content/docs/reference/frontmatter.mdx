@@ -1,6 +1,6 @@
 ---
 title: Frontmatter reference
-description: Every frontmatter key dockg reads — the schema-validated kg block with its controlled vocabularies and dependencies, plus the page-level fields that are accepted but never validated.
+description: Every frontmatter key dockg reads, from the schema-validated kg block with its controlled vocabularies and dependencies to the page-level fields that are accepted but never validated.
 ---
 
 import { Aside } from '@astrojs/starlight/components';
@@ -16,9 +16,10 @@ own, and it is validated against a published JSON Schema.
 
 ## Page-level keys
 
-Read by the `frontmatter` derive source. Aliases are listed in precedence order — the first one
-present wins. **None of these are schema-validated**, so a misspelling is silently ignored rather
-than reported.
+Read by the `frontmatter` derive source. Aliases are listed in precedence order, and the first
+one present wins. **None of these are schema-validated**, so a misspelling is silently ignored
+rather than reported. The ones dockg reads do get a
+[near-miss warning](/dockg/fix/) naming the key you probably meant.
 
 | Frontmatter key | Aliases | Emits |
 |---|---|---|
@@ -27,24 +28,26 @@ than reported.
 | `author` | `authors` | `dcterms:creator` plus a `prov:wasAttributedTo` person node |
 | `date` | `created` | `dcterms:created` (xsd:date) and `prov:generatedAtTime` |
 | `updated` | `lastmod`, `modified` | `dcterms:modified` |
-| `lang` | `language` | `dcterms:language` |
+| `lang` | `language` | `dcterms:language`; a route's `language` supplies it when the page does not. See [localization](/dockg/model/localization/). |
+| `translation-of` | | `schema:translationOfWork` on this page and `schema:workTranslation` back from the source |
 | `tags` | `keywords` | `dcterms:subject`, minting a `skos:Concept` per value |
 | `generated-by` | | `prov:wasGeneratedBy` a generation activity |
 
 ### Page-level twins of `kg` fields
 
-Five facts can be stated at either altitude. **The deeper declaration wins, per fact** — a `kg`
-field that is present replaces its page-level twin rather than adding to it — and where the block
-is silent, the page-level field feeds the graph.
+Five facts can be stated at either altitude, and **the deeper declaration wins, per fact.** A
+present `kg` field replaces its twin rather than adding to it. Where the block is silent, the
+page-level field feeds the graph.
 
 <Aside type="caution" title="These five are not schema-validated">
-  The `kg` block rejects an unknown key outright. These five cannot: a page may carry any key its
-  site generator or team needs, so dockg has no way to tell a typo from someone else's field. A
-  misspelled `applies_to` is therefore not an error — it is simply a key dockg does not read, and
+  The `kg` block rejects an unknown key outright. These five cannot. A page may carry any key its
+  site generator or team needs. dockg has no way to tell a typo from someone else's field. A
+  misspelled `applies_to` is therefore not an error. It is simply a key dockg does not read, and
   the fact goes missing from the graph.
 
-  `dockg build` warns when a page key is one or two characters from one of these five, or when a
-  page `type` value is that close to a mapped one. Spell them exactly as the table shows.
+  `dockg build` warns when a page key is one or two characters from one of these five. It warns
+  the same way when a page `type` value is that close to a mapped one. Spell them exactly as the
+  table shows.
 </Aside>
 
 | Page-level key | `kg` twin | Emits |
@@ -56,7 +59,7 @@ is silent, the page-level field feeds the graph.
 | `supersedes` | `kg.revision-of` | `prov:wasRevisionOf` |
 
 The page's `type` is an open vocabulary; `kg.type` is a closed iiRDS enum. When the block is
-silent, these five page types derive one — and **any other value derives nothing**, rather than
+silent, these five page types derive one. **Any other value derives nothing**, rather than
 inventing an iiRDS term:
 
 | Page `type` | Derived `kg.type` |
@@ -78,7 +81,7 @@ supersedes: [getting-started.md]
 ```
 
 That page derives `iirds:has-topic-type iirds:GenericTask`, a product variant, a subject concept,
-and a revision edge — with no `kg` block at all.
+and a revision edge, with no `kg` block at all.
 
 <Aside type="note" title="`tags` is not a twin">
   `tags`/`keywords` is dockg's own derive source and a different fact from `concepts`, so it is
@@ -104,18 +107,18 @@ tags:
 Validated against `schemas/docmeta-kg-1.0.0-proposal.1.json`, which ships in the npm package.
 Unknown keys inside `kg` are an error.
 
-<Aside type="note" title="The `kg` vocabulary is docmeta's, not dockg's">
+<Aside type="note" title="The `kg` vocabulary belongs to docmeta">
   `kg` is [`docmeta:kg`](https://hawkeyexl.github.io/docmeta/), one of the common metadata
-  vocabularies docmeta publishes. dockg implements graph behavior against it rather than defining
-  its own contract, so a grader, a graph builder, and a retrieval tool all read the same block.
+  vocabularies docmeta publishes. dockg implements graph behavior against it rather than
+  defining its own contract. A grader, a graph builder, and a retrieval tool all read one block.
   dockg ships a byte-verbatim copy because the vocabulary is still in community review.
 </Aside>
 
 **One value is a string; many values are a list.** Every list field below also accepts a bare
 string, so `applies-to: SP-X100` and `applies-to: [SP-X100]` mean the same thing. An *empty* list
-is not a declaration and is rejected — `applies-to: []` used to read as "scoped, to nothing".
+is not a declaration and is rejected. `applies-to: []` used to read as "scoped, to nothing".
 
-### SKOS: what the document is about
+### SKOS, or what the document is about
 
 | Key | Type | Emits |
 |---|---|---|
@@ -128,8 +131,8 @@ is not a declaration and is rejected — `applies-to: []` used to read as "scope
 
 <Aside type="caution" title="Four of these require `label`">
   `alt-labels`, `broader`, `narrower`, and `related-concepts` all describe a concept, so the schema requires
-  `label` to exist as the thing being described. Using one without it is a validation error —
-  and `dockg fill` applies the same rule, silently dropping relationship proposals when no
+  `label` to exist as the thing being described. Using one without it is a validation error.
+  `dockg fill` applies the same rule, silently dropping relationship proposals when no
   `label` exists or is being proposed alongside them.
 </Aside>
 
@@ -147,14 +150,14 @@ or re-serializes the vocabulary.
 | `type` | single | `task`, `concept`, `reference`, `learning`, `troubleshooting`, `form` |
 | `about-product-lifecycle` | list | `administration`, `customization`, `update`, `deployment`, `integration`, `deinstallation` |
 | `about-product-aspect` | list | `architecture`, `interface`, `system-requirement` |
-| `applies-to` | list | Free labels — each mints an `iirds:ProductVariant` |
+| `applies-to` | list | Free labels, each minting an `iirds:ProductVariant` |
 
 ### Negative scope
 
 | Key | Cardinality | Emits |
 |---|---|---|
 | `not-applicable-to` | list | `dockg:notApplicableToVariant` |
-| `not-about-product-aspect` | list | `dockg:notSoftwareSubject` — same three values as `about-product-aspect` |
+| `not-about-product-aspect` | list | `dockg:notSoftwareSubject`, the same three values as `about-product-aspect` |
 
 Both are disjoint from their positive counterparts: asserting the same value on both sides is a
 SHACL **violation** and exits 1. See [open-world semantics](/dockg/concepts/open-world/) for why
@@ -194,7 +197,7 @@ kg:
 Two rules worth stating plainly:
 
 - **Nothing is inherited.** A section does not pick up the document's `type` or `applies-to`.
-- **`label` and the SKOS hierarchy are not permitted** per section — they describe a concept,
+- **`label` and the SKOS hierarchy are not permitted** per section. They describe a concept,
   which is a document-level notion.
 
 A key matching no heading emits `dockg:brokenSectionRef` and is reported by `dockg stats`.
@@ -206,7 +209,7 @@ A key matching no heading emits `dockg:brokenSectionRef` and is reported by `doc
 | `revision-of` | string or list | `prov:wasRevisionOf` |
 | `derived-from` | string or list | `prov:wasDerivedFrom`; unresolved targets become `dockg:brokenLink` |
 | `generated-by` | string | `prov:wasGeneratedBy`, associating the model as a `prov:SoftwareAgent` |
-| `provenance` | object[] | Written by `dockg fill` — see below |
+| `provenance` | object[] | Written by `dockg fill`, described below |
 
 ### `provenance` entries
 
@@ -243,13 +246,14 @@ kg:
 ## Schema versions
 
 `schemas/docmeta-kg-1.0.0-proposal.1.json` is the default. Point `validate.schemas` at another
-file to pin, and expect evolution to arrive as a new file rather than an edit to an existing one —
-every published schema here is immutable.
+file to pin, and expect evolution to arrive as a new file rather than an edit to an existing one.
+Every published schema here is immutable.
 
-`schemas/frontmatter-0.1.json` through `-0.8.json` are dockg's earlier, self-hosted contract. They
-remain published and pinnable, but they are **not** compatible with the `kg` block above: they use
-camelCase spellings (`prefLabel`, `subjects`, `topicType`, `appliesTo`, `softwareSubject`) that the
-current schema rejects, and `dockg build` no longer derives from them.
+`schemas/frontmatter-0.1.json` through `-0.8.json` are dockg's earlier, self-hosted contract.
+They remain published and pinnable, but they are **not** compatible with the `kg` block above.
+They use camelCase spellings (`prefLabel`, `subjects`, `topicType`, `appliesTo`,
+`softwareSubject`) that the current schema rejects, and `dockg build` no longer derives from
+them.
 
 ### Migrating from 0.8
 
@@ -275,7 +279,7 @@ current schema rejects, and `dockg build` no longer derives from them.
   Two config keys name these fields and break with them:
   `fill.fields` (its values are the twelve fillable field names) and the
   `stats.coverageThreshold` map. A stale spelling in either is a config error
-  (exit 2), not a warning — `fields: [prefLabel]` reports
+  (exit 2), not a warning. `fields: [prefLabel]` reports
   `must be equal to one of the allowed values`.
 </Aside>
 

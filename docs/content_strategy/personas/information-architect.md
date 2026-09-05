@@ -34,6 +34,7 @@ journeys:
   - cuj-model-concepts
   - cuj-scope-by-variant
   - cuj-section-granularity
+  - cuj-localize-a-docset
   - cuj-backfill-metadata
   - cuj-export-to-consumer
   - cuj-query-the-graph
@@ -51,8 +52,8 @@ The person who owns what the words mean, and needs the files to agree with them.
 
 Ines maintains the controlled vocabulary for a documentation set covering several products or
 model lines. The vocabulary predates the current publishing platform and will outlive it. They
-have spent real time on questions that look pedantic from outside and are not: whether two terms
-are one concept, whether a topic type is a task or a procedure, whether a caution applies to a
+have spent real time on questions that look pedantic from outside and are not. Whether two terms
+are one concept. Whether a topic type is a task or a procedure. Whether a caution applies to a
 variant or only to a configuration of it.
 
 They are not the person who runs the build. Someone in
@@ -68,24 +69,24 @@ model of their own product taxonomy.
 not `npm install` their way out of a problem.
 
 This inverts the usual assumption. Pages for Ines can be dense about semantics and must be
-gentle about mechanics — the opposite of pages for Priya.
+gentle about mechanics, the opposite of pages for Priya.
 
 ## The two things that win them, and the one that loses them
 
-**Wins:** that dockg's typing vocabularies are *published iiRDS terms*, referenced rather than
-reinvented — recognition is the credibility moment; and that absence of applicability means
+**Wins:** dockg's typing vocabularies are *published iiRDS terms*, referenced rather than
+reinvented, and recognition is the credibility moment. Absence of applicability also means
 **unknown**, not "does not apply", with explicit negative predicates when they need to say the
 stronger thing. That distinction is one they have usually had to argue for elsewhere.
 
 **Loses:** a page that explains SKOS to them, or gets it subtly wrong. They know this material
 better than the docs do. The docset's job is to explain **dockg's mapping onto vocabulary they
-already have** — this frontmatter key becomes that triple — and to be exact about where dockg
-diverges from the standard and why.
+already have**, showing how this frontmatter key becomes that triple. It must also be exact about
+where dockg diverges from the standard and why.
 
 ## What success looks like for them
 
-The vocabulary is in the files, `dockg check` fails when someone violates it, and a query can
-answer "what applies to variant X" correctly — including the negative case, without a human
+The vocabulary is in the files, and `dockg check` fails when someone violates it. A query can
+answer "what applies to variant X" correctly, including the negative case, without a human
 interpreting silence.
 
 ## Their journeys

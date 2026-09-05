@@ -100,6 +100,13 @@ export interface RouteMapping {
   extensions: string[];
   /** Basenames to try for directory routes (`/docs/actions/`). */
   indexFiles: string[];
+  /**
+   * BCP-47 tag labelling every document under `root` (ADR 01037). A page's own
+   * `lang`/`language` frontmatter wins; absent that, the nearest enclosing
+   * route that declares one applies. Omitted, the route says nothing about
+   * language.
+   */
+  language?: string;
 }
 
 export interface DockgConfig {
@@ -176,8 +183,19 @@ export interface DockgConfig {
     model: string;
     /** Weight quantization. `q8` keeps int32 accumulation, which is associative. */
     dtype: string;
-    /** Vector sidecar path. */
+    /**
+     * Directory the sidecars are written into (ADR 01038). One file per
+     * language, named by `vectorIndexFilename`, so this is a directory rather
+     * than the single path it was before the fan-out.
+     */
     out: string;
+    /**
+     * Per-language model overrides, keyed by BCP-47 tag (ADR 01038). A German
+     * corpus embedded with an English-only model returns confident, meaningless
+     * vectors and fails nothing, so this is the knob that makes the fan-out
+     * worth having. Unset languages use `model`/`dtype`.
+     */
+    byLanguage: Record<string, { model?: string; dtype?: string }>;
     /** Per-text vector cache, keyed on text+model+dtype. */
     cacheDir: string;
   };
@@ -289,6 +307,7 @@ export function parseConfig(text: string, configPath: string): DockgConfig {
         .replace(/\/+$/, ""),
       extensions: m.extensions ?? [...DEFAULT_LINK_EXTENSIONS],
       indexFiles: m.indexFiles ?? [...DEFAULT_INDEX_FILES],
+      ...(m.language === undefined ? {} : { language: String(m.language) }),
     })),
     build: {
       derive: r.build?.derive ?? [...ALL_DERIVE_SOURCES],
@@ -327,8 +346,9 @@ export function parseConfig(text: string, configPath: string): DockgConfig {
     embed: {
       model: r.embed?.model ?? DEFAULT_EMBED_MODEL,
       dtype: r.embed?.dtype ?? "q8",
-      out: r.embed?.out ?? "kg/vectors.bin",
+      out: r.embed?.out ?? "kg",
       cacheDir: r.embed?.cacheDir ?? ".dockg/embed-cache",
+      byLanguage: r.embed?.byLanguage ?? {},
     },
     export: {
       iirds: {

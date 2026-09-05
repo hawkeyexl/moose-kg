@@ -5,8 +5,8 @@ description: Load a dockg graph and index in the browser, apply a deterministic 
 
 import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-`dockg/runtime` is a browser-native, retrieval-only module. It has no `node:` imports, ships as a
-single small bundle, and keeps embeddings behind a separate entry point so the query path never
+`dockg/runtime` is a browser-native, retrieval-only module. It has no `node:` imports and ships
+as a single small bundle. Embeddings sit behind a separate entry point, so the query path never
 pulls in the model stack.
 
 It never calls a model. It returns results and stops.
@@ -35,14 +35,28 @@ import { createLocalEmbedder } from "@hawkeyexl/dockg/embed";
 
 Four stages, each of which you can inspect:
 
-1. **Entry** — rank nodes for the query text, lexically and/or by vector, and fuse the rankings.
-2. **Traverse** — walk the graph from those seeds, honoring a scope filter.
-3. **Assemble** — resolve the reached nodes to text and build the bundle.
-4. **Return** — hand back `{ entry, context, citations, trace }`.
+1. **Entry.** Rank nodes for the query text, lexically and/or by vector, and fuse the rankings.
+2. **Traverse.** Walk the graph from those seeds, honoring a scope filter.
+3. **Assemble.** Resolve the reached nodes to text and build the bundle.
+4. **Return.** Hand back `{ entry, context, citations, trace }`.
 
 ```ts
 const graph = new GraphIndex(await (await fetch("/kg/graph.ttl")).text());
-const lexical = createLexicalIndex(await (await fetch("/kg/search.json")).json());
+// One index per language (ADR 01038). Fetch the manifest first to learn which
+// localizations exist, then load only the one you want.
+const manifest = parseLocalizations(
+  await (await fetch("/kg/localizations.json")).text(),
+);
+// Both can legitimately come back empty: `parseLocalizations` returns
+// undefined for anything that is not a manifest, and a corpus need not carry
+// the locale you asked for. Refusing beats ranking against the wrong index.
+if (!manifest) throw new Error("kg/localizations.json is not a dockg manifest");
+const de = manifest.languages.find((l) => l.language === "de");
+if (!de) throw new Error("this corpus has no German localization");
+
+const lexical = createLexicalIndex(
+  await (await fetch(`/kg/${de.search.path}`)).json(),
+);
 
 const entry = findEntry(lexical, "reset the interlock", { limit: 5 });
 
@@ -75,8 +89,8 @@ interface RetrievalBundle {
 
 Two things are deliberate and easy to miss:
 
-**`entry` is returned, not just traced.** Retrieval answers two different questions — what matched
-the query, and what the graph connects to it — and a consumer needs both. The rankings are a result
+**`entry` is returned, not just traced.** Retrieval answers two different questions. What matched
+the query, and what the graph connects to it. A consumer needs both, so the rankings are a result
 surface, not diagnostics.
 
 **A refusal is a result.** When nothing usable is found you get `refusal` with a reason
@@ -90,21 +104,21 @@ traverse(graph, { seeds, depth: 2, variant: "SP-X100" });
 traverse(graph, { seeds, depth: 2, subject: "architecture" });
 ```
 
-A variant may be an IRI, a `dcterms:title`, or a slug. Both polarities are honored: a node is
-excluded when it is explicitly marked non-applicable, and — following
-[open-world semantics](/dockg/concepts/open-world/) — an untyped node is *not* silently treated as
+A variant may be an IRI, a `dcterms:title`, or a slug. Both polarities are honored. A node is
+excluded when it is explicitly marked non-applicable. Following
+[open-world semantics](/dockg/concepts/open-world/), an untyped node is *not* silently treated as
 excluded.
 
 <Aside type="caution" title="Check the exclusions, not just the results">
   The value of a scope filter is what it removed. A traversal returning plausible results while
   dropping nothing is indistinguishable from an unfiltered one. `trace.exclusions` records every
-  node the filter removed and why — assert on it in tests.
+  node the filter removed and why, so assert on it in tests.
 </Aside>
 
 ## `rdf:type` edges are not followed
 
-By default, traversal does not walk `rdf:type` into class nodes, and the reason is the whole point
-of the tool: every document shares `dockg:Document`, so traversing type edges makes every document
+By default, traversal does not walk `rdf:type` into class nodes. The reason is the whole point
+of the tool. Every document shares `dockg:Document`, so traversing type edges makes every document
 reachable from every other in two hops. That is exactly the edge contamination graph-governed
 retrieval exists to prevent.
 
@@ -121,14 +135,14 @@ interface QueryTrace {
 }
 ```
 
-Every returned node must be explainable by a recorded event — the traversal's results are a subset
-of `reachedNodes(trace)`. That is a contract, not a convention, which is what makes the trace usable
-as a reviewer-facing artifact rather than debug output.
+Every returned node must be explainable by a recorded event. The traversal's results are a subset
+of `reachedNodes(trace)`. That is a contract, not a convention, which is what makes the trace
+usable as a reviewer-facing artifact rather than debug output.
 
 ## What it does not do
 
 It does not call a model, build a prompt, chunk documents, or have an opinion about your LLM. It
-also cannot filter by metadata your corpus does not carry — see the
+also cannot filter by metadata your corpus does not carry. See the
 [dependency stated on the track overview](/dockg/retrieve/).
 
 ## Where to go next

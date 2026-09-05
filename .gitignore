@@ -5,10 +5,16 @@ dist/
 # into a tracked fixture. `**/` matches wherever the command was run.
 **/.dockg/
 # Derived, binary, and not CI-regenerable (model weights are a download).
-# Build it in your deploy pipeline instead of committing it.
-**/kg/vectors.bin
+# Build them in your deploy pipeline instead of committing them. One sidecar per
+# language since ADR 01038, so this matches the whole family rather than a
+# single name — the goldens under test/fixtures/golden/ are mock-embedded and
+# committed deliberately, and are not under a `kg/` directory.
+**/kg/vectors.*.bin
 *.tsbuildinfo
 .tmp/
 # Astro's build cache for the docs site. `node_modules/` and `dist/` above are
 # unanchored and already match docs/'s copies at any depth; this one is not.
 **/.astro/
+
+# Vale styles are fetched by `vale sync`, not committed
+.vale/styles/

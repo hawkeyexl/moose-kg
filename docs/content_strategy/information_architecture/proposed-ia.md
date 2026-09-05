@@ -10,7 +10,7 @@ pages_phase_1: 15
 pages_written: 36
 ---
 
-The proposed structure of dockg's published documentation set. **A proposal only** — it
+The proposed structure of dockg's published documentation set. **A proposal only.** It
 describes what should exist; it does not build it.
 
 ## Scope
@@ -26,12 +26,12 @@ it lands.
 
 Sidebar groups are journey-voiced and map one-to-one onto the journeys in
 [`journeys/_overview.md`](../journeys/_overview.md). Do not impose a Diátaxis
-tutorial/how-to/explanation/reference split as the organizing principle — the Reference shelf
-supports navigation, it does not drive it, and the landing page is a router rather than an
+tutorial/how-to/explanation/reference split as the organizing principle. The Reference shelf
+supports navigation and does not drive it, and the landing page is a router rather than an
 introduction.
 
-**Frontmatter requirement:** every page carries `title` and `description`. No exceptions — it is
-a machine-enforced deploy gate.
+**Frontmatter requirement:** every page carries `title` and `description`. There are no
+exceptions, because it is a machine-enforced deploy gate.
 
 ## Navigation tree
 
@@ -55,7 +55,7 @@ Home — "What are you trying to do?" router + a 30-second proof
 
 Group labels are journey-voiced; directories stay short and URL-friendly. Every group
 autogenerates from its directory, with an `index.mdx` doubling as the group's landing page and
-journey hub — no hand-maintained page lists in `astro.config.mjs`.
+journey hub. There are no hand-maintained page lists in `astro.config.mjs`.
 
 | Nav group | Directory |
 |---|---|
@@ -74,10 +74,10 @@ journey hub — no hand-maintained page lists in `astro.config.mjs`.
 **"Understand the model" (`concepts/`) is cross-cutting**, and that is a deliberate exception to
 CUJ-first structure rather than an oversight.
 
-It exists because dockg's single most load-bearing idea — *the graph is an index and governance
-layer, not a retrieval corpus; prose never enters it* — is also its most counter-intuitive, and
-every persona's first journey stalls without it. The question "why aren't my sentences in here?"
-arrives within about thirty seconds of opening the Turtle output, and an unanswered version of it
+It exists because dockg's most load-bearing idea is also its most counter-intuitive. *The graph
+is an index and governance layer, not a retrieval corpus, and prose never enters it.* Every
+persona's first journey stalls without it. The question "why aren't my sentences in here?"
+arrives within about thirty seconds of opening the Turtle output. An unanswered version of it
 makes the tool look broken rather than designed.
 
 The mitigation for it becoming a dumping ground: **every concepts page must be named by at least
@@ -93,8 +93,8 @@ none is flagged in [`ia-gap-analysis.md`](ia-gap-analysis.md).
 
 | Page | CUJ | ★ | Notes |
 |---|---|:--:|---|
-| `index.mdx` | `cuj-first-graph` | ★ | Splash. Hero, a 30-second proof (one command, its real output), a "what are you trying to do?" router card grid, and a checks/doesn't-check pair. |
-| `ns.mdx` | `cuj-export-to-consumer` | | **Sits at the site root because an IRI decides its address, not the nav.** `https://hawkeyexl.github.io/dockg/ns#` is the namespace every minted term lives under, so stripping the fragment must land somewhere real. Defines each term; links the Turtle at `/dockg/ns.ttl`. It is not in the sidebar — a reader arrives by dereferencing an IRI, not by browsing. |
+| `index.mdx` | `cuj-first-graph` | ★ | Splash. A hero and a 30-second proof (one command, its real output). Then a "what are you trying to do?" router card grid, and a checks/doesn't-check pair. |
+| `ns.mdx` | `cuj-export-to-consumer` | | **Sits at the site root because an IRI decides its address, not the nav.** `https://hawkeyexl.github.io/dockg/ns#` is the namespace every minted term lives under, so stripping the fragment must land somewhere real. Defines each term; links the Turtle at `/dockg/ns.ttl`. It is not in the sidebar, since a reader arrives by dereferencing an IRI rather than by browsing. |
 
 ### Get started (`get-started/`)
 
@@ -106,7 +106,7 @@ none is flagged in [`ia-gap-analysis.md`](ia-gap-analysis.md).
 
 | Page | CUJ | ★ | Notes |
 |---|---|:--:|---|
-| `index.mdx` | — *(hub)* | ★ | Four-card router. Deliberately short; nobody should linger here. |
+| `index.mdx` | none *(hub)* | ★ | Four-card router. Deliberately short; nobody should linger here. |
 | `index-not-corpus.mdx` | `cuj-first-graph` | ★ | ADR 01008. Prose never enters the graph; route with the graph, then read the text. Answers the first question every reader asks. |
 | `determinism.mdx` | `cuj-audit-provenance` | ★ | Byte-identical rebuilds, stable IRIs, no blank nodes, no wall clock. Why this is what makes graph output *evidence*. |
 | `open-world.mdx` | `cuj-scope-by-variant` | ★ | Absence means unknown, not excluded. Query the negative edge. The most consequential page for Ines. |
@@ -125,10 +125,11 @@ none is flagged in [`ia-gap-analysis.md`](ia-gap-analysis.md).
 
 | Page | CUJ | ★ | Notes |
 |---|---|:--:|---|
-| `index.mdx` | — *(hub)* | | What dockg models and what it does not. A mapping, not a SKOS tutorial. |
+| `index.mdx` | none *(hub)* | | What dockg models and what it does not. A mapping, not a SKOS tutorial. |
 | `concepts-skos.mdx` | `cuj-model-concepts` | | `label` and its four dependents; how concept IRIs converge; why two spellings is a warning, not a violation. |
 | `variants.mdx` | `cuj-scope-by-variant` | | The four iiRDS typing keys with their published IRIs shown; negative scope; the disjointness check. |
-| `sections.mdx` | `cuj-section-granularity` | | The slug-keyed map; **nothing is inherited**; `brokenSectionRef` as the reason it is safe to rely on. |
+| `sections.mdx` | `cuj-section-granularity` | | The slug-keyed map; **nothing is inherited**; `brokenSectionRef` as what makes it safe to rely on. |
+| `localization.mdx` | `cuj-localize-a-docset` | | `routes[].language` and the page override; `translation-of` and the schema.org pair it emits; why the BCP-47 pattern is a hard error. |
 
 ### Govern it in CI (`govern/`)
 
@@ -144,7 +145,7 @@ none is flagged in [`ia-gap-analysis.md`](ia-gap-analysis.md).
 | Page | CUJ | ★ | Notes |
 |---|---|:--:|---|
 | `index.mdx` | `cuj-serve-retrieval` | | What the runtime does and where it stops. **States the metadata dependency up front**, not at integration time. |
-| `search.mdx` | `cuj-serve-retrieval` | | The artifact chain: graph → search index → vector sidecar. Staleness is refused, not degraded. |
+| `search.mdx` | `cuj-serve-retrieval` | | The artifact chain runs graph → search index → vector sidecar. Staleness is refused, not degraded. |
 | `runtime.mdx` | `cuj-serve-retrieval` | | Browser-side query; the `{context, citations, trace}` shape; a filter demonstrated by what it excluded. |
 | `export.mdx` | `cuj-export-to-consumer` | | Three formats by destination; the `-f` flag trap; lossy projection warnings on stderr; the iiRDS CC BY-ND note. |
 
@@ -152,14 +153,14 @@ none is flagged in [`ia-gap-analysis.md`](ia-gap-analysis.md).
 
 | Page | CUJ | ★ | Notes |
 |---|---|:--:|---|
-| `index.mdx` | `cuj-fix-failing-check` | ★ | **Must work cold** — the landing page for a link in CI output. Error anatomy, whose-fault-is-it, failure catalog with frontmatter diffs. |
+| `index.mdx` | `cuj-fix-failing-check` | ★ | **Must work cold**, as the landing page for a link in CI output. Error anatomy, whose-fault-is-it, failure catalog with frontmatter diffs. |
 | `faq.mdx` | `cuj-fix-failing-check` | | Question-shaped H2s for the cases that are not schema failures. |
 
 ### Reference (`reference/`)
 
 | Page | CUJ | ★ | Notes |
 |---|---|:--:|---|
-| `index.mdx` | — *(shelf index)* | | A card grid and nothing else. |
+| `index.mdx` | none *(shelf index)* | | A card grid and nothing else. |
 | `cli.mdx` | all | ★ | Every command, argument, option, default. **Mechanically drift-checked** against commander. |
 | `configuration.mdx` | all | ★ | Every config key with type and default. Note the `inputs` default differs from the `init` template. |
 | `frontmatter.mdx` | `cuj-model-concepts` | ★ | The `kg:` block, plus the page-level aliases that are accepted but unvalidated. |
@@ -167,9 +168,9 @@ none is flagged in [`ia-gap-analysis.md`](ia-gap-analysis.md).
 | `vocabulary.mdx` | `cuj-scope-by-variant` | | Namespace table, the minimal `dockg:` namespace, every standard term emitted, package-only terms. |
 | `shapes.mdx` | `cuj-model-concepts` | | Every rule `check` enforces, its severity, and what error it protects against. |
 | `runtime-api.mdx` | `cuj-serve-retrieval` | | Exact exports and signatures for `dockg/runtime`. |
-| `library-api.mdx` | `cuj-export-to-consumer` | | The Node package entry: every command as a function, plus IRI minting, derivation, and the emitters. |
+| `library-api.mdx` | `cuj-export-to-consumer` | | The Node package entry, with every command as a function, plus IRI minting, derivation, and the emitters. |
 | `embed-models.mdx` | `cuj-serve-retrieval` | | Tested models, sizes, context limits, the short-context truncation trap. |
-| `glossary.mdx` | — *(support)* | | Term definitions as H2s. Supports navigation; drives none. |
+| `glossary.mdx` | none *(support)* | | Term definitions as H2s. Supports navigation; drives none. |
 
 ## Source-of-truth mapping
 
@@ -178,7 +179,7 @@ is part of the change's definition of done.
 
 | Reference page | Source of truth |
 |---|---|
-| `reference/cli.mdx` | `src/cli.ts` — enforced by `scripts/check-cli-reference.mjs` |
+| `reference/cli.mdx` | `src/cli.ts`, enforced by `scripts/check-cli-reference.mjs` |
 | `reference/configuration.mdx` | `src/core/config-schema.json`, `src/core/config.ts` |
 | `reference/frontmatter.mdx` | `schemas/frontmatter-0.8.json`, `src/core/derive.ts` |
 | `reference/vocabulary.mdx` | `src/core/vocab.ts`, `src/core/iirds.ts` |
@@ -187,29 +188,29 @@ is part of the change's definition of done.
 | `reference/runtime-api.mdx` | `src/runtime.ts` exports, `package.json` `exports` |
 | `reference/library-api.mdx` | `src/index.ts` exports |
 | `reference/embed-models.mdx` | `src/embed.ts` `MODEL_PROFILES` |
-| `concepts/*.mdx` | The ADRs each cites — 01008, 01010, 01014, and the DESIGN.md thesis |
+| `concepts/*.mdx` | The ADRs each cites, namely 01008, 01010, 01014, and the DESIGN.md thesis |
 
 Behavior claims come from source and the test suite, never from memory. Sample output is captured
-by running the built binary against a committed fixture — determinism means the output captured
+by running the built binary against a committed fixture. Determinism means the output captured
 is the output every reader will see.
 
 ## Phased rollout
 
-**All three phases are written.** The ordering is kept as the record of why the set was built in
-this sequence, and as the template for the next tranche of pages.
+**All three phases are written.** The ordering is kept as the record of why the set was built
+this way, and as the template for the next tranche of pages.
 
-**Phase 1 — Launch (15 ★ pages).** Both anchors complete end to end, plus the reference pages
+**Phase 1, Launch (15 ★ pages).** Both anchors complete end to end, plus the reference pages
 that the anchors link into. Landing · get-started · four concepts pages · `build/index` ·
 `build/routes` · `govern/index` · `govern/ci` · `fix/index` · four reference pages. This is a
-coherent set: Priya can adopt and gate, and Sam can self-serve.
+coherent set. Priya can adopt and gate, and Sam can self-serve.
 
-**Phase 2 — Depth.** The `model/` track in full, `govern/coverage` and `govern/provenance`,
+**Phase 2, Depth.** The `model/` track in full, `govern/coverage` and `govern/provenance`,
 `build/backfill`, `concepts/granularity`. Completes Ines and Renata.
 
-**Phase 3 — Breadth.** The `retrieve/` track, remaining reference pages, `fix/faq`. Completes
+**Phase 3, Breadth.** The `retrieve/` track, remaining reference pages, `fix/faq`. Completes
 Kwame.
 
-Phase order follows audience dependency, not page count: nothing else is reachable until Priya
+Phase order follows audience dependency, not page count. Nothing else is reachable until Priya
 can build, and every gate Priya installs generates traffic to Sam's track.
 
 ## Journey walk-through test

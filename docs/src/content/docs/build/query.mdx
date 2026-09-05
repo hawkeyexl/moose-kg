@@ -1,12 +1,12 @@
 ---
 title: Query and traverse the graph
-description: Ask the graph what it actually knows — match triple patterns with dockg query, walk edges with dockg traverse, and find out what depends on a page before you move it.
+description: Ask the graph what it actually knows. Match triple patterns with dockg query, walk edges with dockg traverse, and find out what depends on a page before you move it.
 ---
 
 import { Aside, CardGrid, LinkCard, Steps } from '@astrojs/starlight/components';
 
-`dockg stats` answers aggregate questions. This page is for the specific ones — *what points at
-this page? what does changing it reach? did that concept land the way I wrote it?*
+`dockg stats` answers aggregate questions. This page is for the specific ones. *What points at
+this page? What does changing it reach? Did that concept land the way I wrote it?*
 
 Both commands are read-only and exit `0` even when nothing matches. They are for exploring, not
 gating.
@@ -15,14 +15,14 @@ gating.
 
 A built graph. Every example below runs against
 [`test/fixtures/corpus/`](https://github.com/hawkeyexl/dockg/tree/main/test/fixtures/corpus), so
-your IRIs will differ — the shapes will not.
+your IRIs will differ. The shapes will not.
 
 ## Which command answers which question
 
 | Question | Command |
 |---|---|
-| Show me every X | `dockg query` — match a triple pattern, omit a term for a wildcard |
-| What is connected to this node | `dockg traverse` — walk edges from a starting point |
+| Show me every X | `dockg query`, matching a triple pattern; omit a term for a wildcard |
+| What is connected to this node | `dockg traverse`, walking edges from a starting point |
 
 Readers reach for the wrong one first. `query` is a filter over the whole graph; `traverse` is a
 walk from somewhere.
@@ -171,7 +171,7 @@ excluded by scope:
 ```
 
 **Read the exclusions line, not just the nodes.** A filter that returns plausible results while
-excluding nothing is indistinguishable from no filter at all — and that is the failure
+excluding nothing is indistinguishable from no filter at all. That is the failure
 [open-world semantics](/dockg/concepts/open-world/) warns about, one layer up.
 
 A variant that is not in the graph is an error rather than an empty result:
@@ -185,7 +185,7 @@ Exit `2`. An unresolvable filter would otherwise return exactly what it was mean
 <Aside type="note" title="`rdf:type` is not followed by default">
   Every document shares `dockg:Document`, so walking type edges would make every document reachable
   from every other in two hops. If a traversal looks narrower than you expected, this is usually
-  why — and it is deliberate.
+  why, and it is deliberate.
 </Aside>
 
 ## Verifying what you modelled
@@ -222,12 +222,12 @@ dockg query -p dcterms:references --format json > references.json
 ```
 
 For anything more involved than a pattern match, use the
-[library API](/dockg/reference/library-api/) — `runQuery` and `runTraverse` return structured
+[library API](/dockg/reference/library-api/). `runQuery` and `runTraverse` return structured
 results, and `GraphIndex` gives you the index directly.
 
 ## What you have now
 
-A way to answer questions about one specific node rather than the corpus as a whole — and the
+A way to answer questions about one specific node rather than the corpus as a whole. Plus the
 impact check to run before changing a page anything else depends on.
 
 ## Where to go next

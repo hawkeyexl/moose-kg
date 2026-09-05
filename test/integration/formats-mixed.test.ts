@@ -143,19 +143,33 @@ describe("a corpus of HTML and Markdown", () => {
   it("indexes HTML prose, never HTML markup", () => {
     const dir = mkdtempSync(join(tmpdir(), "dockg-mixed-"));
     const graph = join(dir, "graph.ttl");
-    const search = join(dir, "search.json");
+    // `export --format search` writes a directory of per-locale artifacts
+    // (ADR 01038). These corpora declare no route language, so everything
+    // lands in the `und` bucket.
+    const searchDir = join(dir, "search");
     build(graph);
     execFileSync(
       process.execPath,
-      [cli, "export", "--format", "search", "--graph", graph, "--out", search],
+      [
+        cli,
+        "export",
+        "--format",
+        "search",
+        "--graph",
+        graph,
+        "--out",
+        searchDir,
+      ],
       { encoding: "utf8", cwd: corpus, env: hermeticEnv() },
     );
-    expect(readFileSync(search, "utf8")).toBe(
+    expect(readFileSync(join(searchDir, "search.und.json"), "utf8")).toBe(
       readFileSync(searchGolden, "utf8"),
     );
     // The blunt version of the same claim, in case the golden is ever
     // regenerated from a broken build.
-    expect(readFileSync(search, "utf8")).not.toMatch(/<\/?(?:p|h1|section)\b/);
+    expect(
+      readFileSync(join(searchDir, "search.und.json"), "utf8"),
+    ).not.toMatch(/<\/?(?:p|h1|section)\b/);
   });
 
   it("labels each iiRDS rendition with its own media type", () => {

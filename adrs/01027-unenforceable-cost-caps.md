@@ -19,12 +19,12 @@ which returns `undefined` for any model outside the six in the library's price t
 `costOfUsage(usage, undefined)` returns `0`. So for every other model the total stays `0`, the gate
 never fires, `skipped-budget` is unreachable, and the run prints `LLM cost: $0.0000`.
 
-That is not an edge case. It is every `claude-cli` model (which reports no token usage at all), every
-local model, and every hosted model newer than the table — while the cap is **on by default**. A
-caller who set a limit had no limit and no way to know.
+That is not an edge case. It is every `claude-cli` model, which reports no token usage at all,
+every local model, and every hosted model newer than the table. Meanwhile the cap is **on by
+default**. A caller who set a limit had no limit and no way to know.
 
-The library's own documentation names the distinction: *costing zero is not the same as cannot be
-priced*, and prescribes guarding on the price being known rather than on the number.
+The library's own documentation names the distinction. *Costing zero is not the same as cannot be
+priced.* It prescribes guarding on the price being known rather than on the number.
 
 ## Decision Drivers
 
@@ -37,24 +37,24 @@ priced*, and prescribes guarding on the price being known rather than on the num
 
 ## Considered Options
 
-1. **Report a three-state budget and warn** — `off` / `enforced` / `unpriceable`.
+1. **Report a three-state budget and warn**, as `off`, `enforced`, or `unpriceable`.
 2. **Refuse the run** (exit 2) when a cap is set and the model is unpriced.
-3. **Treat unpriceable as unlimited** — the status quo, documented.
+3. **Treat unpriceable as unlimited**, the status quo, documented.
 4. **Assume a price** for unknown models from a conservative default.
 
 ## Decision Outcome
 
-Chosen: **option 1**.
+**Option 1 was chosen.**
 
 `FillReport` gains `budget: "off" | "enforced" | "unpriceable"` and a `warnings: string[]`. The gate
-now tests an `enforcedCap` that is null unless the cap is both set *and* applicable, so it cannot
+now tests an `enforcedCap` that is null unless the cap is both set *and* applicable. It cannot
 fire on a run whose total means nothing. The pretty renderer prints `LLM cost: unpriceable` instead
-of `$0.0000`, and the warning goes to stderr with the two ways to resolve it — set `fill.pricing`,
+of `$0.0000`. The warning goes to stderr with the two ways to resolve it. Set `fill.pricing`,
 or set `fill.maxCostUsd: null` to say you meant no cap.
 
-Option 2 was rejected on blast radius, not on principle: the cap is on by default and `mock` is
-unpriced, so refusing would fail `dockg fill --provider mock` — the offline path the docs recommend
-— along with every local run. Refusing is the right answer for a *hosted* provider, but dockg cannot
+Option 2 was rejected on blast radius, not on principle. The cap is on by default and `mock` is
+unpriced, so refusing would fail `dockg fill --provider mock`, the offline path the docs recommend,
+along with every local run. Refusing is the right answer for a *hosted* provider, but dockg cannot
 distinguish hosted-and-unpriced from local-and-free through `pricingFor`, which returns `undefined`
 for both. When it can, this decision is worth revisiting.
 
@@ -73,12 +73,13 @@ is worse than a cap that visibly does not fire.
 
 ### Confirmation
 
-`test/unit/fill.test.ts` — an unpriced model with a cap reports `unpriceable`, warns once naming the
-model, still processes every document, and renders `LLM cost: unpriceable` rather than `$0.0000`; a
-priced model reports `enforced` and warns not at all; `maxCostUsd: null` reports `off` with no
-warning, because an unpriced model is only a problem when a limit depends on the price. The existing
-"stops proposing when the cost budget is exhausted" test — whose comment already said *"model name
-must be priced in the cost table for the budget to accrue"* — still passes unchanged.
+`test/unit/fill.test.ts` covers three cases. An unpriced model with a cap reports `unpriceable`,
+warns once naming the model, still processes every document, and renders `LLM cost: unpriceable`
+rather than `$0.0000`. A priced model reports `enforced` and warns not at all. And
+`maxCostUsd: null` reports `off` with no warning, because an unpriced model is only a problem when
+a limit depends on the price. The existing "stops proposing when the cost budget is exhausted" test
+still passes unchanged. Its comment already said *"model name must be priced in the cost table for
+the budget to accrue"*.
 
 ## Pros and Cons of the Options
 
@@ -97,7 +98,7 @@ must be priced in the cost table for the budget to accrue"* — still passes unc
 ### 3. Status quo, documented
 
 - Good, because it costs nothing to implement.
-- Bad, because the failure is invisible at exactly the moment it matters — the run where an
+- Bad, because the failure is invisible at exactly the moment it matters. That is the run where an
   unpriced hosted model spends past the limit that was set.
 
 ### 4. Assume a price

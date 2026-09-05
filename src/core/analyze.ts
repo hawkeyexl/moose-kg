@@ -5,9 +5,11 @@
  * everything downstream — `deriveGraph`, `fill`, the coverage report — sees
  * only `DocModel`, so a new input format never touches derivation.
  *
- * Two things stay here rather than in any analyzer, because they must be
+ * Three things stay here rather than in any analyzer, because they must be
  * identical across formats: the repo-relative path normalization that section
- * and document IRIs are minted from, and the content digest (ADR 01036).
+ * and document IRIs are minted from, the content digest (ADR 01036), and the
+ * route-derived language (ADR 01037). All three are properties of the file's
+ * path and the config, not of the syntax inside it.
  */
 import { createHash } from "node:crypto";
 import { extname } from "node:path";
@@ -23,6 +25,33 @@ import { normalizeDocPath } from "./iri.js";
 export interface AnalyzeOptions {
   /** Site-route mappings for resolving root-absolute links. */
   routes?: RouteMapping[];
+}
+
+/**
+ * The language labelling a source path, from the nearest enclosing route
+ * mapping that declares one (ADR 01037).
+ *
+ * "Nearest" is the longest matching `root`, so a `docs/de` mapping beats a
+ * `docs` one for a file under both. A mapping that declares no language is
+ * transparent rather than blocking: `{root: docs, language: en}` plus
+ * `{root: docs/api}` still labels `docs/api/x.md` as English, the way a nested
+ * directory inherits the setting of its parent.
+ */
+export function routeLanguageFor(
+  path: string,
+  routes: readonly RouteMapping[],
+): string | undefined {
+  let best: { root: string; language: string } | undefined;
+  for (const mapping of routes) {
+    if (mapping.language === undefined) continue;
+    const root = mapping.root;
+    const covers = root === "" || path === root || path.startsWith(`${root}/`);
+    if (!covers) continue;
+    if (best === undefined || root.length > best.root.length) {
+      best = { root, language: mapping.language };
+    }
+  }
+  return best?.language;
 }
 
 /**
@@ -51,14 +80,15 @@ export async function analyzeDoc(
       } — narrow your inputs globs. Supported: ${implementedExtensions().join(", ")}.`,
     );
   }
-  const body = await analyzer.analyze(content, {
-    path,
-    allPaths,
-    routes: options.routes ?? [],
-  });
+  const routes = options.routes ?? [];
+  const body = await analyzer.analyze(content, { path, allPaths, routes });
+  const routeLanguage = routeLanguageFor(path, routes);
   return {
     path,
     ...body,
+    // Omitted rather than set to undefined, so a doc under no localized route
+    // carries no key at all — `routeLanguage` in JSON output means something.
+    ...(routeLanguage === undefined ? {} : { routeLanguage }),
     // Over the content as read — line endings included, so the digest is
     // byte-faithful and equals `sha256sum <file>` for any valid-UTF-8 file
     // (ADR 01036). The CRLF corpus fixture depends on this not normalizing.

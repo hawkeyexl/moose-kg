@@ -40,9 +40,9 @@ learn it.
 
 ## Who they are
 
-Sam edited one page — possibly one line. They may be a software engineer who touched a README
-alongside a code change, a support specialist correcting a procedure, or a writer who does not
-work on the docs platform. They pushed, CI failed, and there is a link in the output.
+Sam edited one page, possibly one line. They may be a software engineer who touched a README
+alongside a code change. They may be a support specialist correcting a procedure, or a writer who
+does not work on the docs platform. They pushed, CI failed, and there is a link in the output.
 
 That link is their entire relationship with dockg. They have not read the landing page, do not
 know what a knowledge graph is, and will not find out today.
@@ -60,8 +60,8 @@ Merge.
 
 The docset should not pretend otherwise, and should not try to convert this visit into
 engagement. Success for this persona is measured by **how quickly they leave**. A single link
-out at the bottom of the page is enough; a page that tries to interest them in the concept track
-has misread the situation and costs them time they did not want to spend.
+out at the bottom of the page is enough. A page that tries to interest them in the concept track
+has misread the situation, and costs them time they did not want to spend.
 
 ## What actually helps
 
@@ -81,7 +81,7 @@ the other personas install generates visits here. This will be the most-read tra
 by people who care about it least.
 
 The track must also work with **no preceding context**, because it is the landing page for a
-link in machine output — no "as we saw above", no assumed installation, no assumed config.
+link in machine output. No "as we saw above", no assumed installation, no assumed config.
 
 ## Their journey
 

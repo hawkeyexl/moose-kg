@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cli = join(root, "dist", "cli.js");
 const corpus = join(root, "test", "fixtures", "corpus");
-const golden = join(root, "test", "fixtures", "golden", "vectors.bin");
+const goldenDir = join(root, "test", "fixtures", "golden");
 
 /**
  * `spawnSync`, not `execFileSync`, so **stderr is captured on success too**.
@@ -39,7 +39,9 @@ function prepare(withVectors = true): {
 } {
   const dir = mkdtempSync(join(tmpdir(), "dockg-embed-"));
   const graph = join(dir, "graph.ttl");
-  const vectors = join(dir, "vectors.bin");
+  // The undetermined bucket: the corpus's English tree declares no language,
+  // so its 20 entries land in `und` (ADR 01038).
+  const vectors = join(dir, "vectors.und.bin");
   execFileSync(process.execPath, [cli, "build", "--out", graph], {
     encoding: "utf8",
     cwd: corpus,
@@ -51,17 +53,7 @@ function prepare(withVectors = true): {
   if (withVectors) {
     execFileSync(
       process.execPath,
-      [
-        cli,
-        "embed",
-        "-g",
-        graph,
-        "--model",
-        "mock",
-        "-o",
-        vectors,
-        "--no-cache",
-      ],
+      [cli, "embed", "-g", graph, "--model", "mock", "--no-cache"],
       { encoding: "utf8", cwd: corpus },
     );
   }
@@ -77,15 +69,57 @@ interface SearchJson {
 }
 
 describe("dockg embed (integration)", () => {
-  it("matches the vectors golden byte-for-byte", () => {
-    const { vectors } = prepare();
-    expect(readFileSync(vectors).equals(readFileSync(golden))).toBe(true);
+  it.each(["und", "de", "de-AT", "fr"])(
+    "matches the %s vectors golden byte-for-byte",
+    (language) => {
+      const { dir } = prepare();
+      const name = `vectors.${language}.bin`;
+      expect(
+        readFileSync(join(dir, name)).equals(
+          readFileSync(join(goldenDir, name)),
+        ),
+      ).toBe(true);
+    },
+  );
+
+  it("records the language each sidecar covers in its header", () => {
+    const { dir } = prepare();
+    // Bytes 12.. are the JSON header; reading it back through the public
+    // decoder would need the runtime bundle, and this only needs the tag.
+    const bytes = readFileSync(join(dir, "vectors.de.bin"));
+    const headerLength = bytes.readUInt32LE(8);
+    const header = JSON.parse(
+      bytes.subarray(12, 12 + headerLength).toString("utf8"),
+    ) as { language: string };
+    expect(header.language).toBe("de");
+  });
+
+  it("fills the manifest's vectors block for every language", () => {
+    const { dir } = prepare();
+    const doc = JSON.parse(
+      readFileSync(join(dir, "localizations.json"), "utf8"),
+    ) as {
+      languages: Array<{
+        language: string;
+        vectors?: { path: string; model: string; count: number };
+      }>;
+    };
+    expect(doc.languages.map((l) => l.language)).toEqual([
+      "de",
+      "de-AT",
+      "fr",
+      "und",
+    ]);
+    for (const l of doc.languages) {
+      expect(l.vectors?.path).toBe(`vectors.${l.language}.bin`);
+      expect(l.vectors?.model).toBe("mock");
+    }
   });
 
   it("is byte-identical across two runs (determinism gate)", () => {
     const { dir, graph } = prepare(false);
-    const a = join(dir, "a.bin");
-    const b = join(dir, "b.bin");
+    const a = join(dir, "a");
+    const b = join(dir, "b");
     const args = (out: string) => [
       "embed",
       "-g",
@@ -98,7 +132,11 @@ describe("dockg embed (integration)", () => {
     ];
     run(args(a), corpus);
     run(args(b), corpus);
-    expect(readFileSync(a).equals(readFileSync(b))).toBe(true);
+    for (const name of ["vectors.und.bin", "vectors.de.bin"]) {
+      expect(
+        readFileSync(join(a, name)).equals(readFileSync(join(b, name))),
+      ).toBe(true);
+    }
   });
 
   it("serves repeat runs from the cache", () => {
@@ -118,7 +156,7 @@ describe("dockg embed (integration)", () => {
       "--model",
       "mock",
       "-o",
-      join(dir, "c.bin"),
+      join(dir, "c"),
       "-f",
       "json",
     ];
@@ -127,14 +165,18 @@ describe("dockg embed (integration)", () => {
       cached: number;
     };
     expect(first.embedded).toBeGreaterThan(0);
-    expect(first.cached).toBe(0);
+    // Not zero: concepts are shared vocabulary and appear in every language's
+    // index (ADR 01038), and the cache is keyed on text+model+dtype — so the
+    // first run already serves each concept's repeats from cache rather than
+    // embedding the same string once per locale. Replication is free.
+    const firstTotal = first.embedded + first.cached;
 
     const second = JSON.parse(run(args, corpus).stdout) as {
       embedded: number;
       cached: number;
     };
     expect(second.embedded).toBe(0);
-    expect(second.cached).toBe(first.embedded);
+    expect(second.cached).toBe(firstTotal);
   });
 
   it("reports the model and dimensions it used", () => {
@@ -149,16 +191,22 @@ describe("dockg embed (integration)", () => {
           "mock",
           "--no-cache",
           "-o",
-          join(dir, "d.bin"),
+          join(dir, "d"),
           "-f",
           "json",
         ],
         corpus,
       ).stdout,
-    ) as { model: string; dims: number; total: number };
-    expect(out.model).toBe("mock");
-    expect(out.dims).toBeGreaterThan(0);
+    ) as {
+      total: number;
+      languages: Array<{ language: string; model: string; dims: number }>;
+    };
     expect(out.total).toBeGreaterThan(0);
+    expect(out.languages).toHaveLength(4);
+    for (const l of out.languages) {
+      expect(l.model).toBe("mock");
+      expect(l.dims).toBeGreaterThan(0);
+    }
   });
 
   it("exits 2 when the search index is missing", () => {
@@ -200,6 +248,8 @@ describe("dockg search with vectors (integration)", () => {
       "configuration",
       "-g",
       graph,
+      "--lang",
+      "und",
       "--vectors",
       vectors,
       "-f",
@@ -221,6 +271,8 @@ describe("dockg search with vectors (integration)", () => {
       "configuration",
       "-g",
       graph,
+      "--lang",
+      "und",
       "--vectors",
       vectors,
       "--mode",
@@ -240,6 +292,8 @@ describe("dockg search with vectors (integration)", () => {
       "configuration",
       "-g",
       graph,
+      "--lang",
+      "und",
       "--vectors",
       vectors,
       "--mode",
@@ -254,7 +308,16 @@ describe("dockg search with vectors (integration)", () => {
   it("answers lexically when no sidecar exists, without failing", () => {
     // Additive, never a new failure mode (ADR 01009).
     const { graph } = prepare(false);
-    const out = search(["search", "configuration", "-g", graph, "-f", "json"]);
+    const out = search([
+      "search",
+      "configuration",
+      "-g",
+      graph,
+      "--lang",
+      "und",
+      "-f",
+      "json",
+    ]);
     expect(out.mode).toBe("lexical");
     expect(out.results.length).toBeGreaterThan(0);
   });
@@ -262,7 +325,16 @@ describe("dockg search with vectors (integration)", () => {
   it("exits 2 when --mode vector is asked for without a sidecar", () => {
     const { graph } = prepare(false);
     const { status, output } = run(
-      ["search", "configuration", "-g", graph, "--mode", "vector"],
+      [
+        "search",
+        "configuration",
+        "-g",
+        graph,
+        "--lang",
+        "und",
+        "--mode",
+        "vector",
+      ],
       corpus,
     );
     expect(status).toBe(2);
@@ -274,7 +346,7 @@ describe("dockg search with vectors (integration)", () => {
     // yesterday's vectors — stale hits point at IRIs that may be gone, and
     // everything added since is unreachable (ADR 01020).
     const { graph, vectors } = prepare();
-    const index = join(dirname(graph), "search.json");
+    const index = join(dirname(graph), "search.und.json");
     const doc = JSON.parse(readFileSync(index, "utf8")) as {
       entries: Array<Record<string, string>>;
     };
@@ -287,7 +359,16 @@ describe("dockg search with vectors (integration)", () => {
     writeFileSync(index, JSON.stringify(doc), "utf8");
 
     const { status, output } = run(
-      ["search", "configuration", "-g", graph, "--vectors", vectors],
+      [
+        "search",
+        "configuration",
+        "-g",
+        graph,
+        "--lang",
+        "und",
+        "--vectors",
+        vectors,
+      ],
       corpus,
     );
     expect(status).toBe(2);
@@ -300,7 +381,7 @@ describe("dockg search with vectors (integration)", () => {
     // not turn a working lexical search into exit 2 — the leg is additive
     // (ADR 01009). Warned on stderr, so the user learns why it went lexical.
     const { graph, vectors } = prepare();
-    const index = join(dirname(graph), "search.json");
+    const index = join(dirname(graph), "search.und.json");
     const doc = JSON.parse(readFileSync(index, "utf8")) as {
       entries: Array<Record<string, string>>;
     };
@@ -312,19 +393,32 @@ describe("dockg search with vectors (integration)", () => {
     });
     writeFileSync(index, JSON.stringify(doc), "utf8");
 
-    // The sidecar has to be at the *configured default* path for this to be the
-    // discovered case — passing `--vectors` would make it explicitly requested,
-    // which is the exit-2 branch above.
+    // The sidecar has to be at the *configured default* location for this to be
+    // the discovered case — passing `--vectors` would make it explicitly
+    // requested, which is the exit-2 branch above. `embed.out` is the sidecar
+    // directory since the per-locale fan-out (ADR 01038); search joins it with
+    // the filename the manifest records for this language.
     const cfg = join(dirname(vectors), "dockg.config.yaml");
     writeFileSync(
       cfg,
-      `version: 1\nbaseIri: https://example.com/kg/\nembed:\n  out: ${JSON.stringify(vectors)}\n`,
+      `version: 1\nbaseIri: https://example.com/kg/\nembed:\n  out: ${JSON.stringify(dirname(vectors))}\n`,
       "utf8",
     );
 
     // No --vectors and no --mode: the sidecar is discovered, not requested.
     const { status, stdout, stderr } = run(
-      ["search", "configuration", "-g", graph, "-c", cfg, "-f", "json"],
+      [
+        "search",
+        "configuration",
+        "-g",
+        graph,
+        "--lang",
+        "und",
+        "-c",
+        cfg,
+        "-f",
+        "json",
+      ],
       dirname(vectors),
     );
     expect(status).toBe(0);
@@ -339,7 +433,16 @@ describe("dockg search with vectors (integration)", () => {
     // confident answer to a question the user did not ask.
     const { graph } = prepare(false);
     const { status, output } = run(
-      ["search", "configuration", "-g", graph, "--vectors", "nope.bin"],
+      [
+        "search",
+        "configuration",
+        "-g",
+        graph,
+        "--lang",
+        "und",
+        "--vectors",
+        "nope.bin",
+      ],
       corpus,
     );
     expect(status).toBe(2);
@@ -353,7 +456,16 @@ describe("dockg search with vectors (integration)", () => {
     const bad = join(dir, "not-vectors.bin");
     writeFileSync(bad, "definitely not a vector index", "utf8");
     const { status, output } = run(
-      ["search", "configuration", "-g", graph, "--vectors", bad],
+      [
+        "search",
+        "configuration",
+        "-g",
+        graph,
+        "--lang",
+        "und",
+        "--vectors",
+        bad,
+      ],
       corpus,
     );
     expect(status).toBe(2);
@@ -370,6 +482,8 @@ describe("dockg search with vectors (integration)", () => {
       "   ",
       "-g",
       graph,
+      "--lang",
+      "und",
       "--vectors",
       vectors,
       "--mode",
@@ -390,6 +504,8 @@ describe("dockg search with vectors (integration)", () => {
       "configuration",
       "-g",
       graph,
+      "--lang",
+      "und",
       "--vectors",
       vectors,
       "--mode",
@@ -405,7 +521,8 @@ describe("dockg search with vectors (integration)", () => {
 
   it("refuses a sidecar built by a different model", () => {
     const { dir, graph } = prepare(false);
-    const other = join(dir, "other.bin");
+    const otherDir = join(dir, "other");
+    const other = join(otherDir, "vectors.und.bin");
     run(
       [
         "embed",
@@ -415,7 +532,7 @@ describe("dockg search with vectors (integration)", () => {
         "mock",
         "--no-cache",
         "-o",
-        other,
+        otherDir,
         "--dtype",
         "q8",
       ],
@@ -433,6 +550,8 @@ describe("dockg search with vectors (integration)", () => {
         "configuration",
         "-g",
         graph,
+        "--lang",
+        "und",
         "-c",
         cfg,
         "--vectors",

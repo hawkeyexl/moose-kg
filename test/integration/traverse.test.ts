@@ -250,3 +250,69 @@ describe("JSON-LD ⇄ Turtle equivalence gate", () => {
     expect(a.trace.exclusions.length).toBeGreaterThan(0);
   });
 });
+
+/**
+ * Localization at the CLI (ADR 01037). The two halves that matter to a
+ * localization owner: reaching a page's translations when it changes, and not
+ * reaching the ones in the wrong language.
+ */
+describe("dockg traverse --lang", () => {
+  const EN = "https://example.com/kg/doc/docs/getting-started.md";
+
+  it("reaches every translation of a changed source", () => {
+    // The governance job: impact analysis across the translation edge. Without
+    // the materialized inverse this returns nothing at all.
+    const graph = buildGraph();
+    const { stdout, status } = run(
+      [
+        "traverse",
+        EN,
+        "-g",
+        graph,
+        "--impact",
+        "--predicates",
+        "schema:translationOfWork",
+      ],
+      corpus,
+    );
+    expect(status).toBe(0);
+    expect(stdout).toContain("docs/de/getting-started.md");
+    expect(stdout).toContain("docs/fr/getting-started.md");
+  });
+
+  it("excludes a translation in another language, and says so", () => {
+    const graph = buildGraph();
+    const { stdout, status } = run(
+      [
+        "traverse",
+        EN,
+        "-g",
+        graph,
+        "--impact",
+        "--predicates",
+        "schema:translationOfWork",
+        "--lang",
+        "fr",
+      ],
+      corpus,
+    );
+    expect(status).toBe(0);
+    expect(stdout).toContain("docs/fr/getting-started.md");
+    expect(stdout).toContain("excluded by scope:");
+    // The trace names the firing rule, not just the fact of exclusion.
+    expect(stdout).toMatch(
+      /docs\/de\/getting-started\.md — dcterms:language fr/,
+    );
+  });
+
+  it("keeps nodes that declare no language at all", () => {
+    // Unscoped content applies broadly, the same rule variants follow — so a
+    // language filter must not silently empty a corpus that has not adopted it.
+    const graph = buildGraph();
+    const { stdout } = run(
+      ["traverse", EN, "-g", graph, "-d", "1", "--lang", "de"],
+      corpus,
+    );
+    expect(stdout).toContain("docs/configuration.md");
+  });
+});

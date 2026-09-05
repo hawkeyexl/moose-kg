@@ -9,7 +9,7 @@ This page maps dockg's frontmatter onto SKOS. It assumes you know SKOS and does 
 
 ## The whole surface
 
-Six keys. That is all of it — you are probably braced for more.
+Six keys. That is all of it, though you are probably braced for more.
 
 | Key | Cardinality | Emits |
 |---|---|---|
@@ -18,7 +18,7 @@ Six keys. That is all of it — you are probably braced for more.
 | `broader` | list | `skos:broader` |
 | `narrower` | list | `skos:narrower` |
 | `related-concepts` | string or list | `skos:related` |
-| `concepts` | string or list | `dcterms:subject` — a plain subject tag, not a primary topic |
+| `concepts` | string or list | `dcterms:subject`, a plain subject tag rather than a primary topic |
 
 ```md title="docs/rate-limiting.md"
 ---
@@ -41,8 +41,8 @@ Every concept lands in a single `skos:ConceptScheme` with `skos:inScheme`.
 `label` alongside them via `dependentRequired`. Without it there is nothing for the
 relationship to hang from.
 
-`dockg fill` enforces the same rule at proposal time: if no `label` exists or is being proposed
-in the same pass, relationship proposals are dropped — and the check re-runs after every subsequent
+`dockg fill` enforces the same rule at proposal time. If no `label` exists or is being proposed
+in the same pass, relationship proposals are dropped. The check re-runs after every subsequent
 drop, so a `label` rejected for low confidence takes its dependents with it.
 
 ## Concept IRIs converge on the slug
@@ -50,7 +50,7 @@ drop, so a `label` rejected for low confidence takes its dependents with it.
 Concepts are minted from the slugified label, so two spellings of the same term become the **same
 node**. `Rate Limiting`, `rate limiting`, and `Rate limiting` are one concept.
 
-That is usually what you want — it is how a taxonomy tolerates inconsistent authoring. It is
+That is usually what you want, and it is how a taxonomy tolerates inconsistent authoring. It is
 occasionally a surprise, so dockg reports it:
 
 ```
@@ -67,7 +67,7 @@ warning: https://example.com/kg/concept/installation skos:prefLabel — concept 
 | Finding | Severity | What it protects against |
 |---|---|---|
 | `skos:broader` / `narrower` cycle | violation | A concept being its own ancestor |
-| `skos:related` conflicting with `skos:broaderTransitive` | violation | SKOS S27 — a concept both related to and an ancestor of another |
+| `skos:related` conflicting with `skos:broaderTransitive` | violation | SKOS S27, a concept both related to and an ancestor of another |
 | Concept missing `skos:prefLabel` or `skos:inScheme` | violation | Unlabelled or unscoped nodes |
 | Relation target that is not a typed concept | violation | Dangling hierarchy |
 | Unexpected predicate on a concept node | violation | The shapes are `sh:closed` |
@@ -75,7 +75,7 @@ warning: https://example.com/kg/concept/installation skos:prefLabel — concept 
 | `dcterms:subject` pointing at a non-concept | warning | Subject tags that will not resolve |
 
 Cycle detection and the transitive S27 check run in TypeScript rather than SHACL, because core
-SHACL cannot express transitive closure. They are part of `dockg check` regardless — you will not
+SHACL cannot express transitive closure. They are part of `dockg check` regardless. You will not
 find them by reading the shapes file, which is worth knowing if you go looking.
 
 Every finding names the responsible documents at the end of the line:

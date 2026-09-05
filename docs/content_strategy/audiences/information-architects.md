@@ -34,8 +34,8 @@ The vocabulary. They decide what a topic type means, which product variants exis
 concept hierarchy looks like, and whether two terms are the same term. That work usually
 predates any tool decision and often predates the current documentation platform.
 
-They bring SKOS, controlled vocabularies, and at least one industry standard — most often iiRDS
-or DITA. What they typically do **not** bring is Node tooling or CI internals; someone in
+They bring SKOS, controlled vocabularies, and at least one industry standard, most often iiRDS
+or DITA. What they typically do **not** bring is Node tooling or CI internals. Someone in
 [`aud-docs-as-code-teams`](docs-as-code-teams.md) runs the pipeline for them.
 
 ## What they want
@@ -45,12 +45,12 @@ than a human. Specifically:
 
 - **Typing that maps to a real standard**, not a bespoke enum. dockg's `type`,
   `about-product-lifecycle`, and `about-product-aspect` are closed vocabularies bound to published
-  iiRDS IRIs — this audience recognizes them on sight, and that recognition is the credibility
+  iiRDS IRIs. This audience recognizes them on sight, and that recognition is the credibility
   moment.
 - **Applicability modeling with teeth.** Which topics apply to which product variant is the
   question their whole taxonomy exists to answer, and the one most often answered wrongly.
   dockg's open-world default (absence means *unknown*, not *does not apply*) plus explicit
-  negative scope is unusually precise about this, and precision is what they are shopping for.
+  negative scope is unusually precise here. Precision is what they are shopping for.
 - **Granularity that matches the content.** A 40-page document tagged as one node is a lie.
   `kg.sections` lets metadata sit on the heading that owns the text.
 - **Enforcement that catches vocabulary errors, not just typos.** `dockg check` finding a
@@ -60,13 +60,14 @@ than a human. Specifically:
 ## What makes them hard to serve
 
 They are the audience most likely to know more about the standard than the docs do. A page that
-explains SKOS to them wastes their time; a page that gets SKOS subtly wrong loses them. The
-docset's job is to explain **dockg's mapping onto vocabulary they already know** — this
-frontmatter key becomes that triple — and to be precise about where dockg deliberately diverges.
+explains SKOS to them wastes their time. A page that gets SKOS subtly wrong loses them. The
+docset's job is to explain **dockg's mapping onto vocabulary they already know**, showing how
+this frontmatter key becomes that triple. It must also be precise about where dockg deliberately
+diverges.
 
 They are also the audience for whom the single most important sentence in the docset is the
-open-world one, because the failure it prevents is silent: an interlock query that returns
-everything it was meant to exclude.
+open-world one. The failure it prevents is silent: an interlock query that returns everything it
+was meant to exclude.
 
 ## Where the docset serves them
 

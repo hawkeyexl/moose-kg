@@ -65,6 +65,13 @@ export interface DocModel {
   /** Distinct fenced code block languages, sorted. */
   codeLanguages: string[];
   /**
+   * BCP-47 tag from the nearest enclosing route mapping that declares one
+   * (ADR 01037), or undefined when no route covers this path or none in the
+   * chain declares a language. The page's own `lang`/`language` frontmatter
+   * outranks it.
+   */
+  routeLanguage?: string;
+  /**
    * Lowercase sha256 hex digest of the document's UTF-8 content, as read —
    * line endings included, so it matches `sha256sum <file>` (ADR 01036).
    */

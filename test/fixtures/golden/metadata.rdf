@@ -20,6 +20,42 @@
     <iirds:source>content/docs/configuration.md</iirds:source>
     <rdf:type rdf:resource="http://iirds.tekom.de/iirds#Rendition"/>
   </rdf:Description>
+  <rdf:Description rdf:about="https://example.com/kg/doc/docs/de/getting-started.md">
+    <iirds:has-rendition rdf:resource="https://example.com/kg/doc/docs/de/getting-started.md/rendition"/>
+    <iirds:is-part-of-package rdf:resource="https://example.com/kg/package"/>
+    <iirds:language>de</iirds:language>
+    <iirds:title>Erste Schritte</iirds:title>
+    <rdf:type rdf:resource="http://iirds.tekom.de/iirds#Topic"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://example.com/kg/doc/docs/de/getting-started.md/rendition">
+    <iirds:format>text/markdown</iirds:format>
+    <iirds:source>content/docs/de/getting-started.md</iirds:source>
+    <rdf:type rdf:resource="http://iirds.tekom.de/iirds#Rendition"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://example.com/kg/doc/docs/de/regional.md">
+    <iirds:has-rendition rdf:resource="https://example.com/kg/doc/docs/de/regional.md/rendition"/>
+    <iirds:is-part-of-package rdf:resource="https://example.com/kg/package"/>
+    <iirds:language>de-AT</iirds:language>
+    <iirds:title>Regionale Hinweise</iirds:title>
+    <rdf:type rdf:resource="http://iirds.tekom.de/iirds#Topic"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://example.com/kg/doc/docs/de/regional.md/rendition">
+    <iirds:format>text/markdown</iirds:format>
+    <iirds:source>content/docs/de/regional.md</iirds:source>
+    <rdf:type rdf:resource="http://iirds.tekom.de/iirds#Rendition"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://example.com/kg/doc/docs/fr/getting-started.md">
+    <iirds:has-rendition rdf:resource="https://example.com/kg/doc/docs/fr/getting-started.md/rendition"/>
+    <iirds:is-part-of-package rdf:resource="https://example.com/kg/package"/>
+    <iirds:language>fr</iirds:language>
+    <iirds:title>Premiers pas</iirds:title>
+    <rdf:type rdf:resource="http://iirds.tekom.de/iirds#Topic"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://example.com/kg/doc/docs/fr/getting-started.md/rendition">
+    <iirds:format>text/markdown</iirds:format>
+    <iirds:source>content/docs/fr/getting-started.md</iirds:source>
+    <rdf:type rdf:resource="http://iirds.tekom.de/iirds#Rendition"/>
+  </rdf:Description>
   <rdf:Description rdf:about="https://example.com/kg/doc/docs/getting-started.md">
     <iirds:has-rendition rdf:resource="https://example.com/kg/doc/docs/getting-started.md/rendition"/>
     <iirds:has-topic-type rdf:resource="http://iirds.tekom.de/iirds#GenericTask"/>

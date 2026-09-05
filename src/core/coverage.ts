@@ -36,6 +36,12 @@ export const COVERAGE_FIELDS: readonly CoverageField[] = [
   { field: "modified", iri: `${NS.dcterms}modified` },
   { field: "subject", iri: `${NS.dcterms}subject` },
   { field: "label", iri: `${NS.foaf}primaryTopic` },
+  // Dropped by ADR 01011 as "near-universally 0% noise", which was true on the
+  // monolingual corpora it was measured against and false the moment language
+  // means something. Restored by ADR 01037, which made it a scope dimension:
+  // an unlabelled document in a translated corpus cannot be filtered, indexed
+  // per locale, or counted against the right audience.
+  { field: "language", iri: `${NS.dcterms}language` },
   // The iiRDS typing added in Phases 2–4. Coverage predates all of it, so the
   // measure of "what a graph-side consumer can see" was silent about the
   // vocabulary the project spent four phases adding (ADR 01029).

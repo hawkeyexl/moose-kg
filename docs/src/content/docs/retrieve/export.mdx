@@ -1,6 +1,6 @@
 ---
 title: Export for another system
-description: Reserialize the graph as JSON-LD for anything RDF-native or as a standards-conformant iiRDS package — both deterministic, both lossy in ways worth knowing before you integrate.
+description: Reserialize the graph as JSON-LD for anything RDF-native or as a standards-conformant iiRDS package. Both are deterministic, and both are lossy in ways worth knowing before you integrate.
 ---
 
 import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
@@ -13,7 +13,7 @@ The graph is Turtle. Your destination probably is not. `dockg export` reserializ
 |---|---|---|
 | `jsonld` (default) | A JSON-LD document | A triple store, an RDF-native pipeline, or anything that already speaks linked data |
 | `iirds` | An iiRDS package (a zip) | A content delivery portal, a partner ingest, or a contractual obligation |
-| `search` | A lexical index | dockg's own runtime — see [build the search artifacts](/dockg/retrieve/search/) |
+| `search` | A lexical index | dockg's own runtime, so see [build the search artifacts](/dockg/retrieve/search/) |
 
 ```sh
 dockg export                              # JSON-LD, beside the graph
@@ -32,8 +32,8 @@ Wrote 13 nodes to dist/docs.iirds
 ```
 
 The counts differ because the two formats carry different things. JSON-LD is the whole graph, one
-node per distinct subject. The iiRDS package is a *projection* — only the nodes iiRDS has terms
-for, which is why it is the lossy one of the two.
+node per distinct subject. The iiRDS package is a *projection*, carrying only the nodes iiRDS has
+terms for. That is why it is the lossy one of the two.
 
 <Aside type="caution" title="`-f` means the export format here">
   On every other command `-f/--format` selects how output is rendered (`pretty` or `json`). On
@@ -47,7 +47,7 @@ JSON-LD comes from a hand-rolled deterministic serializer rather than a general-
 and the iiRDS package is a deterministic zip. Same inputs, same bytes.
 
 For a consumer that means exports are cacheable and content-addressable. For a regulated producer it
-means a package can be resubmitted identically — see [determinism](/dockg/concepts/determinism/).
+means a package can be resubmitted identically. See [determinism](/dockg/concepts/determinism/).
 
 ## Projection is lossy, and warnings go to stderr
 
@@ -63,7 +63,7 @@ A pipeline that discards stderr will not know something was dropped. If you care
 ## What is inside an iiRDS package
 
 A zip containing `META-INF/metadata.rdf` plus renditions of your documents. The metadata graph uses
-package-only terms that never appear in the built graph — `iirds:Package`, `iirds:Topic`,
+package-only terms that never appear in the built graph, such as `iirds:Package`, `iirds:Topic`,
 `iirds:Rendition`, `iirds:is-part-of-package`, party and vCard terms for the creator.
 
 If you diff an iiRDS export against `graph.ttl` and find vocabulary that is not in the Turtle, that
@@ -82,8 +82,8 @@ export:
 <Aside type="note" title="iiRDS licensing">
   iiRDS is CC BY-ND. dockg references published IRIs and never vendors, re-serializes, or modifies
   the vocabulary, so no redistribution obligation reaches you or your users. Tools that copy the
-  vocabulary into their own namespace create an obligation their users inherit — worth checking if
-  you are comparing options.
+  vocabulary into their own namespace create an obligation their users inherit. That is worth
+  checking if you are comparing options.
 </Aside>
 
 ## Where to go next

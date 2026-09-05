@@ -1,6 +1,6 @@
 ---
 title: Glossary
-description: Definitions of the terms dockg's documentation uses — graph vocabulary, dockg's own concepts, and the standards it references.
+description: Definitions of the terms dockg's documentation uses, across graph vocabulary, dockg's own concepts, and the standards it references.
 ---
 
 Definitions only. Where a term has a page, this points at it rather than re-explaining it.
@@ -34,7 +34,7 @@ from the slugified label, so two spellings converge on one node.
 
 ## Coverage
 
-The fraction of documents carrying a given metadata field, over eleven document fields, plus a second, ungated table over sections. Reported by
+The fraction of documents carrying a given metadata field, over twelve document fields, plus a second, ungated table over sections. Reported by
 `dockg stats` and gated by [thresholds](/dockg/govern/coverage/) under `--check`.
 
 ## CUJ
@@ -71,15 +71,15 @@ shapes and reject anything that would corrupt the graph. Rejections are routine 
 
 ## iiRDS
 
-The intelligent information Request and Delivery Standard, from tekom — the technical-communication
-industry's RDF vocabulary for documentation semantics. dockg references its published IRIs for topic
+The intelligent information Request and Delivery Standard, from tekom. It is the
+technical-communication industry's RDF vocabulary for documentation semantics. dockg references its published IRIs for topic
 typing, product applicability, lifecycle phases, and subjects. Licensed CC BY-ND, so the vocabulary
 is referenced and never vendored.
 
 ## IRI
 
-Internationalized Resource Identifier — the stable identity of a node. A document's is its
-repo-relative path under the base IRI; a section's is its document's plus the heading slug as a
+Internationalized Resource Identifier, the stable identity of a node. A document's is its
+repo-relative path under the base IRI. A section's is its document's, plus the heading slug as a
 fragment.
 
 ## `kg:` versus `dockg:`
@@ -89,7 +89,7 @@ fragment.
 
 ## Negative scope
 
-An explicit assertion that something does **not** apply — `kg.not-applicable-to` and
+An explicit assertion that something does **not** apply, via `kg.not-applicable-to` and
 `kg.not-about-product-aspect`. Necessary because [absence means unknown](/dockg/concepts/open-world/).
 
 ## Open-world semantics
@@ -108,8 +108,8 @@ attribution and association nodes that distinguish a human author from a tool fr
 
 ## Qualified attribution
 
-A PROV-O node carrying a role alongside an agent, so the graph distinguishes who authored, what
-generated, and which tool built — rather than collapsing them into one `creator` string.
+A PROV-O node carrying a role alongside an agent. The graph then distinguishes who authored, what
+generated, and which tool built, rather than collapsing them into one `creator` string.
 
 ## Route mapping
 
@@ -123,12 +123,12 @@ attached per section via `kg.sections`.
 
 ## SHACL
 
-Shapes Constraint Language — the W3C standard `dockg check` validates the assembled graph against.
+Shapes Constraint Language, the W3C standard `dockg check` validates the assembled graph against.
 See [validation rules](/dockg/reference/shapes/).
 
 ## SKOS
 
-Simple Knowledge Organization System — the W3C vocabulary for concepts and their relationships.
+Simple Knowledge Organization System, the W3C vocabulary for concepts and their relationships.
 dockg maps `kg.label` and its dependents onto it.
 
 ## Slug
@@ -143,5 +143,6 @@ in git.
 
 ## Vector sidecar
 
-`kg/vectors.bin` — the optional embedding artifact beside the graph and search index. Refused rather
-than used when its model, dtype, dimensions, or corpus digest disagree with the index.
+`kg/vectors.<lang>.bin`, the optional embedding artifact beside the graph and that language's
+search index, one per localization. Refused rather than used when its model, dtype, dimensions,
+language, or corpus digest disagree with the index.

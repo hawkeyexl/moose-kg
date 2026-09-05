@@ -4,6 +4,7 @@ import { basename, dirname, join } from "node:path";
 import { Ajv2020 } from "ajv/dist/2020.js";
 import { describe, expect, it } from "vitest";
 import { bundledSchemaPath, bundledShapesPath } from "../../src/core/pkg.js";
+import { LANGUAGE_TAG } from "../../src/core/localizations.js";
 import { FIELD_SCHEMAS } from "../../src/llm/prompt.js";
 import {
   COVERAGE_FIELDS,
@@ -367,5 +368,131 @@ describe("SECTION_FIELD_NAMES ↔ COVERAGE_FIELDS", () => {
     for (const field of UNMEASURED_BY_DESIGN) {
       expect(measured.has(field), `${field} is measured after all`).toBe(false);
     }
+  });
+});
+
+/**
+ * Drift guard: the docs state the measured-field count in prose, and three
+ * pages said "eleven" for a release after the list grew to twelve. A number
+ * spelled out in four places is a number that goes stale, so pin it.
+ */
+describe("documented coverage field count ↔ COVERAGE_FIELDS", () => {
+  const WORDS = [
+    "zero",
+    "one",
+    "two",
+    "three",
+    "four",
+    "five",
+    "six",
+    "seven",
+    "eight",
+    "nine",
+    "ten",
+    "eleven",
+    "twelve",
+    "thirteen",
+    "fourteen",
+  ];
+  const docsRoot = join(
+    dirname(fileURLToPath(import.meta.url)),
+    "..",
+    "..",
+    "docs",
+    "src",
+    "content",
+    "docs",
+  );
+  const pages = [
+    join("govern", "coverage.mdx"),
+    join("reference", "configuration.mdx"),
+    join("reference", "glossary.mdx"),
+    join("reference", "library-api.mdx"),
+  ];
+
+  it("no page names a count other than the measured one", () => {
+    const correct = WORDS[COVERAGE_FIELDS.length];
+    expect(correct, "extend WORDS if the field list grew").toBeDefined();
+    const wrong = WORDS.filter((w) => w !== correct && w !== "one");
+
+    for (const page of pages) {
+      const text = readFileSync(join(docsRoot, page), "utf8");
+      for (const word of wrong) {
+        // Only where the number is qualifying "fields": `eleven commands` on
+        // the CLI page is a different (correct) count.
+        const stale = new RegExp(`\\b${word}\\b[^.\\n]{0,40}\\bfields\\b`, "i");
+        expect(
+          stale.test(text),
+          `${page} says "${word} … fields" but ${correct} are measured`,
+        ).toBe(false);
+      }
+    }
+  });
+});
+
+/**
+ * The BCP-47 grammar lives in three places, and they must agree: the config
+ * schema (routes[].language, embed.byLanguage keys), the SHACL shapes
+ * (dcterms:language), and `LANGUAGE_TAG` in localizations.ts — which exists
+ * because a tag also becomes a filename, and the shapes only run under
+ * `dockg check`.
+ */
+describe("BCP-47 pattern ↔ config schema ↔ shapes", () => {
+  const source = LANGUAGE_TAG.source;
+
+  it("matches every copy in the config schema", () => {
+    const schema = JSON.parse(
+      readFileSync(
+        join(
+          dirname(fileURLToPath(import.meta.url)),
+          "..",
+          "..",
+          "src",
+          "core",
+          "config-schema.json",
+        ),
+        "utf8",
+      ),
+    ) as unknown;
+    const found = new Set<string>();
+    const walk = (node: unknown): void => {
+      if (Array.isArray(node)) return node.forEach(walk);
+      if (!node || typeof node !== "object") return;
+      for (const [key, value] of Object.entries(node)) {
+        if (
+          key === "pattern" &&
+          typeof value === "string" &&
+          /A-Za-z/.test(value)
+        ) {
+          found.add(value);
+        }
+        // patternProperties keys are patterns too — that is how
+        // embed.byLanguage constrains its language keys.
+        if (key === "patternProperties" && value && typeof value === "object") {
+          for (const p of Object.keys(value)) found.add(p);
+        }
+        walk(value);
+      }
+    };
+    walk(schema);
+    expect(found.size).toBeGreaterThan(0);
+    for (const pattern of found) expect(pattern).toBe(source);
+  });
+
+  it("matches the dcterms:language pattern in the bundled shapes", () => {
+    const shapes = readFileSync(bundledShapesPath(import.meta.url), "utf8");
+    // The shape *definition*, not its mention in DocumentShape's sh:property
+    // list — slicing from the mention picks up dockg:contentHash's pattern.
+    const start = shapes.indexOf("dsh:Document-language\n  a sh:PropertyShape");
+    expect(
+      start,
+      "no dsh:Document-language shape in the bundled shapes",
+    ).toBeGreaterThan(-1);
+    const block = shapes.slice(start, shapes.indexOf(" .", start));
+    const match = /sh:pattern "([^"]+)"/.exec(block);
+    expect(match, "shapes declare no sh:pattern for dcterms:language").not.toBe(
+      null,
+    );
+    expect(match![1]).toBe(source);
   });
 });

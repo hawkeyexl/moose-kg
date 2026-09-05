@@ -151,14 +151,26 @@ describe("an AsciiDoc corpus", () => {
   it("indexes AsciiDoc prose, never the converter's HTML", () => {
     const dir = mkdtempSync(join(tmpdir(), "dockg-adoc-"));
     const graph = join(dir, "graph.ttl");
-    const search = join(dir, "search.json");
+    // `export --format search` writes a directory of per-locale artifacts
+    // (ADR 01038). These corpora declare no route language, so everything
+    // lands in the `und` bucket.
+    const searchDir = join(dir, "search");
     build(graph);
     execFileSync(
       process.execPath,
-      [cli, "export", "--format", "search", "--graph", graph, "--out", search],
+      [
+        cli,
+        "export",
+        "--format",
+        "search",
+        "--graph",
+        graph,
+        "--out",
+        searchDir,
+      ],
       { encoding: "utf8", cwd: corpus, env: hermeticEnv() },
     );
-    const written = readFileSync(search, "utf8");
+    const written = readFileSync(join(searchDir, "search.und.json"), "utf8");
     expect(written).toBe(readFileSync(searchGolden, "utf8"));
     expect(written).not.toMatch(/<\/?(?:div|h2|pre|code)\b/);
     expect(written).not.toContain("sectionbody");

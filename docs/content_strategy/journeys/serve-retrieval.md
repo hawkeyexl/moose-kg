@@ -46,13 +46,13 @@ Kwame puts a deterministic boundary in front of a ranker that cannot see one.
 
 ## The journey
 
-The arriving failure is specific: retrieval returns a passage that is genuinely similar and
+The arriving failure is specific. Retrieval returns a passage that is genuinely similar and
 belongs to a different product, and the model produces a fluent, wrong, correctly-cited answer.
 Reranking did not help, because ranking is not the problem.
 
 What dockg offers is a typed filter applied before similarity is considered, plus a citation and
-trace trail that survives review. The runtime is retrieval-only — it returns context, citations,
-and a trace, then stops, without calling a model — so it drops into an existing stack rather than
+trace trail that survives review. The runtime is retrieval-only. It returns context, citations,
+and a trace, then stops, without calling a model. So it drops into an existing stack rather than
 competing with it.
 
 ## The dependency that goes on the first page
@@ -62,9 +62,9 @@ values cannot be filtered by variant no matter how good the runtime is.
 
 This is uncomfortable and it belongs in the opening section of the track, not at integration
 time. A reader who builds the integration, gets no lift, and *then* discovers the dependency
-concludes the tool does not work. A reader who is told up front can go measure their corpus with
-`dockg stats` coverage and take a number to the documentation team — which is a better outcome
-for everyone, and is the honest version of the pitch.
+concludes the tool does not work. A reader told up front can measure their corpus with
+`dockg stats` coverage and take a number to the documentation team. That is a better outcome
+for everyone, and the honest version of the pitch.
 
 ## What they need to reach, in order
 
@@ -74,7 +74,7 @@ for everyone, and is the honest version of the pitch.
    stay in sync is a thing to design for, not discover.
 3. **A working browser query.** No `node:` imports, one small bundle, and a separate entry point
    for embeddings so the query path stays lean.
-4. **A filter that provably excludes.** Showing what came back is not enough — the whole point is
+4. **A filter that provably excludes.** Showing what came back is not enough. The whole point is
    what did not, so the demonstration has to show the excluded set.
 5. **The staleness contract.** A mismatched model, dtype, dimension count, or corpus digest is
    refused with an error rather than ranked with. This reader has been burned by the silent
@@ -86,7 +86,7 @@ for everyone, and is the honest version of the pitch.
   machine. That is a procurement-relevant fact, not just a technical one, and it should be stated
   where someone can quote it.
 - `@huggingface/transformers` is an **optional** peer dependency, so a missing embedder degrades
-  to lexical search — unless vector mode was explicitly requested, in which case it errors. The
+  to lexical search. The exception is an explicitly requested vector mode, which errors. The
   distinction between graceful degradation and explicit refusal is exactly what this reader wants
   documented.
 

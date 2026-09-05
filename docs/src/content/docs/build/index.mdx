@@ -11,7 +11,7 @@ interpret what comes back.
 
 ## Before you start
 
-You should have run `dockg build` once — see [Get started](/dockg/get-started/) — and have a
+You should have run `dockg build` once, per [Get started](/dockg/get-started/), and have a
 `graph.ttl` to look at.
 
 ## The seven derive sources
@@ -47,7 +47,7 @@ it should not depend on how someone typed the command.
 
 <Steps>
 
-1. **Set your inputs.** With no config file dockg ingests `**/*.md` — which includes
+1. **Set your inputs.** With no config file dockg ingests `**/*.md`, which includes
    `README.md`, `CHANGELOG.md`, and any Markdown in `test/`. That is rarely what you want past
    the first run.
 
@@ -69,8 +69,8 @@ it should not depend on how someone typed the command.
    </Aside>
 
    <Aside type="caution" title="Which formats dockg reads">
-     `.md`, `.markdown`, `.mdx`, `.html`, `.htm`, `.dita`, `.ditamap`, `.adoc` and `.asciidoc`. A
-     glob that pulls in anything else fails the build rather than ingesting it —
+     `.md`, `.markdown`, `.mdx`, `.html`, `.htm`, `.dita`, `.ditamap`, `.adoc` and `.asciidoc`.
+     A glob that pulls in anything else fails the build rather than ingesting it.
      reStructuredText and generic XML are recognized by name but cannot be read yet:
 
      ```
@@ -83,9 +83,9 @@ it should not depend on how someone typed the command.
      dockg: No input format is registered for docs/notes.txt (".txt") — narrow your inputs globs. Supported: .adoc, .asciidoc, .dita, .ditamap, .htm, .html, .markdown, .md, .mdx.
      ```
 
-     Both exit `2` and write no graph. Refusing is deliberate: parsing an unknown format as
-     Markdown succeeds at everything except finding anything, and a graph that is empty for a
-     parser reason looks exactly like a corpus with no structure.
+     Both exit `2` and write no graph. Refusing is deliberate. Parsing an unknown format as
+     Markdown succeeds at everything except finding anything. A graph left empty for a parser
+     reason looks exactly like a corpus with no structure.
    </Aside>
 
 2. **Set a real `baseIri`.** IRIs are the graph's stable identity, and changing the base later
@@ -157,14 +157,14 @@ Coverage (sections, not gated):
   subject                  1/9  11.1%
 ```
 
-**Most connected** are your hub documents — the ones whose removal or rename hurts most.
+**Most connected** are your hub documents, the ones whose removal or rename hurts most.
 
 **Orphan docs** have no inbound or outbound `dcterms:references`. A genuine orphan is usually
 either unreachable content or a page everybody links to from a nav config that dockg cannot see.
 
-**Broken internal links** point at files that do not exist. If your corpus links by published site
-route rather than file path, expect many of these and see below — they are a configuration gap,
-not a corpus defect.
+**Broken internal links** point at files that do not exist. If your corpus links by published
+site route rather than file path, expect many of these and see below. They are a configuration
+gap, not a corpus defect.
 
 **Broken section refs** are `kg.sections` keys matching no heading, almost always a renamed
 heading.
@@ -173,7 +173,7 @@ heading.
 starting point, not a failing grade.
 
 <Aside type="note" title="MDX components are read too">
-  In an `.mdx` file, a JSX element's `href` becomes a link — on any element, since that is HTML's
+  In an `.mdx` file, a JSX element's `href` becomes a link on any element, since that is HTML's
   hyperlink attribute wherever it appears. So `<LinkCard href="…" />` produces the same edge a
   Markdown link would.
 
@@ -186,8 +186,8 @@ starting point, not a failing grade.
 
 <Aside type="note" title="HTML is read structurally, not as a source format">
   A published site is often the only copy of a corpus that still exists. dockg reads `.html` and
-  `.htm` the same way it reads Markdown: `h1`–`h6` become sections, `<a href>` and `<area href>`
-  become links, `<img src>` becomes an image, and a `language-*` or `lang-*` class on a `<code>`
+  `.htm` the same way it reads Markdown. `h1`–`h6` become sections. `<a href>` and `<area href>`
+  become links, and `<img src>` becomes an image. A `language-*` or `lang-*` class on a `<code>`
   element becomes a code language. Page metadata comes from `<title>` and `<meta name>`.
 
   **Section anchors come from ids, not from titles.** A heading's own `id` wins; failing that, the

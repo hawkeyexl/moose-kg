@@ -40,14 +40,14 @@ never written a SPARQL query and have no reason to want to.
 
 ## What they want
 
-Something that turns the frontmatter they already have into an answer to questions they already
-ask and currently answer by hand: *what links to this page? what did we break when we moved it?
-which pages have no owner? how much of the corpus is actually annotated?*
+Something that turns the frontmatter they already have into answers. They already ask these
+questions and currently answer them by hand. *What links to this page? What did we break when we
+moved it? Which pages have no owner? How much of the corpus is actually annotated?*
 
 The decisive quality is that dockg reads what is already on disk. There is no authoring step,
-no separate metadata database, and no migration — `dockg build` over an existing repo produces
+no separate metadata database, and no migration. `dockg build` over an existing repo produces
 a graph on the first run. That is the entire pitch to this audience, and it is why they are the
-lead: they are the segment that can get value before understanding the model.
+lead. They are the segment that can get value before understanding the model.
 
 ## Why they are the lead audience
 
@@ -55,11 +55,11 @@ Three reasons, in order of weight:
 
 1. **They are the only audience that can adopt dockg alone.** Every other segment needs someone
    in this role to wire it up. The information architect needs the build running before their
-   `kg:` block means anything; the AI platform team needs a graph to consume; the compliance
+   `kg:` block means anything. The AI platform team needs a graph to consume, and the compliance
    owner needs a gate someone else maintains.
-2. **The product's defaults are built for them.** ADR 01009's rule — hermetic features on by
-   default, network and spend always explicit — is a bet that the first run should just work
-   without a config file. That is this persona's first run.
+2. **The product's defaults are built for them.** ADR 01009's rule puts hermetic features on by
+   default and keeps network and spend always explicit. It is a bet that the first run should
+   just work without a config file. That is this persona's first run.
 3. **Their failure mode is the one that kills adoption.** If they conclude dockg requires
    learning RDF before it returns anything, they leave. Every page in the on-ramp is
    constrained by that.
@@ -70,5 +70,5 @@ The `build/` and `govern/` tracks, plus the whole of `get-started/`. See
 [`persona-docs-engineer`](../personas/docs-engineer.md) and journeys
 [`cuj-first-graph`](../journeys/first-graph.md),
 [`cuj-map-site-routes`](../journeys/map-site-routes.md),
-[`cuj-gate-metadata-in-ci`](../journeys/gate-metadata-in-ci.md), and — through the brownfield
-lens — [`cuj-backfill-metadata`](../journeys/backfill-metadata.md).
+[`cuj-gate-metadata-in-ci`](../journeys/gate-metadata-in-ci.md), and, through the brownfield
+lens, [`cuj-backfill-metadata`](../journeys/backfill-metadata.md).

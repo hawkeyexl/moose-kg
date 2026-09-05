@@ -315,11 +315,18 @@ program
   .option("-c, --config <path>", "Path to dockg.config.yaml")
   .option("-g, --graph <path>", "Graph .ttl path (default: config out)")
   .option(
-    "-i, --index <path>",
-    "Search index path (default: search.json beside the graph)",
+    "-i, --index <dir>",
+    "Directory holding the indexes and manifest (default: beside the graph)",
+  )
+  .option(
+    "--lang <tag>",
+    "Which localization to search (required when the corpus has more than one)",
   )
   .option("--limit <n>", "Maximum results (default 10)", countOption("--limit"))
-  .option("--vectors <path>", "Vector sidecar path (default: config embed.out)")
+  .option(
+    "--vectors <path>",
+    "Vector sidecar path (default: from the manifest)",
+  )
   .option(
     "--mode <mode>",
     "Which legs to run: lexical | vector | hybrid (default: hybrid when vectors exist)",
@@ -332,6 +339,7 @@ program
         config?: string;
         graph?: string;
         index?: string;
+        lang?: string;
         limit?: number;
         vectors?: string;
         mode?: "lexical" | "vector" | "hybrid";
@@ -369,6 +377,7 @@ program
     "Scope filter: product variant IRI, title, or slug",
   )
   .option("--subject <subject>", "Scope filter: software subject")
+  .option("--lang <tag>", "Scope filter: BCP-47 language tag, matched exactly")
   .option("--limit <n>", "Stop after this many nodes", countOption("--limit"))
   .option("-f, --format <format>", "Output format: pretty | json", "pretty")
   .action(
@@ -383,6 +392,7 @@ program
         impact?: boolean;
         variant?: string;
         subject?: string;
+        lang?: string;
         limit?: number;
         format: string;
       },
@@ -404,10 +414,13 @@ program
   .option("-c, --config <path>", "Path to dockg.config.yaml")
   .option("-g, --graph <path>", "Graph .ttl path (default: config out)")
   .option(
-    "-i, --index <path>",
-    "Search index path (default: search.json beside the graph)",
+    "-i, --index <dir>",
+    "Directory holding the indexes and manifest (default: beside the graph)",
   )
-  .option("-o, --out <path>", "Vector sidecar path (default: config embed.out)")
+  .option(
+    "-o, --out <dir>",
+    "Directory for the sidecars (default: the index directory)",
+  )
   .option(
     "--model <id>",
     "Embedding model id (any id; `mock` for offline runs)",

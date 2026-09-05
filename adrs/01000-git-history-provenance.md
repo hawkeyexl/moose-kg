@@ -17,7 +17,7 @@ determinism contract or its performance profile?
 
 - Byte-identical output per corpus commit; the wall clock must never enter the graph.
 - One `dockg build` must not spawn a subprocess per file.
-- Frontmatter is the author's explicit statement — it must win over inference.
+- Frontmatter is the author's explicit statement, so it must win over inference.
 - Author emails are personal data.
 
 ## Considered Options
@@ -28,34 +28,35 @@ determinism contract or its performance profile?
 
 ## Decision Outcome
 
-Chosen option 2: `collectGitHistory` (src/core/git.ts) runs a single
-`git -c core.quotepath=off log --format=%x01%H%x09%an%x09%cI --name-status -M`
-and folds the stream newest→oldest into per-file `{created, modified, authors,
-renamedFrom}`, following renames backward so history accrues to the current
-path. Gated by `provenance.git` (renamed from the unreleased `gitTime`, whose
-scope it absorbs). Frontmatter dates always win; git fills only what is
+Chosen option 2. `collectGitHistory` (src/core/git.ts) runs a single
+`git -c core.quotepath=off log --format=%x01%H%x09%an%x09%cI --name-status -M`.
+It folds the stream newest→oldest into per-file `{created, modified, authors,
+renamedFrom}`. Renames are followed backward, so history accrues to the current
+path. It is gated by `provenance.git`, renamed from the unreleased `gitTime`
+whose scope it absorbs. Frontmatter dates always win. Git fills only what is
 absent. Author names are emitted through the same agent-node path as
-frontmatter authors; emails are never emitted.
+frontmatter authors. Emails are never emitted.
 
 ### Consequences
 
-- Good: deterministic per commit; one subprocess regardless of corpus size;
-  works for dates, authors, renames, and the build activity's `prov:endedAtTime`
-  from a single pass.
-- Bad: whole-history parsing can be slow on very large repos (opt-in; a
-  bounded-depth knob is an easy later add), and shallow CI clones yield
-  partial facts silently.
+- Good. Deterministic per commit, one subprocess regardless of corpus size,
+  and it works for dates, authors, renames, and the build activity's
+  `prov:endedAtTime` from a single pass.
+- Bad. Whole-history parsing can be slow on very large repos, though it is
+  opt-in and a bounded-depth knob is an easy later add. Shallow CI clones also
+  yield partial facts silently.
 
 ### Confirmation
 
-Unit tests with a scripted exec mock plus a real tmp-repo integration test
-(test/unit/git.test.ts, test/integration/git-history.test.ts); build-level
-byte-stability test in test/integration/build.test.ts.
+- Unit tests drive a scripted exec mock in `test/unit/git.test.ts`.
+- A real tmp-repo integration test in `test/integration/git-history.test.ts` covers
+  the rest.
+- `test/integration/build.test.ts` gates byte stability at build level.
 
 ## Pros and Cons of the Options
 
-- **Per-file git log** — simple, but N subprocesses; rejected on performance.
-- **One-pass parse** — one subprocess, rename chains fall out naturally;
-  requires careful stream parsing (mitigated by the injectable exec seam).
-- **Library (.git reader)** — no subprocess, but a heavy dependency and a
+- **Per-file git log.** Simple, but N subprocesses; rejected on performance.
+- **One-pass parse.** One subprocess, and rename chains fall out naturally. It
+  requires careful stream parsing, mitigated by the injectable exec seam.
+- **Library (.git reader).** No subprocess, but a heavy dependency and a
   second implementation of git semantics; rejected for footprint.

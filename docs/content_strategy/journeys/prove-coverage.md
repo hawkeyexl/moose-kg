@@ -43,7 +43,7 @@ Renata converts a coverage spreadsheet into a build failure.
 
 ## The journey
 
-The obligation is external: some fraction of topics must carry a given field, some set of
+The obligation is external. Some fraction of topics must carry a given field, some set of
 variants must be covered, and a gap is a finding. Today that is tracked by hand and discovered
 late.
 
@@ -52,21 +52,21 @@ pages must work as something forwarded to an engineer.
 
 ## What they need to reach, in order
 
-1. **What "covered" means per field.** Coverage is computed over seven specific fields, and a
-   reader specifying an obligation needs to know exactly what is being counted before they can
+1. **What "covered" means per field.** Coverage is computed over seven specific fields. A
+   reader specifying an obligation needs to know exactly what is counted before they can
    agree to a number. Ambiguity here produces a threshold nobody trusts.
 2. **Uniform threshold versus per-field map.** A single number applies across all seven fields,
-   which is almost never what a real obligation looks like — `title` at 100% and `label` at
+   which is almost never what a real obligation looks like. `title` at 100% and `label` at
    40% is a coherent policy, and one number cannot express it. The per-field map is config-only,
    so this decision has to be made in the config file rather than a flag.
 3. **The `--check` requirement.** `stats` reports without gating; only `--check` makes it fail.
-   This trips people, and it is a deliberate split — reporting and gating are different jobs.
+   This trips people, and it is a deliberate split. Reporting and gating are different jobs.
 4. **The contradiction check, in the same build.** A topic claiming both `applies-to: X` and
-   `not-applicable-to: X` is caught by SHACL disjointness. This is the defect a human reviewer does
-   not catch and an auditor does, and it belongs in the coverage conversation even though it is a
+   `not-applicable-to: X` is caught by SHACL disjointness. This is the defect a human reviewer
+   misses and an auditor finds. It belongs in the coverage conversation even though it is a
    different command.
 5. **A route out when the gap is too large.** If current coverage is far below the obligation,
-   the answer is not a stricter threshold — it is
+   the answer is not a stricter threshold. It is
    [`cuj-backfill-metadata`](backfill-metadata.md) and a ratchet. Sending a reader from here to
    there is one of the more valuable links in the set.
 
@@ -75,8 +75,8 @@ pages must work as something forwarded to an engineer.
 - **The threshold's first job is to hold the line, not express the goal.** Set at the eventual
   target on day one, the build is permanently red and the team learns to ignore it. Set just
   below current coverage, it prevents regression immediately and can be raised. This advice is
-  repeated from [`cuj-gate-metadata-in-ci`](gate-metadata-in-ci.md) deliberately — both readers
-  need it and neither reliably reads the other's track.
+  repeated from [`cuj-gate-metadata-in-ci`](gate-metadata-in-ci.md) deliberately. Both readers
+  need it, and neither reliably reads the other's track.
 - **An empty graph is vacuously 100% covered.** A gate that passes because nothing was ingested
   is worse than no gate, and a misconfigured `inputs` glob produces exactly that. Worth a caution
   next to the threshold advice.

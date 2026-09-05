@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildSearchIndex,
   emitSearchIndex,
+  partitionByLanguage,
   type SearchEntry,
 } from "../../src/core/search-index.js";
 import { GraphIndex } from "../../src/runtime/graph.js";
@@ -183,5 +184,68 @@ describe("buildSearchIndex", () => {
     expect(out.endsWith("}\n")).toBe(true);
     expect(out.endsWith("\n\n")).toBe(false);
     expect(() => JSON.parse(out)).not.toThrow();
+  });
+});
+
+/**
+ * Per-locale partitioning (ADR 01038), and the review fix underneath it:
+ * concepts belong to every locale, not to `und`.
+ */
+describe("partitionByLanguage", () => {
+  const DE = `${BASE}doc/docs/de.md`;
+  const LANGUAGE = `${NS.dcterms}language`;
+
+  /** One German doc with a section, one unlabelled doc, one shared concept. */
+  function graph(labelEveryDoc: boolean): GraphIndex {
+    const quads: Quad[] = [
+      { s: DE, p: RDF_TYPE, o: iri(`${NS.dockg}Document`) },
+      { s: DE, p: `${NS.dockg}path`, o: lit("docs/de.md") },
+      { s: DE, p: LANGUAGE, o: lit("de") },
+      { s: DOC, p: RDF_TYPE, o: iri(`${NS.dockg}Document`) },
+      { s: DOC, p: `${NS.dockg}path`, o: lit("docs/a.md") },
+      { s: CONCEPT, p: RDF_TYPE, o: iri(`${NS.skos}Concept`) },
+      { s: CONCEPT, p: `${NS.skos}prefLabel`, o: lit("configuration") },
+    ];
+    if (labelEveryDoc) quads.push({ s: DOC, p: LANGUAGE, o: lit("de") });
+    return GraphIndex.fromQuads(quads);
+  }
+
+  const index = async (g: GraphIndex) =>
+    partitionByLanguage(
+      g,
+      await buildSearchIndex(g, "/tmp", { readDoc: () => undefined }),
+    );
+
+  it("files a concept into every language, not into und", async () => {
+    const buckets = await index(graph(false));
+    for (const language of ["de", "und"]) {
+      expect(
+        buckets.get(language)?.entries.some((e) => e.id === CONCEPT),
+        `concept missing from ${language}`,
+      ).toBe(true);
+    }
+  });
+
+  it("grows no und bucket when every document declares a language", async () => {
+    // Before the fix, concepts alone created a phantom `und` localization —
+    // which then made `dockg search` demand `--lang` on a corpus its author
+    // considers monolingual.
+    const buckets = await index(graph(true));
+    expect([...buckets.keys()]).toEqual(["de"]);
+    expect(buckets.get("de")?.entries.some((e) => e.id === CONCEPT)).toBe(true);
+  });
+
+  it("keeps every bucket sorted by IRI", async () => {
+    for (const bucket of (await index(graph(false))).values()) {
+      const ids = bucket.entries.map((e) => e.id);
+      expect(ids).toEqual([...ids].sort());
+    }
+  });
+
+  it("puts a document and its sections in the same bucket", async () => {
+    const buckets = await index(graph(false));
+    const de = buckets.get("de")!.entries.map((e) => e.id);
+    expect(de).toContain(DE);
+    expect(buckets.get("und")!.entries.map((e) => e.id)).toContain(DOC);
   });
 });

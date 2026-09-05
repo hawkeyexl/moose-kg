@@ -4,7 +4,7 @@ date: 2026-08-28
 decision-makers: [hawkeyexl]
 ---
 
-# Deeper wins, the page level is the harvest fallback — per fact
+# Deeper wins per fact, with the page level as the harvest fallback
 
 ## Context and Problem Statement
 
@@ -23,13 +23,13 @@ page-level twin:
 | what it does not | `kg.not-applicable-to` | `not-applicable-to` |
 | what it replaces | `kg.revision-of` | `supersedes` (`docmeta:lifecycle`) |
 
-That is intentional: a team should be able to say "this page applies to the FIPS build" without
-opening a `kg` block at all. But it leaves dockg with a question it has never had to answer — when
+That is intentional. A team should be able to say "this page applies to the FIPS build" without
+opening a `kg` block at all. But it leaves dockg with a question it has never had to answer. When
 a page declares a fact at both altitudes, which one reaches the graph?
 
 The existing union behavior is not a usable default here. Under a union, a page that says
 `applies-to: [SP-X100]` at the top and `applies-to: [SP-X200]` in the block would be scoped to
-*both* — which is neither of the things the author wrote, and in the negative-scope case
+*both*. That is neither of the things the author wrote. In the negative-scope case
 ([ADR 01014](01014-negative-scope.md)) it can produce a graph that is disjoint-violating on its own
 frontmatter.
 
@@ -47,28 +47,29 @@ frontmatter.
 
 ## Considered Options
 
-1. **Union both altitudes** — the current `tags` behavior, generalized.
-2. **Deeper wins, per fact** — a `kg` field that is present owns that fact outright.
-3. **Deeper wins, per page** — any `kg` block at all suppresses every page-level twin.
-4. **Read the `kg` block only** — no harvest; page-level twins are ignored.
+1. **Union both altitudes.** The current `tags` behavior, generalized.
+2. **Deeper wins, per fact.** A `kg` field that is present owns that fact outright.
+3. **Deeper wins, per page.** Any `kg` block at all suppresses every page-level twin.
+4. **Read the `kg` block only.** No harvest, and page-level twins are ignored.
 
 ## Decision Outcome
 
-Chosen: **option 2** — *deeper wins; the page level is the harvest fallback, **per fact***. This is
-also the ruling recorded on the docmeta side, so the two repos agree on what the vocabulary means.
+**Option 2 was chosen.** *Deeper wins, with the page level as the harvest fallback, **per fact***.
+This is also the ruling recorded on the docmeta side, so the two repos agree on what the
+vocabulary means.
 
-Per fact, not per page, is the whole distinction. Under option 3, adding `kg.label` — a fact with
-no page-level twin at all — would silently switch off a page's `applies-to`. Facts are resolved one
+Per fact, not per page, is the whole distinction. Under option 3, adding `kg.label`, a fact with
+no page-level twin at all, would silently switch off a page's `applies-to`. Facts are resolved one
 at a time, in [`resolveKg`](../src/core/derive.ts), which is the single place the rule lives.
 
-Option 4 was rejected because it makes the page-level twins dead keys in dockg specifically, which
+Option 4 was rejected because it makes the page-level twins dead keys in dockg specifically. That
 would make dockg the reason the family's flat-page design does not work.
 
 **Scope is deliberately limited to the five facts above.** The harvest rule as stated on the docmeta
 side also mentions `prerequisites` → `dcterms:requires` and `next-steps`/`related-pages` →
-`dcterms:references`. Those are not twins of any `kg` field — they are `docmeta:structure`'s own
+`dcterms:references`. Those are not twins of any `kg` field. They are `docmeta:structure`'s own
 fields, and harvesting them is *implementing another vocabulary*, not resolving an altitude
-conflict. That is separate work with its own shapes impact; a test pins that dockg does not do it
+conflict. That is separate work with its own shapes impact. A test pins that dockg does not do it
 today, so the absence is a decision rather than an oversight.
 
 ### Deriving `kg.type` from the page's `type`
@@ -84,9 +85,10 @@ When the block is silent, the page's open `type` derives a topic type through a 
 | `reference` | `reference` |
 | `troubleshooting` | `troubleshooting` |
 
-A page type with **no** entry derives nothing. That is the important half: inventing an iiRDS term
-for `blog-post` would put a claim in the graph that nobody made, and iiRDS's enum is published —
-dockg references its terms and never mints them ([ADR 01012](01012-iirds-core-vocabulary.md)).
+A page type with **no** entry derives nothing. That is the important half. Inventing an iiRDS term
+for `blog-post` would put a claim in the graph that nobody made. iiRDS's enum is published, and
+dockg references its terms rather than minting them
+([ADR 01012](01012-iirds-core-vocabulary.md)).
 
 ### Consequences
 
@@ -95,20 +97,21 @@ dockg references its terms and never mints them ([ADR 01012](01012-iirds-core-vo
   are unaffected: they are dockg's own derive source and a different fact, so they still union in.
 - **Pages with no `kg` block can now derive iiRDS triples.** A corpus that types its pages at the
   top level will gain `iirds:has-topic-type` and `iirds:relates-to-product-variant` edges on
-  upgrade. That is the feature, but it is a graph diff and the release note must say so — and it
-  can surface real `sh:disjoint` findings that were previously invisible.
+  upgrade. That is the feature, but it is a graph diff and the release note must say so. It can
+  also surface real `sh:disjoint` findings that were previously invisible.
 - `emitIirdsTyping` is no longer gated on a `kg` block existing. Sections are unaffected: they are
   passed their own block, never the harvested one, so explicit-only still holds.
 - The page-level spelling is `generated-by`, not the old camelCase `generatedBy`. That key is not
-  part of this rule — `docmeta:ai-context` owns it outright, and the `kg` twin is gone
-  ([ADR 01023](01023-adopt-docmetas-common-kg-vocabulary.md)) — but it moves in the same release.
+  part of this rule. `docmeta:ai-context` owns it outright, and the `kg` twin is gone
+  ([ADR 01023](01023-adopt-docmetas-common-kg-vocabulary.md)). It moves in the same release.
 
 ### Confirmation
 
-- `test/unit/derive.test.ts` — "the harvest rule" covers each fact in all three states (block only,
-  page only, both, where the block must win *outright*), every one of the five type mappings, the
-  unmapped page type deriving nothing, the explicit block winning, the shorthand on every list
-  field, and the guard that a harvested document fact never reaches a section node.
+- `test/unit/derive.test.ts` has a "the harvest rule" block. It covers each fact in all three
+  states. Block only, page only, and both, where the block must win *outright*. It also covers
+  every one of the five type mappings and the unmapped page type deriving nothing. Then the
+  explicit block winning, the shorthand on every list field, and the guard that a harvested
+  document fact never reaches a section node.
 - A test pins that `prerequisites`/`next-steps`/`related-pages` derive nothing, so the scope
   boundary is enforced rather than merely described.
 - [`test/fixtures/corpus/docs/harvest.md`](../test/fixtures/corpus/docs/harvest.md) carries the
@@ -126,7 +129,7 @@ dockg references its terms and never mints them ([ADR 01012](01012-iirds-core-vo
 ### 2. Deeper wins, per fact
 
 - Good, because the deeper declaration means what an author reaching for it intends: replace this.
-- Good, because facts stay independent — declaring one `kg` field never disturbs another.
+- Good, because facts stay independent. Declaring one `kg` field never disturbs another.
 - Bad, because "both are set" silently drops a value. Loud enough in the golden diff; invisible in
   a single page.
 

@@ -1,6 +1,6 @@
 ---
 title: Fix a failing check
-description: Your pull request is red because of a dockg finding — decode the error line, work out whether it is your page or the pipeline, find your failure in the catalog, and apply the fix.
+description: Your pull request is red because of a dockg finding. Decode the error line, work out whether it is your page or the pipeline, find your failure in the catalog, and apply the fix.
 ---
 
 import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
@@ -8,7 +8,7 @@ import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
 Your pull request is red and a tool you may never have heard of is the reason. You are in the
 right place, and you do not need to learn anything about knowledge graphs to get out of here.
 
-dockg checks the **frontmatter** at the top of your Markdown file — the block between `---`
+dockg checks the **frontmatter** at the top of your Markdown file, the block between `---`
 lines. It does not check your prose. So whatever failed, the fix is in that block.
 
 ## Is it even your fault?
@@ -20,13 +20,13 @@ Check the exit code, or just the shape of the message.
 | A list of findings naming your file, exit `1` | Yours | Fix the frontmatter. Read on. |
 | `dockg: <something>` in red, exit `2` | The pipeline | Hand it back to whoever owns CI. |
 
-Exit `2` means dockg could not run properly at all — a missing file, an unreadable config, a
+Exit `2` means dockg could not run properly at all: a missing file, an unreadable config, a
 broken environment. Nothing you write in your page will fix it. Common ones:
 
 ```
 dockg: No input files matched: docs/**/*.md (cwd: /repo/docs)
 dockg: Graph not found: kg/graph.ttl — run `dockg build` first.
-dockg: Search index not found: kg/search.json — run `dockg export --format search` first.
+dockg: Localization manifest not found: kg/localizations.json — run `dockg export --format search` first.
 ```
 
 <Aside type="tip" title="Say so when you hand it back">
@@ -49,12 +49,12 @@ A validation failure looks like this:
 | Part | What it tells you |
 |---|---|
 | `✗ bad-kg.md` | The file to open |
-| `/kg` | Where in the frontmatter — here, inside the `kg:` block |
+| `/kg` | Where in the frontmatter, here inside the `kg:` block |
 | `must NOT have additional property 'bogus'` | The rule that fired |
 | `(line 3)` | Where the `kg:` block starts, not necessarily the offending line |
 | `[…docmeta-kg-1.0.0-proposal.1.json]` | The schema being enforced |
 
-A graph-level finding from `dockg check` looks different — it names a concept rather than a file,
+A graph-level finding from `dockg check` looks different. It names a concept rather than a file,
 and lists the files responsible at the end:
 
 ```
@@ -105,7 +105,7 @@ concept to describe. Add the `label`, or remove the relationship.
 /kg/type  must be equal to one of the allowed values
 ```
 
-`type`, `about-product-lifecycle`, and `about-product-aspect` accept fixed lists — they map onto a
+`type`, `about-product-lifecycle`, and `about-product-aspect` accept fixed lists. They map onto a
 published standard, so you cannot invent a value.
 
 ```diff lang="md" title="docs/guide.md"
@@ -118,7 +118,7 @@ published standard, so you cannot invent a value.
 
 Permitted values: `task`, `concept`, `reference`, `learning`, `troubleshooting`, `form`.
 
-### A `sections` key that matches no heading
+### A `sections` key matching no heading
 
 ```
 Broken section refs (1):
@@ -148,11 +148,11 @@ Broken internal links (1):
   docs/no-frontmatter.md -> missing.md
 ```
 
-The link target does not exist on disk. Either fix the path, or — if the link works on the
-published site — the repo may be missing
+The link target does not exist on disk. Either fix the path, or check whether the link works on
+the published site. If it does, the repo may be missing
 [route mappings](/dockg/build/routes/), which is a config problem rather than yours.
 
-A link to something that is not a document — an archive, a PDF, an OpenAPI `.yaml` — never
+A link to something that is not a document, such as an archive, a PDF, or an OpenAPI `.yaml`, never
 appears here. dockg reads any explicit extension outside your `extensions` list as a static asset
 your site serves, so there is nothing to fix and nothing is reported.
 
@@ -172,7 +172,7 @@ violation: … skos:broader cycle through …/alpha, …/beta … [docs/alpha.md
 ```
 
 <Aside type="caution" title="This one may not be your page">
-  A cycle is formed by several documents together, and the file you edited might be innocent — it
+  A cycle is formed by several documents together, and the file you edited might be innocent. It
   may just be the one that closed the loop. The bracketed file list names every document involved.
   If they are not yours, this needs whoever owns the vocabulary rather than a quick fix.
 </Aside>
@@ -183,7 +183,7 @@ violation: … skos:broader cycle through …/alpha, …/beta … [docs/alpha.md
 warning: … concept carries multiple prefLabels (same slug, different spellings) — settle on one spelling
 ```
 
-This is a **warning**, not a violation. It exits `0` and does not fail a build — if your job is
+This is a **warning**, not a violation. It exits `0` and does not fail a build. If your job is
 red, this is not why.
 
 ### A page-level key that derives nothing
@@ -192,9 +192,9 @@ red, this is not why.
 dockg: test/fixtures/dd/harvest/guide.md: page key "applies_to" is not read by dockg and looks like "applies-to" — nothing was derived from it
 ```
 
-The five page-level keys dockg reads — `type`, `concepts`, `applies-to`, `not-applicable-to`,
-`supersedes` — are **not** schema-validated, because a page may legitimately carry any other key
-its site generator or team needs. So a misspelling is not an error; it is just a key dockg does not
+The five page-level keys dockg reads are `type`, `concepts`, `applies-to`, `not-applicable-to`,
+and `supersedes`. They are **not** schema-validated, because a page may legitimately carry any
+other key its site generator or team needs. A misspelling is not an error. It is just a key dockg does not
 read, and the fact you meant to declare is missing from the graph.
 
 `dockg build` warns when a page key is one or two characters from one it does read. Fix the
@@ -204,10 +204,10 @@ spelling and rebuild. The same message appears for a page `type` value:
 dockg: test/fixtures/dd/harvest/guide.md: page type "how to" maps to no iiRDS topic type and looks like "how-to" — no kg.type was derived
 ```
 
-A page `type` with no iiRDS counterpart — `blog-post`, `release-note` — derives nothing on purpose
+A page `type` with no iiRDS counterpart, say `blog-post` or `release-note`, derives nothing on purpose
 and is not warned about. dockg references published iiRDS terms and never invents one.
 
-This is a **warning**: exit `0`, and nothing is derived either way. dockg reports what it did not
+This is a **warning**. It exits `0`, and nothing is derived either way. dockg reports what it did not
 understand rather than guessing what you meant.
 
 ## Reproduce it locally
@@ -222,7 +222,7 @@ npx @hawkeyexl/dockg validate
 npx @hawkeyexl/dockg build && npx @hawkeyexl/dockg check
 ```
 
-Run them from the repository root — input globs resolve against your working directory, so
+Run them from the repository root. Input globs resolve against your working directory, so
 running from a subdirectory matches nothing.
 
 If that does not reproduce what CI saw, your branch and CI probably disagree about the config.

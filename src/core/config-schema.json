@@ -51,6 +51,10 @@
               "pattern": "^\\."
             }
           },
+          "language": {
+            "type": "string",
+            "pattern": "^[A-Za-z]{2,3}(-[A-Za-z]{4})?(-([A-Za-z]{2}|[0-9]{3}))?(-([A-Za-z0-9]{5,8}|[0-9][A-Za-z0-9]{3}))*$"
+          },
           "indexFiles": {
             "type": "array",
             "items": {
@@ -173,6 +177,11 @@
                   "maximum": 100
                 },
                 "label": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "language": {
                   "type": "number",
                   "minimum": 0,
                   "maximum": 100
@@ -309,6 +318,26 @@
         "cacheDir": {
           "type": "string",
           "minLength": 1
+        },
+        "byLanguage": {
+          "type": "object",
+          "additionalProperties": false,
+          "patternProperties": {
+            "^[A-Za-z]{2,3}(-[A-Za-z]{4})?(-([A-Za-z]{2}|[0-9]{3}))?(-([A-Za-z0-9]{5,8}|[0-9][A-Za-z0-9]{3}))*$": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "model": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "dtype": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          }
         }
       }
     },

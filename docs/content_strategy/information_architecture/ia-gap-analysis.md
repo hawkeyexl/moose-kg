@@ -10,10 +10,10 @@ What the docset replaced, what it added, and what is still open.
 
 ## Where this started
 
-Every user-facing word lived in `README.md` — 686 lines doing the work of overview, concept
-explainer, vocabulary reference, frontmatter reference, config reference, command reference,
-runtime API guide, embeddings guide, export guide, standards backgrounder, and contributor guide.
-No page existed; every proposed page was `[NEW]`.
+Every user-facing word lived in `README.md`, 686 lines of it. That one file did the work of an
+overview, a concept explainer, and four references: vocabulary, frontmatter, config, and command.
+It also served as runtime API guide, embeddings guide, export guide, standards backgrounder, and
+contributor guide. No page existed, and every proposed page was `[NEW]`.
 
 **All 35 are now written**, and all 76 CUJ steps resolve to a real page. The README is 66 lines and
 routes into the site; contributor mechanics live in `CONTRIBUTING.md`. What follows is kept as the
@@ -26,45 +26,46 @@ summary the destination page goes beyond; "split" means one section fed several 
 
 | README section | Destination | Disposition |
 |---|---|---|
-| What the graph is (and isn't) | `concepts/index-not-corpus.mdx` | Expand — this is the highest-value paragraph in the README and deserves a page |
+| What the graph is (and isn't) | `concepts/index-not-corpus.mdx` | Expand. This is the highest-value paragraph in the README and deserves a page |
 | Install · Quick start | `get-started/index.mdx` | Move, expand with the double-build proof |
 | What gets derived | `build/index.mdx` | Move |
-| The `kg:` frontmatter key | `reference/frontmatter.mdx` + `model/concepts-skos.mdx` | Split — reference table vs. modeling guidance |
+| The `kg:` frontmatter key | `reference/frontmatter.mdx` + `model/concepts-skos.mdx` | Split, reference table against modeling guidance |
 | Per-section metadata | `model/sections.mdx` + `reference/frontmatter.mdx` | Split |
-| Negative scope | `model/variants.mdx` + `concepts/open-world.mdx` | Split — the semantics page must come first |
+| Negative scope | `model/variants.mdx` + `concepts/open-world.mdx` | Split; the semantics page must come first |
 | Example output | `get-started/index.mdx`, `build/index.mdx` | Split, regenerate from a fixture |
 | Provenance (PROV-O) | `govern/provenance.mdx` + `reference/vocabulary.mdx` | Split, expand for a non-CLI reader |
 | Graph validation (SHACL) | `govern/index.mdx` + `reference/shapes.mdx` | Split |
 | Route mappings | `build/routes.mdx` | Move, expand with per-generator examples |
 | AI fill | `build/backfill.mdx` | Move, **reframe** as a review workflow rather than a feature |
 | Commands | `reference/cli.mdx` | Move, then drift-check |
-| Retrieval runtime | `retrieve/runtime.mdx` + `reference/runtime-api.mdx` | Split — guide vs. signatures |
+| Retrieval runtime | `retrieve/runtime.mdx` + `reference/runtime-api.mdx` | Split, guide against signatures |
 | Lexical entry · Semantic entry | `retrieve/search.mdx` + `reference/embed-models.mdx` | Split |
 | Export | `retrieve/export.mdx` | Move |
 | Metadata coverage | `govern/coverage.mdx` | Move, expand with the ratchet advice |
 | Configuration | `reference/configuration.mdx` | Move |
 | Related standards | `concepts/index.mdx`, `reference/glossary.mdx` | Split, compress |
-| Contributing · Quality gates · Commit messages | **`CONTRIBUTING.md`** | Out of scope for the site — see below |
+| Contributing · Quality gates · Commit messages | **`CONTRIBUTING.md`** | Out of scope for the site, described below |
 | License | `README.md` | Stays |
 
 ### One thing that leaves the README and does not go to the site
 
-Contributor mechanics — quality gates, commit conventions, release channels — belong in a
-`CONTRIBUTING.md`. Putting them on the published site mixes audiences the IA is trying to separate,
-and leaving them in a slimmed README defeats the point of slimming it. The file did not exist and
-was created as part of the README slim.
+Contributor mechanics belong in a `CONTRIBUTING.md`, meaning quality gates, commit conventions,
+and release channels. Putting them on the published site mixes audiences the IA is trying to
+separate. Leaving them in a slimmed README defeats the point of slimming it. The file did not
+exist, and was created as part of the README slim.
 
 ## Content with no source material at all
 
 These are the gaps that are not solved by moving text around, ordered by how much they cost
-today. **This list is the deliverable** — it is what the docset adds rather than reorganizes.
+today. **This list is the deliverable.** It is what the docset adds rather than reorganizes.
 
-### 1. Troubleshooting content — nothing exists
+### 1. Troubleshooting content, of which nothing exists
 
-dockg emits numerous well-written operational errors, and they are collected nowhere: a missing
-search index, a stale vector sidecar, an unknown variant or software subject, TOML/JSON
-frontmatter handed to `fill`, git unavailable under `provenance.git: true`, unsupported file
-types under `validate`, a model that will not load.
+dockg emits numerous well-written operational errors, and they are collected nowhere. They
+include a missing search index, a stale vector sidecar, and an unknown variant or software
+subject. They also include TOML/JSON frontmatter handed to `fill`, git unavailable under
+`provenance.git: true`, unsupported file types under `validate`, and a model that will not
+load.
 
 Every one of these currently sends a reader to the source or to an issue. This is the entire
 `fix/` track, it serves the highest-traffic persona, and it is the largest single gap in the set.
@@ -72,7 +73,7 @@ Every one of these currently sends a reader to the source or to an issue. This i
 
 ### 2. The exit-code contract as a documented set
 
-The individual codes appear in passing; the contract does not appear anywhere as a whole, and its
+The individual codes appear in passing. The contract never appears anywhere as a whole, and its
 counter-intuitive cases are precisely the ones that cause misconfiguration:
 
 - `fill` low-confidence drops and SHACL guardrail rejections → **exit 0**, deliberately
@@ -82,7 +83,7 @@ counter-intuitive cases are precisely the ones that cause misconfiguration:
 - `stats` gates only under `--check`.
 
 A reader wiring CI without this will build a gate that does not gate, or one that fails on
-healthy runs. **High priority** — it blocks `cuj-gate-metadata-in-ci`.
+healthy runs. **High priority**, because it blocks `cuj-gate-metadata-in-ci`.
 
 ### 3. Two different `-f/--format` flags
 
@@ -94,7 +95,7 @@ pages. **Cheap and high-value.**
 
 The code default is `["**/*.md"]`; the `dockg init` template writes `["docs/**/*.md"]`. A reader
 running without a config file gets different ingestion than one who ran `init`, and nothing says
-so. Belongs on `reference/configuration.mdx` and `build/index.mdx`. **Medium priority** — it also
+so. Belongs on `reference/configuration.mdx` and `build/index.mdx`. **Medium priority.** It also
 interacts with the empty-graph coverage caution, since a too-narrow glob produces a vacuously
 perfect score.
 
@@ -102,21 +103,21 @@ perfect score.
 
 The README shows `title`, `description`, `author`/`authors`, `date`, `updated`, `lang`. The code
 also accepts `created`, `lastmod`, `modified`, `keywords`, and a page-level `generated-by`. None
-of these are schema-validated — the frontmatter schema constrains only the `kg` block — so a
+of these are schema-validated, since the frontmatter schema constrains only the `kg` block. So a
 reader has no way to discover them except by reading `src/core/derive.ts`. **Medium priority.**
 
 ### 6. Where the two validation layers differ
 
 `validate` (per-file JSON Schema, via docmeta) and `check` (whole assembled graph, SHACL) are
 both documented in isolation, and the choice between them is never explained. A cross-document
-error — a `broader` cycle spanning three pages — is invisible to `validate` by construction.
-**Medium priority** — it blocks confident CI wiring.
+error such as a `broader` cycle spanning three pages is invisible to `validate` by construction.
+**Medium priority**, because it blocks confident CI wiring.
 
 ### 7. Unbuilt surface that must not be documented as shipping
 
-`dockg retrieve`, `dockg mcp`, and the eval harness are designed but unbuilt. They appear in
+`dockg retrieve`, `dockg mcp`, and the eval suite are designed but unbuilt. They appear in
 `DESIGN.md` and a reader may encounter them there. The docset must not imply they ship.
-**Constraint, not a gap** — recorded here so it is not accidentally violated.
+**Constraint, not a gap.** It is recorded here so it is not accidentally violated.
 
 ## Known limitation, since resolved
 
@@ -125,17 +126,17 @@ error — a `broader` cycle spanning three pages — is invisible to `validate` 
 derived correctly; `href`s inside components such as `<LinkCard>` and `<CardGrid>` **did not become
 graph edges**.
 
-It was documented on `build/index.mdx` rather than worked around, and the docs graph was the
-evidence: 36 documents, **26 reference edges, 5 orphans** — every orphan a page whose outbound links
-were all `<LinkCard>`s.
+It was documented on `build/index.mdx` rather than worked around. The docs graph was the
+evidence: 36 documents, **26 reference edges, 5 orphans**. Every orphan was a page whose outbound
+links were all `<LinkCard>`s.
 
 [ADR 01022](../../../adrs/01022-parse-mdx-and-derive-from-jsx-attributes.md) resolved it. `.mdx`
 inputs now go through `remark-mdx`, and a JSX element's `href` is read as a link, `src` as an image,
 on any element. The same corpus now reports **129 reference edges and 0 orphans**.
 
-Keeping the record because the sequence is the point: the limitation was found by building a graph
-from the docset and reading a number that disagreed with the corpus. Stating it plainly is what made
-it fixable — a limitation quietly designed around would still be there.
+The record is kept because the sequence is the point. The limitation was found by building a
+graph from the docset and reading a number that disagreed with the corpus. Stating it plainly is
+what made it fixable. A limitation quietly designed around would still be there.
 
 ## Pages that map to no CUJ
 
@@ -148,28 +149,28 @@ should grow beyond that role:
 | `reference/index.mdx` | Shelf index | A card grid and nothing else. |
 | `reference/glossary.mdx` | Lookup support | Definitions only. It supports navigation; it must never become the place concepts are explained. |
 
-Every other page — including `model/index.mdx`, which is the orienting step of
-[`cuj-model-concepts`](../journeys/model-concepts.md) — is reachable from at least one journey
-step.
+Every other page is reachable from at least one journey step. That includes `model/index.mdx`,
+which is the orienting step of
+[`cuj-model-concepts`](../journeys/model-concepts.md).
 
 **No page may exist without a CUJ unless it is one of these three.** A page that serves no
-journey and is not on this list is a page the IA does not have a reason for, and the route
-cross-check below is what catches it.
+journey and is not on this list is a page the IA has no reason for. The route cross-check below
+is what catches it.
 
 ## Verifying this IA mechanically
 
 Three properties are checked by `scripts/check-content-strategy.mjs` on every CI run:
 
-1. **No dangling routes** — every `steps[].doc` in `journeys/` names a page the content set plans.
+1. **No dangling routes.** Every `steps[].doc` in `journeys/` names a page the content set plans.
    A journey pointing at a page nobody intends to write is a silent gap.
-2. **No unjustified pages** — every planned page is named by a journey step, except the three
+2. **No unjustified pages.** Every planned page is named by a journey step, except the three
    above.
-3. **`exists` tracks reality, both ways** — a step may not claim `exists: true` for a route that
-   resolves to nothing, *and* may not keep claiming a `[GAP]` for a page that now exists.
+3. **`exists` tracks reality, both ways.** A step may not claim `exists: true` for a route that
+   resolves to nothing. It also may not keep claiming a `[GAP]` for a page that now exists.
 
 The second caught a real defect when it was written: `reference/cli.mdx` was a launch page no
 journey reached. The third was added after all 75 steps sat at `exists: false` while 29 pages had
-already shipped — the coverage field the journeys overview calls "the live gate" had become
+already shipped. The coverage field the journeys overview calls "the live gate" had become
 fiction, and nothing noticed.
 
 ## Gaps that were closed
@@ -179,7 +180,7 @@ built to fix:
 
 | # | Gap | Closed by |
 |---|---|---|
-| 1 | `fix/` track — troubleshooting existed nowhere | `fix/index.mdx`, `fix/faq.mdx` |
+| 1 | The `fix/` track, since troubleshooting existed nowhere | `fix/index.mdx`, `fix/faq.mdx` |
 | 2 | Exit-code contract as a set | `reference/output-and-exit-codes.mdx` |
 | 3 | The on-ramp with no RDF prerequisite | `get-started/index.mdx` |
 | 4 | Why prose is not in the graph | `concepts/index-not-corpus.mdx` |
@@ -192,12 +193,12 @@ built to fix:
 
 Three gaps found later and also closed:
 
-- The Node package entry (`.`) had no planned page at all — only `./runtime` and `./embed` did.
+- The Node package entry (`.`) had no planned page at all. Only `./runtime` and `./embed` did.
   Now `reference/library-api.mdx`.
 - `reference/embed-models.mdx` quoted a model size with no source in the repo. Removed rather than
   left unfalsifiable.
 - **`query` and `traverse` had only CLI-reference coverage.** This was first recorded as a
-  deliberate non-gap on the grounds that no journey asked for a guide — which inverted the test.
+  deliberate non-gap on the grounds that no journey asked for a guide, which inverted the test.
   The IA's rule is that a page needs a journey, not that a command's absence is justified by one
   missing. There *was* an unwritten journey: reading the graph back, and specifically checking what
   depends on a page before changing it, which `concepts/index-not-corpus.mdx` promises the graph is
@@ -205,25 +206,25 @@ Three gaps found later and also closed:
 
 ## What is still open
 
-### 1. Command output on a page is verified by nobody — **closed**
+### 1. Command output on a page is verified by nobody, now **closed**
 
-This was the largest remaining risk in the set, on the grounds that it degrades silently: a page
+This was the largest remaining risk in the set, on the grounds that it degrades silently. A page
 stays plausible long after it stops being true. It did exactly that. Between the runner's removal
-and its return, **eight documented outputs drifted**, and one of them —
-`retrieve/export.mdx`'s JSON-LD node count — had never matched any build of any corpus, because it
-was the `search.json` count pasted under the wrong heading.
+and its return, **eight documented outputs drifted**. One of them,
+`retrieve/export.mdx`'s JSON-LD node count, had never matched any build of any corpus. It was the
+`search.json` count pasted under the wrong heading.
 
 Doc Detective is back, with the guard that makes it mean something, run against
-`test/fixtures/dd/` by `npm run docs:test`. Both failure modes are covered — a step whose
+`test/fixtures/dd/` by `npm run docs:test`. Both failure modes are covered. A step whose
 assertion no longer holds fails the run, and a step the schema silently drops fails
-`scripts/check-doc-tests.mjs`. The second matters as much as the first: the previous integration
+`scripts/check-doc-tests.mjs`. The second matters as much as the first. The previous integration
 was green while executing 11 of its 33 steps.
 
 Coverage is partial, and [ADR 01035](../../../adrs/01035-executing-documented-command-output.md)
 states the boundary as a rule rather than a page list, so it stays true as pages are added. Two
-categories are outside: pages illustrating a corpus that exists nowhere in the repo, where there is
-no command to run; and pages quoting output from a corpus no fixture reproduces, each closable by
-adding a fixture. Their output is still verified by whoever captured it. That is the residue of
+categories are outside it. First, pages illustrating a corpus that exists nowhere in the repo,
+where there is no command to run. Second, pages quoting output from a corpus no fixture
+reproduces, each closable by adding a fixture. Their output is still verified by whoever captured it. That is the residue of
 this gap, and it is much smaller than the gap was.
 
 ### 2. Deliberate non-gaps

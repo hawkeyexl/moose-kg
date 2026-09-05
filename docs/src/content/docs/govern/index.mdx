@@ -1,6 +1,6 @@
 ---
 title: Govern it in CI
-description: Which of dockg's three gates catches what — per-file frontmatter validation, whole-graph SHACL checks, and coverage thresholds — and how each obligation maps onto a command someone can run.
+description: Which of dockg's three gates catches what, across per-file frontmatter validation, whole-graph SHACL checks, and coverage thresholds, and how each obligation maps onto a command someone can run.
 ---
 
 import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
@@ -12,7 +12,7 @@ things, and picking the wrong one wastes a week.
 
 | Gate | Scope | Catches | Exits 1 when |
 |---|---|---|---|
-| `dockg validate` | One file at a time | Frontmatter that violates the JSON Schema — wrong type, bad enum value, `broader` without `label` | Any file fails |
+| `dockg validate` | One file at a time | Frontmatter that violates the JSON Schema, such as a wrong type, a bad enum value, or `broader` without `label` | Any file fails |
 | `dockg check` | The whole assembled graph | Cross-document problems: `broader` cycles, `related`/`broader` conflicts, applicability contradictions, untyped relation targets | Any finding is a violation |
 | `dockg stats --check` | Aggregate numbers | Broken internal links, broken section refs, coverage below threshold | Any threshold is breached |
 
@@ -20,7 +20,7 @@ They are complementary, and most teams end up running all three.
 
 <Aside type="note" title="Why per-file validation is not enough">
   A `skos:broader` cycle spanning three documents is invisible to a per-file check by
-  construction — each file is individually valid. Only the assembled graph shows it. That is what
+  construction, because each file is individually valid. Only the assembled graph shows it. That is what
   `check` is for, and it is the reason two validation layers exist rather than one.
 </Aside>
 
@@ -41,7 +41,7 @@ If you are specifying a requirement for someone else to implement, this is the t
 
 ## Read the exit codes before you wire anything
 
-The contract is `0` success, `1` findings, `2` operational error — but four cases report a problem
+The contract is `0` success, `1` findings, `2` operational error. But four cases report a problem
 and still exit `0`, and each one will bite a gate that assumes otherwise:
 
 - `check` with warnings but no violations.

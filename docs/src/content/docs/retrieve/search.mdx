@@ -27,11 +27,19 @@ npm install @huggingface/transformers
    ```
 
    ```
-   Wrote 20 nodes to kg/search.json
+   Wrote 20 nodes to kg/localizations.json
    ```
 
-   The index lives beside the graph rather than inside it. Prose belongs in neither — the index
+   The indexes live beside the graph rather than inside it. Prose belongs in neither. An index
    holds the short, searchable strings a node already carries (titles, labels), not document text.
+
+   **One index per language** ([localization](/dockg/model/localization/)): `search.<lang>.json`
+   for each language the corpus declares, `search.und.json` for documents that declare none, and
+   `localizations.json` naming them all.
+
+   `und` tracks what the documents *say*, not how many languages there are. A corpus that labels
+   everything `en` gets `search.en.json` and a one-entry manifest, while a corpus that labels
+   nothing gets `search.und.json`. Both are monolingual as far as `--lang` is concerned.
 
 2. **Compute vectors.**
 
@@ -40,9 +48,14 @@ npm install @huggingface/transformers
    ```
 
    ```
-   Wrote 20 vectors (384-d, onnx-community/granite-embedding-small-english-r2-ONNX) to kg/vectors.bin
+   Wrote 1 sidecar beside kg/localizations.json
+     und: 20 vectors (384-d, onnx-community/granite-embedding-small-english-r2-ONNX) -> kg/vectors.und.bin
      20 embedded, 0 from cache
    ```
+
+   `embed` reads the manifest as its work list and writes one sidecar per language, each with
+   that language's model from `embed.byLanguage`. It then fills each entry's `vectors` block, so
+   the manifest describes exactly what is on disk.
 
    For an offline or CI run with no model download, use deterministic hash vectors:
 
@@ -76,14 +89,14 @@ No API, no key, no spend, and **no corpus text leaves the machine**. That is a p
 much as a technical one, and it is worth having quotable.
 
 Node and the browser **rank the same, though they do not compute the same floats**.
-transformers.js uses a native ONNX runtime in Node and WASM in the browser, and it accepts
+transformers.js uses a native ONNX runtime in Node and WASM in the browser. It accepts
 *different* `device` values on each, so there is no way to force one backend everywhere. Measured
-on the default model, a query embedded in Node and the same query embedded in Chrome agree to
+on the default model, a query embedded in Node and the same query in Chrome agree to
 **cosine 0.999914**.
 
-What dockg guarantees — and gates in CI against the real model in a real browser — is **decisive
-ordering**: any two results clearly separated in score keep their relative order on both platforms.
-Results within the noise of each other may swap, and in practice sometimes do, so do not treat the
+What dockg guarantees is **decisive ordering**, gated in CI against the real model in a real
+browser. Any two results clearly separated in score keep their relative order on both platforms.
+Results within the noise of each other may swap, and in practice sometimes do. Do not treat the
 tail of a result list as stable across platforms. dockg pins what is pinnable: single-threaded on
 the WASM side, `q8` weights, one text per call.
 
@@ -95,7 +108,7 @@ the WASM side, `q8` weights, one text per call.
 | `lexical` | Lexical only | Always available; no sidecar needed |
 | `vector` | Vector only | Diagnosing the vector leg in isolation |
 
-A missing embedder **degrades to lexical** — unless you asked for `vector` or `hybrid` explicitly,
+A missing embedder **degrades to lexical**, unless you asked for `vector` or `hybrid` explicitly,
 in which case it errors. Silent degradation is fine when you did not express a preference and wrong
 when you did.
 
@@ -125,14 +138,15 @@ Exit `2` in both cases.
   ```
 
   Skipping the last step gives you a refusal at query time rather than bad results, which is the
-  intended failure — but it will fail your pipeline, so wire the three together.
+  intended failure. It will still fail your pipeline, so wire the three together.
 </Aside>
 
 ## Do not commit the sidecar
 
-`kg/vectors.bin` is gitignored by default. It is a binary, it is derived, and regenerating it
-requires a model download — so it belongs in your deploy pipeline rather than your repository.
-The graph and the search index are text and can reasonably be committed.
+`kg/vectors.*.bin` is gitignored by default. They are binaries, they are derived, and
+regenerating them requires a model download. They belong in your deploy pipeline rather than
+your repository. The graph, the indexes and the manifest are text and can reasonably be
+committed.
 
 ## Where to go next
 
@@ -160,8 +174,12 @@ The graph and the search index are text and can reasonably be committed.
     would close this comment. Run with `npx doc-detective`. */}
 {/* test {"testId":"retrieve-artifacts","description":"The artifact chain: search index, vectors, and a ranked query."} */}
 {/* step {"description":"Build the graph the artifacts derive from.","runShell":{"command":"dockg build -c test/fixtures/dd/dockg.config.yaml","exitCodes":[0]}} */}
-{/* step {"description":"export --format search writes the lexical index.","runShell":{"command":"dockg export -c test/fixtures/dd/dockg.config.yaml --format search -o .tmp/dd/search.json","exitCodes":[0],"stdio":"nodes to"}} */}
-{/* step {"description":"embed --model mock computes deterministic vectors with no download and no network.","runShell":{"command":"dockg embed -c test/fixtures/dd/dockg.config.yaml -i .tmp/dd/search.json -o .tmp/dd/vectors.bin --model mock","exitCodes":[0],"stdio":"mock)"}} */}
-{/* step {"description":"search ranks graph nodes, fusing both legs when a sidecar exists.","runShell":{"command":"dockg search configuration -c test/fixtures/dd/dockg.config.yaml -i .tmp/dd/search.json --vectors .tmp/dd/vectors.bin --limit 3","exitCodes":[0],"stdio":"(hybrid)"}} */}
-{/* step {"description":"A missing search index is an operational error with the fix in the message.","runShell":{"command":"dockg search configuration -c test/fixtures/dd/dockg.config.yaml -i .tmp/dd/absent.json","exitCodes":[2],"stdio":"Search index not found"}} */}
+{/* step {"description":"export --format search writes one index per language plus the manifest.","runShell":{"command":"dockg export -c test/fixtures/dd/dockg.config.yaml --format search -o .tmp/dd","exitCodes":[0],"stdio":"localizations.json"}} */}
+{/* step {"description":"embed --model mock computes deterministic vectors with no download and no network.","runShell":{"command":"dockg embed -c test/fixtures/dd/dockg.config.yaml -i .tmp/dd --model mock","exitCodes":[0],"stdio":"mock)"}} */}
+{/* step {"description":"search ranks graph nodes, fusing both legs when a sidecar exists.","runShell":{"command":"dockg search configuration -c test/fixtures/dd/dockg.config.yaml -i .tmp/dd --vectors .tmp/dd/vectors.und.bin --limit 3","exitCodes":[0],"stdio":"(hybrid)"}} */}
+{/* step {"description":"Build the two-locale corpus for the refusal below.","runShell":{"command":"dockg build -c test/fixtures/dd/l10n.config.yaml","exitCodes":[0]}} */}
+{/* step {"description":"Its indexes fan out into one file per language.","runShell":{"command":"dockg export -c test/fixtures/dd/l10n.config.yaml --format search -o .tmp/dd-l10n","exitCodes":[0],"stdio":"localizations.json"}} */}
+{/* step {"description":"A single-language corpus needs no --lang; a multi-language one refuses to guess.","runShell":{"command":"dockg search installieren -c test/fixtures/dd/l10n.config.yaml -i .tmp/dd-l10n","exitCodes":[2],"stdio":"more than one localization"}} */}
+{/* step {"description":"With --lang it answers, out of that language only.","runShell":{"command":"dockg search installieren -c test/fixtures/dd/l10n.config.yaml -i .tmp/dd-l10n --lang de","exitCodes":[0],"stdio":"l10n/de/install.md"}} */}
+{/* step {"description":"A missing manifest is an operational error with the fix in the message.","runShell":{"command":"dockg search configuration -c test/fixtures/dd/dockg.config.yaml -i .tmp/dd/absent","exitCodes":[2],"stdio":"Localization manifest not found"}} */}
 {/* test end */}

@@ -331,12 +331,21 @@ export function deriveGraph(docs: DocModel[], options: DeriveOptions): Quad[] {
     qualifyAttribution(docIri, a, name);
   };
 
-  /** Shared mapping for kg.derived-from / kg.revision-of entries. */
+  /**
+   * Shared mapping for kg.derived-from / kg.revision-of / page `translation-of`
+   * entries.
+   *
+   * `inverse`, when given, is also emitted back from the resolved target — but
+   * only for a target inside the corpus. A URL names a resource dockg has not
+   * analyzed and does not speak for, so it gains an inbound edge and never an
+   * outbound claim (ADR 01037).
+   */
   const provTargetEdge = (
     doc: DocModel,
     docIri: string,
     raw: string,
     predicate: string,
+    inverse?: string,
   ): void => {
     if (hasScheme(raw)) {
       add(docIri, predicate, iri(raw));
@@ -348,7 +357,9 @@ export function deriveGraph(docs: DocModel[], options: DeriveOptions): Quad[] {
       docByPath,
     );
     if (target) {
-      add(docIri, predicate, iri(mintDocIri(baseIri, target)));
+      const targetIri = mintDocIri(baseIri, target);
+      add(docIri, predicate, iri(targetIri));
+      if (inverse) add(targetIri, inverse, iri(docIri));
     } else {
       add(docIri, `${NS.dockg}brokenLink`, lit(raw));
     }
@@ -403,8 +414,27 @@ export function deriveGraph(docs: DocModel[], options: DeriveOptions): Quad[] {
         modifiedEmitted = true;
       }
 
-      const language = asString(fmValue(fm, ["lang", "language"]));
+      // The page's own key outranks the route it sits under (ADR 01037): a
+      // single English page inside a translated tree can correct its label,
+      // and a corpus that declares nothing keeps deriving nothing.
+      const language =
+        asString(fmValue(fm, ["lang", "language"])) ?? doc.routeLanguage;
       if (language) add(docIri, `${NS.dcterms}language`, lit(language));
+
+      // Page-level only: docmeta's `kg` block is closed and carries no
+      // translation key, so this fact lives at the altitude `lang` already
+      // does (ADR 01023, ADR 01037). Both directions are materialized, so
+      // "every localization of this page" is one lookup for a consumer with no
+      // inbound index of its own.
+      for (const raw of asStringArray(fmValue(fm, ["translation-of"]))) {
+        provTargetEdge(
+          doc,
+          docIri,
+          raw,
+          `${NS.schema}translationOfWork`,
+          `${NS.schema}workTranslation`,
+        );
+      }
 
       // kg sub-key: the SKOS hierarchy has no page-level twin, so it reads the
       // block as written (frontmatter key `kg`, RDF ns `dockg:`).

@@ -1,6 +1,6 @@
 ---
 title: Validation rules
-description: Every rule dockg check enforces against the assembled graph, its severity, and the error each one protects against — including the checks that run in TypeScript because SHACL cannot express them.
+description: Every rule dockg check enforces against the assembled graph, its severity, and the error each one protects against, including the checks that run in TypeScript because SHACL cannot express them.
 ---
 
 import { Aside } from '@astrojs/starlight/components';
@@ -19,7 +19,7 @@ with `check.shapes` / `--shapes`.
 | `sh:Warning` | 0 | Something is probably unintended, but the graph is coherent. |
 | `sh:Info` | 0 | Informational. |
 
-Only violations gate. A run reporting warnings exits `0` — see
+Only violations gate. A run reporting warnings exits `0`. See
 [output & exit codes](/dockg/reference/output-and-exit-codes/).
 
 ## Shapes are closed
@@ -30,8 +30,8 @@ Every node shape sets `sh:closed true`, targeting `dockg:Document`, `dockg:Secti
 
 <Aside type="caution" title="A new derive predicate fails check until the shapes learn it">
   That is the feature, not a bug. Closed shapes mean the emitted graph cannot quietly grow a
-  predicate nobody agreed to. If you add one, the shapes are part of the same change — and because
-  published shapes files are immutable, that means a new version file, not an edit.
+  predicate nobody agreed to. If you add one, the shapes are part of the same change. Published
+  shapes files are immutable, so that means a new version file, not an edit.
 </Aside>
 
 ## Concept rules
@@ -39,7 +39,7 @@ Every node shape sets `sh:closed true`, targeting `dockg:Document`, `dockg:Secti
 | Rule | Severity | Protects against |
 |---|---|---|
 | No `skos:broader`/`narrower` cycle | violation | A concept being its own ancestor |
-| `skos:related` must not conflict with `skos:broaderTransitive` | violation | SKOS S27 — a concept both related to and an ancestor of another |
+| `skos:related` must not conflict with `skos:broaderTransitive` | violation | SKOS S27, a concept both related to and an ancestor of another |
 | A concept carries `skos:prefLabel` | violation | Unlabelled nodes |
 | A concept carries `skos:inScheme` | violation | Concepts outside any scheme |
 | Relation targets are typed concepts | violation | Dangling hierarchy |
@@ -83,7 +83,7 @@ Enforced on both documents and sections.
 ## Rules that are not in the shapes file
 
 Cycle detection and the transitive SKOS S27 check run in **TypeScript**, because core SHACL cannot
-express transitive closure. They are part of `dockg check` regardless — you will not find them by
+express transitive closure. They are part of `dockg check` regardless. You will not find them by
 reading `shapes/dockg-0.7.ttl`, which is worth knowing before you go looking.
 
 ```
@@ -92,20 +92,20 @@ violation: https://example.com/kg/concept/alpha skos:broader — skos:broader cy
 
 ## Every finding names the responsible files
 
-The bracketed list at the end of a finding is the set of documents that produced it. For a cycle or
-an S27 conflict that is several files, none of which is individually wrong — which is exactly why
+The bracketed list at the end of a finding is the set of documents that produced it. For a cycle
+or an S27 conflict that is several files, none of which is individually wrong. That is exactly why
 this check operates on the assembled graph and per-file
 [`dockg validate`](/dockg/govern/) cannot replace it.
 
 ## The same rules guard `dockg fill`
 
-Before writing a proposed field, `fill` simulates its triples against this contract and rejects
-anything that would create a cycle, an S27 conflict, a second spelling of an existing concept, or an
-applicability contradiction. Rejections are routine operation and leave the exit code at `0`. See
-[backfilling](/dockg/build/backfill/).
+Before writing a proposed field, `fill` simulates its triples against this contract. It rejects
+anything that would create a cycle, an S27 conflict, a second spelling of an existing concept, or
+an applicability contradiction. Rejections are routine operation and leave the exit code at `0`.
+See [backfilling](/dockg/build/backfill/).
 
 ## Versioning
 
 Published shapes files are immutable. The contract evolves by adding a new version file, never by
-editing bytes in place — the same rule the [frontmatter schemas](/dockg/reference/frontmatter/)
-follow.
+editing bytes in place. That is the same rule the
+[frontmatter schemas](/dockg/reference/frontmatter/) follow.

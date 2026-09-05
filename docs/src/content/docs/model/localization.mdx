@@ -1,0 +1,229 @@
+---
+title: Localize a docset
+description: Label every page in a translated corpus with its language, link each translation to its source with the schema.org translation pair, and make a malformed language tag a hard error rather than a silent partition.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+A translated docset reaches dockg as Markdown that happens to live in different directories.
+Two facts are obvious to anyone reading the paths and invisible to every consumer. Those are
+which language a page is in, and which page it was translated from.
+
+## Read this first
+
+[Open-world semantics](/dockg/concepts/open-world/). Language is a scope boundary of the same
+kind as [product variant](/dockg/model/variants/), and the same rule governs it. A page that
+declares no language is **unknown**, not "English by default". Nothing infers a locale from a
+path unless you tell dockg what the path means.
+
+## Label the tree, not the file
+
+A route already tells dockg how a published URL maps back to a source directory. Adding
+`language` to it labels every document under that root:
+
+```yaml title="dockg.config.yaml"
+routes:
+  - root: docs/en
+    basePath: /
+    language: en
+  - root: docs/de
+    basePath: /de
+    language: de
+```
+
+That is one line per locale rather than one key per file. That is what makes this adoptable on
+a corpus that already has a thousand translated pages.
+
+A page's own `lang` (or `language`) frontmatter still wins, for the page in the wrong tree and
+for the regional variant inside a general one:
+
+```md title="docs/de/regional.md"
+---
+title: Regionale Hinweise
+lang: de-AT
+---
+```
+
+Where routes nest, the **nearest enclosing route that declares a language** applies. So a
+`docs/api` route that declares none still inherits `en` from the `docs` route above it, the way
+a nested directory inherits its parent's setting.
+
+Both produce one `dcterms:language` literal per document:
+
+```console
+$ dockg query -g kg/graph.ttl -p dcterms:language
+<…/l10n/de/install.md> dcterms:language "de"
+<…/l10n/de/regional.md> dcterms:language "de-AT"
+<…/l10n/en/install.md> dcterms:language "en"
+
+3 match(es)
+```
+
+## Link a translation to its source
+
+`translation-of` is a page-level key naming the source document. The value is doc-relative,
+repo-relative, or a URL:
+
+```md title="docs/de/install.md"
+---
+title: Installieren
+translation-of: ../en/install.md
+---
+```
+
+dockg emits **both directions** of the schema.org translation pair from that one key:
+
+| Triple | On | Meaning |
+|---|---|---|
+| `schema:translationOfWork` | the translation | the work this was translated from |
+| `schema:workTranslation` | the source | a translation of this work |
+
+The inverse is materialized rather than left to inference. So "every localization of this page"
+is a single lookup for a consumer with no reasoner and no reverse index:
+
+```console
+$ dockg query -g kg/graph.ttl -p schema:workTranslation
+<…/l10n/en/install.md> schema:workTranslation <…/l10n/de/install.md>
+
+1 match(es)
+```
+
+A source with three translations carries three `schema:workTranslation` triples. A
+`translation-of` naming a file the corpus does not contain becomes a `dockg:brokenLink`, surfaced
+by [`stats`](/dockg/build/) and gated by `stats --check`, rather than a silently missing edge.
+
+<Aside type="note" title="Why not a `kg` key">
+  The `kg` block is docmeta's vocabulary, vendored byte-for-byte and closed to additions, so
+  dockg cannot put a key inside it. `translation-of` therefore lives at page level. That is the
+  same altitude `lang` has always occupied, and the same one the
+  [harvest rule](/dockg/reference/frontmatter/) reads.
+</Aside>
+
+## A language tag is a partition key, not prose
+
+`dcterms:language` is pattern-checked against BCP-47's common shape: `de`, `de-DE`, `pt-BR`,
+`zh-Hans`, `zh-Hans-CN`, `und`. A language *name* is rejected.
+
+<Steps>
+
+1. **Write a language name instead of a tag.**
+
+   ```md title="docs/install.md"
+   ---
+   lang: German
+   ---
+   ```
+
+2. **`check` refuses it, and exits 1.**
+
+   ```console
+   $ dockg check
+   violation: <…/install.md> dcterms:language — Value does not match pattern "^[A-Za-z]{2,3}…"
+
+   1 violation, 0 warnings
+   ```
+
+</Steps>
+
+This is deliberately a hard error. Every consumer of the label groups on it, from scope
+filtering to per-language coverage to per-locale retrieval artifacts. So `German`, `de`, and
+`Deutsch` on three pages of one corpus do not under-specify the locale. They invent three.
+
+<Aside type="caution" title="There is no negative-language predicate">
+  Variants have `not-applicable-to` because "this page does not cover the SP-C40" is a claim a
+  reviewer makes. "This page is not in German" is not. A document has exactly one language, and
+  the shapes already say so with `sh:maxCount 1`. If you are reaching for a negative here, the
+  fact you want is probably an untranslated page. That is an absence in the corpus rather than
+  an assertion in the graph.
+</Aside>
+
+## Retrieval follows the label
+
+The artifacts fan out per locale, so nothing has to rank across the boundary you just declared:
+
+| Artifact | One per |
+|---|---|
+| `kg/search.<lang>.json` | language, `und` for documents declaring none |
+| `kg/vectors.<lang>.bin` | language, embedded with that language's model |
+| `kg/localizations.json` | corpus, the manifest naming them all |
+
+Concepts are the exception. They are shared vocabulary rather than documents in a language, so
+**every** index carries all of them. A `--lang de` search can still reach the concepts your
+German pages point at. A corpus whose documents all declare a language grows no `und` index.
+
+```sh
+dockg search installieren --lang de
+```
+
+On a corpus with one language `--lang` is optional. With more, omitting it **exits 2 and names
+what is available** rather than picking for you. Answering out of the wrong language is the
+failure the fan-out exists to prevent.
+
+Set a per-language embedding model where the default does not cover the language:
+
+```yaml title="dockg.config.yaml"
+embed:
+  byLanguage:
+    de:
+      model: onnx-community/multilingual-e5-small
+```
+
+Without it, German text embedded under an English-only model returns confident, meaningless
+vectors and fails nothing. See [embedding models](/dockg/reference/embed-models/).
+
+## Reach a page's translations when it changes
+
+The impact question a localization owner actually has, *what needs re-translating?*, is a
+traversal over the edge you just declared:
+
+```console
+$ dockg traverse <the-english-page> --impact --predicates schema:translationOfWork
+  …/docs/de/getting-started.md — Erste Schritte
+  …/docs/fr/getting-started.md — Premiers pas
+
+2 nodes, 2 hops, 0 excluded
+```
+
+`--lang` scopes it, and the trace names the rule that excluded anything:
+
+```console
+$ dockg traverse <the-english-page> --impact --predicates schema:translationOfWork --lang fr
+  …/docs/fr/getting-started.md — Premiers pas
+
+excluded by scope:
+  …/docs/de/getting-started.md — dcterms:language fr
+
+1 node, 2 hops, 1 excluded
+```
+
+A node that declares **no** language is kept, not excluded. Unscoped content applies broadly,
+exactly as it does for [variants](/dockg/model/variants/). A language filter never silently
+empties a corpus that has not adopted the label.
+
+**The page you start from is a starting point, not a result.** Ask this from a source that *is*
+labelled, say `--lang de` from an English page, and the walk still reaches the German
+translation. The English page is simply excluded from the answer and named in the trace. The
+filter governs what the walk reaches, not where you chose to begin.
+
+<Aside type="note" title="No locale fallback">
+  `de-AT` does not fall back to `de`, and a query for one does not search the other. Fallback is
+  an inference about how locales relate, and dockg does not infer. A corpus that wants them
+  searched together labels them the same.
+</Aside>
+
+{/* Doc-detective blocks. `stdio` is the only output field the runShell schema
+    accepts — `stdout`/`stderr` are silently dropped (scripts/check-doc-tests.mjs
+    is the guard). Paths are repo-root-relative with the input globs in the
+    fixture config, because a glob on the command line would close this comment.
+    Run with `npx doc-detective`. */}
+{/* test {"testId":"localize-a-docset","description":"Route-derived language, the page override, the emitted translation pair, and a rejected language name."} */}
+{/* step {"description":"Build the two-locale fixture corpus.","runShell":{"command":"dockg build -c test/fixtures/dd/l10n.config.yaml","exitCodes":[0],"stdio":"3 docs"}} */}
+{/* step {"description":"The German page inherits de from its route.","runShell":{"command":"dockg query -g .tmp/dd/l10n.ttl -p dcterms:language","exitCodes":[0],"stdio":"l10n/de/install.md> dcterms:language \"de\""}} */}
+{/* step {"description":"The page-level lang overrides the route language.","runShell":{"command":"dockg query -g .tmp/dd/l10n.ttl -p dcterms:language","exitCodes":[0],"stdio":"l10n/de/regional.md> dcterms:language \"de-AT\""}} */}
+{/* step {"description":"The source carries the inverse edge, so its translations are one lookup.","runShell":{"command":"dockg query -g .tmp/dd/l10n.ttl -p schema:workTranslation","exitCodes":[0],"stdio":"l10n/en/install.md> schema:workTranslation"}} */}
+{/* step {"description":"A graph whose language is a name rather than a tag builds.","runShell":{"command":"dockg build -c test/fixtures/dd/l10n-invalid.config.yaml","exitCodes":[0]}} */}
+{/* step {"description":"check rejects it, naming dcterms:language, and exits 1.","runShell":{"command":"dockg check -c test/fixtures/dd/l10n-invalid.config.yaml","exitCodes":[1],"stdio":"dcterms:language"}} */}
+{/* step {"description":"impact over the translation edge reaches every localization of a source.","runShell":{"command":"dockg traverse https://example.com/dd/doc/test/fixtures/dd/l10n/en/install.md -c test/fixtures/dd/l10n.config.yaml --impact --predicates schema:translationOfWork","exitCodes":[0],"stdio":"l10n/de/install.md"}} */}
+{/* step {"description":"--lang de from a labelled English source still reaches the German translation — the seed is excluded from the answer, not from the walk.","runShell":{"command":"dockg traverse https://example.com/dd/doc/test/fixtures/dd/l10n/en/install.md -c test/fixtures/dd/l10n.config.yaml --impact --predicates schema:translationOfWork --lang de","exitCodes":[0],"stdio":"l10n/de/install.md — Installieren"}} */}
+{/* step {"description":"A reached node the filter excludes is named in the trace, not merely counted.","runShell":{"command":"dockg traverse https://example.com/dd/doc/test/fixtures/dd/l10n/en/install.md -c test/fixtures/dd/l10n.config.yaml --impact --predicates schema:translationOfWork --lang fr","exitCodes":[0],"stdio":"l10n/de/install.md — dcterms:language fr"}} */}
+{/* test end */}

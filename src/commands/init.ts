@@ -19,12 +19,17 @@ exclude:
 out: kg/graph.ttl
 
 # Map published-site routes back to source files so route-style links
-# (/docs/actions/find) become graph edges. Uncomment and adjust:
+# (/docs/actions/find) become graph edges. A route may also carry the BCP-47
+# \`language\` labelling every document under its root; a page's own \`lang\`
+# frontmatter wins. Uncomment and adjust:
 # routes:
 #   - basePath: /docs
 #     root: docs
 #     extensions: [.md, .mdx]
 #     indexFiles: [index, README]
+#   - basePath: /docs/de
+#     root: docs/de
+#     language: de
 
 # What to derive triples from. Remove entries to opt out.
 build:

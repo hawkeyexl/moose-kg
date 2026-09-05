@@ -9,7 +9,7 @@ decision-makers: [hawkeyexl, Claude]
 ## Context and Problem Statement
 
 `dockg validate` checks docs one file at a time against a JSON Schema. But
-dockg's most fragile invariants are emergent — they only exist after `derive`
+dockg's most fragile invariants are emergent. They only exist after `derive`
 has merged N docs into shared nodes, and nothing validated them:
 
 - Concept IRIs deliberately converge on slugified labels, so `tags: [Set Up]`
@@ -18,10 +18,10 @@ has merged N docs into shared nodes, and nothing validated them:
   collisions, invisible to every existing check.
 - `skos:broader` cycles and `skos:related`⨯`skos:broaderTransitive` conflicts
   (SKOS S27). `fill.fields` keeps `broader`/`narrower` off by default because
-  hierarchy proposals hallucinate most — there was no gate that would make
+  hierarchy proposals hallucinate most, and there was no gate that would make
   turning them on safe.
-- Half-built nodes: subjects without `rdf:type skos:Concept`, concepts without
-  `skos:inScheme`, agents without `foaf:name` — exactly what a downstream
+- Half-built nodes. Subjects without `rdf:type skos:Concept`, concepts without
+  `skos:inScheme`, and agents without `foaf:name`. Exactly what a downstream
   consumer trips over after merging the emitted Turtle into their store.
 
 How should dockg validate the *assembled graph*, and what standing should
@@ -29,12 +29,12 @@ those rules have?
 
 ## Decision Drivers
 
-- The emitted graph is a published artifact; consumers need a machine-readable
+- The emitted graph is a published artifact. Consumers need a machine-readable
   statement of what a valid dockg graph looks like, not just a README table.
 - `dockg fill` needs a correctness gate strong enough to flip hierarchy fill
   from "don't use this" to "verified on write".
 - No network in tests; no new exit-code semantics; determinism everywhere.
-- Concept-IRI convergence is a documented feature — validation must not
+- Concept-IRI convergence is a documented feature, so validation must not
   declare the design itself broken.
 
 ## Considered Options
@@ -42,8 +42,8 @@ those rules have?
 1. SHACL shapes as a **published, immutable contract** (`shapes/dockg-0.1.ttl`
    shipped in the npm package, versioned like `schemas/`), consumed by a new
    `dockg check` command and by a `dockg fill` guardrail.
-2. SHACL as an **internal lint** — shapes private to the repo, changeable at
-   will, not part of the package surface.
+2. SHACL as an **internal lint**, with shapes private to the repo, changeable at
+   will, and not part of the package surface.
 3. More hand-rolled TypeScript checks in `stats` (no SHACL at all).
 
 ## Decision Outcome
@@ -68,57 +68,59 @@ Three subsidiary decisions:
   spellings onto one concept is dockg's documented design; failing the build
   over it would condemn the feature. `dockg check` surfaces the collision
   (exit 0), while the fill guardrail still rejects *new* second spellings an
-  LLM proposes — humans may converge, machines may not add spellings.
-- **Severity maps onto the existing exit-code contract**: `sh:Violation` (or
+  LLM proposes. Humans may converge; machines may not add spellings.
+- **Severity maps onto the existing exit-code contract.** `sh:Violation` (or
   a TS-detected cycle/conflict) → exit 1, `sh:Warning`/`sh:Info` → reported,
   exit 0, operational failure (`DockgError`) → exit 2.
 
 ### Consequences
 
-- Good: the vocabulary README table now has an enforceable, machine-readable
+- Good. The vocabulary README table now has an enforceable, machine-readable
   counterpart; downstream consumers can validate merged graphs against the
   same contract dockg tests itself with.
-- Good: closed shapes (`sh:closed true` on Document/Section/Concept/agents)
-  make an unexpected predicate from a future derive source fail loudly — the
-  graph-side analogue of `additionalProperties: false`.
-- Good: `fill.fields: [broader, narrower, …]` is now a defensible opt-in; the
+- Good. Closed shapes (`sh:closed true` on Document/Section/Concept/agents)
+  make an unexpected predicate from a future derive source fail loudly. It is
+  the graph-side analogue of `additionalProperties: false`.
+- Good. `fill.fields: [broader, narrower, …]` is now a defensible opt-in; the
   guardrail also accumulates accepted proposals within a run, so two docs
   cannot jointly form a cycle.
-- Bad: any change to what `derive` emits now requires a shapes review (and a
-  new shapes version when the published contract changes) — a deliberate new
-  definition-of-done step recorded in CLAUDE.md.
-- Bad: the guardrail re-derives and re-validates the SKOS subgraph per
+- Bad. Any change to what `derive` emits now requires a shapes review, plus a
+  new shapes version when the published contract changes. That is a deliberate
+  new definition-of-done step recorded in CLAUDE.md.
+- Bad. The guardrail re-derives and re-validates the SKOS subgraph per
   guarded proposal (O(docs) per doc). Acceptable for documentation corpora;
   scoped to `frontmatter`+`tags` derive sources to keep it cheap and git-free.
 
 ### Confirmation
 
-`test/unit/shacl.test.ts` (one failing case per shape family, cycle/conflict
-walks, blame reporter, determinism), `test/integration/check.test.ts` (clean
-regression corpus exits 0; `test/fixtures/check-violations/` corpus exits 1
-naming offending docs; byte-identical double runs; missing shapes/graph exit
-2), and the guardrail cases in `test/unit/fill.test.ts` (cycle rejected,
-joint-cycle rejected across docs, second-spelling rejected, exact-spelling
-accepted, both off-switches).
+`test/unit/shacl.test.ts` covers one failing case per shape family, the
+cycle and conflict walks, the blame reporter, and determinism.
+`test/integration/check.test.ts` covers a clean regression corpus exiting 0 and
+a `test/fixtures/check-violations/` corpus exiting 1 while naming offending
+docs. It also covers byte-identical double runs, and missing shapes or graph
+exiting 2. The
+guardrail cases live in `test/unit/fill.test.ts`: cycle rejected, joint-cycle
+rejected across docs, second-spelling rejected, exact-spelling accepted, and
+both off-switches.
 
 ## Pros and Cons of the Options
 
 ### Published SHACL contract + check command + fill guardrail
 
-- Good: one rule set serves three audiences — CI (`check`), the LLM pipeline
-  (`fill`), and downstream consumers (shipped file).
-- Good: standard vocabulary (SHACL) instead of a bespoke rule format.
-- Bad: immutability commitment; contract changes require versioned files.
+- Good. One rule set serves three audiences: CI (`check`), the LLM pipeline
+  (`fill`), and downstream consumers reading the shipped file.
+- Good. Standard vocabulary (SHACL) instead of a bespoke rule format.
+- Bad. Immutability commitment; contract changes require versioned files.
 
 ### Internal lint only
 
-- Good: no compatibility commitment, free to iterate.
-- Bad: consumers can't validate against it; the README table stays the only
+- Good. No compatibility commitment, free to iterate.
+- Bad. Consumers can't validate against it; the README table stays the only
   (unenforceable) statement of the graph's shape.
 
 ### More hand-rolled TypeScript in `stats`
 
-- Good: no new dependency.
-- Bad: every rule is imperative code; nothing is publishable or reusable;
+- Good. No new dependency.
+- Bad. Every rule is imperative code; nothing is publishable or reusable;
   `stats` drifts into an ad-hoc validator dockg already decided SHACL
   expresses better.

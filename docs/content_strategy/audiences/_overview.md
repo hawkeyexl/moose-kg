@@ -18,8 +18,8 @@ Who dockg's documentation serves, segmented bottom-up from the product surface.
 Segments are cut on **who owns the documentation × how mature that organization's
 documentation practice is.** That axis was chosen because it is the one that actually predicts
 which dockg commands a reader reaches for. A team whose docs are owned by an engineer with a CI
-pipeline starts at `build` and `stats`; a team whose docs are owned by an information architect
-with an existing controlled vocabulary starts at the `kg:` block and `check`; a team that does
+pipeline starts at `build` and `stats`. A team whose docs are owned by an information architect
+with an existing controlled vocabulary starts at the `kg:` block and `check`. A team that does
 not own the docs at all but consumes them starts at `export` and the runtime.
 
 Note what the axis is *not* cut on: company size, industry, or seat count. Nothing in dockg's
@@ -32,19 +32,19 @@ act on.
 |---|---|---|---|---|
 | [`aud-docs-as-code-teams`](docs-as-code-teams.md) | Docs-as-code teams | Docs engineer / tech writer in an engineering repo | Has docs-as-code and CI; wants metadata to mean something | **Lead** |
 | [`aud-information-architects`](information-architects.md) | Standards-driven documentation orgs | Information architect / taxonomist | Has a real metadata standard; needs it enforced and expressed | Core |
-| [`aud-ai-platform-teams`](ai-platform-teams.md) | AI platform teams | Nobody on this team — they consume | Has a retrieval pipeline that is leaking across product boundaries | Core |
+| [`aud-ai-platform-teams`](ai-platform-teams.md) | AI platform teams | Nobody on this team; they consume | Has a retrieval pipeline that is leaking across product boundaries | Core |
 | [`aud-compliance-owners`](compliance-owners.md) | Regulated documentation owners | Compliance / regulatory documentation owner | Must produce audit evidence on demand | Core |
 | [`aud-doc-contributors`](doc-contributors.md) | Individual doc contributors | Owns one page, not the infrastructure | Maturity-independent | Secondary, highest-traffic |
 
 ## The cross-cutting lens
 
-[`aud-brownfield-corpora`](brownfield-corpora.md) — **a large existing corpus with no metadata
-at all.** This is a lens, not a segment: it overlaps docs-as-code teams and information
-architects rather than sitting beside them, and a reader can be in it *and* in one of the five
+[`aud-brownfield-corpora`](brownfield-corpora.md) covers **a large existing corpus with no
+metadata at all.** This is a lens, not a segment. It overlaps docs-as-code teams and information
+architects rather than sitting beside them. A reader can be in it *and* in one of the five
 segments at the same time.
 
 It earns a file of its own because it changes the shape of the advice rather than just the
-volume. A greenfield corpus gets metadata as it is written; a brownfield corpus needs
+volume. A greenfield corpus gets metadata as it is written. A brownfield corpus needs
 `dockg fill`, a coverage threshold that starts below where it should end up, and a ratchet.
 That is a different journey ([`cuj-backfill-metadata`](../journeys/backfill-metadata.md)), not a
 longer version of the same one.

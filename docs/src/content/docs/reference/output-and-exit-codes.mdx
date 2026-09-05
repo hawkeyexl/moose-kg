@@ -16,8 +16,8 @@ not gate, or one that fails on healthy runs.
 | `1` | Findings. Validation failures, `check` violations, `stats --check` breaches. | Fail the build. Someone's page needs fixing. |
 | `2` | Operational error. Bad input, missing file, unusable environment. | Fail the build, but this is a pipeline problem, not a content problem. |
 
-The `1` versus `2` distinction is the one worth wiring into your messaging: `1` means a
-contributor should fix a document, `2` means whoever owns the pipeline should look at it.
+The `1` versus `2` distinction is the one worth wiring into your messaging. `1` means a
+contributor should fix a document; `2` means whoever owns the pipeline should look at it.
 
 ## Per command
 
@@ -59,15 +59,15 @@ separate jobs, and a CI step that runs plain `stats` will never fail no matter h
 numbers get.
 
 **`fill` dropping fields.** Low-confidence drops and SHACL guardrail rejections are routine
-operation, not errors. Only a per-document `error` status exits `1`. This is deliberate so an
-orchestrating agent does not treat a normal run as a failure — but it means you must read the
+operation, not errors. Only a per-document `error` status exits `1`. That is deliberate, so an
+orchestrating agent does not treat a normal run as a failure. It does mean you must read the
 report rather than the exit code to know what was written.
 
 **`fill` with an unenforceable cost cap.** A cap needs a known price; against a model dockg has no
 price for, spend cannot be totalled and the cap cannot be applied. That warns on stderr and exits
-`0`, because dockg cannot tell a free model from an expensive one and refusing would break the
-local and mock paths that genuinely cost nothing. The report carries
-`"budget": "unpriceable"` — read that field, not `costUsd`, to know whether a limit was in force.
+`0`. dockg cannot tell a free model from an expensive one, and refusing would break the local and
+mock paths that genuinely cost nothing. The report carries
+`"budget": "unpriceable"`. Read that field, not `costUsd`, to know whether a limit was in force.
 
 <Aside type="caution" title="An empty graph passes every coverage gate">
   Coverage over zero documents is vacuously 100%. A misconfigured `inputs` glob therefore produces
@@ -85,8 +85,8 @@ dockg stats --format json
 ```
 
 <Aside type="caution" title="`-f` on `export` means something else entirely">
-  On `export`, `-f/--format` selects the **export format** — `jsonld`, `iirds`, or `search` — not
-  the rendering. There is no `pretty`/`json` choice on `export`.
+  On `export`, `-f/--format` selects the **export format**, one of `jsonld`, `iirds`, or
+  `search`, rather than the rendering. There is no `pretty`/`json` choice on `export`.
 </Aside>
 
 ## stdout, stderr, and color

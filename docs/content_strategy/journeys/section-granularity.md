@@ -46,31 +46,32 @@ A forty-page document tagged as one node is a lie about most of its content. Thi
 fix, and it comes from a principle worth stating before the mechanics: **content granularity must
 match node granularity.** Every node should index exactly the text it owns, and no more.
 
-The reader arrives already believing this — it is a standing complaint in their profession — so
-the page does not need to argue for it. It needs to show the mechanism and be exact about three
+The reader arrives already believing this, since it is a standing complaint in their profession.
+The page does not need to argue for it. It needs to show the mechanism and be exact about three
 rules that are easy to get wrong.
 
 ## The three rules
 
 1. **The map is keyed by heading slug.** Keys are GitHub-style slugs of the heading text, which
    means the key is derived from prose the writer may edit without thinking about metadata.
-2. **Nothing is inherited.** Section metadata is explicit-only: a section does not pick up the
-   document's `applies-to` or `type`. This surprises people, and it is the right default —
-   inherited applicability would silently re-create the document-level lie at section level. Say
-   it early, in bold, before the examples.
+2. **Nothing is inherited.** Section metadata is explicit-only, so a section does not pick up
+   the document's `applies-to` or `type`. This surprises people, and it is still the right
+   default. Inherited applicability would silently re-create the document-level lie at section
+   level. Say it early, in bold, before the examples.
 3. **Not every key is meaningful per section.** `label` and the SKOS hierarchy are document
-   concerns; a section carries typing, applicability, subjects, and their negative forms. The
-   reference page should mark the boundary rather than leaving it to be inferred from an example.
+   concerns. A section carries typing, applicability, subjects, and their negative forms. The
+   reference page should mark the boundary rather than leaving it to be inferred from an
+   example.
 
 ## The failure mode that defines the journey
 
 Someone renames a heading. The slug changes. The `kg.sections` key now matches nothing, and the
 metadata that was protecting that section silently stops applying.
 
-dockg reports this as `dockg:brokenSectionRef` rather than ignoring it — which is the entire
-reason section metadata is safe to rely on. That link between "keys are derived from editable
-prose" and "so the tool tells you when they stop matching" should be made explicitly on the page,
-because it is the answer to the objection this reader will raise.
+dockg reports this as `dockg:brokenSectionRef` rather than ignoring it. That is the entire
+reason section metadata is safe to rely on. Make the link between "keys are derived from editable
+prose" and "so the tool tells you when they stop matching" explicit on the page. It is the answer
+to the objection this reader will raise.
 
 ## Design note
 

@@ -25,6 +25,13 @@ import { createTrace, type QueryTrace, type ScopeExclusion } from "./trace.js";
 
 const DCTERMS_TITLE = `${NS.dcterms}title`;
 const DCTERMS_REFERENCES = `${NS.dcterms}references`;
+const DCTERMS_LANGUAGE = `${NS.dcterms}language`;
+
+/** A section IRI's document, or the IRI itself when it has no fragment. */
+function documentOf(iri: string): string {
+  const hash = iri.indexOf("#");
+  return hash === -1 ? iri : iri.slice(0, hash);
+}
 
 export type Direction = "out" | "in" | "both";
 
@@ -33,6 +40,12 @@ export interface ScopeFilter {
   variant?: string;
   /** Software subject: an IRI or a `kg.about-product-aspect` value (e.g. "architecture"). */
   subject?: string;
+  /**
+   * BCP-47 tag (ADR 01037). Matched exactly against `dcterms:language`, with no
+   * fallback: `de-AT` is not `de`, because relatedness between locales is an
+   * inference and this runtime does not infer.
+   */
+  language?: string;
 }
 
 export interface TraverseOptions extends ScopeFilter {
@@ -115,27 +128,47 @@ export function resolveSubject(
 export function scopeExclusion(
   graph: GraphIndex,
   iri: string,
-  scope: { variantIri?: string; subjectIri?: string },
+  scope: { variantIri?: string; subjectIri?: string; language?: string },
 ): ScopeExclusion | undefined {
-  const checks: Array<[string | undefined, string, string]> = [
+  // [target, positive predicate, negative predicate, object kind]. Language
+  // joins the same table with two differences, both deliberate: its objects are
+  // literals, and it has **no negative predicate** — a document has one
+  // language (`sh:maxCount 1`), so "not in German" is not a claim an author
+  // makes and there is nothing for a `dockg:not*` term to express (ADR 01037).
+  const checks: Array<
+    [string | undefined, string, string | undefined, "iri" | "literal"]
+  > = [
     [
       scope.variantIri,
       IIRDS_RELATES_TO_PRODUCT_VARIANT,
       DOCKG_NOT_APPLICABLE_TO_VARIANT,
+      "iri",
     ],
-    [scope.subjectIri, IIRDS_HAS_SUBJECT, DOCKG_NOT_SOFTWARE_SUBJECT],
+    [scope.subjectIri, IIRDS_HAS_SUBJECT, DOCKG_NOT_SOFTWARE_SUBJECT, "iri"],
+    [scope.language, DCTERMS_LANGUAGE, undefined, "literal"],
   ];
-  for (const [target, positive, negative] of checks) {
+  for (const [target, positive, negative, kind] of checks) {
     if (!target) continue;
-    const denied = graph
-      .values(iri, negative)
-      .some((v) => v.kind === "iri" && v.value === target);
-    if (denied) return { node: iri, rule: negative, value: target };
+    if (negative !== undefined) {
+      const denied = graph
+        .values(iri, negative)
+        .some((v) => v.kind === kind && v.value === target);
+      if (denied) return { node: iri, rule: negative, value: target };
+    }
 
-    const claimed = graph.values(iri, positive);
+    // Language is the one dimension a section inherits. Applicability is
+    // explicit-only by ADR 01013 — a section may legitimately scope itself
+    // differently from its document — but a section's *text* is in its
+    // document's language and cannot differ, and the per-locale indexes file it
+    // that way (`partitionByLanguage`). Without this a link with an anchor
+    // reaches a section directly (derive.ts mints section IRIs as
+    // `dcterms:references` targets) and carries English prose past a `de`
+    // filter that excluded the document it belongs to.
+    const subject = positive === DCTERMS_LANGUAGE ? documentOf(iri) : iri;
+    const claimed = graph.values(subject, positive);
     if (claimed.length > 0) {
       const matches = claimed.some(
-        (v) => v.kind === "iri" && v.value === target,
+        (v) => v.kind === kind && v.value === target,
       );
       if (!matches) return { node: iri, rule: positive, value: target };
     }
@@ -162,7 +195,9 @@ export function traverse(
   const subjectIri = options.subject
     ? resolveSubject(graph, options.subject)
     : undefined;
-  const scope = { variantIri, subjectIri };
+  // Language needs no resolution step: the filter value and the graph value are
+  // both BCP-47 tags, matched exactly.
+  const scope = { variantIri, subjectIri, language: options.language };
 
   const excluded = new Set<string>();
   const keep = (iri: string): boolean => {
@@ -191,8 +226,16 @@ export function traverse(
     if (!alreadySeeded.has(seed)) {
       trace.entry.push({ iri: seed, score: 1, via: "explicit" });
     }
-    if (!keep(seed)) continue;
-    nodes.push({ iri: seed, depth: 0 });
+    // A seed always expands, even when the scope filter excludes it. The
+    // filter governs what the walk *reaches*, not where the caller chose to
+    // start — and the canonical query is exactly this shape: from an English
+    // page, `--impact --lang de` asks what German content a change here
+    // affects. Gating the seed made that return nothing at all, because the
+    // seed excluded itself before the frontier was ever populated.
+    //
+    // It is still kept out of the results and recorded in the trace, so the
+    // answer honors the filter even though the walk started outside it.
+    if (keep(seed)) nodes.push({ iri: seed, depth: 0 });
     frontier.push(seed);
   }
 
@@ -271,14 +314,17 @@ export function impact(
     seeds: [iri],
     direction: "in",
     depth: options.depth ?? 3,
-    // The seed occupies a slot in the walker's limit but is dropped below, so
-    // ask for one more: `limit` means "this many *affected* nodes". (A seed the
-    // scope filter excludes never enters the walker's set, and then traversal
-    // stops at the empty frontier, so this cannot over-return.)
+    // The seed *may* occupy a slot in the walker's limit, so ask for one more:
+    // `limit` means "this many *affected* nodes". Whether it actually takes
+    // one depends on the scope filter — a seed the filter excludes still
+    // expands but is not in `nodes` — so the slack is trimmed below rather
+    // than assumed spent.
     limit: options.limit === undefined ? undefined : options.limit + 1,
   });
+  const affected = result.nodes.filter((n) => n.iri !== iri);
   return {
-    nodes: result.nodes.filter((n) => n.iri !== iri),
+    nodes:
+      options.limit === undefined ? affected : affected.slice(0, options.limit),
     trace: result.trace,
   };
 }

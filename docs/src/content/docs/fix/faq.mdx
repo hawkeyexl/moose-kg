@@ -1,6 +1,6 @@
 ---
 title: FAQ
-description: Answers to the questions a blocked contributor asks that are not schema failures — whose fault a failure is, why a check passed locally, and what to do when the offending page is not yours.
+description: Answers to the questions a blocked contributor asks that are not schema failures. Whose fault a failure is, why a check passed locally, and what to do when the offending page is not yours.
 ---
 
 import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
@@ -10,9 +10,9 @@ people ask when a check goes red.
 
 ## The error names a file I did not touch. Is it mine?
 
-Possibly not. Graph-level findings — `broader` cycles, `related`/`broader` conflicts — are properties
-of several documents together, and no single file is wrong on its own. Your page may just be the one
-that closed the loop.
+Possibly not. Graph-level findings such as `broader` cycles and `related`/`broader` conflicts are
+properties of several documents together, and no single file is wrong on its own. Your page may
+just be the one that closed the loop.
 
 The bracketed list at the end of the finding names every document involved:
 
@@ -31,8 +31,8 @@ The usual causes, in order of likelihood:
 - **Your branch and CI disagree about the config.** Check whether `dockg.config.yaml` changed on the
   base branch.
 - **You ran `stats` without `--check`.** Plain `stats` never fails, however bad the numbers are.
-- **You ran `validate` but CI runs `check` too.** They catch different things — per-file frontmatter
-  versus the assembled graph.
+- **You ran `validate` but CI runs `check` too.** They catch different things: per-file
+  frontmatter versus the assembled graph.
 
 ## It fails locally but passes in CI
 
@@ -62,7 +62,7 @@ chasing the difference.
 `validate` checks each file's frontmatter against a JSON Schema. `check` validates the **assembled
 graph** against SHACL.
 
-A cycle spanning three documents is invisible to `validate` by construction — every file is
+A cycle spanning three documents is invisible to `validate` by construction, because every file is
 individually valid. That is why both exist. See [which gate catches what](/dockg/govern/).
 
 ## The job is red but I only see warnings
@@ -72,7 +72,7 @@ Then the warnings are not why. Warnings exit `0` and never gate; only `sh:Violat
 
 ## What does exit code 2 mean?
 
-That dockg could not run properly at all — a missing file, an unreadable config, a broken
+That dockg could not run properly at all. Think a missing file, an unreadable config, or a broken
 environment. Nothing you write in your page will fix it.
 
 ```
@@ -80,14 +80,14 @@ dockg: Graph not found: kg/graph.ttl — run `dockg build` first.
 dockg: No input files matched: docs/**/*.md (cwd: /repo/docs)
 ```
 
-Hand it back to whoever owns the pipeline, and say it exited `2` — it is a distinction the tool makes
-deliberately.
+Hand it back to whoever owns the pipeline, and say it exited `2`. That is a distinction the tool
+makes deliberately.
 
 ## Can I just add the field to make it pass?
 
-For a missing `title` or `description`, yes — write a real one.
+For a missing `title` or `description`, yes. Write a real one.
 
-For anything describing meaning — `type`, `applies-to`, `label` — no. A guessed value is
+For anything describing meaning, such as `type`, `applies-to`, or `label`, no. A guessed value is
 worse than a missing one, because absence is
 [recorded as unknown](/dockg/concepts/open-world/) while a wrong value is recorded as fact. If you do
 not know the right value, ask whoever owns the vocabulary.
@@ -99,8 +99,8 @@ not know the right value, ask whoever owns the vocabulary.
 
 ## My page has no frontmatter at all. Is that allowed?
 
-Yes. A document with no frontmatter still becomes a node — dockg derives headings, links, images, and
-code from the body. It simply contributes nothing to metadata coverage.
+Yes. A document with no frontmatter still becomes a node, because dockg derives headings, links,
+images, and code from the body. It simply contributes nothing to metadata coverage.
 
 Whether your repo *requires* frontmatter is a separate policy question, set by
 [coverage thresholds](/dockg/govern/coverage/).
@@ -122,13 +122,13 @@ matching:
 
 ## Two documents use the same concept spelled differently. Which wins?
 
-Neither — they converge on one node, because concept IRIs come from the slugified label. dockg
+Neither. They converge on one node, because concept IRIs come from the slugified label. dockg
 reports it as a **warning** so you can settle on a spelling; it does not fail the build.
 
 ## Does dockg check my prose?
 
 No. It reads frontmatter, headings, links, tags, images, and code-fence languages. Your sentences
-never enter the graph — see [an index, not a corpus](/dockg/concepts/index-not-corpus/).
+never enter the graph. See [an index, not a corpus](/dockg/concepts/index-not-corpus/).
 
 ## Where do I go next?
 

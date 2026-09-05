@@ -1,6 +1,6 @@
 ---
 title: Prove provenance
-description: Answer who wrote a document, when, what it was derived from, and which model proposed which field — with PROV-O assertions that regenerate identically, plus an honest account of what the evidence does not prove.
+description: Answer who wrote a document, when, what it was derived from, and which model proposed which field, with PROV-O assertions that regenerate identically, plus an honest account of what the evidence does not prove.
 ---
 
 import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
@@ -18,7 +18,7 @@ makes the output **evidence**.
 
 A report that changes between runs over unchanged inputs cannot be submitted. One that does not can
 be regenerated in front of the person asking, from inputs they can see. dockg emits no wall-clock
-time, no blank nodes, and no unordered output precisely so that this holds — see
+time, no blank nodes, and no unordered output precisely so that this holds. See
 [determinism](/dockg/concepts/determinism/).
 
 ## What is derived, and from where
@@ -43,23 +43,24 @@ provenance:
 | Value | Behavior |
 |---|---|
 | `auto` (default) | Derive from git where possible; warn on stderr and continue when not |
-| `true` | Require git — exit `2` if history is unreadable |
+| `true` | Require git, exiting `2` if history is unreadable |
 | `false` | Never shell out to git |
 
 <Aside type="caution" title="`auto` produces a successful build with missing evidence">
   A build in a shallow clone, an exported archive, or a container without git history warns and
-  **still exits 0**. If provenance is an obligation rather than a nicety, set `provenance.git: true`
-  so a missing history fails the build instead of quietly producing a thinner graph.
+  **still exits 0**. If provenance is an obligation rather than a nicety, set
+  `provenance.git: true`. A missing history then fails the build instead of quietly producing a
+  thinner graph.
 
-  This is also why two builds of the same corpus — one with git, one without — are not
+  This is also why two builds of the same corpus, one with git and one without, are not
   byte-identical. Determinism holds for a fixed set of inputs, and git history is an input.
 </Aside>
 
 ## Qualified attribution, and why it is not just a name
 
-A `dcterms:creator` string answers "whose name is on this". It does not distinguish the person who
-wrote a document from the tool that generated it from the model that proposed one of its fields —
-and that distinction is exactly what an AI-authorship question is asking about.
+A `dcterms:creator` string answers "whose name is on this". It does not separate the person who
+wrote a document, the tool that generated it, and the model that proposed one of its fields. That
+distinction is exactly what an AI-authorship question is asking about.
 
 With `provenance.qualified: true` (the default), dockg emits attribution and association nodes
 carrying **roles**, so the graph separates:
@@ -68,8 +69,8 @@ carrying **roles**, so the graph separates:
 - a **software agent** that generated, via `dockg:generatorRole`
 - the **tool** that built the graph, via `dockg:toolRole`
 
-Agent IRIs are segmented by kind — `agent/person/…`, `agent/software/…`, `agent/org/…` — so a
-person and a tool that happen to share a name never collide into one node.
+Agent IRIs are segmented by kind, as `agent/person/…`, `agent/software/…`, and `agent/org/…`. So
+a person and a tool that happen to share a name never collide into one node.
 
 ## The machine-authorship record
 
@@ -86,9 +87,9 @@ kg:
         type: 0.81
 ```
 
-**Humans delete entries as they review them.** The block is an outstanding-review queue rather than
-a permanent ledger, which is the framing worth carrying into an audit conversation: the presence of
-an entry means "a machine proposed this and nobody has checked it yet."
+**Humans delete entries as they review them.** The block is an outstanding-review queue rather
+than a permanent ledger. That framing is worth carrying into an audit conversation. The presence
+of an entry means "a machine proposed this and nobody has checked it yet."
 
 Fields union across runs, and one model's entries are preserved when another model runs.
 
@@ -102,7 +103,7 @@ dockg traverse "https://docs.example.com/kg/doc/docs/api-keys.md" --predicates p
 dockg query -p prov:wasAttributedTo --format json > attribution.json
 ```
 
-For an impact question — what a change to this document affects — walk inbound edges:
+For an impact question, meaning what a change to this document affects, walk inbound edges:
 
 ```sh
 dockg traverse "https://docs.example.com/kg/doc/docs/api-keys.md" --impact
@@ -112,10 +113,10 @@ dockg traverse "https://docs.example.com/kg/doc/docs/api-keys.md" --impact
 
 Worth stating plainly, because overclaiming here is worse than underclaiming.
 
-dockg records what your files and git history **assert**. It does not verify that the named author
-wrote the text, it cannot tell a `kg.provenance` entry deleted after careful review from one
-deleted to clear a warning, and a document with no author simply has no attribution rather than an
-anonymous one.
+dockg records what your files and git history **assert**. It does not verify that the named
+author wrote the text. It cannot tell a `kg.provenance` entry deleted after careful review from
+one deleted to clear a warning. And a document with no author simply has no attribution rather
+than an anonymous one.
 
 The mechanism supports an audit. It does not replace one.
 
