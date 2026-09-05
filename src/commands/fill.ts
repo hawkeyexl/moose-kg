@@ -332,7 +332,12 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
   // no non-null assertion and cannot fire on an unpriceable run.
   const enforcedCap = budget === "enforced" ? maxCostUsd : null;
 
-  const allPaths = new Set(files);
+  // The whole discovered corpus, not the fillable subset. These two are
+  // different questions: `files` is what may be *written*, while link
+  // resolution asks what *exists*. Narrowing this to `files` would classify a
+  // Markdown link to a skipped `./b.html` as broken, so the prompt would
+  // describe the document's links differently from the way `build` does.
+  const allPaths = new Set(discovered);
   const results: FillDocResult[] = [];
   let costUsd = 0;
 
