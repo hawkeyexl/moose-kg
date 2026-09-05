@@ -266,3 +266,60 @@ describe("HTML metadata", () => {
     expect(doc.links).toHaveLength(1);
   });
 });
+
+describe("explicit ids reach the graph intact", () => {
+  /**
+   * `derive` matches a link's anchor against a section's slug with `===`, and
+   * the anchor is carried verbatim. So an id that gets re-slugged can never be
+   * matched: the reference silently degrades from a section edge to a document
+   * edge, and `stats` reports nothing broken because nothing *is* broken —
+   * only imprecise. That defeats the reason ids are preferred over titles.
+   */
+  it("preserves case and dots, which the slugger would strip", async () => {
+    const doc = await analyzeDoc(
+      html(`<h2 id="Install.SDK">Install</h2><h2 id="GUID-A1B2-C3D4">Two</h2>`),
+      "docs/a.html",
+      NO_PATHS,
+    );
+    // Not "installsdk" / "guid-a1b2-c3d4". GUID ids are the standard DITA
+    // authoring convention, and mixed-case anchors are ordinary in HTML.
+    expect(doc.sections.map((s) => s.slug)).toEqual([
+      "Install.SDK",
+      "GUID-A1B2-C3D4",
+    ]);
+  });
+
+  it("matches an anchor written exactly as the id", async () => {
+    const doc = await analyzeDoc(
+      html(`<a href="./b.html#Install.SDK">go</a>`),
+      "docs/a.html",
+      new Set(["docs/a.html", "docs/b.html"]),
+    );
+    const target = await analyzeDoc(
+      html(`<h2 id="Install.SDK">Install</h2>`),
+      "docs/b.html",
+      new Set(["docs/a.html", "docs/b.html"]),
+    );
+    expect(doc.links[0]!.anchor).toBe(target.sections[0]!.slug);
+  });
+
+  it("still disambiguates a repeated explicit id", async () => {
+    const doc = await analyzeDoc(
+      html(`<h2 id="GUID-1">A</h2><h2 id="GUID-1">B</h2>`),
+      "docs/a.html",
+      NO_PATHS,
+    );
+    expect(doc.sections.map((s) => s.slug)).toEqual(["GUID-1", "GUID-1-1"]);
+  });
+
+  it("falls back to slugging an id an IRI cannot carry", async () => {
+    // `mintSectionIri` does not percent-encode, so an id with a space would
+    // emit Turtle that does not parse. Losing the match is the lesser harm.
+    const doc = await analyzeDoc(
+      html(`<h2 id="has space">A</h2><h2 id="café">B</h2>`),
+      "docs/a.html",
+      NO_PATHS,
+    );
+    expect(doc.sections.map((s) => s.slug)).toEqual(["has-space", "café"]);
+  });
+});

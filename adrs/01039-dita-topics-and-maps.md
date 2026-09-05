@@ -65,6 +65,14 @@ is right for both forms: a bare `#install` addresses the root topic, whose secti
 own `@id`. The link's `raw` value stays what the author wrote — a broken-link report naming a
 target that appears nowhere in the source is unactionable.
 
+**Scheme-bearing targets are exempt.** `topicid/elementid` describes fragments *inside a DITA
+topic*, and applying it to every href — as this first did — corrupts external URLs whose
+fragment merely happens to contain a slash:
+`<xref href="https://example.com/docs#section/subsection" scope="external">` emitted
+`dcterms:references <https://example.com/docs#subsection>`, a plausible IRI pointing at a
+different anchor on a real site. That is a wrong assertion rather than a missing one, the
+direction [ADR 01022](01022-parse-mdx-and-derive-from-jsx-attributes.md) rules out.
+
 **3b — a map is links with no sections.** A map contains no prose, so giving it sections would
 assert content that does not exist, and every one of those section nodes would index no text.
 Option 3a was rejected because the map *is* the corpus's navigation structure, which is precisely

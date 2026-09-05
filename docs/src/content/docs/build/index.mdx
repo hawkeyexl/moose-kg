@@ -195,6 +195,11 @@ starting point, not a failing grade.
   because a link elsewhere in your corpus targets the id, so slugging the title would mint a
   section IRI nothing points at.
 
+  The id is used **exactly as written** — `id="GUID-A1B2-C3D4"` becomes `…#GUID-A1B2-C3D4`, case
+  and dots intact — because that is what your links say. (An id holding a space or a non-ASCII
+  character is slugged instead, since a section IRI is not percent-encoded and would otherwise
+  emit Turtle that does not parse.)
+
   A heading's own permalink (`<a class="headerlink" href="#install">¶</a>`) is dropped from its
   text. A link from a heading to itself carries nothing; a link from a heading to anywhere else is
   kept.

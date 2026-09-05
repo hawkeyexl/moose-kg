@@ -63,6 +63,21 @@ heading is not that section's title, and letting it claim the same id would coll
 sections onto one IRI. Explicit ids still pass through the same disambiguator as slugs, because
 nothing guarantees a document's ids are unique.
 
+**An explicit id is preserved verbatim, case and dots included.** This is the whole point and it
+was got wrong first time round: the id was handed to the slugger, which lowercases and strips
+punctuation, so `id="Install.SDK"` became `installsdk` while a link to `#Install.SDK` kept its
+anchor verbatim. `derive` matches the two with `===`, so the reference silently degraded from a
+section edge to a document edge — and `stats` reported nothing broken, because nothing *was*
+broken, only imprecise. Re-slugging the id reintroduces exactly the failure that preferring the
+id over the title was meant to remove.
+
+The exception is IRI safety. `mintSectionIri` does not percent-encode — it has always relied on
+the slug already being safe — so an id is preserved only when it is made of characters an IRI
+fragment accepts unchanged, which is the XML NCName charset plus `:`. That covers what HTML,
+DITA and AsciiDoc actually put in an `id`. Anything stranger (a space, a quote, non-ASCII) still
+falls back to slugging: losing the match is the lesser harm against emitting Turtle that does
+not parse.
+
 **2b — `href` is read from `<a>` and `<area>` only.** This is a deliberate divergence from ADR
 01022, and the reasoning that ADR gave is what justifies it. Over-reading was accepted there
 because a spurious edge from an unusual `href` is *occasional*, visible, and correctable. In

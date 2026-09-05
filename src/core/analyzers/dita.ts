@@ -40,7 +40,7 @@ import {
   parseXml,
   type XmlElement,
 } from "./dita-dom.js";
-import { classifyImage, classifyLink } from "./links.js";
+import { classifyImage, classifyLink, hasScheme } from "./links.js";
 import { SectionBuilder } from "./sections.js";
 import type { AnalyzedBody, AnalyzeContext, DocAnalyzer } from "./types.js";
 
@@ -49,8 +49,16 @@ import type { AnalyzedBody, AnalyzeContext, DocAnalyzer } from "./types.js";
  * IRIs are `doc#slug` where the slug is that element's own id, so the last
  * fragment segment is the anchor — which is right for both forms: `#install`
  * addresses the root topic, `#install/prereq` addresses the section inside it.
+ *
+ * **Scheme-bearing targets are left alone.** The `topicid/elementid`
+ * convention describes fragments *inside a DITA topic*; an external URL's
+ * fragment is an opaque anchor that may happen to contain a slash. Rewriting
+ * `https://example.com/docs#section/subsection` to `#subsection` emits an edge
+ * pointing at a different place on a real site — a wrong IRI rather than a
+ * missing one.
  */
 function normalizeDitaHref(href: string): string {
+  if (hasScheme(href)) return href;
   const hash = href.indexOf("#");
   if (hash < 0) return href;
   const path = href.slice(0, hash);

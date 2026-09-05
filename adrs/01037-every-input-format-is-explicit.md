@@ -101,12 +101,22 @@ closes.
 
 **`writable` is separate from `implemented`.** dockg's frontmatter writer re-serializes a YAML
 fence and *creates* one when a file has none, which on a format with no frontmatter is a
-corruption rather than an edit. `dockg fill` therefore checks the whole corpus for unwritable
-formats immediately after discovery — before the graph guard analyzes anything and long before a
-provider is constructed — because the answer is a property of the inputs, not of one document,
-and fields that could never be applied are not worth paying for. Note this is a dockg
-limitation, not a docmeta one: every docmeta extractor exposes `apply`, so writing metadata into
-HTML or AsciiDoc is available later without a new dependency.
+corruption rather than an edit. `dockg fill` therefore drops unwritable files immediately after
+discovery — before the graph guard analyzes anything and long before a provider is constructed —
+since fields that could never be applied are not worth paying for.
+
+**Dropped, not fatal.** This decision originally refused the whole run, reasoning that
+writability "is a property of the inputs, not of one document". That was wrong about the inputs.
+A corpus of `docs/**/*.md` plus `docs/**/*.html` is ordinary — sources beside published output —
+and aborting over the HTML left every fillable Markdown file unfilled. Worse, the remedy it
+pushed the reader toward (narrow the globs) changes the corpus the graph guard sees, weakening
+the cross-document cycle checks that guard exists for. So unwritable files are skipped and named
+in a report warning, and only a corpus with *nothing* writable in it is an error — because then
+there is genuinely no work to do. The warning is required, not cosmetic: a run that filled two
+of five files must not read as a run that filled everything.
+
+Note this is a dockg limitation, not a docmeta one: every docmeta extractor exposes `apply`, so
+writing metadata into HTML or AsciiDoc is available later without a new dependency.
 
 ### Consequences
 

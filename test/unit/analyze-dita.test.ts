@@ -219,3 +219,37 @@ describe("DITA maps", () => {
     expect(doc.frontmatter.title).toBe("SDK documentation");
   });
 });
+
+describe("DITA hrefs that are not DITA", () => {
+  it("leaves an external URL's fragment alone", async () => {
+    // `topicid/elementid` describes fragments *inside a DITA topic*. An
+    // external URL's fragment is an opaque anchor that may happen to contain a
+    // slash, and rewriting it emits an edge pointing at a different place on a
+    // real site — a wrong IRI rather than a missing one.
+    const doc = await analyzeDoc(
+      `<topic id="a"><title>A</title><body>
+         <p><xref href="https://example.com/docs#section/subsection" scope="external">e</xref></p>
+       </body></topic>`,
+      "docs/a.dita",
+      NO_PATHS,
+    );
+    expect(doc.links).toEqual([
+      {
+        raw: "https://example.com/docs#section/subsection",
+        kind: "external",
+        url: "https://example.com/docs#section/subsection",
+      },
+    ]);
+  });
+
+  it("still normalizes a DITA-internal fragment", async () => {
+    const doc = await analyzeDoc(
+      `<topic id="a"><title>A</title><body>
+         <p><xref href="configuration.dita#configuration/keys">k</xref></p>
+       </body></topic>`,
+      "docs/a.dita",
+      CORPUS,
+    );
+    expect(doc.links[0]).toMatchObject({ anchor: "keys" });
+  });
+});

@@ -13,6 +13,7 @@ import { analyzerForExtension } from "../core/analyzers/index.js";
 import { loadConfig, type FillField } from "../core/config.js";
 import type { DocModel } from "../types.js";
 import { discoverFiles } from "../core/discover.js";
+import { byCodeUnit } from "../core/sort.js";
 import {
   applyKgFields,
   existingKgFields,
@@ -202,32 +203,46 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
   const inputs =
     opts.globs && opts.globs.length > 0 ? opts.globs : config.inputs;
 
-  const files = discoverFiles(inputs, config.exclude, cwd);
-  if (files.length === 0) {
+  const discovered = discoverFiles(inputs, config.exclude, cwd);
+  if (discovered.length === 0) {
     throw new DockgError(
       `No input files matched: ${inputs.join(", ")} (cwd: ${cwd})`,
     );
   }
 
-  // A format dockg cannot write is refused before any work happens — before
-  // the corpus is analyzed and long before a provider is reached. The writer
-  // re-serializes a YAML frontmatter fence and *creates* one when a file has
-  // none, which on a format that has no frontmatter is a corruption rather
-  // than an edit (ADR 01037); proposing fields that could never be applied is
-  // not worth paying for. Checked over the whole corpus, like `validate`,
-  // because the answer is a property of the inputs, not of one document.
-  const unwritable = files.filter((f) => {
+  // Files in a format dockg cannot write are dropped before any work happens —
+  // before the corpus is analyzed and long before a provider is reached. The
+  // writer re-serializes a YAML frontmatter fence and *creates* one when a file
+  // has none, which on a format that has no frontmatter is a corruption rather
+  // than an edit (ADR 01037), and proposing fields that could never be applied
+  // is not worth paying for.
+  //
+  // Skipped, not fatal: a corpus of `docs/**/*.md` plus `docs/**/*.html` is
+  // perfectly ordinary, and aborting the run over the HTML would leave every
+  // fillable Markdown file unfilled. Only a corpus with *nothing* writable in
+  // it is an error, because then there is no work to do at all.
+  const unwritableFormats = new Map<string, string[]>();
+  const files = discovered.filter((f) => {
     const analyzer = analyzerForExtension(extname(f).toLowerCase());
-    return analyzer !== undefined && !analyzer.writable;
+    if (analyzer === undefined || analyzer.writable) return true;
+    const named = unwritableFormats.get(analyzer.name) ?? [];
+    named.push(f);
+    unwritableFormats.set(analyzer.name, named);
+    return false;
   });
-  if (unwritable.length > 0) {
-    const shown = unwritable.slice(0, 5).join(", ");
+  // Grouped by format, so the message names the format each file actually is
+  // rather than attributing every skipped file to whichever came first.
+  const skipped = [...unwritableFormats.entries()]
+    .sort(([a], [b]) => byCodeUnit(a, b))
+    .map(([name, paths]) => {
+      const shown = paths.slice(0, 5).join(", ");
+      return `${name}: ${shown}${paths.length > 5 ? ", …" : ""}`;
+    });
+  if (files.length === 0) {
     throw new DockgError(
-      `dockg cannot write metadata into ${
-        analyzerForExtension(extname(unwritable[0]!).toLowerCase())!.name
-      } files: ${shown}${
-        unwritable.length > 5 ? ", …" : ""
-      } — narrow your inputs globs, or add this metadata by hand.`,
+      `dockg cannot write metadata into any of the matched files (${skipped.join(
+        "; ",
+      )}) — narrow your inputs globs, or add this metadata by hand.`,
     );
   }
 
@@ -303,6 +318,14 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
             `so spend cannot be totalled. Set fill.pricing to enforce it, or fill.maxCostUsd: null if you meant no cap.`,
         ]
       : [];
+  // Skipping has to be visible, or a run that silently filled two of five
+  // files reads as a run that filled everything.
+  if (skipped.length > 0) {
+    warnings.push(
+      `Skipped ${discovered.length - files.length} file(s) in formats dockg cannot write ` +
+        `(${skipped.join("; ")}) — add this metadata by hand, or narrow your inputs globs.`,
+    );
+  }
   /** Set when section fields were written but could not be recorded. */
   let sectionsUnrecorded = false;
   // Null unless the cap is both set and applicable, so the gate below needs
