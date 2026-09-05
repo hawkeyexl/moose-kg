@@ -48,31 +48,31 @@ per file.
 
 A translated docset arrives at dockg as a pile of Markdown that happens to sit in different
 directories. Nothing in the graph says which language a page is in unless somebody wrote
-`lang:` in its frontmatter, and nothing at all says that `docs/de/install.md` is the German of
+`lang:` in its frontmatter. Nothing at all says that `docs/de/install.md` is the German of
 `docs/en/install.md`. Both facts are obvious to a human reading the paths and invisible to
 every consumer.
 
 The cost lands in two places this docset already promises to serve. Retrieval blends locales,
-which is the edge contamination `cuj-scope-by-variant` exists to prevent on the other axis —
-except a wrong-language answer is obvious to the reader in a way a wrong-variant answer is not.
-And coverage reports one blended number across every locale, so a corpus at 100% English and 0%
-German reads as roughly half-done and names neither audience.
+which is the edge contamination `cuj-scope-by-variant` exists to prevent on the other axis.
+A wrong-language answer is obvious to the reader in a way a wrong-variant answer is not.
+Coverage also reports one blended number across every locale. A corpus at 100% English and 0%
+German then reads as roughly half-done, and names neither audience.
 
 ## Why two personas
 
 This is a **specify-and-implement** journey of the same shape as `cuj-audit-provenance`.
 
-Ines owns the model: whether a locale is a scope dimension, what the tag vocabulary is, and
-which relation carries a translation. Priya owns the declaration: `routes[]` is config, it
-already maps directories, and adding `language` to a route is the difference between one line
+Ines owns the model. That covers whether a locale is a scope dimension, what the tag vocabulary
+is, and which relation carries a translation. Priya owns the declaration. `routes[]` is config
+and already maps directories, so adding `language` to a route is the difference between one line
 per locale and one line per file.
 
-The page has to work for both at once. It states the emitted triples — the pair Ines has to
-review against the vocabulary she governs — and the route block Priya pastes into
-`dockg.config.yaml`, rather than only one.
+The page has to work for both at once. It states the emitted triples, the pair Ines has to
+review against the vocabulary she governs. It also gives the route block Priya pastes into
+`dockg.config.yaml`, rather than only one of the two.
 
 ## Where it stops
 
-The journey ends at a labelled, linked graph. Retrieval that *uses* the label — a
-language-scoped traversal, per-locale search and vector indexes — belongs to
-`cuj-serve-retrieval`, and the model has to exist before it can be filtered on.
+The journey ends at a labelled, linked graph. Retrieval that *uses* the label belongs to
+`cuj-serve-retrieval`, meaning a language-scoped traversal plus per-locale search and vector
+indexes. The model has to exist before it can be filtered on.

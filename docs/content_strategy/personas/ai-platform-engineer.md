@@ -46,11 +46,11 @@ The engineer who has to make retrieval correct over documentation they cannot ch
 ## Who they are
 
 Kwame owns an assistant or search product built on the company's documentation. Vector search is
-already in place and mostly works. The failures that remain are the expensive kind: the system
+already in place and mostly works. The failures that remain are the expensive kind. The system
 returns a passage that is genuinely similar and belongs to a different product, and the model
 produces a confident, wrong, correctly-cited answer.
 
-They have already tried reranking. It did not fix it, because ranking is not the problem — the
+They have already tried reranking. It did not fix it, because ranking is not the problem. The
 wrong chunk really is close in embedding space. What they need is a *filter with a hard
 boundary*, applied before similarity is considered.
 
@@ -69,11 +69,11 @@ standardized it.
 
 dockg's value to Kwame **scales with metadata someone else has to add.** A corpus with no
 `applies-to` values cannot be filtered by variant, no matter how good the runtime is. This is
-uncomfortable and it belongs on their first page rather than at integration time — otherwise
+uncomfortable, and it belongs on their first page rather than at integration time. Otherwise
 they build the integration, get no lift, and conclude the tool does not work.
 
-The honest framing: dockg gives them a deterministic scoping and citation layer *to the extent
-the corpus is typed*, plus the tooling to find out how typed it actually is
+The honest framing is that dockg gives them a deterministic scoping and citation layer *to the
+extent the corpus is typed*. It also gives them the tooling to find out how typed it actually is
 (`dockg stats` coverage) and to argue for more.
 
 ## What wins them

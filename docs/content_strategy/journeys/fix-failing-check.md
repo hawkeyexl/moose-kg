@@ -54,22 +54,22 @@ above", no assumed installation, no assumed config knowledge, and no assumption 
 knows what dockg is. Every other track can assume arrival from the top; this one cannot.
 
 **Success is a short visit.** The reader leaving quickly is the goal, not a failure of
-engagement. The temptation to route them into the concepts track should be resisted — one link
-out, at the bottom, is enough.
+engagement. Resist the temptation to route them into the concepts track. One link out, at the
+bottom, is enough.
 
 ## What they need, in order of how fast it helps
 
 1. **Error-line anatomy.** Which part is the file, which is the field, which is the rule that
    fired. A part-by-part table does more here than any amount of prose.
 2. **Whose fault is it.** Exit 1 means a finding in their page. Exit 2 means the pipeline is
-   broken and they should hand it back rather than debug it. Getting this wrong costs an
-   escalation in both directions, and it is the single highest-leverage sentence on the page.
+   broken, so they should hand it back rather than debug it. Getting this wrong costs
+   an escalation either way, so it is the most important sentence here.
 3. **A catalog of common failures**, each with the fix shown as a diff on frontmatter. This
-   reader scans for the shape that matches theirs and copies it — so the catalog should be
-   organized by what the error *looks like*, not by which subsystem produced it.
-4. **Reproduce locally, or don't.** One command if it is genuinely one command; an honest
-   statement that setting up locally is slower than pushing a fix if that is the truth. Pretending
-   local reproduction is easy when it is not wastes the visit.
+   reader scans for the shape that matches theirs and copies it. So organize the catalog by what
+   the error *looks like*, not by which subsystem produced it.
+4. **Reproduce locally, or don't.** One command if it is genuinely one command. Otherwise an
+   honest statement that setting up locally is slower than pushing a fix. Pretending local
+   reproduction is easy when it is not wastes the visit.
 
 ## The failures this catalog has to cover
 
@@ -77,7 +77,7 @@ Drawn from what dockg actually emits, not from what seems likely:
 
 - A required frontmatter field missing, or the wrong type.
 - A `kg` relationship field used without `label`, which the schema requires as its subject.
-- A value outside a closed vocabulary — `type`, `about-product-lifecycle`, `about-product-aspect`.
+- A value outside a closed vocabulary, meaning `type`, `about-product-lifecycle`, or `about-product-aspect`.
 - A `kg.sections` key matching no heading, usually because someone renamed the heading.
 - A `broader`/`narrower` cycle, or a `related` conflict, introduced by one page in a chain.
 - An `applies-to` and `not-applicable-to` contradiction on the same node.
@@ -90,7 +90,7 @@ page" and "this is not your problem."
 
 ## Design note
 
-The graph-level findings — cycles, conflicts — are the hard case for this persona, because the
+The graph-level findings, cycles and conflicts, are the hard case for this persona. The
 violation may be *caused* by a page they did not touch. The catalog entry has to say so and give
 them somewhere to escalate, rather than implying their page is wrong.
 

@@ -1,6 +1,6 @@
 ---
 title: dockg
-description: Derive a deterministic RDF knowledge graph from the documentation you already have — frontmatter, headings, links, and tags — and keep it in git beside the docs it describes.
+description: Derive a deterministic RDF knowledge graph from the documentation you already have, meaning frontmatter, headings, links, and tags, and keep it in git beside the docs it describes.
 template: splash
 hero:
   tagline: Deterministic knowledge graphs derived from documentation you already wrote. No authoring step, no second system of record.
@@ -86,7 +86,7 @@ Coverage (documents):
 <CardGrid>
   <Card title="dockg reads" icon="approve-check">
     Frontmatter fields, heading structure, internal and external links, tags, images, and
-    code-fence languages — plus git history, if you let it. It turns those into typed nodes
+    code-fence languages, plus git history if you let it. It turns those into typed nodes
     and edges with stable IRIs.
   </Card>
   <Card title="dockg does not read" icon="close">
@@ -97,7 +97,7 @@ Coverage (documents):
 
 <Aside type="note" title="An index, not a corpus">
   This is the one idea worth ten minutes up front. The graph exists to route, filter, audit,
-  and attribute — not to store text for retrieval. If you open `graph.ttl` looking for your
+  and attribute, not to store text for retrieval. If you open `graph.ttl` looking for your
   sentences and do not find them, that is the design working.
   [Read why](/dockg/concepts/index-not-corpus/).
 </Aside>

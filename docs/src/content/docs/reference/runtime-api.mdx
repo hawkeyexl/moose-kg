@@ -1,6 +1,6 @@
 ---
 title: Runtime API
-description: The exports, types, and return shapes of dockg/runtime — the browser-native, retrieval-only query surface that returns context, citations, and a trace and then stops.
+description: The exports, types, and return shapes of dockg/runtime, the browser-native, retrieval-only query surface that returns context, citations, and a trace and then stops.
 ---
 
 import { Aside } from '@astrojs/starlight/components';
@@ -24,11 +24,11 @@ import { GraphIndex, findEntry, traverse, assemble } from "@hawkeyexl/dockg/runt
 | `compactIri`, `expandTerm` | CURIE ⇄ IRI, using the emitted prefix table |
 | `splitFragment` | Split a section IRI into document IRI and heading slug |
 
-## Entry: what matched the query
+## Entry, or what matched the query
 
 | Export | Purpose |
 |---|---|
-| `parseLocalizations` | Read `localizations.json` — which languages exist, and their artifacts |
+| `parseLocalizations` | Read `localizations.json`, naming which languages exist and their artifacts |
 | `searchIndexFilename`, `vectorIndexFilename`, `LOCALIZATIONS_FILENAME`, `UNDETERMINED` | The per-locale naming rules |
 | `createLexicalIndex` | Build the lexical index from one `search.<lang>.json` |
 | `createVectorIndex`, `decodeVectorIndex`, `encodeVectorIndex` | The vector sidecar |
@@ -36,7 +36,7 @@ import { GraphIndex, findEntry, traverse, assemble } from "@hawkeyexl/dockg/runt
 | `rrfMerge` | Reciprocal-rank fusion of the lexical and vector rankings |
 | `searchIndexDigest` | The corpus digest that makes a stale sidecar detectable |
 
-Fetch the manifest first, then load only the localization you need — see
+Fetch the manifest first, then load only the localization you need. See
 [localization](/dockg/model/localization/).
 
 ```ts
@@ -47,10 +47,10 @@ interface EntryRankings {
 }
 ```
 
-All three are returned rather than only the fused one: retrieval answers both "what matched?" and
+All three are returned rather than only the fused one. Retrieval answers both "what matched?" and
 "what is the graph connected to it?", and a consumer usually needs both.
 
-## Traverse: what the graph connects
+## Traverse, or what the graph connects
 
 ```ts
 interface TraverseOptions {
@@ -70,7 +70,7 @@ interface TraverseOptions {
 | Export | Purpose |
 |---|---|
 | `traverse` | Walk from seeds, honoring scope |
-| `impact` | Transitive inbound reach — what a change here affects |
+| `impact` | Transitive inbound reach, meaning what a change here affects |
 | `reverseReferences` | Direct inbound `dcterms:references` |
 | `reachedNodes` | Every node the trace records as reached |
 | `resolveVariant`, `resolveSubject` | Resolve a filter input to its IRI |
@@ -83,18 +83,18 @@ one fired:
 |---|---|---|
 | explicitly denies the target (`dockg:notApplicableToVariant`, `dockg:notSoftwareSubject`) | excluded | the `dockg:not*` predicate |
 | declares a set that omits the target | excluded | the positive predicate |
-| declares nothing | **kept** — unscoped content applies broadly | — |
+| declares nothing | **kept**, since unscoped content applies broadly | none |
 
-The explicit-negative check is what distinguishes "this does not apply here" from "this says
-nothing", which is why `trace.exclusions` names the predicate rather than just the node
-(ADR 01014). `language` has no negative predicate — a document has one language, so there is
-nothing for a `dockg:not*` term to say — and a section takes its document's language, though not
+The explicit-negative check distinguishes "this does not apply here" from "this says
+nothing". That is why `trace.exclusions` names the predicate rather than just the node
+(ADR 01014). `language` has no negative predicate. A document has one language, so there is
+nothing for a `dockg:not*` term to say. A section takes its document's language, though not
 its applicability. See [localization](/dockg/model/localization/).
 
-**Seeds are exempt.** The filter governs what a walk *reaches*, not where it starts: a seed always
+**Seeds are exempt.** The filter governs what a walk *reaches*, not where it starts. A seed always
 expands, and is merely kept out of the results (and recorded in `exclusions`) if it fails the
-filter. Otherwise `impact(enPage, { language: "de" })` — what German content does a change here
-affect — would return nothing at all.
+filter. Otherwise `impact(enPage, { language: "de" })`, asking what German content a change here
+affects, would return nothing at all.
 
 <Aside type="caution" title="`includeTypeEdges` almost always stays false">
   Every document shares `dockg:Document`, so following `rdf:type` makes every document reachable
@@ -102,7 +102,7 @@ affect — would return nothing at all.
   graph-governed retrieval exists to prevent.
 </Aside>
 
-## Assemble: the bundle
+## Assemble the bundle
 
 ```ts
 interface RetrievalBundle {
@@ -131,7 +131,7 @@ type RefusalReason = "no-route" | "no-content";
 | `documentSectionOrder`, `sectionOccurrence`, `sectionOccurrences` | Section ordering and duplicate-heading disambiguation |
 
 **A refusal is a result, not an exception.** When nothing usable is found you get `refusal` with a
-reason and an empty `context` — never a plausible-looking empty answer.
+reason and an empty `context`, never a plausible-looking empty answer.
 
 ## Trace
 
@@ -146,9 +146,9 @@ interface QueryTrace {
 
 `createTrace()` starts one; pass it through `traverse` and `assemble` to accumulate.
 
-Every returned node must be explainable by a recorded event — a traversal's results are a subset of
-`reachedNodes(trace)`. That is a contract rather than a convention, which is what makes the trace
-usable as a reviewer-facing artifact instead of debug output.
+Every returned node must be explainable by a recorded event. A traversal's results are a subset
+of `reachedNodes(trace)`. That is a contract rather than a convention, which is what makes the
+trace usable as a reviewer-facing artifact instead of debug output.
 
 **Assert on `trace.exclusions`.** The value of a scope filter is what it removed; a traversal
 returning plausible results while dropping nothing is indistinguishable from an unfiltered one.

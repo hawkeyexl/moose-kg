@@ -1,6 +1,6 @@
 ---
 title: Granularity
-description: A node should index exactly the text it owns and no more — so metadata on a long document that covers several variants is false for part of that document, and dockg lets you push it down to the heading level.
+description: A node should index exactly the text it owns and no more. Metadata on a long document that covers several variants is false for part of that document, so dockg lets you push it down to the heading level.
 ---
 
 import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
@@ -8,8 +8,8 @@ import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
 A forty-page document tagged with one topic type and one product variant is telling the truth
 about a fraction of itself.
 
-The rule dockg is built around: **content granularity must match node granularity.** Every node
-should index exactly the text it owns.
+The rule dockg is built around is this. **Content granularity must match node granularity.** Every
+node should index exactly the text it owns.
 
 ## Why document-level tagging breaks down
 
@@ -38,7 +38,7 @@ GitHub-style slug:
 ```
 
 That fragment is not decorative. It resolves to an exact span on disk, so *route with the graph,
-then read the text* works at section resolution — you narrow to the heading that matters and open
+then read the text* works at section resolution. You narrow to the heading that matters and open
 the file at it, rather than handing a reader a whole document.
 
 You attach metadata to those sections with a slug-keyed map:
@@ -60,14 +60,14 @@ kg:
 
 <Aside type="caution" title="Sections inherit nothing">
   Section metadata is explicit-only. A section does not pick up the document's `applies-to` or
-  `type`, and that is deliberate — inherited applicability would silently recreate the
+  `type`, and that is deliberate. Inherited applicability would silently recreate the
   document-level lie one level down, which is the exact problem sections exist to solve.
 </Aside>
 
 ## The keys are derived from prose, so they can drift
 
 Section keys are slugs of heading text. Heading text is prose, and writers edit prose without
-thinking about metadata. Rename a heading and its key matches nothing — and the metadata that was
+thinking about metadata. Rename a heading and its key matches nothing. The metadata that was
 scoping that section silently stops applying.
 
 dockg reports it rather than ignoring it:

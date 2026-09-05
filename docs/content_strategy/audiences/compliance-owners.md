@@ -30,8 +30,8 @@ The person who has to answer an auditor, using documentation someone else wrote.
 ## What they own
 
 The obligation, not the pipeline. They are accountable for the documentation being complete,
-attributable, and internally consistent — and they usually cannot write a CLI invocation to
-prove it. Today the evidence is assembled by hand: git blame, a spreadsheet of which topics
+attributable, and internally consistent. They usually cannot write a CLI invocation to
+prove it. Today the evidence is assembled by hand, from git blame, a spreadsheet of which topics
 cover which variant, and a meeting.
 
 They bring regulatory context and evidence standards. They do **not** bring CLI comfort. They
@@ -45,12 +45,12 @@ Four questions, answered without a manual audit:
    gives a real answer rather than a git log they must interpret.
 2. **Which parts were machine-generated?** As soon as AI-assisted authoring enters a regulated
    corpus, "did a human write this?" becomes a finding. dockg's `kg.provenance` block records
-   which model proposed which fields at what confidence, per model, and humans delete entries as
-   they review them — so the block itself is the review queue.
+   which model proposed which fields at what confidence, per model. Humans delete entries as
+   they review them, so the block itself is the review queue.
 3. **Is every variant covered?** Coverage thresholds per field, gated by `stats --check`,
    convert a spreadsheet into a build failure.
-4. **Does anything contradict itself?** A topic claiming both "applies to X" and "does not apply
-   to X" is exactly the defect an audit finds and a human reviewer does not. SHACL disjointness
+4. **Does anything contradict itself?** A topic claiming both "applies to X" and "does not
+   apply to X" is the defect an audit finds and a human reviewer misses. SHACL disjointness
    catches it every build.
 
 ## Why determinism matters more to them than to anyone else
@@ -64,9 +64,9 @@ because it is not obvious from the outside that a docs tool would care.
 ## What makes them hard to serve
 
 They are the audience least able to act on what they read. Every journey they have ends in
-someone else running something — so their pages have to be written so they can be *handed to*
-an engineer, and their success criteria have to be phrased as artifacts to receive rather than
-commands to run. A page that assumes this reader will open a terminal has misjudged them.
+someone else running something. So their pages have to be written to be *handed to* an engineer.
+Their success criteria have to be phrased as artifacts to receive rather than commands to
+run. A page that assumes this reader will open a terminal has misjudged them.
 
 ## Where the docset serves them
 

@@ -4,7 +4,7 @@ date: 2026-07-21
 decision-makers: [hawkeyexl, Claude]
 ---
 
-# Revision chains: declared kg.revisionOf plus git-rename derivation
+# Revision chains from declared kg.revisionOf plus git-rename derivation
 
 ## Context and Problem Statement
 
@@ -28,8 +28,8 @@ single-snapshot graph where old versions may no longer exist as files?
 ## Decision Outcome
 
 Chosen option 3. `kg.revisionOf` (schema 0.3) resolves exactly like
-`kg.derivedFrom` — doc-relative, then repo-relative, then URL; unresolvable
-entries surface as `dockg:brokenLink` — via one shared helper
+`kg.derivedFrom`, meaning doc-relative, then repo-relative, then URL.
+Unresolvable entries surface as `dockg:brokenLink`. One shared helper does both
 (`provTargetEdge`/`resolveProvDocPath` in src/core/derive.ts). Under
 `provenance.git`, each rename hop old→new additionally emits
 `<newDoc> prov:wasRevisionOf <{base}doc/{oldPath}>` and types the
@@ -38,11 +38,12 @@ as non-deterministic.
 
 ### Consequences
 
-- Good: works with or without git; multi-hop rename chains produce one edge
-  per hop; broken declarations feed `stats` like broken links do.
-- Bad: rename detection rides git's `-M` similarity heuristic — best-effort,
-  documented as such; historical-path IRIs name entities that no longer exist
-  as files (intentional: they are PROV entities, not documents).
+- Good. Works with or without git, multi-hop rename chains produce one edge
+  per hop, and broken declarations feed `stats` like broken links do.
+- Bad. Rename detection rides git's `-M` similarity heuristic, which is
+  best-effort and documented as such. Historical-path IRIs also name entities
+  that no longer exist as files, intentionally, since they are PROV entities
+  rather than documents.
 
 ### Confirmation
 
@@ -51,8 +52,8 @@ schema 0.3 acceptance tests in test/integration/validate.test.ts.
 
 ## Pros and Cons of the Options
 
-- **Declared only** — explicit but misses the history git already knows.
-- **Git only** — free facts but no way to declare cross-file succession.
-- **Both** (chosen) — full coverage; slight risk of duplicate edges when an
-  author declares what git also derives (harmless: quads dedupe).
-- **Similarity inference** — rejected; non-deterministic and unexplainable.
+- **Declared only.** Explicit, but it misses the history git already knows.
+- **Git only.** Free facts, but no way to declare cross-file succession.
+- **Both** (chosen). Full coverage, with a slight risk of duplicate edges when
+  an author declares what git also derives. That is harmless, since quads dedupe.
+- **Similarity inference.** Rejected as non-deterministic and unexplainable.

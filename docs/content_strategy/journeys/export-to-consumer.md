@@ -62,16 +62,16 @@ want the same thing.
    command it selects output rendering. This will bite someone, and it costs one sentence to
    prevent.
 3. **What each format carries and what it drops.** A projection is lossy by definition, and
-   projection warnings go to stderr without failing the run — so a reader who does not check
+   projection warnings go to stderr without failing the run. A reader who does not check
    stderr will not know something was dropped. That is worth an explicit callout.
-4. **Determinism across formats.** JSON-LD is emitted by a hand-rolled deterministic serializer,
-   and the iiRDS package is a deterministic zip, precisely so exports diff and can be pinned. For
-   Kwame this means cacheable artifacts; for Ines it means a package that can be resubmitted
-   identically.
+4. **Determinism across formats.** JSON-LD comes from a hand-rolled deterministic serializer,
+   and the iiRDS package is a deterministic zip. That is precisely so exports diff and can be
+   pinned. For Kwame this means cacheable artifacts. For Ines it means a package that can be
+   resubmitted identically.
 
 ## The iiRDS licensing note
 
-iiRDS is CC BY-ND. dockg only *references* published IRIs — it never vendors, re-serializes, or
+iiRDS is CC BY-ND. dockg only *references* published IRIs. It never vendors, re-serializes, or
 modifies the vocabulary, and the IRIs in the source are byte-verified against the consortium's
 published models.
 
@@ -82,11 +82,11 @@ users inherit.
 
 ## Design note
 
-Package-only terms exist — the iiRDS package's `metadata.rdf` carries classes and properties that
+Package-only terms exist. The iiRDS package's `metadata.rdf` carries classes and properties that
 never appear in the built graph. A reader comparing the export to the Turtle will notice the
-difference and should find it explained rather than have to work it out.
+difference, and should find it explained rather than have to work it out.
 
 ## Where it goes next
 
-Back to [`cuj-serve-retrieval`](serve-retrieval.md) if the destination turns out to be dockg's own
-runtime after all, which is the common discovery for a reader who arrived wanting JSON-LD.
+Back to [`cuj-serve-retrieval`](serve-retrieval.md) if the destination turns out to be dockg's
+own runtime after all. That is the common discovery for a reader who arrived wanting JSON-LD.

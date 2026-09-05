@@ -1,6 +1,6 @@
 ---
 title: Section-level metadata
-description: Attach topic types and applicability to the heading that owns the text using a slug-keyed kg.sections map — where nothing is inherited from the document and a renamed heading is reported rather than silently ignored.
+description: Attach topic types and applicability to the heading that owns the text using a slug-keyed kg.sections map. Nothing is inherited from the document, and a renamed heading is reported rather than silently ignored.
 ---
 
 import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
@@ -8,7 +8,7 @@ import { Aside, CardGrid, LinkCard } from '@astrojs/starlight/components';
 A document that covers three product variants cannot be truthfully tagged with any one of them.
 Section metadata is how you stop lying about two thirds of a page.
 
-The principle behind it: [node granularity must match content
+The principle behind it is that [node granularity must match content
 granularity](/dockg/concepts/granularity/).
 
 ## The map
@@ -44,7 +44,7 @@ exact span on disk:
 https://docs.example.com/kg/doc/docs/maintenance.md#reset-the-interlock
 ```
 
-Sections are derived whether or not you add metadata — the `sections` derive source emits a node
+Sections are derived whether or not you add metadata. The `sections` derive source emits a node
 per heading with its level and sibling order regardless. The `kg.sections` map only adds meaning
 to nodes that already exist.
 
@@ -62,9 +62,9 @@ The SKOS keys are absent deliberately: `label` establishes what a *document* is 
 about, and a concept hierarchy hanging off a heading is not a meaningful claim.
 
 <Aside type="caution" title="Sections inherit nothing">
-  A section does not pick up the document's `type` or `applies-to`. This surprises people and
-  it is the right default — inherited applicability would silently recreate the document-level lie
-  one level down, which is the exact problem sections exist to solve.
+  A section does not pick up the document's `type` or `applies-to`. This surprises people, and it
+  is still the right default. Inherited applicability would silently recreate the document-level
+  lie one level down, which is the exact problem sections exist to solve.
 
   If a section genuinely shares the document's scope, either state it again or leave the document
   tag to cover it. Do not expect the two to combine.
@@ -83,8 +83,8 @@ Broken section refs (1):
 ```
 
 That single behavior is what makes section metadata safe to rely on. Without it, section scoping
-would be a system that degrades quietly every time somebody improves a heading — and the
-degradation would be invisible until a scoped query returned the wrong set.
+would degrade quietly every time somebody improves a heading. The degradation would be invisible
+until a scoped query returned the wrong set.
 
 It is also gated: `dockg stats --check` exits `1` on a broken section ref, so a renamed heading
 fails its own pull request.
@@ -99,7 +99,7 @@ dockg query -s "https://docs.example.com/kg/doc/docs/maintenance.md#reset-the-in
 dockg traverse "https://docs.example.com/kg/doc/docs/maintenance.md" --variant SP-X100 --depth 2
 ```
 
-The second is the one that matters: a variant-scoped traversal over a section-annotated document
+The second is the one that matters. A variant-scoped traversal over a section-annotated document
 should return the sections that apply, not the whole document.
 
 ## Use it where scope actually varies
@@ -113,12 +113,12 @@ already lying.
 
 ## Backfilling sections
 
-Writing a `sections` block per page by hand does not scale past a small corpus, and
-[`dockg stats`](/dockg/govern/coverage/) will tell you exactly how far behind you are — the section
+Writing a `sections` block per page by hand does not scale past a small corpus.
+[`dockg stats`](/dockg/govern/coverage/) will tell you exactly how far behind you are. The section
 coverage table starts at 0% on any corpus that has not adopted this.
 
 `dockg fill --sections` (or `fill.sections: true`) asks the model for per-section metadata alongside
-the document's, in the same call. It is **opt-in**, for two reasons: it costs more output per
+the document's, in the same call. It is **opt-in** for two reasons. It costs more output per
 document, and section metadata carries the same review obligation as anything else a model writes.
 
 ```sh
@@ -135,7 +135,7 @@ Two behaviors worth knowing before you run it:
 - **Preservation is per field, per section.** A value you set on one section is never overwritten
   without `--force`, and that does not stop the section beside it from being filled.
 
-The confidence gate applies exactly as it does to document fields — a section field scored below
+The confidence gate applies exactly as it does to document fields. A section field scored below
 `fill.minConfidence` is reported and not written.
 
 ## Where to go next

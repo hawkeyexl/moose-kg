@@ -31,6 +31,13 @@ jobs:
           node-version: 24
           cache: npm
 
+      # Same engine floor as ci.yml: engines.npm is >=11.6.3 with engine-strict,
+      # so a runner image below it fails `npm ci` with EBADENGINE and nothing in
+      # the log says why. The floor does not ride on the Node floor, because Node
+      # 24.11.0 satisfies >=24 and bundles npm 11.6.1 (ADR 01040).
+      - name: Enforce the npm engines floor
+        run: npm install -g npm@^11.6.3
+
       - run: npm ci
       - run: npm run build
 
@@ -73,7 +80,7 @@ jobs:
       # The docs site is its own npm project, so the published dockg package never
       # carries a docs toolchain. Still `npm install` where the root job uses
       # `npm ci`: the root lock was verified against a strict install when that
-      # switch was made (ADR 01023) and docs/package-lock.json was not, so this
+      # switch was made (ADR 01040) and docs/package-lock.json was not, so this
       # one stays loose until someone checks it the same way.
       - run: npm install
         working-directory: docs

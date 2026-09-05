@@ -39,13 +39,13 @@ filesystem instead.
 
 ## The journey
 
-This journey is **discovered, not sought.** Nobody sets out to configure route mappings; they
+This journey is **discovered, not sought.** Nobody sets out to configure route mappings. They
 run `stats`, see a broken-link count that contradicts what they know about their site, and go
 looking for the reason. The entry point is therefore the broken-links section of the `build`
-track, and that section has to hand off clearly or the reader concludes dockg's link detection
+track. That section has to hand off clearly, or the reader concludes dockg's link detection
 is simply wrong.
 
-The underlying situation is ordinary: a page written as `[find](/docs/actions/find)` publishes
+The underlying situation is ordinary. A page written as `[find](/docs/actions/find)` publishes
 correctly because the site generator knows `/docs/actions/find` maps to
 `src/content/docs/actions/find.mdx`. dockg does not know that until it is told. Once it is,
 those links become real graph edges and the impact and reference questions start working.
@@ -55,25 +55,25 @@ those links become real graph edges and the impact and reference questions start
 1. **The diagnosis.** A broken-link report whose entries look correct on the live site means
    the corpus links by route and dockg is resolving by path. Naming that pattern is most of the
    fix.
-2. **The mapping model** — `basePath` is where the site serves from, `root` is the repo
-   directory it serves, plus the extension and index-file rules that make `/docs/actions/find`
-   and `/docs/actions/` both land somewhere.
+2. **The mapping model.** `basePath` is where the site serves from and `root` is the repo
+   directory it serves. Then come the extension and index-file rules that make
+   `/docs/actions/find` and `/docs/actions/` both land somewhere.
 3. **A worked example matching their generator.** This is the step that actually gets done or
-   not; an abstract description of the four keys will strand them.
+   not. An abstract description of the four keys will strand them.
 4. **Verification by delta.** Re-run `stats`, watch the count drop, then inspect one specific
    edge to confirm it points where they expect rather than trusting the number.
 
 ## Design notes
 
 - **The remaining broken links are the valuable output.** After mapping, what is left is
-  genuinely broken, and that is the feature — this journey converts noise into a signal Priya
+  genuinely broken, and that is the feature. This journey converts noise into a signal Priya
   can act on. The page should end by framing it that way, not by celebrating zero.
-- **Multiple route entries are normal**, not an edge case: a docs section and a blog often
+- **Multiple route entries are normal**, not an edge case. A docs section and a blog often
   publish under different base paths from different roots.
 - Route configuration is corpus-defining, so it is config-only with no CLI override. Worth
   stating, since Priya will look for a flag.
 
 ## Where it goes next
 
-[`cuj-gate-metadata-in-ci`](gate-metadata-in-ci.md) — a broken-link count is only useful once
-something fails when it rises.
+[`cuj-gate-metadata-in-ci`](gate-metadata-in-ci.md), since a broken-link count is only useful
+once something fails when it rises.

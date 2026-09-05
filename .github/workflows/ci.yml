@@ -42,7 +42,7 @@ jobs:
         run: npm install -g npm@^11.6.3
 
       # `npm ci`, restored: the "platform-skewed lock" this used to work around
-      # was a misdiagnosis (ADR 01023). The lock records all fourteen rolldown
+      # was a misdiagnosis (ADR 01040). The lock records all fourteen rolldown
       # bindings with their os/cpu, Linux included, and rolldown no longer ships
       # a wasm32-wasi binding at all — so the @emnapi/* peers it once reached are
       # not in the tree. The real variable was npm's own version: <=11.6.2
@@ -229,7 +229,7 @@ jobs:
         run: npm install -g npm@^11.6.3
 
       # `npm ci`, matching build-test. This job predates the switch back to it
-      # (ADR 01023) and merged in still carrying `npm install`, which would have
+      # (ADR 01040) and merged in still carrying `npm install`, which would have
       # left the two jobs installing differently — one against the lockfile, one
       # free to resolve around it.
       - run: npm ci

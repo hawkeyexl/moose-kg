@@ -1,6 +1,6 @@
 ---
 title: Library API
-description: The Node-side package entry — every command available as a function, plus the IRI minting, derivation, emitter, and config primitives, for building dockg into a pipeline instead of shelling out to the CLI.
+description: The Node-side package entry. Every command is available as a function, alongside the IRI minting, derivation, emitter, and config primitives, for building dockg into a pipeline instead of shelling out to the CLI.
 ---
 
 import { Aside } from '@astrojs/starlight/components';
@@ -37,9 +37,9 @@ printing. Paths resolve against `opts.cwd`, defaulting to `process.cwd()`.
 | `runEmbed` | `dockg embed` | Vector count, dimensions, cache hits |
 | `runExport` | `dockg export` | Node count and the output path |
 
-Renderers for the pretty output are exported alongside them — `renderEmbed`, `renderSearch`,
-`renderTraverse`, and their siblings — if you want the CLI's formatting without its process
-handling.
+Renderers for the pretty output are exported alongside them, namely `renderEmbed`,
+`renderSearch`, `renderTraverse`, and their siblings. Use them if you want the CLI's formatting
+without its process handling.
 
 ```ts
 import { runBuild, runCheck } from "@hawkeyexl/dockg";
@@ -53,7 +53,7 @@ if (violations.length) process.exitCode = 1;
 
 <Aside type="caution" title="Errors are thrown, not exit codes">
   The functions throw `DockgError` where the CLI would exit `2`. The `0`/`1`/`2` mapping lives in
-  `src/cli.ts`, not in these functions — so a wrapper decides for itself what a finding means. See
+  `src/cli.ts`, not in these functions, so a wrapper decides for itself what a finding means. See
   [output & exit codes](/dockg/reference/output-and-exit-codes/).
 </Aside>
 
@@ -93,7 +93,7 @@ by consumers.
 
 | Export | Produces |
 |---|---|
-| `emitTurtle` | Canonically sorted Turtle — the determinism contract |
+| `emitTurtle` | Canonically sorted Turtle, the determinism contract |
 | `emitJsonLd` | Deterministic JSON-LD |
 | `emitRdfXml` | RDF/XML for the iiRDS package's `metadata.rdf` |
 | `emitSearchIndex`, `buildSearchIndex` | The lexical index |
@@ -109,7 +109,7 @@ by consumers.
 ## Vocabulary constants
 
 `NS`, `PREFIXES`, `TOPIC_TYPE_IRIS`, `SOFTWARE_LIFECYCLE_IRIS`, `SOFTWARE_SUBJECT_IRIS`,
-`DOCKG_NOT_APPLICABLE_TO_VARIANT`, `DOCKG_NOT_SOFTWARE_SUBJECT` — the same values the emitter uses.
+`DOCKG_NOT_APPLICABLE_TO_VARIANT`, and `DOCKG_NOT_SOFTWARE_SUBJECT`, the same values the emitter uses.
 See [emitted vocabulary](/dockg/reference/vocabulary/).
 
 ## Testing against the LLM path

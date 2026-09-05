@@ -25,9 +25,9 @@ reaches each.
 
 ## What a CUJ is here
 
-A complete outcome a persona can reach using dockg and its documentation — not a feature, not a
-page, and not a command. A journey is done when the persona has the result they came for, which
-is why several journeys end in a verification step rather than a final command.
+A complete outcome a persona can reach using dockg and its documentation. Not a feature, not a
+page, and not a command. A journey is done when the persona has the result they came for. That is
+why several journeys end in a verification step rather than a final command.
 
 Journeys are named from the persona's mouth, in their words rather than the product's.
 
@@ -65,23 +65,23 @@ this one fails nothing downstream is reachable. `cuj-fix-failing-check` is the *
 it is the destination of every error message dockg emits, and every gate the other personas
 install generates visits to it.
 
-They fail in opposite ways. The first fails by demanding too much before returning value — an
-RDF explanation before a build. The second fails by assuming context that a reader arriving from
-a CI log does not have.
+They fail in opposite ways. The first fails by demanding too much before returning value, such
+as an RDF explanation before a build. The second fails by assuming context that a reader arriving
+from a CI log does not have.
 
 ## The specify-and-implement pattern
 
 Four journeys have two personas because one specifies and another executes:
 
-- [`cuj-audit-provenance`](audit-provenance.md) and [`cuj-prove-coverage`](prove-coverage.md) —
+- [`cuj-audit-provenance`](audit-provenance.md) and [`cuj-prove-coverage`](prove-coverage.md).
   Renata states the obligation, Priya wires the gate.
-- [`cuj-backfill-metadata`](backfill-metadata.md) — Priya runs `fill`, Ines decides whether the
+- [`cuj-backfill-metadata`](backfill-metadata.md). Priya runs `fill`, Ines decides whether the
   proposals are acceptable against the governed vocabulary.
-- [`cuj-localize-a-docset`](localize-a-docset.md) — Ines settles the locale model, Priya declares
+- [`cuj-localize-a-docset`](localize-a-docset.md). Ines settles the locale model, Priya declares
   it once per route rather than once per file.
 
-Pages serving these journeys have to work for both readers at once: the requirement stated so it
-can be forwarded, and the mechanism stated so it can be implemented. In practice that means
+Pages serving these journeys have to work for both readers at once. State the requirement so it
+can be forwarded, and the mechanism so it can be implemented. In practice that means
 showing the resulting artifact *and* naming the command that produced it, rather than only one.
 
 ## Route coverage
@@ -89,7 +89,7 @@ showing the resulting artifact *and* naming the command that produced it, rather
 **Every journey is fully backed: all 83 `steps[].doc` entries resolve to a real page.**
 
 That field is the live coverage gate. A step carries `exists: false` and a `[GAP]` note while its
-page is unwritten, and flips to `true` once the route resolves — `scripts/check-content-strategy.mjs`
+page is unwritten, and flips to `true` once the route resolves. `scripts/check-content-strategy.mjs`
 fails the build both ways, so a step cannot claim a page that does not exist *or* keep claiming a
 gap that has been filled.
 

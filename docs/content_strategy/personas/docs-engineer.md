@@ -51,14 +51,15 @@ The person who owns the docs pipeline, and gets paged when it breaks.
 ## Who they are
 
 Priya maintains a documentation site of a few hundred pages that lives in a git repo and
-deploys on merge. They wrote the CI workflow, they chose the site generator, and they are the
+deploys on merge. They wrote the CI workflow and chose the site generator. They are the
 only person on the team who knows how the whole thing fits together. Content comes from a dozen
 contributors; the pipeline comes from Priya.
 
-They have tried to improve metadata before. Usually it went: agree on a set of frontmatter
-fields, document them, watch compliance decay over two quarters because nothing enforced it.
-They are receptive to dockg specifically because it reads what is already on disk — but they
-are also *skeptical for the same reason*, having been promised zero-effort metadata before.
+They have tried to improve metadata before. It usually went the same way. Agree on a set of
+frontmatter fields, document them, then watch compliance decay over two quarters because nothing
+enforced it. They are receptive to dockg specifically because it reads what is already on disk.
+They are also *skeptical for the same reason*, having been promised zero-effort metadata
+before.
 
 ## What they bring, and what they do not
 
@@ -69,11 +70,11 @@ phrase "knowledge graph" from marketing and have no working model behind it.
 
 This gap is the docset's central design constraint. Priya can read `dockg build` output and act
 on `dockg stats` without knowing what a triple is, and the on-ramp must let them. Turtle can be
-shown — it is the product — but not required reading to proceed.
+shown, since it is the product, but it is not required reading to proceed.
 
 ## What success looks like for them
 
-A gate in CI that fails a PR when metadata regresses, a graph file that diffs cleanly in review,
+A gate in CI that fails a PR when metadata regresses. A graph file that diffs cleanly in review,
 and a `stats` number that goes up over time. They will consider dockg adopted when someone
 *else* on the team hits the gate and fixes their own page without asking Priya anything.
 

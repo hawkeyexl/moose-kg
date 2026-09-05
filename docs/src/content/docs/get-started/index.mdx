@@ -6,14 +6,14 @@ description: Install dockg, build a graph from a Markdown repo you already have 
 import { Aside, LinkCard, CardGrid, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
 
 You have a documentation repo. By the end of this page you will have a knowledge graph derived
-from it, you will know what each part of that graph came from, and you will have proved the
+from it. You will know what each part of that graph came from, and you will have proved the
 build is reproducible.
 
 You do not need to know RDF to finish this page.
 
 ## Before you start
 
-You need Node 24 or newer and a repo with Markdown files in it. That is the whole list — dockg
+You need Node 24 or newer and a repo with Markdown files in it. That is the whole list. dockg
 reads what is already on disk, so there is nothing to annotate first and no config file to
 write yet.
 
@@ -65,7 +65,7 @@ write yet.
 
 2. **Open the file.**
 
-   It is Turtle — a text serialization of RDF. Skim it; you do not need to parse it. What you
+   It is Turtle, a text serialization of RDF. Skim it; you do not need to parse it. What you
    are looking for is that every line traces back to something you wrote:
 
    ```turtle
@@ -103,7 +103,7 @@ dockg build --out a.ttl && dockg build --out b.ttl && diff a.ttl b.ttl
 ```
 
 No output means no difference. There is no timestamp in the file, no random ordering, and no
-blank nodes — which is what makes `graph.ttl` safe to commit and reviewable in a pull request.
+blank nodes. That is what makes `graph.ttl` safe to commit and reviewable in a pull request.
 
 <Aside type="note" title="Where do dates come from, then?">
   Frontmatter first, then git committer times. Never the wall clock. A build running twice a
@@ -163,21 +163,21 @@ Three things worth reacting to:
 
 - **Broken internal links** are links whose target does not exist on disk. If your corpus links
   by published site route rather than by file path, expect a lot of these and see
-  [route mappings](/dockg/build/routes/) — they are a configuration gap, not a corpus defect.
+  [route mappings](/dockg/build/routes/). They are a configuration gap, not a corpus defect.
 - **Broken section refs** are `kg.sections` keys that match no heading, usually because someone
   renamed the heading.
 - **Coverage** is the fraction of documents carrying each field.
 
 <Aside type="tip" title="A low coverage number is the normal starting point">
   Nobody adopts a metadata tool before they have too much documentation. If your first coverage
-  reading is in the single digits, that is a baseline, not a grade — and
-  [backfilling](/dockg/build/backfill/) is a designed path rather than an admission of defeat.
+  reading is in the single digits, that is a baseline, not a grade.
+  [Backfilling](/dockg/build/backfill/) is a designed path rather than an admission of defeat.
 </Aside>
 
 ## What you have now
 
-A deterministic graph derived from documentation you did not have to change, a reading of how
-complete that documentation's metadata is, and a list of links that are actually broken.
+A deterministic graph derived from documentation you did not have to change. A reading of how
+complete that documentation's metadata is. And a list of links that are actually broken.
 
 None of it is enforced yet. Nothing fails when the numbers get worse.
 
