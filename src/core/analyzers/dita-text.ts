@@ -142,10 +142,11 @@ function render(blocks: Block[]): string {
     .join("\n\n");
 }
 
-export async function ditaTextOf(content: string): Promise<DocumentText> {
-  // The path is only used in the parse error, and a document that reached the
-  // index already parsed once during analysis.
-  const blocks = blocksOf(content, "<indexed document>");
+export async function ditaTextOf(
+  content: string,
+  path: string,
+): Promise<DocumentText> {
+  const blocks = blocksOf(content, path);
   return {
     body: render(blocks),
 

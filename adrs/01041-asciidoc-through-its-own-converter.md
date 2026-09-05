@@ -93,6 +93,14 @@ site generators put on `.adoc` files.
 `verify`. That is the anchor a published AsciiDoc site serves and what an xref resolves against.
 A prettier slug would mint a node nothing points at.
 
+**`DocAnalyzer.textOf` takes the document's path.** It was added for this format and initially
+was not: AsciiDoc passed the literal `"<document>"`, so a conversion failure during indexing
+named a placeholder while the identical failure during `build` named the file. Indexing is its
+own command over a whole corpus, so that difference is the difference between a fixable error
+and grepping a thousand files. DITA had the same hole (`"<indexed document>"`), which is where it
+is tested — Asciidoctor recovers from essentially any input, so its own failure branch is not
+reachable without faking one, and a test that mocks its way to a conclusion proves nothing.
+
 ### Consequences
 
 - Good: AsciiDoc derives sections, cross-file xrefs with anchors, images, code languages and

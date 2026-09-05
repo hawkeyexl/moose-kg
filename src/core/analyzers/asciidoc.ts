@@ -104,5 +104,5 @@ export const asciidocAnalyzer: DocAnalyzer = {
   writable: false,
   implemented: true,
   analyze: analyzeAsciidoc,
-  textOf: async (content) => htmlTextOf(await toHtml(content, "<document>")),
+  textOf: async (content, path) => htmlTextOf(await toHtml(content, path)),
 };

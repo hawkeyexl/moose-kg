@@ -14,8 +14,9 @@ const NO_PATHS = new Set<string>();
 
 function textOf(
   content: string,
+  path = "docs/indexed.dita",
 ): ReturnType<NonNullable<ReturnType<typeof analyzerForExtension>>["textOf"]> {
-  return analyzerForExtension(".dita")!.textOf(content);
+  return analyzerForExtension(".dita")!.textOf(content, path);
 }
 
 const TOPIC = `<?xml version="1.0"?>
@@ -87,5 +88,32 @@ describe("DITA section text", () => {
        </body></topic>`,
     );
     expect(text.sectionOwnText("A", 1, 0)).toBe("A\n\nFirst.\nSecond.");
+  });
+});
+
+describe("indexing errors name the document", () => {
+  /**
+   * `textOf` takes the path only so a failure here reads like a failure from
+   * `analyze`. Indexing is its own command over a whole corpus, so an error
+   * naming no file — it used to say `<indexed document>` — leaves the reader
+   * grepping a thousand files for the one that broke. This is reachable in the
+   * ordinary way: a source edited between `dockg build` and
+   * `dockg export --format search`.
+   */
+  it("names the file it was given, not a placeholder", async () => {
+    await expect(
+      textOf(`<topic id="a"><title>A</title>`, "docs/broken.dita"),
+    ).rejects.toThrow(/Could not parse XML in docs\/broken\.dita/);
+  });
+
+  it("reports the same file from analyze and from textOf", async () => {
+    const truncated = `<topic id="a"><title>A</title>`;
+    const fromAnalyze = await analyzeDoc(truncated, "docs/x.dita", NO_PATHS)
+      .then(() => "no error")
+      .catch((e: Error) => e.message);
+    const fromText = await textOf(truncated, "docs/x.dita")
+      .then(() => "no error")
+      .catch((e: Error) => e.message);
+    expect(fromText).toBe(fromAnalyze);
   });
 });

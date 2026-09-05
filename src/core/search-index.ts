@@ -93,7 +93,10 @@ async function textOf(
   path: string,
   source: string,
 ): Promise<DocumentText | undefined> {
-  return analyzerForExtension(extname(path).toLowerCase())?.textOf(source);
+  return analyzerForExtension(extname(path).toLowerCase())?.textOf(
+    source,
+    path,
+  );
 }
 
 /** Drop undefined fields so entries serialize identically for equal inputs. */

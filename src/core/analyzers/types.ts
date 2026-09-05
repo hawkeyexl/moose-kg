@@ -77,6 +77,11 @@ export interface DocAnalyzer {
    * Recover indexable prose from the source. Required of every implemented
    * analyzer: a format that can be built but not sliced would emit a lexical
    * index full of its own markup, which is worse than no index at all.
+   *
+   * `path` is the document's repo-relative path, carried purely so a parse
+   * failure here names the file the way `analyze` does. Indexing runs as its
+   * own command over a whole corpus, so an error naming no file leaves the
+   * reader grepping a thousand documents for the one that broke.
    */
-  textOf(content: string): Promise<DocumentText>;
+  textOf(content: string, path: string): Promise<DocumentText>;
 }

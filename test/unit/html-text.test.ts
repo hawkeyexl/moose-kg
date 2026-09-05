@@ -15,7 +15,7 @@ const NO_PATHS = new Set<string>();
 function textOf(
   content: string,
 ): ReturnType<NonNullable<ReturnType<typeof analyzerForExtension>>["textOf"]> {
-  return analyzerForExtension(".html")!.textOf(content);
+  return analyzerForExtension(".html")!.textOf(content, "docs/indexed.html");
 }
 
 /** The Sphinx shape: the anchor id is on the section, the permalink is in the heading. */
