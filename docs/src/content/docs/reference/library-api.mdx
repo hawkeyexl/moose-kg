@@ -68,7 +68,7 @@ if (violations.length) process.exitCode = 1;
 ## Derivation and graph building
 
 <Aside type="caution" title="`analyzeDoc` and `buildSearchIndex` return promises">
-  Both are `async` as of the AsciiDoc work (ADR 01040) — Asciidoctor's current release has no
+  Both are `async` as of the AsciiDoc work (ADR 01044) — Asciidoctor's current release has no
   synchronous API, and one format needing to await made the seam async for every format.
 
   ```js

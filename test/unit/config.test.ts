@@ -242,7 +242,7 @@ describe("parseConfig", () => {
         root: "docs/pages",
         // Every extension dockg can read, in candidate-precedence order —
         // Markdown ahead of HTML, so a corpus holding both a source and its
-        // build output resolves a pretty URL to the source (ADR 01038).
+        // build output resolves a pretty URL to the source (ADR 01042).
         extensions: [
           ".md",
           ".markdown",

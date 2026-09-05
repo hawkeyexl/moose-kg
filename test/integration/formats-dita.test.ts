@@ -1,5 +1,5 @@
 /**
- * A DITA corpus: two topics and a map (ADR 01039).
+ * A DITA corpus: two topics and a map (ADR 01043).
  *
  * The claims that only an end-to-end run can make: a `#topic/element` fragment
  * reaches the section node dockg minted for that element, a map contributes

@@ -8,7 +8,7 @@ decision-makers: hawkeyexl
 
 ## Context and Problem Statement
 
-AsciiDoc is the last format in the [ADR 01037](01037-every-input-format-is-explicit.md) roadmap
+AsciiDoc is the last format in the [ADR 01041](01041-every-input-format-is-explicit.md) roadmap
 with a real parser behind it. Asciidoctor.js is the only credible one — it is the reference
 implementation compiled to JavaScript, so it agrees with `asciidoctor` the tool by construction
 rather than by approximation.

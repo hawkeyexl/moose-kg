@@ -1,5 +1,5 @@
 /**
- * DITA → indexable text (ADR 01039).
+ * DITA → indexable text (ADR 01043).
  *
  * The regression this file opens with: prose lives in text nodes on *either
  * side* of an inline element, so an element-only walk indexes the link text and

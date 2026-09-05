@@ -1,5 +1,5 @@
 /**
- * DITA topic and map analysis (ADR 01039).
+ * DITA topic and map analysis (ADR 01043).
  *
  * Two analyzers, one parser. A topic has prose and structure; a map has
  * neither — it is a navigation tree of references — so a map derives links and

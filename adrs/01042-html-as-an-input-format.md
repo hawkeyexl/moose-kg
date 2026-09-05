@@ -8,7 +8,7 @@ decision-makers: hawkeyexl
 
 ## Context and Problem Statement
 
-[ADR 01037](01037-every-input-format-is-explicit.md) built the registry and made every
+[ADR 01041](01041-every-input-format-is-explicit.md) built the registry and made every
 unsupported format fail loudly. HTML is the first format to land in it.
 
 HTML is the right one to do first, and not only because it is easy. A large share of the

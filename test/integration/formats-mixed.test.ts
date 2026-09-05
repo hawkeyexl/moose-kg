@@ -1,5 +1,5 @@
 /**
- * A corpus of HTML and Markdown together (ADR 01038).
+ * A corpus of HTML and Markdown together (ADR 01042).
  *
  * The point of this fixture is the *seam*, not either format on its own: a
  * link's meaning must not depend on the syntax that expressed it, so an HTML

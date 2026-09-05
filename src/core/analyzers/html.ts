@@ -1,5 +1,5 @@
 /**
- * HTML body analysis (ADR 01038).
+ * HTML body analysis (ADR 01042).
  *
  * parse5 gives a spec-conformant tree and recovers from malformed markup, so
  * analysis never throws on a real-world page — an important difference from
@@ -70,7 +70,7 @@ export type HtmlBody = Omit<AnalyzedBody, "frontmatter" | "frontmatterPresent">;
  * Derive structure from HTML.
  *
  * Exported because AsciiDoc reaches dockg *as* HTML: Asciidoctor is used as an
- * AsciiDoc-to-HTML front end (ADR 01041), so both formats share one body
+ * AsciiDoc-to-HTML front end (ADR 01045), so both formats share one body
  * extraction rather than two that would drift. Page metadata is the caller's
  * job, because the two formats carry it in completely different places —
  * `<meta>` tags versus `:key:` document attributes.

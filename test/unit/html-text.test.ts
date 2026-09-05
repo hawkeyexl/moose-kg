@@ -1,5 +1,5 @@
 /**
- * HTML → indexable text (ADR 01038).
+ * HTML → indexable text (ADR 01042).
  *
  * The contract that binds this to the analyzer: sections are looked up in the
  * lexical index *by their `dcterms:title`*, so the heading text produced here

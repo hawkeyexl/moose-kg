@@ -1,5 +1,5 @@
 /**
- * `dockg build` refuses input formats it cannot analyze (ADR 01037).
+ * `dockg build` refuses input formats it cannot analyze (ADR 01041).
  *
  * The regression under test is not a crash — it is a *success*. `analyzeDoc`
  * used to parse every extension as Markdown, so an HTML corpus built cleanly,

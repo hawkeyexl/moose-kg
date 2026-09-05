@@ -1,7 +1,7 @@
 /**
  * DITA/XML primitives shared by the analyzer and the text slicer.
  *
- * They must agree for the same reason the HTML pair must (ADR 01038): the
+ * They must agree for the same reason the HTML pair must (ADR 01042): the
  * analyzer writes a section's `dcterms:title`, and the lexical index looks its
  * slice up by that title.
  */

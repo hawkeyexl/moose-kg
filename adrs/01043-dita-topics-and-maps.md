@@ -8,7 +8,7 @@ decision-makers: hawkeyexl
 
 ## Context and Problem Statement
 
-DITA is the third format in the [ADR 01037](01037-every-input-format-is-explicit.md) registry,
+DITA is the third format in the [ADR 01041](01041-every-input-format-is-explicit.md) registry,
 and the first that is not a document format in the sense the others are. It is an XML
 architecture with a specialization mechanism, and it separates *content* (topics) from
 *structure* (maps) as a matter of design.
@@ -178,7 +178,7 @@ called for real throughout, never mocked.
 ### 4a. Tag names
 
 - Good: simple, and enough for hand-written DITA.
-- Bad: derives nothing from a specialized document set, silently — the ADR 01037 failure mode,
+- Bad: derives nothing from a specialized document set, silently — the ADR 01041 failure mode,
   reintroduced one level down.
 
 ### 4b. `@class` ancestry with a tag-name fallback (chosen)

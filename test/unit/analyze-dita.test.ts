@@ -1,5 +1,5 @@
 /**
- * DITA topic and map analysis (ADR 01039).
+ * DITA topic and map analysis (ADR 01043).
  *
  * The rules worth pinning: nesting depth is the section level (DITA has no
  * `h2`), a `#topic/element` fragment addresses the *element*, elements are

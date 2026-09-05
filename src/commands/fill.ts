@@ -214,7 +214,7 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
   // before the corpus is analyzed and long before a provider is reached. The
   // writer re-serializes a YAML frontmatter fence and *creates* one when a file
   // has none, which on a format that has no frontmatter is a corruption rather
-  // than an edit (ADR 01037), and proposing fields that could never be applied
+  // than an edit (ADR 01041), and proposing fields that could never be applied
   // is not worth paying for.
   //
   // Skipped, not fatal: a corpus of `docs/**/*.md` plus `docs/**/*.html` is

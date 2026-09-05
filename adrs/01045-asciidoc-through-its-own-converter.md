@@ -8,9 +8,9 @@ decision-makers: hawkeyexl
 
 ## Context and Problem Statement
 
-AsciiDoc is the last format in the [ADR 01037](01037-every-input-format-is-explicit.md) roadmap
+AsciiDoc is the last format in the [ADR 01041](01041-every-input-format-is-explicit.md) roadmap
 with a parser behind it, and it arrives after
-[ADR 01040](01040-the-analyzer-pipeline-is-async.md) made the analyzer pipeline async so
+[ADR 01044](01044-the-analyzer-pipeline-is-async.md) made the analyzer pipeline async so
 Asciidoctor 4 could be used at all.
 
 The obvious approach — walk Asciidoctor's AST the way the Markdown analyzer walks mdast —
@@ -34,7 +34,7 @@ question — an approach that cannot see them is not an approach.
 - Determinism: a converter is a much larger surface for nondeterminism than a parser.
 - ADR 01033: a finding the author cannot act on is worse than no finding.
 - Section anchors must be what a published AsciiDoc site actually serves, or cross-file xrefs
-  resolve to nodes nothing points at (the ADR 01038 lesson, one format over).
+  resolve to nodes nothing points at (the ADR 01042 lesson, one format over).
 - A document's meaning must not depend on files outside the corpus.
 
 ## Considered Options

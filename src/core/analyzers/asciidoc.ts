@@ -1,5 +1,5 @@
 /**
- * AsciiDoc analysis (ADR 01041).
+ * AsciiDoc analysis (ADR 01045).
  *
  * Asciidoctor.js is used as an **AsciiDoc-to-HTML front end**, and the
  * resulting HTML goes through dockg's existing HTML extraction. That is not a

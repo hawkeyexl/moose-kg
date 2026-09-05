@@ -1,5 +1,5 @@
 /**
- * HTML body analysis (ADR 01038).
+ * HTML body analysis (ADR 01042).
  *
  * The rules under test that are *not* obvious: an anchor id beats a slugged
  * title because it is what a link in the same corpus actually targets; a

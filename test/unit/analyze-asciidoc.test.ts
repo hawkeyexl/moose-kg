@@ -1,5 +1,5 @@
 /**
- * AsciiDoc analysis (ADR 01041).
+ * AsciiDoc analysis (ADR 01045).
  *
  * The decisions under test: `= Title` is a level-1 section so it lines up with
  * a Markdown `# Title`; anchors are Asciidoctor's own generated ids, because

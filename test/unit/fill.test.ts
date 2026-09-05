@@ -810,7 +810,7 @@ title: Query Syntax
   /**
    * The writer re-serializes a YAML frontmatter fence and *creates* one when a
    * file has none — which on a format that has no frontmatter is a corruption,
-   * not an edit (ADR 01037). Such files are dropped before any work happens:
+   * not an edit (ADR 01041). Such files are dropped before any work happens:
    * before the corpus is analyzed, and before a provider is reached.
    */
   it("skips the unwritable files and still fills the writable ones", async () => {

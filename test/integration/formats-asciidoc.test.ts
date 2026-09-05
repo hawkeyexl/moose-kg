@@ -1,5 +1,5 @@
 /**
- * An AsciiDoc corpus (ADR 01041).
+ * An AsciiDoc corpus (ADR 01045).
  *
  * The claims worth making end-to-end: a cross-file `xref` resolves to the
  * **source** `.adoc` rather than the `.html` a published site would serve,
