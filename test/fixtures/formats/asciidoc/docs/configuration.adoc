@@ -1,0 +1,7 @@
+= Configuration reference
+:description: Every key the SDK reads.
+
+[[keys]]
+== Keys
+
+One key per line. Set these before you xref:install.adoc#prereq[install].

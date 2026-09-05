@@ -67,10 +67,23 @@ if (violations.length) process.exitCode = 1;
 
 ## Derivation and graph building
 
+<Aside type="caution" title="`analyzeDoc` and `buildSearchIndex` return promises">
+  Both are `async` as of the AsciiDoc work (ADR 01044). Asciidoctor's current release has no
+  synchronous API, and one format needing to await made the seam async for every format.
+
+  ```js
+  const doc = await analyzeDoc(source, "docs/guide.md", allPaths);
+  const index = await buildSearchIndex(graph, cwd);
+  ```
+
+  Nothing else about them changed. They take the same arguments, return the same shapes, and
+  raise the same `DockgError` on an unreadable format.
+</Aside>
+
 | Export | Purpose |
 |---|---|
 | `discoverFiles` | Apply `inputs`/`exclude` the way the CLI does |
-| `analyzeDoc` | Parse one document into headings, links, images, code, frontmatter |
+| `analyzeDoc` | **async.** Parses one document into headings, links, images, code, frontmatter |
 | `deriveGraph` | Turn analyzed documents into quads |
 | `loadGraph`, `storeToQuads` | Read a `.ttl` back into a store |
 | `collectGitHistory` | The git provenance source, injectable for tests |
@@ -96,7 +109,8 @@ by consumers.
 | `emitTurtle` | Canonically sorted Turtle, the determinism contract |
 | `emitJsonLd` | Deterministic JSON-LD |
 | `emitRdfXml` | RDF/XML for the iiRDS package's `metadata.rdf` |
-| `emitSearchIndex`, `buildSearchIndex` | The lexical index |
+| `emitSearchIndex` | Serialize the lexical index |
+| `buildSearchIndex` | **async.** Builds the lexical index from a graph |
 | `writeZip` | The deterministic zip used by the iiRDS export |
 
 ## Frontmatter editing

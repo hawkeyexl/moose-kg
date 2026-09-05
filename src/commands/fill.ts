@@ -6,12 +6,14 @@
  * recorded as a result, never aborts the run.
  */
 import { readFileSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { extname, resolve } from "node:path";
 
 import { analyzeDoc } from "../core/analyze.js";
+import { analyzerForExtension } from "../core/analyzers/index.js";
 import { loadConfig, type FillField } from "../core/config.js";
 import type { DocModel } from "../types.js";
 import { discoverFiles } from "../core/discover.js";
+import { byCodeUnit } from "../core/sort.js";
 import {
   applyKgFields,
   existingKgFields,
@@ -201,10 +203,46 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
   const inputs =
     opts.globs && opts.globs.length > 0 ? opts.globs : config.inputs;
 
-  const files = discoverFiles(inputs, config.exclude, cwd);
-  if (files.length === 0) {
+  const discovered = discoverFiles(inputs, config.exclude, cwd);
+  if (discovered.length === 0) {
     throw new DockgError(
       `No input files matched: ${inputs.join(", ")} (cwd: ${cwd})`,
+    );
+  }
+
+  // Files in a format dockg cannot write are dropped before any work happens —
+  // before the corpus is analyzed and long before a provider is reached. The
+  // writer re-serializes a YAML frontmatter fence and *creates* one when a file
+  // has none, which on a format that has no frontmatter is a corruption rather
+  // than an edit (ADR 01041), and proposing fields that could never be applied
+  // is not worth paying for.
+  //
+  // Skipped, not fatal: a corpus of `docs/**/*.md` plus `docs/**/*.html` is
+  // perfectly ordinary, and aborting the run over the HTML would leave every
+  // fillable Markdown file unfilled. Only a corpus with *nothing* writable in
+  // it is an error, because then there is no work to do at all.
+  const unwritableFormats = new Map<string, string[]>();
+  const files = discovered.filter((f) => {
+    const analyzer = analyzerForExtension(extname(f).toLowerCase());
+    if (analyzer === undefined || analyzer.writable) return true;
+    const named = unwritableFormats.get(analyzer.name) ?? [];
+    named.push(f);
+    unwritableFormats.set(analyzer.name, named);
+    return false;
+  });
+  // Grouped by format, so the message names the format each file actually is
+  // rather than attributing every skipped file to whichever came first.
+  const skipped = [...unwritableFormats.entries()]
+    .sort(([a], [b]) => byCodeUnit(a, b))
+    .map(([name, paths]) => {
+      const shown = paths.slice(0, 5).join(", ");
+      return `${name}: ${shown}${paths.length > 5 ? ", …" : ""}`;
+    });
+  if (files.length === 0) {
+    throw new DockgError(
+      `dockg cannot write metadata into any of the matched files (${skipped.join(
+        "; ",
+      )}) — narrow your inputs globs, or add this metadata by hand.`,
     );
   }
 
@@ -280,13 +318,26 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
             `so spend cannot be totalled. Set fill.pricing to enforce it, or fill.maxCostUsd: null if you meant no cap.`,
         ]
       : [];
+  // Skipping has to be visible, or a run that silently filled two of five
+  // files reads as a run that filled everything.
+  if (skipped.length > 0) {
+    warnings.push(
+      `Skipped ${discovered.length - files.length} file(s) in formats dockg cannot write ` +
+        `(${skipped.join("; ")}) — add this metadata by hand, or narrow your inputs globs.`,
+    );
+  }
   /** Set when section fields were written but could not be recorded. */
   let sectionsUnrecorded = false;
   // Null unless the cap is both set and applicable, so the gate below needs
   // no non-null assertion and cannot fire on an unpriceable run.
   const enforcedCap = budget === "enforced" ? maxCostUsd : null;
 
-  const allPaths = new Set(files);
+  // The whole discovered corpus, not the fillable subset. These two are
+  // different questions: `files` is what may be *written*, while link
+  // resolution asks what *exists*. Narrowing this to `files` would classify a
+  // Markdown link to a skipped `./b.html` as broken, so the prompt would
+  // describe the document's links differently from the way `build` does.
+  const allPaths = new Set(discovered);
   const results: FillDocResult[] = [];
   let costUsd = 0;
 
@@ -307,7 +358,7 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
   ];
   const guard =
     !opts.noValidateGraph && config.fill.validateGraph
-      ? FillGuard.create(
+      ? await FillGuard.create(
           guardFiles,
           cwd,
           config,
@@ -408,8 +459,8 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
     // checking outside the cache-miss branch — but a sections-off run that hits
     // the cache should not pay for a full markdown parse it never reads.
     let docModel: DocModel | undefined;
-    const doc = (): DocModel =>
-      (docModel ??= analyzeDoc(content, path, allPaths, {
+    const doc = async (): Promise<DocModel> =>
+      (docModel ??= await analyzeDoc(content, path, allPaths, {
         routes: config.routes,
       }));
 
@@ -425,7 +476,7 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
       const run = await completeValidatedJSON<Record<string, unknown>>({
         provider: getProvider(),
         system: SYSTEM_PROMPT,
-        user: buildUserPrompt(doc(), content, missing, {
+        user: buildUserPrompt(await doc(), content, missing, {
           sections: withSections,
         }),
         schema: proposalSchema(missing, { sections: sectionFields }),
@@ -460,7 +511,7 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
     // fields (ADR 01032).
     const unknownSlugs: string[] = [];
     if (withSections) {
-      const realSlugs = new Set(doc().sections.map((s) => s.slug));
+      const realSlugs = new Set((await doc()).sections.map((s) => s.slug));
       for (const entry of Array.isArray(proposal["sections"])
         ? (proposal["sections"] as Array<Record<string, unknown>>)
         : []) {
@@ -645,7 +696,7 @@ export async function runFill(opts: FillOptions = {}): Promise<FillReport> {
     if (!opts.dryRun) writeFileSync(absPath, applied.content, "utf8");
     // Fold the accepted result into the guard even on --dry-run, so the dry
     // run predicts exactly what a real run would accept and reject.
-    guard?.commit(path, applied.content);
+    await guard?.commit(path, applied.content);
     return {
       path,
       status: opts.dryRun ? "proposed" : "filled",

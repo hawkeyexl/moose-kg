@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "id": "https://example.com/kg/doc/docs/configuration.dita",
+      "type": "dockg:Document",
+      "title": "Configuration reference",
+      "description": "Every key the SDK reads."
+    },
+    {
+      "id": "https://example.com/kg/doc/docs/configuration.dita#configuration",
+      "type": "dockg:Section",
+      "title": "Configuration reference",
+      "text": "Configuration reference\n\nEvery key the SDK reads."
+    },
+    {
+      "id": "https://example.com/kg/doc/docs/configuration.dita#keys",
+      "type": "dockg:Section",
+      "title": "Keys",
+      "text": "Keys\n\nOne key per line. Set these before you install."
+    },
+    {
+      "id": "https://example.com/kg/doc/docs/install.dita",
+      "type": "dockg:Document",
+      "title": "Install the SDK",
+      "description": "Get the SDK onto a machine."
+    },
+    {
+      "id": "https://example.com/kg/doc/docs/install.dita#install",
+      "type": "dockg:Section",
+      "title": "Install the SDK",
+      "text": "Install the SDK\n\nGet the SDK onto a machine.\nEverything below assumes a clean machine."
+    },
+    {
+      "id": "https://example.com/kg/doc/docs/install.dita#prereq",
+      "type": "dockg:Section",
+      "title": "Prerequisites",
+      "text": "Prerequisites\n\nNode 24 or later. See the keys.\nnpm install sdk"
+    },
+    {
+      "id": "https://example.com/kg/doc/docs/install.dita#verify",
+      "type": "dockg:Section",
+      "title": "Verify",
+      "text": "Verify\n\nRun the smoke test and check the output."
+    },
+    {
+      "id": "https://example.com/kg/doc/docs/sdk.ditamap",
+      "type": "dockg:Document",
+      "title": "SDK documentation",
+      "text": "SDK documentation"
+    }
+  ]
+}

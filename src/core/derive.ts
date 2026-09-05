@@ -6,7 +6,7 @@
 import type { DocModel } from "../types.js";
 import type { DeriveSource } from "./config.js";
 import type { GitHistory } from "./git.js";
-import { hasScheme, resolveRelative } from "./analyze.js";
+import { hasScheme, resolveRelative } from "./analyzers/links.js";
 import type { AgentKind } from "./iri.js";
 import {
   conceptSlug,

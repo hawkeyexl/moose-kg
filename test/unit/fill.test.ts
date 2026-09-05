@@ -795,3 +795,102 @@ describe("runFill graph guardrail (fill.validateGraph)", () => {
     ).toBeUndefined();
   });
 });
+
+describe("runFill over a format dockg cannot write", () => {
+  const HTML = `<!doctype html>
+<html><body><h1>A</h1></body></html>
+`;
+  const MD_SOURCE = `---
+title: Query Syntax
+---
+
+# Q
+`;
+
+  /**
+   * The writer re-serializes a YAML frontmatter fence and *creates* one when a
+   * file has none — which on a format that has no frontmatter is a corruption,
+   * not an edit (ADR 01041). Such files are dropped before any work happens:
+   * before the corpus is analyzed, and before a provider is reached.
+   */
+  it("skips the unwritable files and still fills the writable ones", async () => {
+    // A corpus of Markdown plus published HTML is ordinary. Aborting over the
+    // HTML would leave every fillable Markdown file unfilled, and the user
+    // would have to narrow the globs — which builds a different corpus for the
+    // graph guard than the one they configured.
+    const dir = mkdtempSync(join(tmpdir(), "dockg-fill-"));
+    writeFileSync(
+      join(dir, "dockg.config.yaml"),
+      `version: 1
+inputs: ["*.md", "*.html"]
+${SKOS_FIELDS}`,
+    );
+    writeFileSync(join(dir, "a.md"), MD_SOURCE);
+    writeFileSync(join(dir, "b.html"), HTML);
+    const provider = new MockProvider([{ json: PROPOSAL }]);
+
+    const report = await runFill({
+      cwd: dir,
+      providerInstance: provider,
+      noValidateGraph: true,
+    });
+
+    expect(report.results.map((r) => r.path)).toEqual(["a.md"]);
+    expect(report.results[0]).toMatchObject({ status: "filled" });
+    // The HTML file is untouched — the whole point of the gate.
+    expect(readFileSync(join(dir, "b.html"), "utf8")).toBe(HTML);
+    // And the skip is visible: a run that filled one of two files must not
+    // read as a run that filled everything.
+    expect(report.warnings.join(" ")).toMatch(/html: b\.html/);
+  });
+
+  it("names the format each skipped file actually is", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "dockg-fill-"));
+    writeFileSync(
+      join(dir, "dockg.config.yaml"),
+      `version: 1
+inputs: ["*.md", "*.html", "*.dita"]
+${SKOS_FIELDS}`,
+    );
+    writeFileSync(join(dir, "a.md"), MD_SOURCE);
+    writeFileSync(join(dir, "b.html"), HTML);
+    writeFileSync(
+      join(dir, "c.dita"),
+      `<topic id="c"><title>C</title></topic>`,
+    );
+    const provider = new MockProvider([{ json: PROPOSAL }]);
+
+    const report = await runFill({
+      cwd: dir,
+      providerInstance: provider,
+      noValidateGraph: true,
+    });
+
+    const warning = report.warnings.join(" ");
+    // Not "html: b.html, c.dita" — c.dita is not an HTML file, and attributing
+    // it to whichever format came first tells the reader something false.
+    expect(warning).toMatch(/dita: c\.dita/);
+    expect(warning).toMatch(/html: b\.html/);
+  });
+
+  it("errors only when nothing in the corpus is writable", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "dockg-fill-"));
+    writeFileSync(
+      join(dir, "dockg.config.yaml"),
+      `version: 1
+inputs: ["*.html"]
+`,
+    );
+    writeFileSync(join(dir, "a.html"), HTML);
+    // A response is scripted but must never be consumed: an empty `requests`
+    // is what proves the refusal came before the provider was reached.
+    const provider = new MockProvider([{ json: PROPOSAL }]);
+
+    await expect(
+      runFill({ cwd: dir, providerInstance: provider }),
+    ).rejects.toThrow(/cannot write metadata into any of the matched files/);
+
+    expect(provider.requests).toHaveLength(0);
+    expect(readFileSync(join(dir, "a.html"), "utf8")).toBe(HTML);
+  });
+});

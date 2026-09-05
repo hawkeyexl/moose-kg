@@ -267,7 +267,20 @@ describe("parseConfig", () => {
       {
         basePath: "/docs",
         root: "docs/pages",
-        extensions: [".md", ".mdx"],
+        // Every extension dockg can read, in candidate-precedence order —
+        // Markdown ahead of HTML, so a corpus holding both a source and its
+        // build output resolves a pretty URL to the source (ADR 01042).
+        extensions: [
+          ".md",
+          ".markdown",
+          ".mdx",
+          ".html",
+          ".htm",
+          ".dita",
+          ".ditamap",
+          ".adoc",
+          ".asciidoc",
+        ],
         indexFiles: ["index", "README"],
       },
     ]);

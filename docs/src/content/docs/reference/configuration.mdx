@@ -53,7 +53,7 @@ become real edges.
 |---|---|---|---|
 | `routes[].root` | string | none | **Required.** Repo directory the route serves. |
 | `routes[].basePath` | string | `/` | Normalized to a leading `/` and no trailing `/`; `/` becomes site root. |
-| `routes[].extensions` | string[] | `[".md", ".mdx"]` | Must start with a dot. |
+| `routes[].extensions` | string[] | `[".md", ".markdown", ".mdx", ".html", ".htm", ".dita", ".ditamap", ".adoc", ".asciidoc"]` | Every format dockg reads, in the order it tries them. Must start with a dot. |
 | `routes[].indexFiles` | string[] | `["index", "README"]` | Resolves `/docs/actions/` to a file. |
 | `routes[].language` | string | none | BCP-47 tag labelling every document under `root`. See [localization](/dockg/model/localization/). |
 

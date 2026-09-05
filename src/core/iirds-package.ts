@@ -9,9 +9,10 @@
  * types. Deterministic: baseIri-derived IRIs (no random UUIDs), no blank nodes.
  */
 import { existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { extname, resolve } from "node:path";
 import { DataFactory, type Store } from "n3";
 import { DockgError } from "../types.js";
+import { analyzerForExtension } from "./analyzers/index.js";
 import type { Quad, Term } from "./derive.js";
 import { byCodeUnit } from "./sort.js";
 import { NS, RDF_TYPE } from "./vocab.js";
@@ -139,7 +140,17 @@ export function projectPackage(
       add(doc, IIRDS_HAS_RENDITION, iri(rendition));
       add(rendition, RDF_TYPE, iri(IIRDS_RENDITION));
       add(rendition, IIRDS_SOURCE, lit(zipPath));
-      add(rendition, IIRDS_FORMAT, lit("text/markdown"));
+      // The source's own media type, not a blanket "text/markdown": a
+      // consumer picks its renderer from this, so shipping an HTML rendition
+      // labelled as Markdown is a wrong claim about the bytes in the package.
+      add(
+        rendition,
+        IIRDS_FORMAT,
+        lit(
+          analyzerForExtension(extname(path).toLowerCase())?.mediaType ??
+            "text/markdown",
+        ),
+      );
       contentFiles.push({ zipPath, absPath });
     } else {
       warnings.push(

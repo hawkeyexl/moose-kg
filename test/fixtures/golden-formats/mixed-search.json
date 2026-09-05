@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "id": "https://example.com/kg/doc/docs/configuration.md",
+      "type": "dockg:Document",
+      "title": "Configuration reference",
+      "description": "Every key the SDK reads."
+    },
+    {
+      "id": "https://example.com/kg/doc/docs/configuration.md#configuration-reference",
+      "type": "dockg:Section",
+      "title": "Configuration reference",
+      "text": "# Configuration reference\n\nSet these before you [install](./install.html#prerequisites)."
+    },
+    {
+      "id": "https://example.com/kg/doc/docs/configuration.md#keys",
+      "type": "dockg:Section",
+      "title": "Keys",
+      "text": "## Keys\n\nOne key per line."
+    },
+    {
+      "id": "https://example.com/kg/doc/docs/install.html",
+      "type": "dockg:Document",
+      "title": "Install the SDK",
+      "description": "Get the SDK onto a machine.",
+      "text": "Everything below assumes a clean machine."
+    },
+    {
+      "id": "https://example.com/kg/doc/docs/install.html#install-the-sdk",
+      "type": "dockg:Section",
+      "title": "Install the SDK",
+      "text": "Install the SDK\n\nStart here, then read the configuration reference."
+    },
+    {
+      "id": "https://example.com/kg/doc/docs/install.html#prerequisites",
+      "type": "dockg:Section",
+      "title": "Prerequisites",
+      "text": "Prerequisites\n\nNode 24 or later.\nnpm install sdk"
+    },
+    {
+      "id": "https://example.com/kg/doc/docs/install.html#verify",
+      "type": "dockg:Section",
+      "title": "Verify",
+      "text": "Verify\n\nRun the smoke test and check the output."
+    }
+  ]
+}

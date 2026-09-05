@@ -68,6 +68,26 @@ it should not depend on how someone typed the command.
      ```
    </Aside>
 
+   <Aside type="caution" title="Which formats dockg reads">
+     `.md`, `.markdown`, `.mdx`, `.html`, `.htm`, `.dita`, `.ditamap`, `.adoc` and `.asciidoc`.
+     A glob that pulls in anything else fails the build rather than ingesting it.
+     reStructuredText and generic XML are recognized by name but cannot be read yet:
+
+     ```
+     dockg: The "rst" input format is not yet implemented (docutils is a Python library with no JavaScript equivalent; a subset parser is planned).
+     ```
+
+     An extension nothing claims tells you what the alternatives are:
+
+     ```
+     dockg: No input format is registered for docs/notes.txt (".txt") — narrow your inputs globs. Supported: .adoc, .asciidoc, .dita, .ditamap, .htm, .html, .markdown, .md, .mdx.
+     ```
+
+     Both exit `2` and write no graph. Refusing is deliberate. Parsing an unknown format as
+     Markdown succeeds at everything except finding anything. A graph left empty for a parser
+     reason looks exactly like a corpus with no structure.
+   </Aside>
+
 2. **Set a real `baseIri`.** IRIs are the graph's stable identity, and changing the base later
    rewrites every subject in the file.
 
@@ -162,6 +182,76 @@ starting point, not a failing grade.
 
   An attribute whose value is an expression (`href={route}`) is skipped rather than guessed at: its
   value is not knowable without evaluating the module.
+</Aside>
+
+<Aside type="note" title="HTML is read structurally, not as a source format">
+  A published site is often the only copy of a corpus that still exists. dockg reads `.html` and
+  `.htm` the same way it reads Markdown. `h1`–`h6` become sections. `<a href>` and `<area href>`
+  become links, and `<img src>` becomes an image. A `language-*` or `lang-*` class on a `<code>`
+  element becomes a code language. Page metadata comes from `<title>` and `<meta name>`.
+
+  **Section anchors come from ids, not from titles.** A heading's own `id` wins; failing that, the
+  `id` of an enclosing `<section>` or `<article>` — which is where Sphinx puts it. That matters
+  because a link elsewhere in your corpus targets the id, so slugging the title would mint a
+  section IRI nothing points at.
+
+  The id is used **exactly as written** — `id="GUID-A1B2-C3D4"` becomes `…#GUID-A1B2-C3D4`, case
+  and dots intact — because that is what your links say. (An id holding a space or a non-ASCII
+  character is slugged instead, since a section IRI is not percent-encoded and would otherwise
+  emit Turtle that does not parse.)
+
+  A heading's own permalink (`<a class="headerlink" href="#install">¶</a>`) is dropped from its
+  text. A link from a heading to itself carries nothing; a link from a heading to anywhere else is
+  kept.
+
+  `href` is read from `<a>` and `<area>` only — not from `<link rel="stylesheet">` or `<base>`,
+  which name resources rather than documents. Reading those would put a broken link on every page
+  in the corpus.
+</Aside>
+
+<Aside type="note" title="DITA: topics carry structure, maps carry the graph">
+  A `.dita` topic nests by depth rather than by heading level — the root topic is level 1, a
+  `<section>` or a subtopic inside it is level 2 — because DITA has no `h1`–`h6`. Section anchors
+  come from `@id`, and an `<xref href="config.dita#config/keys">` resolves to the section node
+  dockg minted for `<section id="keys">`.
+
+  A `.ditamap` contributes **references and no sections**: its `<topicref>`s are the corpus's
+  navigation graph, and it has no prose of its own to divide into sections. Page metadata comes
+  from `<othermeta>` and `<shortdesc>`.
+
+  Elements are recognized by their `@class` ancestry, so a specialized document set works — a
+  renamed `<mySection class="- topic/section ">` is still a section. Tag names are the fallback
+  for hand-written DITA that omits `@class`.
+
+  <Aside type="caution" title="Keys and content references are not resolved">
+    `@keyref`, `@conkeyref` and `@conref` are indirections that only a map can resolve, and dockg
+    reads one file at a time. A `<topicref keyref="glossary"/>` therefore derives **no edge** —
+    and no broken-link finding either, since that would blame you for a limitation of dockg's.
+
+    If your corpus addresses most of its targets by key, expect the graph to show far fewer edges
+    than the corpus has.
+  </Aside>
+</Aside>
+
+<Aside type="note" title="AsciiDoc goes through Asciidoctor">
+  dockg converts each `.adoc` file with Asciidoctor and reads the result. That is not a shortcut:
+  a loaded Asciidoctor document has no inline nodes, so links only exist once conversion has run.
+  Converting also means Asciidoctor — the reference implementation — answers what an `xref` points
+  at and which anchor a section carries, rather than dockg guessing.
+
+  `= Title` becomes a level-1 section, matching a Markdown `# Title`. Anchors are Asciidoctor's
+  own ids: an explicit `[[prereq]]` gives `#prereq`, and a plain `== Verify` gives `#_verify` —
+  underscore included, because that is the anchor a published AsciiDoc site serves.
+
+  Cross-file `xref:configuration.adoc#keys[]` resolves to the **source** file. Asciidoctor
+  normally rewrites that to the `.html` a site would publish; dockg turns that off, or every
+  cross-file xref in your corpus would be reported broken.
+
+  <Aside type="caution" title="include:: is not resolved">
+    Resolving one would make your graph depend on files outside the corpus. dockg runs Asciidoctor
+    in secure mode, so an `include::` contributes nothing — **and is not reported as a broken
+    link**, even though Asciidoctor renders it as one.
+  </Aside>
 </Aside>
 
 <Aside type="caution" title="MDX must actually parse">

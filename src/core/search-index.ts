@@ -23,17 +23,15 @@
  * you its subsections), indexing uses `sectionOwnText`.
  */
 import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { extname, resolve } from "node:path";
 import { compactIri } from "./load.js";
 import { byCodeUnit } from "./sort.js";
 import { NS } from "./vocab.js";
 import { UNDETERMINED } from "./localizations.js";
 import type { GraphIndex } from "../runtime/graph.js";
-import {
-  documentPreamble,
-  sectionOccurrences,
-  sectionOwnText,
-} from "../runtime/resolve.js";
+import { sectionOccurrences } from "../runtime/resolve.js";
+import { analyzerForExtension } from "./analyzers/index.js";
+import type { DocumentText } from "./analyzers/index.js";
 
 const DOCKG_DOCUMENT = `${NS.dockg}Document`;
 const DOCKG_SECTION = `${NS.dockg}Section`;
@@ -84,19 +82,21 @@ function joinLabels(values: string[]): string | undefined {
 }
 
 /**
- * A leading YAML frontmatter block, and the blank lines after it.
+ * The indexable text of one source file, or undefined when it cannot be read.
  *
- * Only a document with *no* sections gets body text, and its body is the whole
- * file — frontmatter included, unless it is stripped here. That block is
- * machinery, not prose: left in, a query for `label` or `alt-labels` matches
- * every sectionless document, and the artifact carries YAML nobody can read.
- * Section slices start at their heading, so they never see it.
+ * Slicing is the analyzer's job, not this module's: Markdown *is* its own
+ * indexable text, while HTML has to have prose recovered from markup first.
+ * Doing it here would mean indexing `<div class="md-content">` alongside the
+ * prose for every non-Markdown format.
  */
-const FRONTMATTER =
-  /^---[ \t]*\r?\n(?:[\s\S]*?\r?\n)?(?:---|\.\.\.)[ \t]*(?:\r?\n|$)(?:\r?\n)*/;
-
-function stripFrontmatter(markdown: string): string {
-  return markdown.replace(FRONTMATTER, "");
+async function textOf(
+  path: string,
+  source: string,
+): Promise<DocumentText | undefined> {
+  return analyzerForExtension(extname(path).toLowerCase())?.textOf(
+    source,
+    path,
+  );
 }
 
 /** Drop undefined fields so entries serialize identically for equal inputs. */
@@ -113,11 +113,11 @@ function entry(
   return out;
 }
 
-export function buildSearchIndex(
+export async function buildSearchIndex(
   graph: GraphIndex,
   cwd: string,
   options: SearchIndexOptions = {},
-): SearchIndexDoc {
+): Promise<SearchIndexDoc> {
   const warnings = options.warnings ?? [];
   const readDoc =
     options.readDoc ??
@@ -127,7 +127,8 @@ export function buildSearchIndex(
     });
 
   const entries: SearchEntry[] = [];
-  const sourceOf = new Map<string, string | undefined>();
+  /** Parsed once per document — the section loop below queries it many times. */
+  const textOfDoc = new Map<string, DocumentText | undefined>();
 
   // Group sections by their parent document once. Re-scanning every section per
   // document is quadratic across the corpus, and the section loop below needs
@@ -148,30 +149,27 @@ export function buildSearchIndex(
   for (const doc of graph.instancesOf(DOCKG_DOCUMENT)) {
     const path = graph.literal(doc, DOCKG_PATH);
     const source = path === undefined ? undefined : readDoc(path);
-    sourceOf.set(doc, source);
     if (path !== undefined && source === undefined) {
       warnings.push(
         `Source not found for ${path} — indexed without body text.`,
       );
     }
+    const docText =
+      path === undefined || source === undefined
+        ? undefined
+        : await textOf(path, source);
+    textOfDoc.set(doc, docText);
 
     // Granularity rule: a section owns its slice, so a document with sections
     // keeps only the prose that belongs to no section — the preamble before the
     // first heading. Without this, that text is indexed nowhere and is
     // unfindable. A document with no sections owns its whole body.
-    // Newlines normalized to LF: section slices and `documentPreamble` already
-    // re-join on "\n", so without this a sectionless CRLF document is the one
-    // entry in the artifact carrying "\r\n".
-    const body =
-      source === undefined
-        ? undefined
-        : stripFrontmatter(source).replace(/\r\n/g, "\n");
     const text =
-      body === undefined
+      docText === undefined
         ? undefined
         : (sectionsOf.get(doc)?.length ?? 0) > 0
-          ? documentPreamble(body)
-          : body;
+          ? docText.preamble()
+          : docText.body;
 
     entries.push(
       entry(doc, compactIri(DOCKG_DOCUMENT), {
@@ -189,7 +187,7 @@ export function buildSearchIndex(
     const hash = section.indexOf("#");
     const doc = hash < 0 ? section : section.slice(0, hash);
     const title = graph.literal(section, DCTERMS_TITLE);
-    const source = sourceOf.get(doc);
+    const docText = textOfDoc.get(doc);
     const levelText = graph.literal(section, DOCKG_LEVEL);
     const parsed =
       levelText === undefined ? NaN : Number.parseInt(levelText, 10);
@@ -204,8 +202,8 @@ export function buildSearchIndex(
     // Heading text repeats (the corpus has two `## Install`), so the section's
     // occurrence disambiguates which slice is actually its own.
     const text =
-      source !== undefined && title !== undefined
-        ? sectionOwnText(source, title, level, occurrences.get(section) ?? 0)
+      docText !== undefined && title !== undefined
+        ? docText.sectionOwnText(title, level, occurrences.get(section) ?? 0)
         : undefined;
 
     entries.push(entry(section, compactIri(DOCKG_SECTION), { title, text }));

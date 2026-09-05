@@ -1,0 +1,73 @@
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix dockg: <https://hawkeyexl.github.io/dockg/ns#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix iirds: <http://iirds.tekom.de/iirds#> .
+@prefix iirdsSft: <http://iirds.tekom.de/iirds/domain/software#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix schema: <https://schema.org/> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<https://example.com/kg/activity/build> a prov:Activity ;
+  prov:qualifiedAssociation <https://example.com/kg/activity/build.assoc.dockg> ;
+  prov:used <https://example.com/kg/doc/docs/configuration.md>, <https://example.com/kg/doc/docs/install.html> ;
+  prov:wasAssociatedWith <https://example.com/kg/agent/software/dockg> .
+
+<https://example.com/kg/activity/build.assoc.dockg> a prov:Association ;
+  prov:agent <https://example.com/kg/agent/software/dockg> ;
+  prov:hadRole dockg:toolRole .
+
+<https://example.com/kg/agent/software/dockg> a prov:SoftwareAgent ;
+  foaf:name "dockg" ;
+  dockg:version "0.1.0" .
+
+<https://example.com/kg/doc/docs/configuration.md> a prov:Entity, dockg:Document ;
+  dcterms:description "Every key the SDK reads." ;
+  dcterms:hasPart <https://example.com/kg/doc/docs/configuration.md#configuration-reference> ;
+  dcterms:references <https://example.com/kg/doc/docs/install.html#prerequisites> ;
+  dcterms:title "Configuration reference" ;
+  dockg:contentHash "5abd7b1084e576d6dc753d93d26f6805bfb0652d095ab2f065cab53b62d2fbc9" ;
+  dockg:path "docs/configuration.md" .
+
+<https://example.com/kg/doc/docs/configuration.md#configuration-reference> a dockg:Section ;
+  dcterms:hasPart <https://example.com/kg/doc/docs/configuration.md#keys> ;
+  dcterms:title "Configuration reference" ;
+  dockg:level 1 ;
+  dockg:order 1 .
+
+<https://example.com/kg/doc/docs/configuration.md#keys> a dockg:Section ;
+  dcterms:title "Keys" ;
+  dockg:level 2 ;
+  dockg:order 1 .
+
+<https://example.com/kg/doc/docs/install.html> a prov:Entity, dockg:Document ;
+  iirds:has-topic-type iirds:GenericTask ;
+  dcterms:description "Get the SDK onto a machine." ;
+  dcterms:hasPart <https://example.com/kg/doc/docs/install.html#install-the-sdk> ;
+  dcterms:references <https://example.com/kg/doc/docs/configuration.md> ;
+  dcterms:title "Install the SDK" ;
+  dockg:brokenLink "./missing.html" ;
+  dockg:codeLanguage "bash" ;
+  dockg:contentHash "e709da62df21f30da30abd437eb6df9d61c9e8991b99afa395b36d0f1d244cb3" ;
+  dockg:path "docs/install.html" ;
+  schema:image <https://example.com/kg/file/docs/images/architecture.png> .
+
+<https://example.com/kg/doc/docs/install.html#install-the-sdk> a dockg:Section ;
+  dcterms:hasPart <https://example.com/kg/doc/docs/install.html#prerequisites>, <https://example.com/kg/doc/docs/install.html#verify> ;
+  dcterms:title "Install the SDK" ;
+  dockg:level 1 ;
+  dockg:order 1 .
+
+<https://example.com/kg/doc/docs/install.html#prerequisites> a dockg:Section ;
+  dcterms:title "Prerequisites" ;
+  dockg:level 2 ;
+  dockg:order 1 .
+
+<https://example.com/kg/doc/docs/install.html#verify> a dockg:Section ;
+  dcterms:title "Verify" ;
+  dockg:level 2 ;
+  dockg:order 2 .
+
+<https://example.com/kg/graph> a prov:Entity ;
+  prov:wasGeneratedBy <https://example.com/kg/activity/build> .

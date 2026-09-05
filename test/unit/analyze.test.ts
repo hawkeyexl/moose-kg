@@ -5,8 +5,8 @@ import { analyzeDoc } from "../../src/core/analyze.js";
 const ALL = new Set(["docs/intro.md", "docs/config.md", "docs/sub/deep.md"]);
 
 describe("analyzeDoc — frontmatter", () => {
-  it("extracts frontmatter data via docmeta", () => {
-    const doc = analyzeDoc(
+  it("extracts frontmatter data via docmeta", async () => {
+    const doc = await analyzeDoc(
       "---\ntitle: Intro\ntags: [setup]\n---\n\n# Hello\n",
       "docs/intro.md",
       ALL,
@@ -15,14 +15,14 @@ describe("analyzeDoc — frontmatter", () => {
     expect(doc.frontmatter).toEqual({ title: "Intro", tags: ["setup"] });
   });
 
-  it("handles a doc without frontmatter", () => {
-    const doc = analyzeDoc("# Just a heading\n", "docs/intro.md", ALL);
+  it("handles a doc without frontmatter", async () => {
+    const doc = await analyzeDoc("# Just a heading\n", "docs/intro.md", ALL);
     expect(doc.frontmatterPresent).toBe(false);
     expect(doc.frontmatter).toEqual({});
   });
 
-  it("handles CRLF files", () => {
-    const doc = analyzeDoc(
+  it("handles CRLF files", async () => {
+    const doc = await analyzeDoc(
       "---\r\ntitle: Win\r\n---\r\n\r\n# Heading\r\n",
       "docs/intro.md",
       ALL,
@@ -33,8 +33,8 @@ describe("analyzeDoc — frontmatter", () => {
 });
 
 describe("analyzeDoc — headings", () => {
-  it("builds a section list with levels, slugs, order, and parents", () => {
-    const doc = analyzeDoc(
+  it("builds a section list with levels, slugs, order, and parents", async () => {
+    const doc = await analyzeDoc(
       "# Title\n\n## Install\n\ntext\n\n## Usage\n\n### Advanced\n",
       "docs/intro.md",
       ALL,
@@ -66,18 +66,26 @@ describe("analyzeDoc — headings", () => {
     ]);
   });
 
-  it("disambiguates duplicate headings in document order", () => {
-    const doc = analyzeDoc("## Setup\n\n## Setup\n", "docs/intro.md", ALL);
+  it("disambiguates duplicate headings in document order", async () => {
+    const doc = await analyzeDoc(
+      "## Setup\n\n## Setup\n",
+      "docs/intro.md",
+      ALL,
+    );
     expect(doc.sections.map((s) => s.slug)).toEqual(["setup", "setup-1"]);
   });
 
-  it("attaches level-skipping headings to the nearest shallower ancestor", () => {
-    const doc = analyzeDoc("# Top\n\n### Deep\n", "docs/intro.md", ALL);
+  it("attaches level-skipping headings to the nearest shallower ancestor", async () => {
+    const doc = await analyzeDoc("# Top\n\n### Deep\n", "docs/intro.md", ALL);
     expect(doc.sections[1]).toMatchObject({ slug: "deep", parentSlug: "top" });
   });
 
-  it("handles headings before any shallower heading (parent = doc)", () => {
-    const doc = analyzeDoc("### Orphan\n\n# Later\n", "docs/intro.md", ALL);
+  it("handles headings before any shallower heading (parent = doc)", async () => {
+    const doc = await analyzeDoc(
+      "### Orphan\n\n# Later\n",
+      "docs/intro.md",
+      ALL,
+    );
     expect(doc.sections[0]).toMatchObject({
       slug: "orphan",
       parentSlug: null,
@@ -92,8 +100,8 @@ describe("analyzeDoc — headings", () => {
 });
 
 describe("analyzeDoc — links", () => {
-  it("classifies internal, external, and broken links", () => {
-    const doc = analyzeDoc(
+  it("classifies internal, external, and broken links", async () => {
+    const doc = await analyzeDoc(
       "[a](config.md) [b](https://example.com/x) [c](missing.md)\n",
       "docs/intro.md",
       ALL,
@@ -109,8 +117,8 @@ describe("analyzeDoc — links", () => {
     ]);
   });
 
-  it("resolves relative traversal and anchors", () => {
-    const doc = analyzeDoc(
+  it("resolves relative traversal and anchors", async () => {
+    const doc = await analyzeDoc(
       "[up](../intro.md#install) [peer](deep.md)\n",
       "docs/sub/deep.md",
       new Set(["docs/intro.md", "docs/sub/deep.md"]),
@@ -123,18 +131,22 @@ describe("analyzeDoc — links", () => {
     });
   });
 
-  it("ignores same-document anchor links", () => {
-    const doc = analyzeDoc("[here](#install)\n", "docs/intro.md", ALL);
+  it("ignores same-document anchor links", async () => {
+    const doc = await analyzeDoc("[here](#install)\n", "docs/intro.md", ALL);
     expect(doc.links).toEqual([]);
   });
 
-  it("ignores site-root-absolute links (published-site routes, not repo paths)", () => {
-    const doc = analyzeDoc("[route](/docs/config/)\n", "docs/intro.md", ALL);
+  it("ignores site-root-absolute links (published-site routes, not repo paths)", async () => {
+    const doc = await analyzeDoc(
+      "[route](/docs/config/)\n",
+      "docs/intro.md",
+      ALL,
+    );
     expect(doc.links).toEqual([]);
   });
 
-  it("ignores scheme-bearing targets that are not parseable URLs (example junk)", () => {
-    const doc = analyzeDoc(
+  it("ignores scheme-bearing targets that are not parseable URLs (example junk)", async () => {
+    const doc = await analyzeDoc(
       '[x](http://localhost:8092","params":{"token":"t"}}})\n',
       "docs/intro.md",
       ALL,
@@ -142,8 +154,8 @@ describe("analyzeDoc — links", () => {
     expect(doc.links).toEqual([]);
   });
 
-  it("resolves reference-style links via definitions", () => {
-    const doc = analyzeDoc(
+  it("resolves reference-style links via definitions", async () => {
+    const doc = await analyzeDoc(
       "[a][ref]\n\n[ref]: config.md\n",
       "docs/intro.md",
       ALL,
@@ -153,14 +165,14 @@ describe("analyzeDoc — links", () => {
     ]);
   });
 
-  it("resolves relative extensionless links by trying extensions and index files", () => {
+  it("resolves relative extensionless links by trying extensions and index files", async () => {
     const paths = new Set([
       "docs/input-formats/overview.mdx",
       "docs/input-formats/custom.mdx",
       "docs/actions/index.md",
       "docs/actions/find.mdx",
     ]);
-    const doc = analyzeDoc(
+    const doc = await analyzeDoc(
       "[a](custom) [b](../actions/) [c](../actions/find#usage)\n",
       "docs/input-formats/overview.mdx",
       paths,
@@ -185,8 +197,8 @@ describe("analyzeDoc — links", () => {
     ]);
   });
 
-  it("does not crash on malformed percent-encodings (stray %)", () => {
-    const doc = analyzeDoc(
+  it("does not crash on malformed percent-encodings (stray %)", async () => {
+    const doc = await analyzeDoc(
       "[sale](50%-off.md) [also](file%zz.md)\n",
       "docs/intro.md",
       new Set(["docs/intro.md", "docs/50%-off.md"]),
@@ -200,10 +212,10 @@ describe("analyzeDoc — links", () => {
     expect(doc.links[1]).toEqual({ raw: "file%zz.md", kind: "broken" });
   });
 
-  it("skips a relative link to a non-document file", () => {
+  it("skips a relative link to a non-document file", async () => {
     // Same rule as the route branch (ADR 01033): a download beside the page is
     // not a document dockg failed to find.
-    const doc = analyzeDoc(
+    const doc = await analyzeDoc(
       "[the turtle](./ns.ttl) and [the archive](../dist.zip)\n",
       "docs/intro.md",
       ALL,
@@ -211,8 +223,12 @@ describe("analyzeDoc — links", () => {
     expect(doc.links).toEqual([]);
   });
 
-  it("marks links escaping the root as broken", () => {
-    const doc = analyzeDoc("[out](../../outside.md)\n", "docs/intro.md", ALL);
+  it("marks links escaping the root as broken", async () => {
+    const doc = await analyzeDoc(
+      "[out](../../outside.md)\n",
+      "docs/intro.md",
+      ALL,
+    );
     expect(doc.links).toEqual([{ raw: "../../outside.md", kind: "broken" }]);
   });
 });
@@ -233,8 +249,8 @@ describe("analyzeDoc — route mapping", () => {
     },
   ];
 
-  it("resolves a route to its source file, trying extensions", () => {
-    const doc = analyzeDoc(
+  it("resolves a route to its source file, trying extensions", async () => {
+    const doc = await analyzeDoc(
       "[a](/docs/actions/find) [b](/docs/intro)\n",
       "docs/linker.md",
       paths,
@@ -254,9 +270,9 @@ describe("analyzeDoc — route mapping", () => {
     ]);
   });
 
-  it("falls back to extension candidates for trailing-slash pretty URLs", () => {
+  it("falls back to extension candidates for trailing-slash pretty URLs", async () => {
     // Hugo/Docusaurus serve find.mdx at /docs/actions/find/ — no index file exists
-    const doc = analyzeDoc(
+    const doc = await analyzeDoc(
       "[pretty](/docs/actions/find/)\n",
       "docs/linker.md",
       paths,
@@ -272,7 +288,7 @@ describe("analyzeDoc — route mapping", () => {
       },
     ]);
     // ...but index files still win when both exist
-    const dirDoc = analyzeDoc(
+    const dirDoc = await analyzeDoc(
       "[dir](/docs/actions/)\n",
       "docs/linker.md",
       paths,
@@ -283,8 +299,8 @@ describe("analyzeDoc — route mapping", () => {
     });
   });
 
-  it("resolves directory routes (trailing slash) via index files, and keeps anchors", () => {
-    const doc = analyzeDoc(
+  it("resolves directory routes (trailing slash) via index files, and keeps anchors", async () => {
+    const doc = await analyzeDoc(
       "[dir](/docs/actions/) [anchored](/docs/actions/find#usage)\n",
       "docs/linker.md",
       paths,
@@ -301,8 +317,8 @@ describe("analyzeDoc — route mapping", () => {
     });
   });
 
-  it("marks unresolvable routes under a mapped basePath as broken", () => {
-    const doc = analyzeDoc(
+  it("marks unresolvable routes under a mapped basePath as broken", async () => {
+    const doc = await analyzeDoc(
       "[gone](/docs/actions/missing)\n",
       "docs/linker.md",
       paths,
@@ -315,12 +331,12 @@ describe("analyzeDoc — route mapping", () => {
     ]);
   });
 
-  it("skips a route target whose extension is not a document extension", () => {
+  it("skips a route target whose extension is not a document extension", async () => {
     // A mapping's `extensions` declares what its DOCUMENTS look like. A site
     // also serves static assets under the same basePath — dockg's own
     // /dockg/ns.ttl — and calling one a broken document link is a finding the
     // author cannot act on: there is no .md they could add. (ADR 01033)
-    const doc = analyzeDoc(
+    const doc = await analyzeDoc(
       "[turtle](/docs/ns.ttl) and [spec](/docs/actions/spec.pdf)\n",
       "docs/linker.md",
       paths,
@@ -329,10 +345,10 @@ describe("analyzeDoc — route mapping", () => {
     expect(doc.links).toEqual([]);
   });
 
-  it("still breaks on a route target that IS a document extension", () => {
+  it("still breaks on a route target that IS a document extension", async () => {
     // The narrowing is about non-document extensions only. A link written with
     // the source extension still has to resolve.
-    const doc = analyzeDoc(
+    const doc = await analyzeDoc(
       "[typo](/docs/actions/missing.mdx)\n",
       "docs/linker.md",
       paths,
@@ -343,20 +359,25 @@ describe("analyzeDoc — route mapping", () => {
     ]);
   });
 
-  it("still skips root-absolute links outside every mapped basePath", () => {
-    const doc = analyzeDoc("[other](/blog/post)\n", "docs/linker.md", paths, {
-      routes,
-    });
+  it("still skips root-absolute links outside every mapped basePath", async () => {
+    const doc = await analyzeDoc(
+      "[other](/blog/post)\n",
+      "docs/linker.md",
+      paths,
+      {
+        routes,
+      },
+    );
     expect(doc.links).toEqual([]);
   });
 
-  it("matches case-insensitively and slug-normalized (Fern-style kebab slugs)", () => {
+  it("matches case-insensitively and slug-normalized (Fern-style kebab slugs)", async () => {
     const camelPaths = new Set([
       "docs/pages/actions/closeSurface.mdx",
       "docs/pages/actions/stopRecord.mdx",
       "docs/linker.md",
     ]);
-    const doc = analyzeDoc(
+    const doc = await analyzeDoc(
       "[a](/docs/actions/closesurface) [b](/docs/actions/stop-record)\n",
       "docs/linker.md",
       camelPaths,
@@ -376,8 +397,8 @@ describe("analyzeDoc — route mapping", () => {
     ]);
   });
 
-  it("decodes percent-encoded routes before matching", () => {
-    const doc = analyzeDoc(
+  it("decodes percent-encoded routes before matching", async () => {
+    const doc = await analyzeDoc(
       "[x](/docs/getting%20started)\n",
       "docs/linker.md",
       new Set(["docs/pages/getting started.mdx", "docs/linker.md"]),
@@ -392,14 +413,14 @@ describe("analyzeDoc — route mapping", () => {
     ]);
   });
 
-  it("treats trailing-slash routes as directories (index files only)", () => {
+  it("treats trailing-slash routes as directories (index files only)", async () => {
     // both guide.mdx and guide/index.mdx exist: /docs/guide/ must pick the index
     const both = new Set([
       "docs/pages/guide.mdx",
       "docs/pages/guide/index.mdx",
       "docs/linker.md",
     ]);
-    const doc = analyzeDoc(
+    const doc = await analyzeDoc(
       "[dir](/docs/guide/) [page](/docs/guide)\n",
       "docs/linker.md",
       both,
@@ -415,8 +436,8 @@ describe("analyzeDoc — route mapping", () => {
     });
   });
 
-  it("resolves the bare basePath itself to the root index", () => {
-    const doc = analyzeDoc("[home](/docs)\n", "docs/linker.md", paths, {
+  it("resolves the bare basePath itself to the root index", async () => {
+    const doc = await analyzeDoc("[home](/docs)\n", "docs/linker.md", paths, {
       routes: [{ ...routes[0]!, root: "docs/pages/actions" }],
     });
     expect(doc.links).toEqual([
@@ -430,8 +451,8 @@ describe("analyzeDoc — route mapping", () => {
 });
 
 describe("analyzeDoc — images and code", () => {
-  it("collects images with resolved targets", () => {
-    const doc = analyzeDoc(
+  it("collects images with resolved targets", async () => {
+    const doc = await analyzeDoc(
       "![alt](img/a.png)\n![ext](https://example.com/b.png)\n",
       "docs/intro.md",
       ALL,
@@ -446,8 +467,8 @@ describe("analyzeDoc — images and code", () => {
     ]);
   });
 
-  it("collects distinct fenced code languages, sorted", () => {
-    const doc = analyzeDoc(
+  it("collects distinct fenced code languages, sorted", async () => {
+    const doc = await analyzeDoc(
       "```python\nx\n```\n\n```bash\ny\n```\n\n```python\nz\n```\n\n```\nplain\n```\n",
       "docs/intro.md",
       ALL,
@@ -467,8 +488,8 @@ describe("analyzeDoc — a route mapping with no configured extensions", () => {
     { basePath: "/docs", root: "docs/pages", extensions: [], indexFiles: [] },
   ];
 
-  it("still reports a broken document link", () => {
-    const doc = analyzeDoc(
+  it("still reports a broken document link", async () => {
+    const doc = await analyzeDoc(
       "[gone](/docs/actions/missing.md)\n",
       "docs/l.md",
       paths,
@@ -487,39 +508,43 @@ describe("analyzeDoc — content hash (ADR 01036)", () => {
   const sha256 = (s: string): string =>
     createHash("sha256").update(s, "utf8").digest("hex");
 
-  it("is the sha256 of the content as read", () => {
+  it("is the sha256 of the content as read", async () => {
     const content = "---\ntitle: T\n---\n\n# T\n\nBody.\n";
-    const doc = analyzeDoc(content, "docs/intro.md", ALL);
+    const doc = await analyzeDoc(content, "docs/intro.md", ALL);
     expect(doc.contentHash).toBe(sha256(content));
     expect(doc.contentHash).toMatch(/^[0-9a-f]{64}$/);
   });
 
-  it("distinguishes CRLF from LF", () => {
+  it("distinguishes CRLF from LF", async () => {
     // The corpus pins a CRLF fixture on purpose (.gitattributes). A digest that
     // normalized line endings would call two genuinely different files the
     // same, which is the one thing a drift signal must not do.
     const lf = "# T\n\nBody.\n";
     const crlf = "# T\r\n\r\nBody.\r\n";
-    expect(analyzeDoc(lf, "a.md", ALL).contentHash).not.toBe(
-      analyzeDoc(crlf, "a.md", ALL).contentHash,
+    expect((await analyzeDoc(lf, "a.md", ALL)).contentHash).not.toBe(
+      (await analyzeDoc(crlf, "a.md", ALL)).contentHash,
     );
-    expect(analyzeDoc(crlf, "a.md", ALL).contentHash).toBe(sha256(crlf));
+    expect((await analyzeDoc(crlf, "a.md", ALL)).contentHash).toBe(
+      sha256(crlf),
+    );
   });
 
-  it("depends on content alone, not on the path", () => {
+  it("depends on content alone, not on the path", async () => {
     // The join key a consumer needs is "what was in this file", so two paths
     // holding identical bytes must agree — a rename is not a content change.
     const content = "# Same\n";
-    const a = analyzeDoc(content, "docs/a.md", ALL).contentHash;
+    const a = (await analyzeDoc(content, "docs/a.md", ALL)).contentHash;
     // Assert it is a digest before asserting equality: `undefined === undefined`
     // would make this pass with no implementation at all.
     expect(a).toMatch(/^[0-9a-f]{64}$/);
-    expect(analyzeDoc(content, "docs/sub/b.md", ALL).contentHash).toBe(a);
+    expect((await analyzeDoc(content, "docs/sub/b.md", ALL)).contentHash).toBe(
+      a,
+    );
   });
 
-  it("changes when a single byte changes", () => {
-    const a = analyzeDoc("# T\n\nBody.\n", "a.md", ALL).contentHash;
-    const b = analyzeDoc("# T\n\nBody!\n", "a.md", ALL).contentHash;
+  it("changes when a single byte changes", async () => {
+    const a = (await analyzeDoc("# T\n\nBody.\n", "a.md", ALL)).contentHash;
+    const b = (await analyzeDoc("# T\n\nBody!\n", "a.md", ALL)).contentHash;
     expect(a).not.toBe(b);
   });
 });

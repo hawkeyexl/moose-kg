@@ -3,50 +3,14 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { inflateRawSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
+import { readZip, zipOrder } from "../helpers/zip.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cli = join(root, "dist", "cli.js");
 const corpus = join(root, "test", "fixtures", "corpus");
 const golden = join(root, "test", "fixtures", "golden", "graph.jsonld");
 const rdfGolden = join(root, "test", "fixtures", "golden", "metadata.rdf");
-
-/** Read a .iirds ZIP's entries (name → bytes) via its central directory. */
-function readZip(zip: Buffer): Map<string, Buffer> {
-  const eocd = zip.length - 22;
-  const count = zip.readUInt16LE(eocd + 10);
-  let p = zip.readUInt32LE(eocd + 16);
-  const out = new Map<string, Buffer>();
-  for (let i = 0; i < count; i++) {
-    const method = zip.readUInt16LE(p + 10);
-    const compSize = zip.readUInt32LE(p + 20);
-    const nameLen = zip.readUInt16LE(p + 28);
-    const localOffset = zip.readUInt32LE(p + 42);
-    const name = zip.toString("utf8", p + 46, p + 46 + nameLen);
-    const lNameLen = zip.readUInt16LE(localOffset + 26);
-    const lExtraLen = zip.readUInt16LE(localOffset + 28);
-    const dataStart = localOffset + 30 + lNameLen + lExtraLen;
-    const raw = zip.subarray(dataStart, dataStart + compSize);
-    out.set(name, method === 0 ? Buffer.from(raw) : inflateRawSync(raw));
-    p += 46 + nameLen;
-  }
-  return out;
-}
-
-/** Entry names in stored (central-directory) order. */
-function zipOrder(zip: Buffer): string[] {
-  const eocd = zip.length - 22;
-  const count = zip.readUInt16LE(eocd + 10);
-  let p = zip.readUInt32LE(eocd + 16);
-  const names: string[] = [];
-  for (let i = 0; i < count; i++) {
-    const nameLen = zip.readUInt16LE(p + 28);
-    names.push(zip.toString("utf8", p + 46, p + 46 + nameLen));
-    p += 46 + nameLen;
-  }
-  return names;
-}
 
 function run(args: string[], cwd: string): { stdout: string; status: number } {
   try {

@@ -51,10 +51,14 @@ export async function runBuild(opts: BuildOptions = {}): Promise<BuildResult> {
   }
 
   const allPaths = new Set(files);
-  const docs = files.map((path) =>
-    analyzeDoc(readFileSync(resolve(cwd, path), "utf8"), path, allPaths, {
-      routes: config.routes,
-    }),
+  // Order is the discovery order, which `discoverFiles` already sorted —
+  // `Promise.all` preserves it, so concurrency cannot reach the emitter.
+  const docs = await Promise.all(
+    files.map((path) =>
+      analyzeDoc(readFileSync(resolve(cwd, path), "utf8"), path, allPaths, {
+        routes: config.routes,
+      }),
+    ),
   );
 
   // Page-level keys that look like harvest inputs but are not. The kg block is
